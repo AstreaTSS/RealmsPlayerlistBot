@@ -37,7 +37,7 @@ class Playerlist(commands.Cog):
         xuid = str(xuid).replace("%27", "")
 
         async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(f"https://xbl.io/api/v2/account/{xuid}") as r:
+            async with session.get(f"https://xbl.io/api/v2/account/" + str(xuid)) as r:
                 try:
                     resp_json = await r.json()
                     if "code" in resp_json.keys():
@@ -61,7 +61,7 @@ class Playerlist(commands.Cog):
             "Accept-Language": "en-US"
         }
         async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(f"https://xapi.us/v2/clubs/details/{club_id}") as r:
+            async with session.get(f"https://xapi.us/v2/clubs/details/" + club_id) as r:
                 resp_json = await r.json()
                 return resp_json["clubs"][0]["clubPresence"]
 
@@ -89,7 +89,7 @@ class Playerlist(commands.Cog):
 
             online_list = []
             offline_list = []
-            club_presence = await self.realm_club_get(guild_config["playerlist_chan"])
+            club_presence = await self.realm_club_get(guild_config["club_id"])
 
             for member in club_presence:
                 last_seen = datetime.datetime.strptime(member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f")
