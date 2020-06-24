@@ -19,7 +19,7 @@ class Playerlist(commands.Cog):
             chan = self.bot.get_channel(guild_config["playerlist_chan"]) # playerlist channel
             list_cmd = self.bot.get_command("playerlist")
 
-            messages = await chan.channel.history(limit=1).flatten()
+            messages = await chan.history(limit=1).flatten()
             a_ctx = await self.bot.get_context(messages[0])
             
             await a_ctx.invoke(list_cmd, no_init_mes=True, limited=True)
