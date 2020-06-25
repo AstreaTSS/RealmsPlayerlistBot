@@ -30,7 +30,7 @@ class ModCMDS(commands.Cog):
             season_x_vets = []
 
             for member in guild_members:
-                if member.joined_at.timestamp() < timestamp and not member.bot:
+                if member.joined_at.timestamp() < timestamp and not member.bot and not season_x_role in member.roles:
                     season_x_vets.append(member)
 
             for vet in season_x_vets:
