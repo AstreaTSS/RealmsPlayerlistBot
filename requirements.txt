@@ -1,1 +1,2 @@
 discord
+https://github.com/kyriog/xbox-webapi-python/archive/aiohttp.zip

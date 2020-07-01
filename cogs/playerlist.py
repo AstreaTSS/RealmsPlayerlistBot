@@ -3,6 +3,10 @@ import discord
 import cogs.universals as univ
 import aiohttp, os, datetime
 
+from xbox.webapi.api.client import XboxLiveClient
+from xbox.webapi.authentication.manager import AuthenticationManager
+from xbox.webapi.common.exceptions import AuthenticationException
+
 class Playerlist(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -24,35 +28,42 @@ class Playerlist(commands.Cog):
             
             await a_ctx.invoke(list_cmd, no_init_mes=True, limited=True)
 
-    async def gamertag_handler(self, xuid):
+    async def auth_mgr_create(self):
+        auth_mgr = await AuthenticationManager.create()
+        auth_mgr.email_address = os.environ.get("XBOX_EMAIL")
+        auth_mgr.password = os.environ.get("XBOX_PASSWORD")
+        await auth_mgr.authenticate()
+        await auth_mgr.close()
+
+        return auth_mgr
+
+    async def gamertag_handler(self, xuid, auth_mgr):
         if xuid in self.bot.gamertags.keys():
             return self.bot.gamertags[xuid]
 
-        headers = {
-            "X-Authorization": os.environ.get("OPENXBL_KEY"),
-            "Accept": "application/json",
-            "Accept-Language": "en-US"
-        }
+        client = await XboxLiveClient.create(auth_mgr.userinfo.userhash, auth_mgr.xsts_token.jwt, auth_mgr.userinfo.xuid)
+        profile = await client.profile.get_profile_by_xuid(str(xuid))
 
-        xuid = str(xuid).replace("%27", "")
+        gamertag = f"User with xuid {xuid}"
 
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(f"https://xbl.io/api/v2/account/" + str(xuid)) as r:
-                try:
-                    resp_json = await r.json()
-                    if "code" in resp_json.keys():
-                        return f"User with xuid {xuid}"
-                    else:
-                        settings = {}
-                        for setting in resp_json["profileUsers"][0]["settings"]:
-                            settings[setting["id"]] = setting["value"]
+        try:
+            resp_json = await profile.json()
+            if "code" in resp_json.keys():
+                print(resp_json)
+            else:
+                settings = {}
+                for setting in resp_json["profileUsers"][0]["settings"]:
+                    settings[setting["id"]] = setting["value"]
 
-                        gamertag = settings["Gamertag"]
+                gamertag = settings["Gamertag"]
 
-                        self.bot.gamertags[xuid] = gamertag
-                        return gamertag
-                except aiohttp.client_exceptions.ContentTypeError:
-                    return f"User with xuid {xuid}"
+                self.bot.gamertags[xuid] = gamertag
+        except aiohttp.client_exceptions.ContentTypeError:
+            print(await profile.text())
+
+        await client.close()
+
+        return gamertag
     
     async def realm_club_get(self, club_id):
         headers = {
@@ -91,11 +102,13 @@ class Playerlist(commands.Cog):
             offline_list = []
             club_presence = await self.realm_club_get(guild_config["club_id"])
 
+            auth_mgr = await self.auth_mgr_create()
+
             for member in club_presence:
                 last_seen = datetime.datetime.strptime(member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f")
 
                 if last_seen > time_ago:
-                    gamertag = await self.gamertag_handler(member["xuid"])
+                    gamertag = await self.gamertag_handler(member["xuid"], auth_mgr)
                     if member["lastSeenState"] == "InGame":
                         online_list.append(f"{gamertag}")
                     else:
