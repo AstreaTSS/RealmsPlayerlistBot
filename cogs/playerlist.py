@@ -1,11 +1,13 @@
 from discord.ext import commands, tasks
 import discord
-import cogs.universals as univ
-import aiohttp, os, datetime
+import cogs.utils.universals as univ
+import aiohttp, os, datetime, asyncio
 
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.common.exceptions import AuthenticationException
+
+from cogs.clubs_handler import ClubsProvider
 
 class Playerlist(commands.Cog):
     def __init__(self, bot):
@@ -14,6 +16,14 @@ class Playerlist(commands.Cog):
 
     def cog_unload(self):
         self.playerlist_loop.cancel()
+
+    def get_diff_xuids(self, users, list_xuids, new_list_xuids):
+        for xuid in list_xuids:
+            if xuid not in new_list_xuids:
+                index = list_xuids.index(xuid)
+                users.insert(index, "Gamertag not gotten")
+
+        return users
 
     @tasks.loop(hours=1)
     async def playerlist_loop(self):
@@ -36,6 +46,25 @@ class Playerlist(commands.Cog):
         await auth_mgr.close()
 
         return auth_mgr
+
+    async def try_until_valid(self, xb_client, list_xuids):
+        profiles = await xb_client.profile.get_profiles(list_xuids)
+        profiles = await profiles.json()
+
+        if "code" in profiles.keys():
+            description = profiles["description"]
+            desc_split = description.split(" ")
+            list_xuids.remove(desc_split[1])
+
+            profiles, list_xuids = await self.try_until_valid(xb_client, list_xuids)
+            return profiles, list_xuids
+
+        elif "limitType" in profiles.keys():
+            await asyncio.sleep(15)
+            profiles, list_xuids = await self.try_until_valid(xb_client, list_xuids)
+            return profiles, list_xuids
+
+        return profiles, list_xuids
 
     async def gamertag_handler(self, xuid, auth_mgr):
         if xuid in self.bot.gamertags.keys():
@@ -65,16 +94,12 @@ class Playerlist(commands.Cog):
 
         return gamertag
     
-    async def realm_club_get(self, club_id):
-        headers = {
-            "X-Auth": os.environ.get("XAPI_KEY"),
-            "Content-Type": "application/json",
-            "Accept-Language": "en-US"
-        }
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(f"https://xapi.us/v2/clubs/details/" + club_id) as r:
-                resp_json = await r.json()
-                return resp_json["clubs"][0]["clubPresence"]
+    async def realm_club_get(self, xb_client, club_id):
+        clubs = ClubsProvider(xb_client)
+
+        club = await clubs.get_club_user_presence(club_id)
+        resp_json = await club.json()
+        return resp_json["clubs"][0]["clubPresence"]
 
     @commands.command(aliases = ["player_list", "get_playerlist", "get_player_list"])
     @commands.check(univ.proper_permissions)
@@ -98,24 +123,67 @@ class Playerlist(commands.Cog):
 
             time_ago = now - time_delta
 
+            xuid_list = []
+            state_list = []
+            last_seen_list = []
+
             online_list = []
             offline_list = []
-            club_presence = await self.realm_club_get(guild_config["club_id"])
 
             auth_mgr = await self.auth_mgr_create()
+            xb_client = await XboxLiveClient.create(auth_mgr.userinfo.userhash, auth_mgr.xsts_token.jwt, auth_mgr.userinfo.xuid)
+
+            club_presence = await self.realm_club_get(xb_client, guild_config["club_id"])
 
             for member in club_presence:
                 last_seen = datetime.datetime.strptime(member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f")
-
                 if last_seen > time_ago:
-                    gamertag = await self.gamertag_handler(member["xuid"], auth_mgr)
-                    if member["lastSeenState"] == "InGame":
-                        online_list.append(f"{gamertag}")
-                    else:
-                        time_format = last_seen.strftime("%x %X (%I:%M:%S %p) UTC")
-                        offline_list.append(f"{gamertag}: last seen {time_format}")
+                    xuid_list.append(member["xuid"])
+                    state_list.append(member["lastSeenState"])
+                    last_seen_list.append(last_seen)
                 else:
                     break
+
+            xuid_list_filter = xuid_list.copy()
+            for xuid in xuid_list_filter:
+                if xuid in self.bot.gamertags.keys():
+                    xuid_list_filter.remove(xuid)
+
+            profiles, new_xuid_list = await self.try_until_valid(xb_client, xuid_list_filter)
+            users = profiles["profileUsers"]
+            users = self.get_diff_xuids(users, xuid_list, new_xuid_list)
+            
+            await xb_client.close()
+
+            def add_list(gamertag, state, last_seen):
+                if state == "InGame":
+                    online_list.append(f"{gamertag}")
+                else:
+                    time_format = last_seen.strftime("%x %X (%I:%M:%S %p) UTC")
+                    offline_list.append(f"{gamertag}: last seen {time_format}")
+
+            for i in range(len(xuid_list)):
+                entry = users[i]
+                state = state_list[i]
+                last_seen = last_seen_list[i]
+
+                gamertag = f"User with xuid {xuid_list[i]}"
+
+                if entry == "Gamertag not gotten":
+                    if xuid_list[i] in self.bot.gamertags.keys():
+                        gamertag = self.bot.gamertags[xuid_list[i]]
+                else:
+                    try:
+                        settings = {}
+                        for setting in entry["settings"]:
+                            settings[setting["id"]] = setting["value"]
+
+                        gamertag = settings["Gamertag"]
+                        self.bot.gamertags[xuid_list[i]] = gamertag
+                    except KeyError:
+                        gamertag = f"User with xuid {xuid_list[i]}"
+
+                add_list(gamertag, state, last_seen)
         
         if online_list != []:
             online_str = "```\nPeople online right now:\n\n"

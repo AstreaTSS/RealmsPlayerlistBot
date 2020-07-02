@@ -1,6 +1,6 @@
 from discord.ext import commands
 import urllib.parse, aiohttp, os, discord, datetime
-import cogs.universals as univ
+import cogs.utils.universals as univ
 
 class ModCMDS(commands.Cog):
     def __init__(self, bot):
