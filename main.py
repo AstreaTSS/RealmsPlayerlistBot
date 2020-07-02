@@ -1,11 +1,14 @@
-import discord, os, traceback, asyncio
+import discord, os, traceback
+import asyncio, logging
 from discord.ext import commands
 from datetime import datetime
-import cogs.universals as univ
+import cogs.utils.universals as univ
 
 bot = commands.Bot(command_prefix='!?', fetch_offline_members=True)
-
 bot.remove_command("help")
+
+log = logging.getLogger('authentication')
+log.setLevel(logging.ERROR)
 
 @bot.event
 async def on_ready():
