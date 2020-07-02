@@ -103,7 +103,7 @@ class Playerlist(commands.Cog):
 
     @commands.command(aliases = ["player_list", "get_playerlist", "get_player_list"])
     @commands.check(univ.proper_permissions)
-    @commands.cooldown(1, 450, commands.BucketType.default)
+    @commands.cooldown(1, 120, commands.BucketType.default)
     async def playerlist(self, ctx, **kwargs):
         guild_config = self.bot.config[str(ctx.guild.id)]
 
