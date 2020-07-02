@@ -7,7 +7,7 @@ from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.common.exceptions import AuthenticationException
 
-from cogs.clubs_handler import ClubsProvider
+from cogs.utils.clubs_handler import ClubsProvider
 
 class Playerlist(commands.Cog):
     def __init__(self, bot):
