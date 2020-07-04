@@ -41,6 +41,7 @@ class Playerlist(commands.Cog):
                 try:
                     resp_json = await r.json()
                     if "code" in resp_json.keys():
+                        print(resp_json)
                         return f"User with xuid {xuid}"
                     else:
                         settings = {}
@@ -52,6 +53,7 @@ class Playerlist(commands.Cog):
                         self.bot.gamertags[xuid] = gamertag
                         return gamertag
                 except aiohttp.client_exceptions.ContentTypeError:
+                    print(await r.text())
                     return f"User with xuid {xuid}"
     
     async def realm_club_get(self, club_id):
@@ -67,7 +69,7 @@ class Playerlist(commands.Cog):
 
     @commands.command(aliases = ["player_list", "get_playerlist", "get_player_list"])
     @commands.check(univ.proper_permissions)
-    @commands.cooldown(1, 450, commands.BucketType.default)
+    @commands.cooldown(1, 150, commands.BucketType.default)
     async def playerlist(self, ctx, **kwargs):
         guild_config = self.bot.config[str(ctx.guild.id)]
 
