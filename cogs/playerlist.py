@@ -1,13 +1,7 @@
 from discord.ext import commands, tasks
 import discord
 import cogs.utils.universals as univ
-import aiohttp, os, datetime, asyncio
-
-from xbox.webapi.api.client import XboxLiveClient
-from xbox.webapi.authentication.manager import AuthenticationManager
-from xbox.webapi.common.exceptions import AuthenticationException
-
-from cogs.utils.clubs_handler import ClubsProvider
+import aiohttp, os, datetime
 
 class Playerlist(commands.Cog):
     def __init__(self, bot):
@@ -16,14 +10,6 @@ class Playerlist(commands.Cog):
 
     def cog_unload(self):
         self.playerlist_loop.cancel()
-
-    def get_diff_xuids(self, users, list_xuids, new_list_xuids):
-        for xuid in list_xuids:
-            if xuid not in new_list_xuids:
-                index = list_xuids.index(xuid)
-                users.insert(index, "Gamertag not gotten")
-
-        return users
 
     @tasks.loop(hours=1)
     async def playerlist_loop(self):
@@ -38,72 +24,50 @@ class Playerlist(commands.Cog):
             
             await a_ctx.invoke(list_cmd, no_init_mes=True, limited=True)
 
-    async def auth_mgr_create(self):
-        auth_mgr = await AuthenticationManager.create()
-        auth_mgr.email_address = os.environ.get("XBOX_EMAIL")
-        auth_mgr.password = os.environ.get("XBOX_PASSWORD")
-        await auth_mgr.authenticate()
-        await auth_mgr.close()
-
-        return auth_mgr
-
-    async def try_until_valid(self, xb_client, list_xuids):
-        profiles = await xb_client.profile.get_profiles(list_xuids)
-        profiles = await profiles.json()
-
-        if "code" in profiles.keys():
-            description = profiles["description"]
-            desc_split = description.split(" ")
-            list_xuids.remove(desc_split[1])
-
-            profiles, list_xuids = await self.try_until_valid(xb_client, list_xuids)
-            return profiles, list_xuids
-
-        elif "limitType" in profiles.keys():
-            await asyncio.sleep(15)
-            profiles, list_xuids = await self.try_until_valid(xb_client, list_xuids)
-            return profiles, list_xuids
-
-        return profiles, list_xuids
-
-    async def gamertag_handler(self, xuid, auth_mgr):
+    async def gamertag_handler(self, xuid):
         if xuid in self.bot.gamertags.keys():
             return self.bot.gamertags[xuid]
 
-        client = await XboxLiveClient.create(auth_mgr.userinfo.userhash, auth_mgr.xsts_token.jwt, auth_mgr.userinfo.xuid)
-        profile = await client.profile.get_profile_by_xuid(str(xuid))
+        headers = {
+            "X-Authorization": os.environ.get("OPENXBL_KEY"),
+            "Accept": "application/json",
+            "Accept-Language": "en-US"
+        }
 
-        gamertag = f"User with xuid {xuid}"
+        xuid = str(xuid).replace("%27", "")
 
-        try:
-            resp_json = await profile.json()
-            if "code" in resp_json.keys():
-                print(resp_json)
-            else:
-                settings = {}
-                for setting in resp_json["profileUsers"][0]["settings"]:
-                    settings[setting["id"]] = setting["value"]
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.get(f"https://xbl.io/api/v2/account/" + str(xuid)) as r:
+                try:
+                    resp_json = await r.json()
+                    if "code" in resp_json.keys():
+                        return f"User with xuid {xuid}"
+                    else:
+                        settings = {}
+                        for setting in resp_json["profileUsers"][0]["settings"]:
+                            settings[setting["id"]] = setting["value"]
 
-                gamertag = settings["Gamertag"]
+                        gamertag = settings["Gamertag"]
 
-                self.bot.gamertags[xuid] = gamertag
-        except aiohttp.client_exceptions.ContentTypeError:
-            print(await profile.text())
-
-        await client.close()
-
-        return gamertag
+                        self.bot.gamertags[xuid] = gamertag
+                        return gamertag
+                except aiohttp.client_exceptions.ContentTypeError:
+                    return f"User with xuid {xuid}"
     
-    async def realm_club_get(self, xb_client, club_id):
-        clubs = ClubsProvider(xb_client)
-
-        club = await clubs.get_club_user_presence(club_id)
-        resp_json = await club.json()
-        return resp_json["clubs"][0]["clubPresence"]
+    async def realm_club_get(self, club_id):
+        headers = {
+            "X-Auth": os.environ.get("XAPI_KEY"),
+            "Content-Type": "application/json",
+            "Accept-Language": "en-US"
+        }
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.get(f"https://xapi.us/v2/clubs/details/" + club_id) as r:
+                resp_json = await r.json()
+                return resp_json["clubs"][0]["clubPresence"]
 
     @commands.command(aliases = ["player_list", "get_playerlist", "get_player_list"])
     @commands.check(univ.proper_permissions)
-    @commands.cooldown(1, 120, commands.BucketType.default)
+    @commands.cooldown(1, 450, commands.BucketType.default)
     async def playerlist(self, ctx, **kwargs):
         guild_config = self.bot.config[str(ctx.guild.id)]
 
@@ -123,72 +87,22 @@ class Playerlist(commands.Cog):
 
             time_ago = now - time_delta
 
-            xuid_list = []
-            state_list = []
-            last_seen_list = []
-
             online_list = []
             offline_list = []
+            club_presence = await self.realm_club_get(guild_config["club_id"])
 
-            auth_mgr = await self.auth_mgr_create()
+            for member in club_presence:
+                last_seen = datetime.datetime.strptime(member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f")
 
-            try:
-                xb_client = await XboxLiveClient.create(auth_mgr.userinfo.userhash, auth_mgr.xsts_token.jwt, auth_mgr.userinfo.xuid)
-
-                club_presence = await self.realm_club_get(xb_client, guild_config["club_id"])
-
-                for member in club_presence:
-                    last_seen = datetime.datetime.strptime(member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f")
-                    if last_seen > time_ago:
-                        xuid_list.append(member["xuid"])
-                        state_list.append(member["lastSeenState"])
-                        last_seen_list.append(last_seen)
+                if last_seen > time_ago:
+                    gamertag = await self.gamertag_handler(member["xuid"])
+                    if member["lastSeenState"] == "InGame":
+                        online_list.append(f"{gamertag}")
                     else:
-                        break
-
-                xuid_list_filter = xuid_list.copy()
-                for xuid in xuid_list_filter:
-                    if xuid in self.bot.gamertags.keys():
-                        xuid_list_filter.remove(xuid)
-
-                profiles, new_xuid_list = await self.try_until_valid(xb_client, xuid_list_filter)
-                users = profiles["profileUsers"]
-                users = self.get_diff_xuids(users, xuid_list, new_xuid_list)
-                await xb_client.close()
-                
-            except BaseException:
-                await xb_client.close()
-                raise
-
-            def add_list(gamertag, state, last_seen):
-                if state == "InGame":
-                    online_list.append(f"{gamertag}")
+                        time_format = last_seen.strftime("%x %X (%I:%M:%S %p) UTC")
+                        offline_list.append(f"{gamertag}: last seen {time_format}")
                 else:
-                    time_format = last_seen.strftime("%x %X (%I:%M:%S %p) UTC")
-                    offline_list.append(f"{gamertag}: last seen {time_format}")
-
-            for i in range(len(xuid_list)):
-                entry = users[i]
-                state = state_list[i]
-                last_seen = last_seen_list[i]
-
-                gamertag = f"User with xuid {xuid_list[i]}"
-
-                if entry == "Gamertag not gotten":
-                    if xuid_list[i] in self.bot.gamertags.keys():
-                        gamertag = self.bot.gamertags[xuid_list[i]]
-                else:
-                    try:
-                        settings = {}
-                        for setting in entry["settings"]:
-                            settings[setting["id"]] = setting["value"]
-
-                        gamertag = settings["Gamertag"]
-                        self.bot.gamertags[xuid_list[i]] = gamertag
-                    except KeyError:
-                        gamertag = f"User with xuid {xuid_list[i]}"
-
-                add_list(gamertag, state, last_seen)
+                    break
         
         if online_list != []:
             online_str = "```\nPeople online right now:\n\n"
