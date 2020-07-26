@@ -25,8 +25,8 @@ class Playerlist(commands.Cog):
             await a_ctx.invoke(list_cmd, no_init_mes=True, limited=True)
 
     async def gamertag_handler(self, xuid):
-        if xuid in self.bot.gamertags.keys():
-            return self.bot.gamertags[xuid]
+        if str(xuid) in self.bot.gamertags.keys():
+            return self.bot.gamertags[str(xuid)]
 
         headers = {
             "X-Authorization": os.environ.get("OPENXBL_KEY"),
@@ -50,10 +50,11 @@ class Playerlist(commands.Cog):
 
                         gamertag = settings["Gamertag"]
 
-                        self.bot.gamertags[xuid] = gamertag
+                        self.bot.gamertags[str(xuid)] = gamertag
                         return gamertag
                 except aiohttp.client_exceptions.ContentTypeError:
                     print(await r.text())
+                    print(r.code)
                     return f"User with xuid {xuid}"
     
     async def realm_club_get(self, club_id):
