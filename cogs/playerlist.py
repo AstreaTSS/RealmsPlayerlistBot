@@ -34,7 +34,7 @@ class Playerlist(commands.Cog):
             "Accept-Language": "en-US"
         }
 
-        xuid = str(xuid).replace("%27", "")
+        xuid = str(xuid).replace("'", "")
 
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(f"https://xbl.io/api/v2/account/" + str(xuid)) as r:
@@ -54,7 +54,7 @@ class Playerlist(commands.Cog):
                         return gamertag
                 except aiohttp.client_exceptions.ContentTypeError:
                     print(await r.text())
-                    print(r.code)
+                    print(r.status)
                     return f"User with xuid {xuid}"
     
     async def realm_club_get(self, club_id):
