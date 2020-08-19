@@ -37,7 +37,7 @@ class Playerlist(commands.Cog):
         xuid = str(xuid).replace("'", "")
 
         async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(f"https://xbl.io/api/v2/account/" + str(xuid)) as r:
+            async with session.get(f"https://xbl.io/api/v2/account/{xuid}") as r:
                 try:
                     resp_json = await r.json()
                     if "code" in resp_json.keys():
@@ -53,7 +53,6 @@ class Playerlist(commands.Cog):
                         self.bot.gamertags[str(xuid)] = gamertag
                         return gamertag
                 except aiohttp.client_exceptions.ContentTypeError:
-                    print(await r.text())
                     print(r.status)
                     return f"User with xuid {xuid}"
     
@@ -66,7 +65,12 @@ class Playerlist(commands.Cog):
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(f"https://xapi.us/v2/clubs/details/" + club_id) as r:
                 resp_json = await r.json()
-                return resp_json["clubs"][0]["clubPresence"]
+
+                try:
+                    return resp_json["clubs"][0]["clubPresence"]
+                except KeyError:
+                    print(resp_json)
+                    return None
 
     @commands.command(aliases = ["player_list", "get_playerlist", "get_player_list"])
     @commands.check(univ.proper_permissions)
@@ -93,6 +97,10 @@ class Playerlist(commands.Cog):
             online_list = []
             offline_list = []
             club_presence = await self.realm_club_get(guild_config["club_id"])
+
+            if club_presence == None:
+                await ctx.send("Seems like this command failed somehow. Sonic should have the info needed to see what's going on.")
+                return
 
             for member in club_presence:
                 last_seen = datetime.datetime.strptime(member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f")
