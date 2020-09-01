@@ -18,6 +18,9 @@ async def on_ready():
         bot.gamertags = {}
         bot.pastebins = {}
 
+        application = await bot.application_info()
+        bot.owner = application.owner
+
         bot.load_extension("cogs.config_fetch")
         while bot.config == {}:
             await asyncio.sleep(0.1)
@@ -34,11 +37,13 @@ async def on_ready():
 
         activity = discord.Activity(name = 'over some Bedrock Edition Realms', type = discord.ActivityType.watching)
         await bot.change_presence(activity = activity)
-    else:
-        utcnow = datetime.utcnow()
-        time_format = utcnow.strftime("%x %X UTC")
 
-        await univ.msg_to_owner(bot, f"Reconnected at {time_format}!")
+    utcnow = datetime.datetime.utcnow()
+    time_format = utcnow.strftime("%x %X UTC")
+
+    connect_str = "Connected" if bot.init_load else "Reconnected"
+
+    await univ.msg_to_owner(bot, f"{connect_str} at `{time_format}`!")
 
     bot.init_load = False
     
