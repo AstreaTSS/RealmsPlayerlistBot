@@ -38,7 +38,7 @@ async def on_ready():
         activity = discord.Activity(name = 'over some Bedrock Edition Realms', type = discord.ActivityType.watching)
         await bot.change_presence(activity = activity)
 
-    utcnow = datetime.datetime.utcnow()
+    utcnow = datetime.utcnow()
     time_format = utcnow.strftime("%x %X UTC")
 
     connect_str = "Connected" if bot.init_load else "Reconnected"
