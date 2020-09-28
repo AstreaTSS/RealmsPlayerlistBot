@@ -4,6 +4,8 @@ from discord.ext import commands
 from datetime import datetime
 import cogs.utils.universals as univ
 
+from keep_alive import keep_alive
+
 bot = commands.Bot(command_prefix='!?', fetch_offline_members=True)
 bot.remove_command("help")
 
@@ -74,5 +76,6 @@ async def on_error(event, *args, **kwargs):
     except Exception as e:
         await univ.error_handle(bot, e)
 
+keep_alive()
 bot.init_load = True
 bot.run(os.environ.get("MAIN_TOKEN"))
