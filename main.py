@@ -6,7 +6,9 @@ import cogs.utils.universals as univ
 
 from keep_alive import keep_alive
 
-bot = commands.Bot(command_prefix='!?', fetch_offline_members=True)
+# we're going to use all intents for laziness purposes
+# we could reasonably turn some of these off, but this bot is too small to really matter much
+bot = commands.Bot(command_prefix='!?', fetch_offline_members=True, intents=discord.Intents.all())
 bot.remove_command("help")
 
 log = logging.getLogger('authentication')
