@@ -2,6 +2,8 @@ import discord, os, traceback
 import asyncio, logging
 from discord.ext import commands
 from datetime import datetime
+
+from discord.ext.commands.core import command
 import cogs.utils.universals as univ
 
 from keep_alive import keep_alive
@@ -54,6 +56,10 @@ async def on_ready():
 @bot.check
 async def block_dms(ctx):
     return ctx.guild is not None
+
+@bot.check
+async def not_support_server(ctx: commands.Context):
+    return not (ctx.guild.id == 775912554928144384 and not ctx.command.qualified_name in ("eval", "help", "ping"))
 
 @bot.event
 async def on_command_error(ctx, error):
