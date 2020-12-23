@@ -53,7 +53,7 @@ class GeneralCMDS(commands.Cog):
     async def help(self, ctx):
         await ctx.send(
             "Since I'm too lazy, right now, the bot does not have a proper help command. One day I'll finish this.\n\n" +
-            "Commands: `ping`, `help`, `check_stats`, `season_add`, `playerlist`")
+            "Commands: `ping`, `help`, `check_stats`, `season_add`, `playerlist`, `gt_check`.")
 
     @commands.command()
     async def ping(self, ctx):

@@ -1,11 +1,46 @@
 from discord.ext import commands
 import urllib.parse, aiohttp, os
 import discord, datetime, asyncio
+
+from discord.ext.commands.core import command
 import cogs.utils.universals as univ
 
 class ModCMDS(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+    async def verify_xbl_handler(self, gamertag):
+        mem_gt_url = urllib.parse.quote_plus(gamertag.strip())
+
+        headers = {
+            "X-Authorization": os.environ.get("OPENXBL_KEY"),
+            "Accept": "application/json",
+            "Accept-Language": "en-US"
+        }
+
+        mem_gt_url = mem_gt_url.replace("%27", "")
+
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.get("https://xbl.io/api/v2/friends/search",params=f"gt={mem_gt_url}") as r:
+                try:
+                    resp_json = await r.json()
+                except:
+                    return f"ERROR: Unable to find the gamertag `{gamertag}`."
+
+                if "code" in resp_json.keys():
+                    return f"ERROR: Unable to find the gamertag `{gamertag}`."
+                else:
+                    settings = {}
+                    for setting in resp_json["profileUsers"][0]["settings"]:
+                        settings[setting["id"]] = setting["value"]
+                    
+                    if settings["XboxOneRep"] != "GoodPlayer":
+                        return ("WARNING: The gamertag exists, but doesn't have the best reputation on Xbox Live.\n" +
+                        "Reputation is a measure of how trustworthy a user is in online play, so be careful.")
+                    elif settings["Gamerscore"] == "0":
+                        return "WARNING: The gamertag exists, but has no gamerscore. This is probably a new user, so be careful."
+                    else:
+                        return "OK"
 
     @commands.command()
     @commands.check(univ.proper_permissions)
@@ -39,6 +74,16 @@ class ModCMDS(commands.Cog):
                 await asyncio.sleep(1)
 
             await ctx.send("Done! Added " + str(len(season_x_vets)) + " members!")
+
+    @commands.command(aliases=["gtcheck"])
+    @commands.check(univ.proper_permissions)
+    async def gt_check(self, ctx, gamertag):
+        status = await self.xbl_handler(gamertag)
+
+        if status != "OK":
+            await ctx.send(f"{status}")
+        else:
+            await ctx.send("The gamertag has passed all checks.")
 
 def setup(bot):
     bot.add_cog(ModCMDS(bot))
