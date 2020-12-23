@@ -77,8 +77,8 @@ class ModCMDS(commands.Cog):
 
     @commands.command(aliases=["gtcheck"])
     @commands.check(univ.proper_permissions)
-    async def gt_check(self, ctx, gamertag):
-        status = await self.xbl_handler(gamertag)
+    async def gt_check(self, ctx, *, gamertag):
+        status = await self.verify_xbl_handler(gamertag)
 
         if status != "OK":
             await ctx.send(f"{status}")
