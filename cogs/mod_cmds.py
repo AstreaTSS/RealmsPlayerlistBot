@@ -78,12 +78,13 @@ class ModCMDS(commands.Cog):
     @commands.command(aliases=["gtcheck"])
     @commands.check(univ.proper_permissions)
     async def gt_check(self, ctx, *, gamertag):
-        status = await self.verify_xbl_handler(gamertag)
+        async with ctx.channel.typing():
+            status = await self.verify_xbl_handler(gamertag)
 
-        if status != "OK":
-            await ctx.send(f"{status}")
-        else:
-            await ctx.send("The gamertag has passed all checks.")
+            if status != "OK":
+                await ctx.send(f"{status}")
+            else:
+                await ctx.send("The gamertag has passed all checks.")
 
 def setup(bot):
     bot.add_cog(ModCMDS(bot))
