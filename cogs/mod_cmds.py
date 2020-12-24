@@ -35,10 +35,10 @@ class ModCMDS(commands.Cog):
                         settings[setting["id"]] = setting["value"]
                     
                     if settings["XboxOneRep"] != "GoodPlayer":
-                        return ("WARNING: The gamertag exists, but doesn't have the best reputation on Xbox Live.\n" +
+                        return (f"WARNING: The gamertag `{gamertag}` exists, but doesn't have the best reputation on Xbox Live.\n" +
                         "Reputation is a measure of how trustworthy a user is in online play, so be careful.")
                     elif settings["Gamerscore"] == "0":
-                        return "WARNING: The gamertag exists, but has no gamerscore. This is probably a new user, so be careful."
+                        return f"WARNING: The gamertag `{gamertag}` exists, but has no gamerscore. This is probably a new user, so be careful."
                     else:
                         return "OK"
 
@@ -84,7 +84,7 @@ class ModCMDS(commands.Cog):
             if status != "OK":
                 await ctx.send(f"{status}")
             else:
-                await ctx.send("The gamertag has passed all checks.")
+                await ctx.send(f"The gamertag {gamertag} has passed all checks.")
 
 def setup(bot):
     bot.add_cog(ModCMDS(bot))
