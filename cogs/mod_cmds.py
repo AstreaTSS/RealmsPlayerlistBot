@@ -84,7 +84,7 @@ class ModCMDS(commands.Cog):
             if status != "OK":
                 await ctx.send(f"{status}")
             else:
-                await ctx.send(f"The gamertag {gamertag} has passed all checks.")
+                await ctx.send(f"The gamertag `{gamertag}` has passed all checks.")
 
 def setup(bot):
     bot.add_cog(ModCMDS(bot))
