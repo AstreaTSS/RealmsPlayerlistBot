@@ -16,13 +16,14 @@ class Playerlist(commands.Cog):
         for guild_id in self.bot.config.keys():
             guild_config = self.bot.config[guild_id]
 
-            chan = self.bot.get_channel(guild_config["playerlist_chan"]) # playerlist channel
-            list_cmd = self.bot.get_command("playerlist")
+            if guild_config["club_id"]:
+                chan = self.bot.get_channel(guild_config["playerlist_chan"]) # playerlist channel
+                list_cmd = self.bot.get_command("playerlist")
 
-            messages = await chan.history(limit=1).flatten()
-            a_ctx = await self.bot.get_context(messages[0])
-            
-            await a_ctx.invoke(list_cmd, no_init_mes=True, limited=True)
+                messages = await chan.history(limit=1).flatten()
+                a_ctx = await self.bot.get_context(messages[0])
+                
+                await a_ctx.invoke(list_cmd, no_init_mes=True, limited=True)
 
     async def gamertag_handler(self, xuid):
         if str(xuid) in self.bot.gamertags.keys():
@@ -77,6 +78,9 @@ class Playerlist(commands.Cog):
     @commands.cooldown(1, 240, commands.BucketType.default)
     async def playerlist(self, ctx, **kwargs):
         guild_config = self.bot.config[str(ctx.guild.id)]
+
+        if not guild_config["club_id"]:
+            raise commands.BadArgument("This server is not ready to use playerlist yet.")
 
         if not "no_init_mes" in kwargs.keys():
             if self.bot.gamertags == {}:
