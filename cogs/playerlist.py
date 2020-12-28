@@ -16,7 +16,7 @@ class Playerlist(commands.Cog):
         for guild_id in self.bot.config.keys():
             guild_config = self.bot.config[guild_id]
 
-            if guild_config["club_id"]:
+            if guild_config["club_id"] != "None":
                 chan = self.bot.get_channel(guild_config["playerlist_chan"]) # playerlist channel
                 list_cmd = self.bot.get_command("playerlist")
 
@@ -79,7 +79,7 @@ class Playerlist(commands.Cog):
     async def playerlist(self, ctx, **kwargs):
         guild_config = self.bot.config[str(ctx.guild.id)]
 
-        if not guild_config["club_id"]:
+        if not guild_config["club_id"] != "None":
             raise commands.BadArgument("This server is not ready to use playerlist yet.")
 
         if not "no_init_mes" in kwargs.keys():
