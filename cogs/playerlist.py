@@ -59,12 +59,12 @@ class Playerlist(commands.Cog):
     
     async def realm_club_get(self, club_id):
         headers = {
-            "X-Auth": os.environ.get("XAPI_KEY"),
-            "Content-Type": "application/json",
+            "X-Authorization": os.environ.get("OPENXBL_KEY"),
+            "Accept": "application/json",
             "Accept-Language": "en-US"
         }
         async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(f"https://xapi.us/v2/clubs/details/" + club_id) as r:
+            async with session.get(f"https://xbl.io/api/v2/clubs/" + club_id) as r:
                 resp_json = await r.json()
 
                 try:
