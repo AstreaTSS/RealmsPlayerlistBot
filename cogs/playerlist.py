@@ -54,7 +54,7 @@ class Playerlist(commands.Cog):
                         self.bot.gamertags[str(xuid)] = gamertag
                         return gamertag
                 except aiohttp.client_exceptions.ContentTypeError:
-                    print(r.status)
+                    await univ.msg_to_owner(self.bot, f"Failed to get gamertag of user {xuid}")
                     return f"User with xuid {xuid}"
     
     async def realm_club_get(self, club_id):
@@ -70,7 +70,9 @@ class Playerlist(commands.Cog):
                 try:
                     return resp_json["clubs"][0]["clubPresence"]
                 except KeyError:
-                    print(resp_json)
+                    await univ.msg_to_owner(self.bot, resp_json)
+                    await univ.msg_to_owner(self.bot, r.headers)
+                    await univ.msg_to_owner(self.bot, r.status)
                     return None
 
     @commands.command(aliases = ["player_list", "get_playerlist", "get_player_list"])

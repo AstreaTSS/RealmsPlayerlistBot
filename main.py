@@ -1,4 +1,4 @@
-import discord, os, traceback
+import discord, os
 import asyncio, logging
 from discord.ext import commands
 from datetime import datetime
@@ -6,7 +6,8 @@ from datetime import datetime
 from discord.ext.commands.core import command
 import cogs.utils.universals as univ
 
-from keep_alive import keep_alive
+from dotenv import load_dotenv
+load_dotenv()
 
 # we're going to use all intents for laziness purposes
 # we could reasonably turn some of these off, but this bot is too small to really matter much
@@ -84,6 +85,5 @@ async def on_error(event, *args, **kwargs):
     except Exception as e:
         await univ.error_handle(bot, e)
 
-keep_alive()
 bot.init_load = True
 bot.run(os.environ.get("MAIN_TOKEN"))

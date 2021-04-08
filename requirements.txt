@@ -1,3 +1,2 @@
 discord
-flask
-https://github.com/kyriog/xbox-webapi-python/archive/aiohttp.zip
+python-dotenv
