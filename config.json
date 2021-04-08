@@ -5,16 +5,16 @@
         "club_id": "3379873838585386",
         "announce_chan": 704068253374349334
     },
-    "790254722065629224": {
-        "season_role": "Season X",
-        "playerlist_chan": 792620574659837953,
-        "club_id": "None",
-        "announce_chan": 790263052192448523
-    },
     "675373444623499304": {
         "season_role": "Season X",
         "playerlist_chan": 803303526716932106,
         "club_id": "3379832786469087",
         "announce_chan": 684811280254763261
+    },
+    "821119339964006450": {
+        "season_role": "Season X",
+        "playerlist_chan": 821162999376642080,
+        "club_id": "3379882683248903",
+        "announce_chan": 821161248292732948
     }
 }
