@@ -132,6 +132,6 @@ bot = RealmsPlusBot(
 keep_alive()
 
 bot.init_load = True
-bot.color = discord.Color(os.environ.get("BOT_COLOR"))  # 8ac249, aka 9093705
+bot.color = discord.Color(int(os.environ.get("BOT_COLOR")))  # 8ac249, aka 9093705
 bot.loop.create_task(on_init_load())
 bot.run(os.environ.get("MAIN_TOKEN"))
