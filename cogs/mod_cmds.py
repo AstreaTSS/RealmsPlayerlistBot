@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import importlib
 import os
 import urllib.parse
 
@@ -105,4 +106,5 @@ class ModCMDS(commands.Cog):
 
 
 def setup(bot):
+    importlib.reload(utils)
     bot.add_cog(ModCMDS(bot))

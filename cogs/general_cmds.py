@@ -1,4 +1,5 @@
 import datetime
+import importlib
 import json
 import os
 import time
@@ -119,4 +120,5 @@ class GeneralCMDS(commands.Cog):
 
 
 def setup(bot):
+    importlib.reload(utils)
     bot.add_cog(GeneralCMDS(bot))

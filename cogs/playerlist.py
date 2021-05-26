@@ -1,4 +1,5 @@
 import datetime
+import importlib
 import os
 
 import aiohttp
@@ -172,13 +173,11 @@ class Playerlist(commands.Cog):
                     )
                 await ctx.send(first_offline_str)
 
-                for x in range(len(chunks)):
-                    if x == 0:
-                        continue
-
-                    offline_chunk_str = "```\n" + "\n".join(chunks[x]) + "\n```"
+                for chunk in chunks[1:]:
+                    offline_chunk_str = "```\n" + "\n".join(chunk) + "\n```"
                     await ctx.send(offline_chunk_str)
 
 
 def setup(bot):
+    importlib.reload(utils)
     bot.add_cog(Playerlist(bot))
