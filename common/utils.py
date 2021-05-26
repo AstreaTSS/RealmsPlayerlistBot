@@ -1,5 +1,6 @@
 #!/usr/bin/env python3.8
 import collections
+import logging
 import traceback
 from pathlib import Path
 
@@ -24,6 +25,7 @@ async def error_handle(bot, error, ctx=None):
         split = True
     else:
         error_str = error_format(error)
+        logging.getLogger("discord").error(error_str)
 
         chunks = line_split(error_str)
         for i in range(len(chunks)):

@@ -1,14 +1,28 @@
 import asyncio
 import datetime
+import logging
 import os
 
 import discord
 from discord.ext import commands
+from dotenv import load_dotenv
 from websockets import ConnectionClosedOK
 
 import common.utils as utils
 from common.help_cmd import PaginatedHelpCommand
-from keep_alive import keep_alive
+
+
+load_dotenv()
+
+logger = logging.getLogger("discord")
+logger.setLevel(logging.INFO)
+handler = logging.FileHandler(
+    filename=os.environ.get("LOG_FILE_PATH"), encoding="utf-8", mode="a"
+)
+handler.setFormatter(
+    logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
+)
+logger.addHandler(handler)
 
 
 async def realms_plus_prefixes(bot: commands.Bot, msg: discord.Message):
@@ -129,9 +143,9 @@ bot = RealmsPlusBot(
     command_prefix=realms_plus_prefixes, allowed_mentions=mentions, intents=intents,
 )
 
-keep_alive()
-
 bot.init_load = True
 bot.color = discord.Color(int(os.environ.get("BOT_COLOR")))  # 8ac249, aka 9093705
+bot.config = {}
+
 bot.loop.create_task(on_init_load())
 bot.run(os.environ.get("MAIN_TOKEN"))

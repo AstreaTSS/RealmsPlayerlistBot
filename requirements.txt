@@ -1,5 +1,6 @@
 discord
 humanize
 jishaku
+python-dotenv
 websockets
 flask
