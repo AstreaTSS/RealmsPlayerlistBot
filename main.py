@@ -61,10 +61,11 @@ async def on_init_load():
     cogs_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_FILE"))
 
     for cog in cogs_list:
-        try:
-            bot.load_extension(cog)
-        except commands.NoEntryPointError:
-            pass
+        if cog != "cogs.config_fetch":
+            try:
+                bot.load_extension(cog)
+            except commands.NoEntryPointError:
+                pass
 
 
 class RealmsPlusBot(commands.Bot):
