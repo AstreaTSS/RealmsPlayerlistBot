@@ -1,7 +1,12 @@
-from discord.ext import commands, tasks
-import discord
-import cogs.utils.universals as univ
-import aiohttp, os, datetime
+import datetime
+import os
+
+import aiohttp
+from discord.ext import commands
+from discord.ext import tasks
+
+import common.utils as utils
+
 
 class Playerlist(commands.Cog):
     def __init__(self, bot):
@@ -17,12 +22,14 @@ class Playerlist(commands.Cog):
             guild_config = self.bot.config[guild_id]
 
             if guild_config["club_id"] != "None":
-                chan = self.bot.get_channel(guild_config["playerlist_chan"]) # playerlist channel
+                chan = self.bot.get_channel(
+                    guild_config["playerlist_chan"]
+                )  # playerlist channel
                 list_cmd = self.bot.get_command("playerlist")
 
                 messages = await chan.history(limit=1).flatten()
                 a_ctx = await self.bot.get_context(messages[0])
-                
+
                 await a_ctx.invoke(list_cmd, no_init_mes=True, limited=True)
 
     async def gamertag_handler(self, xuid):
@@ -32,7 +39,7 @@ class Playerlist(commands.Cog):
         headers = {
             "X-Authorization": os.environ.get("OPENXBL_KEY"),
             "Accept": "application/json",
-            "Accept-Language": "en-US"
+            "Accept-Language": "en-US",
         }
 
         xuid = str(xuid).replace("'", "")
@@ -45,23 +52,26 @@ class Playerlist(commands.Cog):
                         print(resp_json)
                         return f"User with xuid {xuid}"
                     else:
-                        settings = {}
-                        for setting in resp_json["profileUsers"][0]["settings"]:
-                            settings[setting["id"]] = setting["value"]
+                        settings = {
+                            setting["id"]: setting["value"]
+                            for setting in resp_json["profileUsers"][0]["settings"]
+                        }
 
                         gamertag = settings["Gamertag"]
 
                         self.bot.gamertags[str(xuid)] = gamertag
                         return gamertag
                 except aiohttp.client_exceptions.ContentTypeError:
-                    await univ.msg_to_owner(self.bot, f"Failed to get gamertag of user {xuid}")
+                    await utils.msg_to_owner(
+                        self.bot, f"Failed to get gamertag of user {xuid}"
+                    )
                     return f"User with xuid {xuid}"
-    
+
     async def realm_club_get(self, club_id):
         headers = {
             "X-Authorization": os.environ.get("OPENXBL_KEY"),
             "Accept": "application/json",
-            "Accept-Language": "en-US"
+            "Accept-Language": "en-US",
         }
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(f"https://xbl.io/api/v2/clubs/" + club_id) as r:
@@ -70,57 +80,64 @@ class Playerlist(commands.Cog):
                 try:
                     return resp_json["clubs"][0]["clubPresence"]
                 except KeyError:
-                    await univ.msg_to_owner(self.bot, resp_json)
-                    await univ.msg_to_owner(self.bot, r.headers)
-                    await univ.msg_to_owner(self.bot, r.status)
+                    await utils.msg_to_owner(self.bot, resp_json)
+                    await utils.msg_to_owner(self.bot, r.headers)
+                    await utils.msg_to_owner(self.bot, r.status)
                     return None
 
-    @commands.command(aliases = ["player_list", "get_playerlist", "get_player_list"])
-    @commands.check(univ.proper_permissions)
+    @commands.command(aliases=["player_list", "get_playerlist", "get_player_list"])
+    @utils.proper_permissions()
     @commands.cooldown(1, 240, commands.BucketType.default)
     async def playerlist(self, ctx, **kwargs):
         guild_config = self.bot.config[str(ctx.guild.id)]
 
-        if not guild_config["club_id"] != "None":
-            raise commands.BadArgument("This server is not ready to use playerlist yet.")
+        if guild_config["club_id"] == "None":
+            raise commands.BadArgument(
+                "This server is not ready to use playerlist yet."
+            )
 
-        if not "no_init_mes" in kwargs.keys():
+        if "no_init_mes" not in kwargs.keys():
             if self.bot.gamertags == {}:
-                await ctx.send("This will probably take a long time as the bot does not have a gamertag cache. Please be patient.")
+                await ctx.send(
+                    "This will probably take a long time as the bot does not have a gamertag cache. Please be patient."
+                )
             else:
                 await ctx.send("This might take a bit. Please be patient.")
 
         async with ctx.channel.typing():
             now = datetime.datetime.utcnow()
 
-            if not "limited" in kwargs.keys():
-                time_delta = datetime.timedelta(days = 1)
-            else:
-                time_delta = datetime.timedelta(hours = 2)
+            if "limited" in kwargs.keys():
+                time_delta = datetime.timedelta(hours=2)
 
+            else:
+                time_delta = datetime.timedelta(days=1)
             time_ago = now - time_delta
 
             online_list = []
             offline_list = []
             club_presence = await self.realm_club_get(guild_config["club_id"])
 
-            if club_presence == None:
-                await ctx.send("Seems like this command failed somehow. Sonic should have the info needed to see what's going on.")
+            if club_presence is None:
+                await ctx.send(
+                    "Seems like this command failed somehow. Sonic should have the info needed to see what's going on."
+                )
                 return
 
             for member in club_presence:
-                last_seen = datetime.datetime.strptime(member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f")
+                last_seen = datetime.datetime.strptime(
+                    member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f"
+                )
 
-                if last_seen > time_ago:
-                    gamertag = await self.gamertag_handler(member["xuid"])
-                    if member["lastSeenState"] == "InGame":
-                        online_list.append(f"{gamertag}")
-                    else:
-                        time_format = last_seen.strftime("%x %X (%I:%M:%S %p) UTC")
-                        offline_list.append(f"{gamertag}: last seen {time_format}")
-                else:
+                if last_seen <= time_ago:
                     break
-        
+
+                gamertag = await self.gamertag_handler(member["xuid"])
+                if member["lastSeenState"] == "InGame":
+                    online_list.append(f"{gamertag}")
+                else:
+                    time_format = last_seen.strftime("%x %X (%I:%M:%S %p) UTC")
+                    offline_list.append(f"{gamertag}: last seen {time_format}")
         if online_list != []:
             online_str = "```\nPeople online right now:\n\n"
             online_str += "\n".join(online_list)
@@ -128,29 +145,40 @@ class Playerlist(commands.Cog):
 
         if offline_list != []:
             if len(offline_list) < 20:
-                if not "limited" in kwargs.keys():
-                    offline_str = "```\nOther people on in the last 24 hours:\n\n"
-                else:
+                if "limited" in kwargs.keys():
                     offline_str = "```\nOther people on in the last 2 hours:\n\n"
 
+                else:
+                    offline_str = "```\nOther people on in the last 24 hours:\n\n"
                 offline_str += "\n".join(offline_list)
                 await ctx.send(offline_str + "\n```")
             else:
-                chunks = [offline_list[x:x+20] for x in range(0, len(offline_list), 20)]
+                chunks = [
+                    offline_list[x : x + 20] for x in range(0, len(offline_list), 20)
+                ]
 
-                if not "limited" in kwargs.keys():
-                    first_offline_str = "```\nOther people on in the last 24 hours:\n\n" + "\n".join(chunks[0]) + "\n```"
+                if "limited" in kwargs.keys():
+                    first_offline_str = (
+                        "```\nOther people on in the last 2 hours:\n\n"
+                        + "\n".join(chunks[0])
+                        + "\n```"
+                    )
+
                 else:
-                    first_offline_str = "```\nOther people on in the last 2 hours:\n\n" + "\n".join(chunks[0]) + "\n```"
-                    
+                    first_offline_str = (
+                        "```\nOther people on in the last 24 hours:\n\n"
+                        + "\n".join(chunks[0])
+                        + "\n```"
+                    )
                 await ctx.send(first_offline_str)
 
                 for x in range(len(chunks)):
                     if x == 0:
                         continue
-                    
+
                     offline_chunk_str = "```\n" + "\n".join(chunks[x]) + "\n```"
                     await ctx.send(offline_chunk_str)
+
 
 def setup(bot):
     bot.add_cog(Playerlist(bot))

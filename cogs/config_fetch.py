@@ -1,5 +1,9 @@
-from discord.ext import commands, tasks
-import discord, os, asyncio, aiohttp
+import os
+
+import aiohttp
+from discord.ext import commands
+from discord.ext import tasks
+
 
 class FetchConfigFile(commands.Cog):
     def __init__(self, bot):
@@ -15,7 +19,8 @@ class FetchConfigFile(commands.Cog):
 
         async with aiohttp.ClientSession() as session:
             async with session.get(document_url) as resp:
-                self.bot.config = await resp.json(content_type='text/plain')
+                self.bot.config = await resp.json(content_type="text/plain")
+
 
 def setup(bot):
     bot.add_cog(FetchConfigFile(bot))
