@@ -2,7 +2,7 @@
   <img src="https://cdn.discordapp.com/attachments/775932004985208853/846987950058635274/BedrockRealmBotBanner.png" alt="Seraphim's Logo" width="700"/>
 </p>
 
-A bot that helps out owners of Minecraft: Bedrock Edition Realms, otherwise known as Realm Plus's.
+A bot that helps out owners of Minecraft: Bedrock Edition Realms, otherwise known as Realm Plus Realms.
 
 There are three things the bot can do: keep a log of players who have joined and left, deal with season roles and their management, and verify the gamertags of users.
 
