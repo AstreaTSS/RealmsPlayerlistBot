@@ -33,6 +33,11 @@ class Playerlist(commands.Cog):
 
                 await a_ctx.invoke(list_cmd, no_init_mes=True, limited=True)
 
+    @playerlist_loop.error
+    async def error_handle(self, *args):
+        error = args[-1]
+        await utils.error_handle(self.bot, error)
+
     async def gamertag_handler(self, xuid):
         if str(xuid) in self.bot.gamertags.keys():
             return self.bot.gamertags[str(xuid)]
