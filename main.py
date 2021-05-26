@@ -1,113 +1,137 @@
 import asyncio
-import logging
+import datetime
 import os
-from datetime import datetime
 
 import discord
 from discord.ext import commands
+from websockets import ConnectionClosedOK
 
 import common.utils as utils
+from common.help_cmd import PaginatedHelpCommand
 from keep_alive import keep_alive
 
-# we're going to use all intents for laziness purposes
-# we could reasonably turn some of these off, but this bot is too small to really matter much
-bot = commands.Bot(
-    command_prefix="!?", fetch_offline_members=True, intents=discord.Intents.all()
-)
-bot.remove_command("help")
 
-log = logging.getLogger("authentication")
-log.setLevel(logging.ERROR)
+async def realms_plus_prefixes(bot: commands.Bot, msg: discord.Message):
+    mention_prefixes = {f"{bot.user.mention} ", f"<@!{bot.user.id}> "}
+    custom_prefixes = {"!?"}
+    return mention_prefixes.union(custom_prefixes)
 
 
-@bot.event
-async def on_ready():
+def global_checks(ctx: commands.Context):
+    if not ctx.bot.is_ready():
+        return False
 
-    if bot.init_load == True:
-        bot.config = {}
-        bot.gamertags = {}
-        bot.pastebins = {}
+    if ctx.bot.init_load:
+        return False
 
-        application = await bot.application_info()
-        bot.owner = application.owner
+    if not ctx.guild:
+        return False
 
-        bot.load_extension("jishaku")
-        bot.load_extension("cogs.config_fetch")
-        while bot.config == {}:
-            await asyncio.sleep(0.1)
-
-        cogs_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_FILE"))
-
-        for cog in cogs_list:
-            if cog != "cogs.config_fetch":
-                try:
-                    bot.load_extension(cog)
-                except commands.NoEntryPointError:
-                    pass
-
-        print("Logged in as")
-        print(bot.user.name)
-        print(bot.user.id)
-        print("------\n")
-
-        activity = discord.Activity(
-            name="over some Bedrock Edition Realms", type=discord.ActivityType.watching
-        )
-        await bot.change_presence(activity=activity)
-
-    utcnow = datetime.utcnow()
-    time_format = utcnow.strftime("%x %X UTC")
-
-    connect_str = "Connected" if bot.init_load else "Reconnected"
-
-    await utils.msg_to_owner(bot, f"{connect_str} at `{time_format}`!")
-
-    bot.init_load = False
-
-
-@bot.check
-async def block_dms(ctx):
-    return ctx.guild is not None
-
-
-@bot.check
-async def not_support_server(ctx: commands.Context):
     return not (
         ctx.guild.id == 775912554928144384
         and ctx.command.qualified_name not in ("jsk", "help", "ping")
     )
 
 
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.CommandInvokeError):
-        original = error.original
-        if not isinstance(original, discord.HTTPException):
-            await utils.error_handle(bot, error, ctx)
-    elif isinstance(
-        error,
-        (commands.ConversionError, commands.UserInputError, commands.CommandOnCooldown),
+async def on_init_load():
+    await bot.wait_until_ready()
+
+    application = await bot.application_info()
+    bot.owner = application.owner
+
+    bot.load_extension("jishaku")
+    bot.load_extension("cogs.config_fetch")
+    while bot.config == {}:
+        await asyncio.sleep(0.1)
+
+    cogs_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_FILE"))
+
+    for cog in cogs_list:
+        try:
+            bot.load_extension(cog)
+        except commands.NoEntryPointError:
+            pass
+
+
+class RealmsPlusBot(commands.Bot):
+    def __init__(
+        self,
+        command_prefix,
+        help_command=PaginatedHelpCommand(),
+        description=None,
+        **options,
     ):
-        await ctx.send(error)
-    elif isinstance(error, commands.CheckFailure):
-        if ctx.guild != None:
-            await ctx.send(
-                "You do not have the proper permissions to use that command."
-            )
-    elif isinstance(error, commands.CommandNotFound):
-        return
-    else:
-        await utils.error_handle(bot, error, ctx)
+        super().__init__(
+            command_prefix,
+            help_command=help_command,
+            description=description,
+            **options,
+        )
+        self._checks.append(global_checks)
+
+    async def on_ready(self):
+        utcnow = datetime.datetime.utcnow()
+        time_format = utcnow.strftime("%x %X UTC")
+
+        connect_msg = (
+            f"Logged in at `{time_format}`!"
+            if self.init_load == True
+            else f"Reconnected at `{time_format}`!"
+        )
+
+        while (
+            not hasattr(self, "owner")
+            or not hasattr(self, "config")
+            or self.config == {}
+        ):
+            await asyncio.sleep(0.1)
+
+        await self.owner.send(connect_msg)
+
+        self.init_load = False
+
+        activity = discord.Activity(
+            name="over some Realms Plus realms", type=discord.ActivityType.watching
+        )
+
+        try:
+            await self.change_presence(activity=activity)
+        except ConnectionClosedOK:
+            await utils.msg_to_owner(self, "Reconnecting...")
+
+    async def on_resumed(self):
+        activity = discord.Activity(
+            name="over some Realms Plus realms", type=discord.ActivityType.watching
+        )
+        await self.change_presence(activity=activity)
+
+    async def on_error(self, event, *args, **kwargs):
+        try:
+            raise
+        except BaseException as e:
+            await utils.error_handle(self, e)
+
+    async def get_context(self, message, *, cls=commands.Context):
+        """A simple extension of get_content. If it doesn't manage to get a command, it changes the string used
+        to get the command from - to _ and retries. Convenient for the end user."""
+
+        ctx = await super().get_context(message, cls=cls)
+        if ctx.command is None and ctx.invoked_with:
+            ctx.command = self.all_commands.get(ctx.invoked_with.replace("-", "_"))
+
+        return ctx
 
 
-@bot.event
-async def on_error(event, *args, **kwargs):
-    try:
-        raise
-    except Exception as e:
-        await utils.error_handle(bot, e)
+intents = discord.Intents.all()
+mentions = discord.AllowedMentions.all()
 
+bot = RealmsPlusBot(
+    command_prefix=realms_plus_prefixes, allowed_mentions=mentions, intents=intents,
+)
 
 keep_alive()
+
 bot.init_load = True
+bot.color = discord.Color(os.environ.get("BOT_COLOR"))  # 8ac249, aka 9093705
+bot.loop.create_task(on_init_load())
 bot.run(os.environ.get("MAIN_TOKEN"))

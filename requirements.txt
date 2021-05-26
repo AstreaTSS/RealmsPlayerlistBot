@@ -1,4 +1,5 @@
 discord
 humanize
 jishaku
+websockets
 flask

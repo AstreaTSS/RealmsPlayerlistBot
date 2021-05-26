@@ -7,6 +7,8 @@ import aiohttp
 import discord
 from discord.ext import commands
 
+import common.utils as utils
+
 
 class GeneralCMDS(commands.Cog):
     def __init__(self, bot):
@@ -48,16 +50,9 @@ class GeneralCMDS(commands.Cog):
                     snippet_id = resp_json["id"]
                     return f"https://glot.io/snippets/{snippet_id}"
                 else:
-                    print(resp.status)
-                    print(await resp.text())
+                    text = await resp.text()
+                    utils.msg_to_owner(self.bot, f"{resp.status}\n{text}")
                     return "ERROR, contact Sonic49."
-
-    @commands.command()
-    async def help(self, ctx):
-        await ctx.send(
-            "Since I'm too lazy, right now, the bot does not have a proper help command. One day I'll finish this.\n\n"
-            + "Commands: `ping`, `help`, `check_stats`, `season_add`, `playerlist`, `gt_check`."
-        )
 
     @commands.command()
     async def ping(self, ctx):
@@ -111,7 +106,7 @@ class GeneralCMDS(commands.Cog):
                 count = cache["count"]
             stats_embed = discord.Embed(
                 title=f"There are {count} people that have the {season_x_role.name} role.",
-                colour=discord.Colour(0x4A7DE2),
+                colour=ctx.bot.color,
                 description=f"List of members: {url}",
             )
 
