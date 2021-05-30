@@ -41,9 +41,12 @@ def global_checks(ctx: commands.Context):
     if not ctx.guild:
         return False
 
+    if ctx.author.id != ctx.bot.owner.id:
+        return True
+
     return not (
         ctx.guild.id == 775912554928144384
-        and ctx.command.qualified_name not in ("jsk", "help", "ping")
+        and ctx.command.qualified_name not in ("help", "ping")
     )
 
 
