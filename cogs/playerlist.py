@@ -94,7 +94,7 @@ class Playerlist(commands.Cog):
     @commands.command(aliases=["player_list", "get_playerlist", "get_player_list"])
     @utils.proper_permissions()
     @commands.cooldown(1, 240, commands.BucketType.default)
-    async def playerlist(self, ctx, **kwargs):
+    async def playerlist(self, ctx: commands.Context, **kwargs):
         """Checks and makes a playerlist, a log of players who have joined and left.
         The command version goes back 24 hours, while the autorun version only goes back 2.
         Has a cooldown of 4 minutes due to how intensive this command can be. May take a while to run at first.
@@ -106,7 +106,7 @@ class Playerlist(commands.Cog):
                 "This server is not ready to use playerlist yet."
             )
 
-        if "no_init_mes" not in kwargs.keys():
+        if not kwargs.get("no_init_mes"):
             if self.bot.gamertags == {}:
                 await ctx.send(
                     "This will probably take a long time as the bot does not have a gamertag cache. Please be patient."
@@ -117,9 +117,10 @@ class Playerlist(commands.Cog):
         async with ctx.channel.typing():
             now = datetime.datetime.utcnow()
 
-            if "limited" in kwargs.keys():
-                time_delta = datetime.timedelta(hours=2)
+            limited = bool(kwargs.get("limited"))
 
+            if limited:
+                time_delta = datetime.timedelta(hours=2)
             else:
                 time_delta = datetime.timedelta(days=1)
             time_ago = now - time_delta
@@ -148,14 +149,14 @@ class Playerlist(commands.Cog):
                 else:
                     time_format = last_seen.strftime("%x %X (%I:%M:%S %p) UTC")
                     offline_list.append(f"{gamertag}: last seen {time_format}")
-        if online_list != []:
-            online_str = "```\nPeople online right now:\n\n"
-            online_str += "\n".join(online_list)
+
+        if online_list:
+            online_str = "```\nPeople online right now:\n\n" + "\n".join(online_list)
             await ctx.send(online_str + "\n```")
 
-        if offline_list != []:
+        if offline_list:
             if len(offline_list) < 20:
-                if "limited" in kwargs.keys():
+                if limited:
                     offline_str = "```\nOther people on in the last 2 hours:\n\n"
 
                 else:
@@ -167,7 +168,7 @@ class Playerlist(commands.Cog):
                     offline_list[x : x + 20] for x in range(0, len(offline_list), 20)
                 ]
 
-                if "limited" in kwargs.keys():
+                if limited:
                     first_offline_str = (
                         "```\nOther people on in the last 2 hours:\n\n"
                         + "\n".join(chunks[0])
