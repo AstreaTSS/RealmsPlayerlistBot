@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import importlib
 import os
+import typing
 import urllib.parse
 
 import aiohttp
@@ -54,7 +55,14 @@ class ModCMDS(commands.Cog):
 
     @commands.command()
     @utils.proper_permissions()
-    async def season_add(self, ctx, season, message_id=None):
+    async def season_add(self, ctx, season, message_id: typing.Optional[int]):
+        """Adds a season role for the season specified to everyone who joined eithe before the command \
+            was sent or before the message specified.
+        The season specified... well, if you have roles that follow a 'Season X' format, where X is a number \
+            or the like, then you would put what you would put in X, if that makes sense.
+        As for the message ID, it has to be a message ID of a message in the announcements channel of that server.
+        This command will take a long time to run, especially on big servers.
+        Requires Manage Server permissions to run."""
         timestamp = datetime.datetime.utcnow().timestamp()
         guild_entry = self.bot.config[str(ctx.guild.id)]
 
@@ -96,6 +104,8 @@ class ModCMDS(commands.Cog):
     @commands.command(aliases=["gtcheck"])
     @utils.proper_permissions()
     async def gt_check(self, ctx, *, gamertag):
+        """Checks if the gamertag provided is valid, and also does a few other checks here and there.
+        Requires Manage Server permissions to run."""
         async with ctx.channel.typing():
             status = await self.verify_xbl_handler(gamertag)
 

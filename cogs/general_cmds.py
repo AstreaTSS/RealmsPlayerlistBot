@@ -18,7 +18,7 @@ class GeneralCMDS(commands.Cog):
     async def pastebin_cache(self, season):
         current_time = datetime.datetime.utcnow()
 
-        if season in self.bot.pastebins.keys():
+        if self.bot.pastebins.get(season):
             entry = self.bot.pastebins[season]
 
             four_hours = datetime.timedelta(hours=4)
@@ -57,6 +57,7 @@ class GeneralCMDS(commands.Cog):
 
     @commands.command()
     async def ping(self, ctx):
+        """Pings the bot. Great way of finding out if the bot’s working correctly, but otherwise has no real use."""
         start_time = time.perf_counter()
         ping_discord = round((self.bot.latency * 1000), 2)
 
@@ -72,7 +73,11 @@ class GeneralCMDS(commands.Cog):
         )
 
     @commands.command(aliases=["check_season", "season_stats"])
-    async def check_stats(self, ctx, season):
+    async def check_stats(self, ctx: commands.Context, season):
+        """Checks how many people have a season role and gives a list of those people.
+        The season specified... well, if you have roles that follow a 'Season X' format, where X is a number \
+            or the like, then you would put what you would put in X, if that makes sense.
+        Might not be fully accurate, as the bot does a tiny bit of caching here and there."""
         guild_entry = self.bot.config[str(ctx.guild.id)]
         season_x_role = discord.utils.get(
             ctx.guild.roles, name=guild_entry["season_role"].replace("X", season)
@@ -82,20 +87,18 @@ class GeneralCMDS(commands.Cog):
             await ctx.send("Invalid season number!")
         else:
             cache = await self.pastebin_cache(season)
-            if cache is None:
-                count = 0
-                list_of_people = []
-
-                for member in ctx.guild.members:
-                    if season_x_role in member.roles:
-                        count += 1
-                        list_of_people.append(
-                            f"{member.display_name} || {member.name}#{member.discriminator} || {member.id}"
-                        )
+            if not cache:
+                list_of_people = [
+                    f"{member.display_name} || {str(member)} || {member.id}"
+                    for member in ctx.guild.members
+                    if member._roles.has(season_x_role.id)
+                ]
+                count = len(list_of_people)
 
                 title = f"Query about people that have the {season_x_role.name} role:"
                 str_of_people = "".join(name + "\n" for name in list_of_people)
                 url = await self.post_paste(title, str_of_people)
+
                 self.bot.pastebins[season] = {
                     "time": datetime.datetime.utcnow(),
                     "url": url,

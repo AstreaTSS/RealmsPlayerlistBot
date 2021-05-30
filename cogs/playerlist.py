@@ -95,6 +95,10 @@ class Playerlist(commands.Cog):
     @utils.proper_permissions()
     @commands.cooldown(1, 240, commands.BucketType.default)
     async def playerlist(self, ctx, **kwargs):
+        """Checks and makes a playerlist, a log of players who have joined and left.
+        The command version goes back 24 hours, while the autorun version only goes back 2.
+        Has a cooldown of 4 minutes due to how intensive this command can be. May take a while to run at first.
+        Requires Manage Server permissions."""
         guild_config = self.bot.config[str(ctx.guild.id)]
 
         if guild_config["club_id"] == "None":
