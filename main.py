@@ -41,7 +41,7 @@ def global_checks(ctx: commands.Context):
     if not ctx.guild:
         return False
 
-    if ctx.author.id != ctx.bot.owner.id:
+    if ctx.author.id == ctx.bot.owner.id:
         return True
 
     return not (
