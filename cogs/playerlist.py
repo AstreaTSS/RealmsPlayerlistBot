@@ -55,7 +55,7 @@ class Playerlist(commands.Cog):
                 try:
                     resp_json = await r.json()
                     if "code" in resp_json.keys():
-                        utils.msg_to_owner(self.bot, resp_json)
+                        await utils.msg_to_owner(self.bot, resp_json)
                         return f"User with xuid {xuid}"
                     else:
                         settings = {

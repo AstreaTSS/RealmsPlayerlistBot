@@ -52,7 +52,7 @@ class GeneralCMDS(commands.Cog):
                     return f"https://glot.io/snippets/{snippet_id}"
                 else:
                     text = await resp.text()
-                    utils.msg_to_owner(self.bot, f"{resp.status}\n{text}")
+                    await utils.msg_to_owner(self.bot, f"{resp.status}\n{text}")
                     return "ERROR, contact Sonic49."
 
     @commands.command()
