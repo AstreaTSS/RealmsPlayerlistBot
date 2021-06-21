@@ -12,8 +12,7 @@ import common.utils as utils
 """
 Hi, potential code viewer.
 If you're looking at this, chances are you're interested in how this works.
-I made this code a long time ago - it's June 21st 2021 right now, and I made it a year before this.
-Maybe even longer than that.
+I made this code a long time ago - it's June 21st 2021 right now, and I made it roughly a year before this.
 
 Most of this code is not pretty and probably could be made better.
 But at the same time, this code works, and poking around is not fun.
@@ -21,13 +20,25 @@ Also, this isn't exactly my favorite bot. I don't like messing around with this 
 Oh well.
 
 Also note that this code came from an old project called the Bappo Realm Bot
-which is not defunct as that Realm is gone.
+which is now defunct as that Realm is gone.
 That bot had this, but it also had a much faster,
 if more unstable playerlist that was used for the command version (this version was used
 for the auto-run version).
 Check it out here: https://github.com/Sonic4999/BappoRealmBot/blob/master/cogs/cmds/playerlist.py
 Though be warned that that version used a custom version of yet another API that communicated
 directly with the Xbox Live API.
+
+Also also (yeah), this approach is a somewhat hacky exploit of how Realms work.
+Every Realm creates a club for it to use - in Minecraft itself, you can view this by clicking
+the whole photo view thing while in a Realm.
+This is largely used just to share photos and info, but I did a deep dive on this and found out
+it can also be used to see who was online and who was offline.
+You can do this via the Xbox app, actually - I believe if you're in a Realm, you should automatically
+join the Relam club, so just check that and search for the section that has all of the players in it.
+The problem is that that section doesn't tell you enough - it doesn't tell you when they were last on, for example.
+This bot basically combines all of that knowledge together, gets the club of the Realm via the Xbox Live API since it is
+an Xbox Live thing, gets the people who were on, and puts out one easy to use playerlist to be used for
+moderation (or really, whatever you would like).
 
 I'm going to attempt to leave comments and the like to document what I was doing
 though note that I'm basically re-analyzing my own code to figure out what it all means.
@@ -80,7 +91,8 @@ class Playerlist(commands.Cog):
         await utils.error_handle(self.bot, error)
 
     async def gamertag_handler(self, xuid):
-        # easy way of handling getting a gamertag
+        # easy way of handling getting a gamertag from an xuid
+        # as the clubs request does not get gamertags itself
 
         # this is where the gamertag cache that the bot has comes into use
         # the bot stores gamertags in an {xuid: gamertag} format
@@ -112,7 +124,9 @@ class Playerlist(commands.Cog):
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(f"https://xbl.io/api/v2/account/{xuid}") as r:
                 try:
-                    resp_json = await r.json()
+                    resp_json = (
+                        await r.json()
+                    )  # i have little idea of how this looks these days - experiment yourself
                     if "code" in resp_json.keys():  # service is down
                         await utils.msg_to_owner(self.bot, resp_json)
                         return f"User with xuid {xuid}"
@@ -229,6 +243,10 @@ class Playerlist(commands.Cog):
                 if last_seen <= time_ago:
                     break
 
+                # yeah, we only get the xuid from this list
+                # xuids are basically xbox's equivalent of discord ids
+                # but they dont give us info on gamertags
+                # so the below function is just for that
                 gamertag = await self.gamertag_handler(member["xuid"])
                 if (
                     member["lastSeenState"] == "InGame"

@@ -18,6 +18,25 @@ class FetchConfigFile(commands.Cog):
 
     @tasks.loop(minutes=2.5)
     async def fetch_document(self):
+        # this url has to be pointing to the raw text of something that looks like
+        # 'config.json'
+        # in production this points to the github page of 'config.json'
+
+        # each club looks like this:
+        # {
+        #   'A-GUILD-ID-AS-A-STRING': {
+        #       "season_role": "However their season roles are named, with
+        #       'X' being used for whatever changes each season.",
+        #
+        #       "playerlist_chan": PLAYERLIST-DISCORD-CHANNEL,
+        #
+        #       "club_id": "XBOX CLUB ID AS A STR",
+        #       (you can get it by using the web Xbox app and navigating to the club)
+        #       (the id will be in the url)
+        #
+        #       "announce_chan": ANNOUNCEMENTS-DISCORD-CHANNEL
+        #   }
+        # }
         document_url = os.environ.get("CONFIG_URL")
 
         async with aiohttp.ClientSession() as session:
