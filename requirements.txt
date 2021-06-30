@@ -1,6 +1,5 @@
-discord
+discord.py==1.7.3
 humanize
 jishaku
 python-dotenv==0.18.0
-websockets
-flask
+websockets==9.1
