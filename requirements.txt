@@ -1,5 +1,5 @@
 discord
-humanize
+humanize==3.9.0
 jishaku
 python-dotenv
 websockets
