@@ -1,6 +1,6 @@
 discord
 humanize
 jishaku
-python-dotenv
+python-dotenv==0.18.0
 websockets
 flask
