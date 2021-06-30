@@ -123,3 +123,4 @@ dmypy.json
 
 discord.log
 .env
+env/
