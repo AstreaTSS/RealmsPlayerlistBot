@@ -2,5 +2,5 @@ discord
 humanize
 jishaku
 python-dotenv
-websockets
+websockets==9.1
 flask
