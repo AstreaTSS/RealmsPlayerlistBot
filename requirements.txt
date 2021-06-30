@@ -3,4 +3,4 @@ humanize
 jishaku
 python-dotenv
 websockets
-flask
+flask==2.0.1
