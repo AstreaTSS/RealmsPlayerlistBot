@@ -253,25 +253,25 @@ class Playerlist(commands.Cog):
                 ):  # the state that indicates they're in game
                     online_list.append(f"{gamertag}")
                 else:
-                    # i believe this is MM/DD/YY HH:MM:SS (HH:MM:SS but respecting AM/PM) UTC
-                    time_format = last_seen.strftime("%x %X (%I:%M:%S %p) UTC")
+                    # screw manually doing this, let discord handle it
+                    time_format = f"<t:{int(time_format.timestamp()):f}>"
                     offline_list.append(f"{gamertag}: last seen {time_format}")
 
         if online_list:
-            online_str = "```\nPeople online right now:\n\n" + "\n".join(online_list)
-            await ctx.send(online_str + "\n```")
+            online_str = "People online right now:\n\n" + "\n".join(online_list)
+            await ctx.send(online_str)
 
         if offline_list:
             if (
                 len(offline_list) < 20
             ):  # if its bigger than this, we don't want to run into the chara limit
                 if limited:
-                    offline_str = "```\nOther people on in the last 2 hours:\n\n"
+                    offline_str = "Other people on in the last 2 hours:\n\n"
 
                 else:
-                    offline_str = "```\nOther people on in the last 24 hours:\n\n"
+                    offline_str = "Other people on in the last 24 hours:\n\n"
                 offline_str += "\n".join(offline_list)
-                await ctx.send(offline_str + "\n```")
+                await ctx.send(offline_str)
             else:
                 # gets the offline list in lines of 20
                 # basically, it's like
@@ -282,21 +282,19 @@ class Playerlist(commands.Cog):
 
                 if limited:
                     first_offline_str = (
-                        "```\nOther people on in the last 2 hours:\n\n"
+                        "Other people on in the last 2 hours:\n\n"
                         + "\n".join(chunks[0])
-                        + "\n```"
                     )
 
                 else:
                     first_offline_str = (
-                        "```\nOther people on in the last 24 hours:\n\n"
+                        "Other people on in the last 24 hours:\n\n"
                         + "\n".join(chunks[0])
-                        + "\n```"
                     )
                 await ctx.send(first_offline_str)
 
                 for chunk in chunks[1:]:
-                    offline_chunk_str = "```\n" + "\n".join(chunk) + "\n```"
+                    offline_chunk_str = "\n".join(chunk)
                     await ctx.send(offline_chunk_str)
 
 
