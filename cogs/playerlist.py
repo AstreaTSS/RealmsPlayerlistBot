@@ -211,9 +211,7 @@ class Playerlist(commands.Cog):
                 time_delta = datetime.timedelta(hours=2)
             else:
                 time_delta = datetime.timedelta(days=1)
-            time_ago = (
-                now - time_delta
-            )  # simple way of determining how far back in the playerlist we need to go
+            time_ago = (now - time_delta).astimezone(datetime.timezone.utc)
 
             # some initialization stuff
             online_list = []  # stores currently on realm users
