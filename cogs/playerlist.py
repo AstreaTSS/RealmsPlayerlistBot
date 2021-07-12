@@ -234,7 +234,7 @@ class Playerlist(commands.Cog):
                 # so we cut out that precision
                 last_seen = datetime.datetime.strptime(
                     member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f"
-                )
+                ).astimezone(datetime.timezone.utc)
 
                 # if this person was on the realm longer than the time period specified
                 # we can stop this for loop
