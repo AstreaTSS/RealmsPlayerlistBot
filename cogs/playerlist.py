@@ -254,7 +254,7 @@ class Playerlist(commands.Cog):
                     online_list.append(f"`{gamertag}`")
                 else:
                     # screw manually doing this, let discord handle it
-                    time_format = f"<t:{int(last_seen.timestamp()):f}>"
+                    time_format = f"<t:{int(last_seen.timestamp())}>"
                     offline_list.append(f"`{gamertag}`: last seen {time_format}")
 
         if online_list:
