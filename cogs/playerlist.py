@@ -203,7 +203,7 @@ class Playerlist(commands.Cog):
                 await ctx.send("This might take a bit. Please be patient.")
 
         async with ctx.channel.typing():
-            now = datetime.datetime.utcnow()
+            now = datetime.datetime.now(datetime.timezone.utc)
 
             limited = bool(kwargs.get("limited"))  # because python is weird
 
@@ -211,7 +211,7 @@ class Playerlist(commands.Cog):
                 time_delta = datetime.timedelta(hours=2)
             else:
                 time_delta = datetime.timedelta(days=1)
-            time_ago = (now - time_delta).astimezone(datetime.timezone.utc)
+            time_ago = now - time_delta
 
             # some initialization stuff
             online_list = []  # stores currently on realm users
@@ -232,7 +232,7 @@ class Playerlist(commands.Cog):
                 # so we cut out that precision
                 last_seen = datetime.datetime.strptime(
                     member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f"
-                ).astimezone(datetime.timezone.utc)
+                ).replace(tzinfo=datetime.timezone.utc)
 
                 # if this person was on the realm longer than the time period specified
                 # we can stop this for loop
