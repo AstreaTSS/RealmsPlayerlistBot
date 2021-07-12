@@ -256,7 +256,7 @@ class Playerlist(commands.Cog):
                     offline_list.append(f"`{gamertag}`: last seen {time_format}")
 
         if online_list:
-            online_str = "__**People online right now:**__\n\n" + "\n".join(online_list)
+            online_str = "**People online right now:**\n\n" + "\n".join(online_list)
             await ctx.send(online_str)
 
         if offline_list:
@@ -264,10 +264,10 @@ class Playerlist(commands.Cog):
                 len(offline_list) < 20
             ):  # if its bigger than this, we don't want to run into the chara limit
                 if limited:
-                    offline_str = "__**Other people on in the last 2 hours:**__\n\n"
+                    offline_str = "**Other people on in the last 2 hours:**\n\n"
 
                 else:
-                    offline_str = "__**Other people on in the last 24 hours:**__\n\n"
+                    offline_str = "**Other people on in the last 24 hours:**\n\n"
                 offline_str += "\n".join(offline_list)
                 await ctx.send(offline_str)
             else:
@@ -280,13 +280,13 @@ class Playerlist(commands.Cog):
 
                 if limited:
                     first_offline_str = (
-                        "__**Other people on in the last 2 hours:**__\n\n"
+                        "**Other people on in the last 2 hours:**\n\n"
                         + "\n".join(chunks[0])
                     )
 
                 else:
                     first_offline_str = (
-                        "__**Other people on in the last 24 hours:**__\n\n"
+                        "**Other people on in the last 24 hours:**\n\n"
                         + "\n".join(chunks[0])
                     )
                 await ctx.send(first_offline_str)
