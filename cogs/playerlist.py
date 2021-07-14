@@ -295,6 +295,53 @@ class Playerlist(commands.Cog):
                     offline_chunk_str = "\n".join(chunk)
                     await ctx.send(offline_chunk_str)
 
+    @commands.command()
+    @commands.cooldown(1, 300, commands.BucketType.guild)
+    async def online(self, ctx: commands.Context):
+        """Allows you to see if anyone is online on the Realm right now.
+        The realm must agree to this being enabled for you to use it."""
+
+        guild_config = self.bot.config[str(ctx.guild.id)]
+        if guild_config["club_id"] == "None" or not guild_config["online_cmd"]:
+            raise commands.BadArgument(
+                "This server is not allowed to use this command."
+            )
+
+        if self.bot.gamertags == {}:
+            await ctx.send(
+                "This will probably take a long time as the bot does not have a gamertag cache. Please be patient."
+            )
+            # it can take up to a minute on its first run
+        else:
+            await ctx.send("This might take a bit. Please be patient.")
+
+        club_presence = await self.realm_club_get(guild_config["club_id"])
+
+        if club_presence is None:
+            # this can happen
+            await ctx.send(
+                "Seems like this command failed somehow. The owner of the bot "
+                + "should have the info needed to see what's going on."
+            )
+            return
+
+        online_list = []  # stores currently on realm users
+
+        for member in club_presence:
+            if member["lastSeenState"] != "InGame":
+                break
+
+            gamertag = await self.gamertag_handler(member["xuid"])
+            online_list.append(f"`{gamertag}`")
+
+        if online_list:
+            online_str = f"**{len(online_list)}/10 people online:**\n\n" + "\n".join(
+                online_list
+            )
+            await ctx.send(online_str)
+        else:
+            raise utils.CustomCheckFailure("There's no one on the Realm right now!")
+
 
 def setup(bot):
     importlib.reload(utils)
