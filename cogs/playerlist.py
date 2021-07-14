@@ -50,6 +50,18 @@ Good luck on your bot coding journey
 """
 
 
+async def can_run_playerlist(self, ctx: commands.Context):
+    # simple check to see if a person can run the playerlist command
+    guild_config = self.bot.config[str(ctx.guild.id)]
+    return guild_config["club_id"] != "None"
+
+
+async def can_run_online(self, ctx: commands.Context):
+    # same, but for the online command
+    guild_config = self.bot.config[str(ctx.guild.id)]
+    return bool(guild_config["club_id"] != "None" and guild_config["online_cmd"])
+
+
 class Playerlist(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -180,6 +192,7 @@ class Playerlist(commands.Cog):
 
     @commands.command(aliases=["player_list", "get_playerlist", "get_player_list"])
     @utils.proper_permissions()
+    @commands.check(can_run_playerlist)
     @commands.cooldown(1, 240, commands.BucketType.default)
     async def playerlist(self, ctx: commands.Context, **kwargs):
         """Checks and makes a playerlist, a log of players who have joined and left.
@@ -187,11 +200,6 @@ class Playerlist(commands.Cog):
         Has a cooldown of 4 minutes due to how intensive this command can be. May take a while to run at first.
         Requires Manage Server permissions."""
         guild_config = self.bot.config[str(ctx.guild.id)]
-
-        if guild_config["club_id"] == "None":
-            raise commands.BadArgument(
-                "This server is not ready to use playerlist yet."
-            )
 
         if not kwargs.get("no_init_mes"):
             if self.bot.gamertags == {}:
@@ -297,15 +305,12 @@ class Playerlist(commands.Cog):
 
     @commands.command()
     @commands.cooldown(1, 300, commands.BucketType.guild)
+    @commands.check(can_run_online)
     async def online(self, ctx: commands.Context):
         """Allows you to see if anyone is online on the Realm right now.
         The realm must agree to this being enabled for you to use it."""
-
+        # uses much of the same code as playerlist
         guild_config = self.bot.config[str(ctx.guild.id)]
-        if guild_config["club_id"] == "None" or not guild_config["online_cmd"]:
-            raise commands.BadArgument(
-                "This server is not allowed to use this command."
-            )
 
         if self.bot.gamertags == {}:
             await ctx.send(
