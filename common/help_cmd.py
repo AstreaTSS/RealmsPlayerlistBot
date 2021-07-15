@@ -218,9 +218,9 @@ class PaginatedHelpCommand(commands.HelpCommand):
 
         await pages.paginate()
 
-    async def command_not_found(self, string: str):
+    def command_not_found(self, string: str):
         actual_str = string.replace("_", "-")
-        return await super().command_not_found(actual_str)
+        return super().command_not_found(actual_str)
 
     async def subcommand_not_found(self, command, string: str):
         qualified_name = command.qualified_name.replace("_", "-")
