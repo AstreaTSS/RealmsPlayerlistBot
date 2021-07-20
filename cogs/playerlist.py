@@ -50,15 +50,15 @@ Good luck on your bot coding journey
 """
 
 
-async def can_run_playerlist(self, ctx: commands.Context):
+async def can_run_playerlist(ctx: commands.Context):
     # simple check to see if a person can run the playerlist command
-    guild_config = self.bot.config[str(ctx.guild.id)]
+    guild_config = ctx.bot.config[str(ctx.guild.id)]
     return guild_config["club_id"] != "None"
 
 
-async def can_run_online(self, ctx: commands.Context):
+async def can_run_online(ctx: commands.Context):
     # same, but for the online command
-    guild_config = self.bot.config[str(ctx.guild.id)]
+    guild_config = ctx.bot.config[str(ctx.guild.id)]
     return bool(guild_config["club_id"] != "None" and guild_config["online_cmd"])
 
 
