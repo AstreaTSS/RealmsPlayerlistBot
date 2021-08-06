@@ -24,7 +24,7 @@ which is now defunct as that Realm is gone.
 That bot had this, but it also had a much faster,
 if more unstable playerlist that was used for the command version (this version was used
 for the auto-run version).
-Check it out here: https://github.com/Sonic4999/BappoRealmBot/blob/master/cogs/cmds/playerlist.py
+Check it out here: https://github.com/Astrea49/BappoRealmBot/blob/master/cogs/cmds/playerlist.py
 Though be warned that that version used a custom version of yet another API that communicated
 directly with the Xbox Live API.
 
@@ -46,7 +46,7 @@ I tend to make most of my code self-documenting, so it should be understandable 
 but I may not be able to make you understand all of this.
 
 Good luck on your bot coding journey
-- Sonic49
+- Astrea
 """
 
 

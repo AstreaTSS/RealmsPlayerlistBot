@@ -53,7 +53,7 @@ class GeneralCMDS(commands.Cog):
                 else:
                     text = await resp.text()
                     await utils.msg_to_owner(self.bot, f"{resp.status}\n{text}")
-                    return "ERROR, contact Sonic49."
+                    return "ERROR, contact Astrea."
 
     @commands.command()
     async def ping(self, ctx):
