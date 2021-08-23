@@ -10,9 +10,10 @@ from websockets import ConnectionClosedOK
 
 import common.utils as utils
 from common.help_cmd import PaginatedHelpCommand
+import keep_alive
 
 
-load_dotenv()
+# load_dotenv()
 
 logger = logging.getLogger("discord")
 logger.setLevel(logging.INFO)
@@ -154,4 +155,5 @@ bot.gamertags = {}
 bot.pastebins = {}
 
 bot.loop.create_task(on_init_load())
+keep_alive.keep_alive()
 bot.run(os.environ.get("MAIN_TOKEN"))
