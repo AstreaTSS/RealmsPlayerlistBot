@@ -150,16 +150,22 @@ class Playerlist(commands.Cog):
 
                         # also for some reason the xbox live api gives every response as a list
                         # even when we're only requesting for one person
-                        settings = {
-                            setting["id"]: setting["value"]
-                            for setting in resp_json["profileUsers"][0]["settings"]
-                        }
 
-                        gamertag = settings["Gamertag"]  # where the gamertag is stored
-                        # probably would be easier to manually just get it, but eh
+                        try:
+                            settings = {
+                                setting["id"]: setting["value"]
+                                for setting in resp_json["profileUsers"][0]["settings"]
+                            }
 
-                        self.bot.gamertags[str(xuid)] = gamertag  # add to cache
-                        return gamertag
+                            gamertag = settings[
+                                "Gamertag"
+                            ]  # where the gamertag is stored
+                            # probably would be easier to manually just get it, but eh
+
+                            self.bot.gamertags[str(xuid)] = gamertag  # add to cache
+                            return gamertag
+                        except KeyError:
+                            return f"User with xuid {xuid}"
                 except aiohttp.client_exceptions.ContentTypeError:
                     # can happen, if not rare
                     await utils.msg_to_owner(
