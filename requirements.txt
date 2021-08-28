@@ -4,3 +4,8 @@ jishaku==2.2.0
 python-dotenv==0.19.0
 websockets==9.1
 flask==2.0.1
+xbox-webapi==2.0.11
+cchardet==2.1.7
+aiodns==3.0.0
+brotlipy==0.7.0
+attrs==21.2.0

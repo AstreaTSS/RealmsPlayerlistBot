@@ -1,13 +1,17 @@
+import asyncio
 import datetime
 import importlib
 import os
+import typing
 
 import aiohttp
+import attr
 from discord.ext import commands
 from discord.ext import tasks
+from xbox.webapi.api.provider.profile.models import ProfileResponse
 
+import common.profile_custom as profile
 import common.utils as utils
-
 
 """
 Hi, potential code viewer.
@@ -48,6 +52,38 @@ but I may not be able to make you understand all of this.
 Good luck on your bot coding journey
 - Astrea
 """
+
+
+@attr.s(slots=True, eq=False)
+class Player:
+    xuid: str = attr.ib()
+    last_seen: datetime.datetime = attr.ib()
+    last_seen_state: str = attr.ib()
+    gamertag: typing.Optional[str] = attr.ib(default=None)
+
+    def __eq__(self, o: object) -> bool:
+        if not isinstance(o, self.__class__):
+            return False
+
+        return o.xuid == self.xuid
+
+    @property
+    def resolved(self):
+        return bool(self.gamertag)
+
+    @property
+    def in_game(self):
+        return self.last_seen_state == "InGame"
+
+    @property
+    def display(self):  # sourcery skip: remove-unnecessary-else
+        base = f"`{self.gamertag}`" if self.gamertag else f"User with XUID {self.xuid}"
+
+        if self.in_game:
+            return base
+        else:
+            time_format = f"<t:{int(self.last_seen.timestamp())}>"
+            return f"{base}: last seen {time_format}"
 
 
 async def can_run_playerlist(ctx: commands.Context):
@@ -102,76 +138,27 @@ class Playerlist(commands.Cog):
         error = args[-1]
         await utils.error_handle(self.bot, error)
 
-    async def gamertag_handler(self, xuid):
-        # easy way of handling getting a gamertag from an xuid
-        # as the clubs request does not get gamertags itself
+    async def get_gamertags(
+        self, profile: profile.ProfileProvider, list_xuids
+    ) -> ProfileResponse:
 
-        # this is where the gamertag cache that the bot has comes into use
-        # the bot stores gamertags in an {xuid: gamertag} format
-        # which is useful if we dont want to overload the api we're using
-        # with requests over and over again
-        # since we do have to determine the gamertag from xuid a lot
+        profile_resp = await profile.get_profiles(list_xuids)
 
-        # note that there is a flaw in this system: gamertags will never update for an xuid
-        # unless manually cleared
-        # this is fine for most use cases, but you may want to implement a system that gets
-        # rid of gamertags if theyve been stored over a long period of time
+        if profile_resp.get("code"):
+            description = profile_resp["description"]
+            desc_split = description.split(" ")
+            list_xuids.remove(desc_split[1])
 
-        # use strings here because xbox live api is weird
-        if str(xuid) in self.bot.gamertags.keys():
-            return self.bot.gamertags[str(xuid)]
+            profiles, list_xuids = await self.get_gamertags(profile, list_xuids)
+            return profiles, list_xuids
 
-        # we use https://xbl.io/ for communicating with the xbox live api
-        # why? because the actual xbox live api sucks and is hard to use
-        # this service makes that way easier
-        headers = {
-            "X-Authorization": os.environ.get("OPENXBL_KEY"),
-            "Accept": "application/json",
-            "Accept-Language": "en-US",
-        }
+        elif profile_resp.get("limitType"):
+            await asyncio.sleep(15)
+            profiles, list_xuids = await self.get_gamertags(profile, list_xuids)
+            return profiles, list_xuids
 
-        # don't ask
-        xuid = str(xuid).replace("'", "")
-
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(f"https://xbl.io/api/v2/account/{xuid}") as r:
-                try:
-                    resp_json = (
-                        await r.json()
-                    )  # i have little idea of how this looks these days - experiment yourself
-                    if "code" in resp_json.keys():  # service is down
-                        await utils.msg_to_owner(self.bot, resp_json)
-                        return f"User with xuid {xuid}"
-                    else:
-                        # xbox does this annoying thing where it maps out all of the 'settings'
-                        # (settings are just basic info about the user, don't ask)
-                        # in an {"id": "e", "value": "f"} format
-                        # why isn't it just {"e": "f"}? idk
-
-                        # also for some reason the xbox live api gives every response as a list
-                        # even when we're only requesting for one person
-
-                        try:
-                            settings = {
-                                setting["id"]: setting["value"]
-                                for setting in resp_json["profileUsers"][0]["settings"]
-                            }
-
-                            gamertag = settings[
-                                "Gamertag"
-                            ]  # where the gamertag is stored
-                            # probably would be easier to manually just get it, but eh
-
-                            self.bot.gamertags[str(xuid)] = gamertag  # add to cache
-                            return gamertag
-                        except KeyError:
-                            return f"User with xuid {xuid}"
-                except aiohttp.client_exceptions.ContentTypeError:
-                    # can happen, if not rare
-                    await utils.msg_to_owner(
-                        self.bot, f"Failed to get gamertag of user {xuid}"
-                    )
-                    return f"User with xuid {xuid}"
+        profiles = ProfileResponse.parse_raw(await profile_resp.text())
+        return profiles, list_xuids
 
     async def realm_club_get(self, club_id):
         headers = {  # same api as the gamerag one
@@ -228,10 +215,10 @@ class Playerlist(commands.Cog):
             time_ago = now - time_delta
 
             # some initialization stuff
-            online_list = []  # stores currently on realm users
-            offline_list = (
-                []
-            )  # stores users who were on the realm in the time period specified
+            player_list: typing.List[Player] = []  # hard to explain, you'll see
+            unresolved_dict: typing.Dict[str, Player] = {}
+            online_list: typing.List[Player] = []  # stores currently on realm users
+            offline_list: typing.List[Player] = []  # stores recently online users
             club_presence = await self.realm_club_get(guild_config["club_id"])
 
             if club_presence is None:
@@ -255,19 +242,37 @@ class Playerlist(commands.Cog):
                 if last_seen <= time_ago:
                     break
 
-                # yeah, we only get the xuid from this list
-                # xuids are basically xbox's equivalent of discord ids
-                # but they dont give us info on gamertags
-                # so the below function is just for that
-                gamertag = await self.gamertag_handler(member["xuid"])
-                if (
-                    member["lastSeenState"] == "InGame"
-                ):  # the state that indicates they're in game
-                    online_list.append(f"`{gamertag}`")
+                player = Player(
+                    member["xuid"],
+                    last_seen,
+                    member["lastSeenState"],
+                    self.bot.gamertags.get(member["xuid"]),
+                )
+                if player.resolved:
+                    player_list.append(player)
                 else:
-                    # screw manually doing this, let discord handle it
-                    time_format = f"<t:{int(last_seen.timestamp())}>"
-                    offline_list.append(f"`{gamertag}`: last seen {time_format}")
+                    unresolved_dict(player)
+
+            if unresolved_dict:
+                client_profile = self.bot.profile
+
+                profiles = await self.get_gamertags(
+                    client_profile, list(unresolved_dict.keys())
+                )
+                for user in profiles.profile_users:
+                    try:
+                        gamertag = tuple(
+                            s.value for s in user.settings if s.id == "Gamertag"
+                        )[0]
+                        self.bot.gamertags[user.id] = gamertag
+                        unresolved_dict[user.id].gamertag = gamertag
+                    except KeyError or IndexError:
+                        continue
+
+                player_list.extend(unresolved_dict.values())
+
+        online_list = [p.display for p in player_list if p.in_game]
+        offline_list = [p.display for p in player_list if not p.in_game]
 
         if online_list:
             online_str = "**People online right now:**\n\n" + "\n".join(online_list)
@@ -326,24 +331,57 @@ class Playerlist(commands.Cog):
         else:
             await ctx.send("This might take a bit. Please be patient.")
 
-        club_presence = await self.realm_club_get(guild_config["club_id"])
+        async with ctx.channel.typing():
+            club_presence = await self.realm_club_get(guild_config["club_id"])
 
-        if club_presence is None:
-            # this can happen
-            await ctx.send(
-                "Seems like this command failed somehow. The owner of the bot "
-                + "should have the info needed to see what's going on."
-            )
-            return
+            if club_presence is None:
+                # this can happen
+                await ctx.send(
+                    "Seems like this command failed somehow. The owner of the bot "
+                    + "should have the info needed to see what's going on."
+                )
+                return
 
-        online_list = []  # stores currently on realm users
+            online_list = []  # stores currently on realm users
+            player_list: typing.List[Player] = []  # hard to explain, you'll see
+            unresolved_dict: typing.Dict[str, Player] = {}
 
-        for member in club_presence:
-            if member["lastSeenState"] != "InGame":
-                break
+            for member in club_presence:
+                if member["lastSeenState"] != "InGame":
+                    break
 
-            gamertag = await self.gamertag_handler(member["xuid"])
-            online_list.append(f"`{gamertag}`")
+                last_seen = datetime.datetime.strptime(
+                    member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f"
+                ).replace(tzinfo=datetime.timezone.utc)
+
+                player = Player(
+                    member["xuid"],
+                    last_seen,
+                    member["lastSeenState"],
+                    self.bot.gamertags.get(member["xuid"]),
+                )
+                if player.resolved:
+                    player_list.append(player)
+                else:
+                    unresolved_dict[player.xuid] = player
+
+            if unresolved_dict:
+                profiles = await self.get_gamertags(
+                    self.bot.profile, list(unresolved_dict.keys())
+                )
+                for user in profiles.profile_users:
+                    try:
+                        gamertag = tuple(
+                            s.value for s in user.settings if s.id == "Gamertag"
+                        )[0]
+                        self.bot.gamertags[user.id] = gamertag
+                        unresolved_dict[user.id].gamertag = gamertag
+                    except KeyError or IndexError:
+                        continue
+
+                player_list.extend(unresolved_dict.values())
+
+        online_list = [p.display for p in player_list]
 
         if online_list:
             online_str = f"**{len(online_list)}/10 people online:**\n\n" + "\n".join(

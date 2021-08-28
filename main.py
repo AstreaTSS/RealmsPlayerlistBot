@@ -3,14 +3,19 @@ import datetime
 import logging
 import os
 
+import aiohttp
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 from websockets import ConnectionClosedOK
+from xbox.webapi.api.client import XboxLiveClient
+from xbox.webapi.authentication.manager import AuthenticationManager
+from xbox.webapi.authentication.models import OAuth2TokenResponse
 
 import common.utils as utils
-from common.help_cmd import PaginatedHelpCommand
 import keep_alive
+from common.help_cmd import PaginatedHelpCommand
+from common.profile_custom import ProfileProvider
 
 
 # load_dotenv()
@@ -56,6 +61,15 @@ async def on_init_load():
 
     application = await bot.application_info()
     bot.owner = application.owner
+
+    bot.session = aiohttp.ClientSession()
+    auth_mgr = AuthenticationManager(
+        bot.session, os.environ.get("CLIENT_ID"), os.environ.get("CLIENT_SECRET"), ""
+    )
+    auth_mgr.oauth = OAuth2TokenResponse.parse_raw(os.environ.get("XAPI_TOKENS"))
+    await auth_mgr.refresh_tokens()
+    xbl_client = XboxLiveClient(auth_mgr)
+    bot.profile = ProfileProvider(xbl_client)
 
     bot.load_extension("jishaku")
     bot.load_extension("cogs.config_fetch")
@@ -139,6 +153,10 @@ class RealmsPlusBot(commands.Bot):
             ctx.command = self.all_commands.get(ctx.invoked_with.replace("-", "_"))
 
         return ctx
+
+    async def close(self) -> None:
+        await bot.session.close()
+        return await super().close()
 
 
 intents = discord.Intents.all()
