@@ -10,7 +10,7 @@ More features are planned to be added eventually.
 
 If you wish to add this bot, join the Support Server and talk to me (Astrea) - I'll talk about how to set it up and all, since it isn't simple.
 
-Environmental vars: `MAIN_TOKEN`, `DIRECTORY_OF_FILE`, `LOG_FILE_PATH`, `OPENXBL_KEY`, `CONFIG_URL`, `BOT_COLOR`, `JISHAKU_NO_UNDERSCORE=true` (last one is optional but recommended)
+Environmental vars: `MAIN_TOKEN`, `DIRECTORY_OF_FILE`, `LOG_FILE_PATH`, `OPENXBL_KEY`, `CONFIG_URL`, `BOT_COLOR`, `CLIENT_ID`, `CLIENT_SECRET`, `XAPI_TOKENS`, `JISHAKU_NO_UNDERSCORE=true` (last one is optional but recommended)
 
 Links:
 
