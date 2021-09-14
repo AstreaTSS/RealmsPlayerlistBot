@@ -176,7 +176,7 @@ class Playerlist(commands.Cog):
                     # and we only need the presences of the users
                     # not the other stuff
                     return resp_json["clubs"][0]["clubPresence"]
-                except KeyError:
+                except KeyError or TypeError:
                     # who knows
                     await utils.msg_to_owner(self.bot, resp_json)
                     await utils.msg_to_owner(self.bot, r.headers)
@@ -224,7 +224,7 @@ class Playerlist(commands.Cog):
             if club_presence is None:
                 # this can happen
                 await ctx.send(
-                    "Seems like this command failed somehow. Sonic should have the info needed to see what's going on."
+                    "Seems like this command failed somehow. Astrea should have the info needed to see what's going on."
                 )
                 return
 
