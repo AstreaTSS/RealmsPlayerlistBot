@@ -18,6 +18,6 @@
         "playerlist_chan": 898306382871269467,
         "club_id": "3379867002223966",
         "announce_chan": 870730905906446446,
-        "online_cmd": false
+        "online_cmd": true
     }
 }
