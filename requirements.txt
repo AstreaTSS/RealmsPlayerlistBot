@@ -3,7 +3,7 @@ humanize==3.12.0
 jishaku==2.3.2
 python-dotenv==0.19.2
 websockets==10.1
-flask==2.0.1
+flask==2.0.2
 xbox-webapi==2.0.11
 cchardet==2.1.7
 aiodns==3.0.0
