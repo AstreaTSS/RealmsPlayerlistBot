@@ -104,7 +104,7 @@ class RealmsPlusBot(commands.Bot):
 
     async def on_ready(self):
         utcnow = datetime.datetime.now(tz=datetime.timezone.utc)
-        time_format = f"<t:{utcnow.timestamp()}:f>"
+        time_format = f"<t:{int(utcnow.timestamp())}:f>"
 
         connect_msg = (
             f"Logged in at {time_format}!"

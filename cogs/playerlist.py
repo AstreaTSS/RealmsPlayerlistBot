@@ -139,9 +139,9 @@ class Playerlist(commands.Cog):
 
                 to_run.append(self.auto_run_playerlist(list_cmd, guild_config))
 
-            # this gather is done so that they can all run in parallel
-            # should make things slightly faster for everyone
-            await asyncio.gather(*to_run)
+        # this gather is done so that they can all run in parallel
+        # should make things slightly faster for everyone
+        await asyncio.gather(*to_run)
 
     @playerlist_loop.error
     async def error_handle(self, *args):
@@ -150,19 +150,20 @@ class Playerlist(commands.Cog):
 
     async def get_gamertags(
         self, profile: profile.ProfileProvider, list_xuids
-    ) -> ProfileResponse:
+    ) -> typing.Tuple[ProfileResponse, typing.List[str]]:
 
         profile_resp = await profile.get_profiles(list_xuids)
+        profile_json = await profile_resp.json()
 
-        if profile_resp.get("code"):
-            description = profile_resp["description"]
+        if profile_json.get("code"):
+            description = profile_json["description"]
             desc_split = description.split(" ")
             list_xuids.remove(desc_split[1])
 
             profiles, list_xuids = await self.get_gamertags(profile, list_xuids)
             return profiles, list_xuids
 
-        elif profile_resp.get("limitType"):
+        elif profile_json.get("limitType"):
             await asyncio.sleep(15)
             profiles, list_xuids = await self.get_gamertags(profile, list_xuids)
             return profiles, list_xuids
@@ -219,7 +220,7 @@ class Playerlist(commands.Cog):
             limited = bool(kwargs.get("limited"))  # because python is weird
 
             if limited:
-                time_delta = datetime.timedelta(hours=1)
+                time_delta = datetime.timedelta(hours=2)
             else:
                 time_delta = datetime.timedelta(days=1)
             time_ago = now - time_delta
@@ -261,7 +262,7 @@ class Playerlist(commands.Cog):
                 if player.resolved:
                     player_list.append(player)
                 else:
-                    unresolved_dict(player)
+                    unresolved_dict[member["xuid"]] = player
 
             if unresolved_dict:
                 client_profile = self.bot.profile
@@ -269,7 +270,7 @@ class Playerlist(commands.Cog):
                 profiles = await self.get_gamertags(
                     client_profile, list(unresolved_dict.keys())
                 )
-                for user in profiles.profile_users:
+                for user in profiles[0].profile_users:
                     try:
                         gamertag = tuple(
                             s.value for s in user.settings if s.id == "Gamertag"
@@ -293,7 +294,7 @@ class Playerlist(commands.Cog):
                 len(offline_list) < 20
             ):  # if its bigger than this, we don't want to run into the chara limit
                 if limited:
-                    offline_str = "**Other people on in the last hour:**\n\n"
+                    offline_str = "**Other people on in the last two hours:**\n\n"
 
                 else:
                     offline_str = "**Other people on in the last 24 hours:**\n\n"
@@ -309,7 +310,7 @@ class Playerlist(commands.Cog):
 
                 if limited:
                     first_offline_str = (
-                        "**Other people on in the last hour:**\n\n"
+                        "**Other people on in the last two hours:**\n\n"
                         + "\n".join(chunks[0])
                     )
 
@@ -379,7 +380,7 @@ class Playerlist(commands.Cog):
                 profiles = await self.get_gamertags(
                     self.bot.profile, list(unresolved_dict.keys())
                 )
-                for user in profiles.profile_users:
+                for user in profiles[0].profile_users:
                     try:
                         gamertag = tuple(
                             s.value for s in user.settings if s.id == "Gamertag"
