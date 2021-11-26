@@ -100,11 +100,26 @@ async def can_run_online(ctx: commands.Context):
 
 class Playerlist(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: commands.Bot = bot
         self.playerlist_loop.start()
 
     def cog_unload(self):
         self.playerlist_loop.cancel()
+
+    async def auto_run_playerlist(self, list_cmd, guild_config):
+        chan = self.bot.get_channel(
+            guild_config["playerlist_chan"]
+        )  # playerlist channel
+
+        # gets the most recent message in the playerlist channel
+        # its used to fetch a specific message from there, but honestly, this method is better
+        messages = await chan.history(limit=1).flatten()
+        a_ctx = await self.bot.get_context(messages[0])
+
+        # take advantage of the fact that users cant really use kwargs for commands
+        # the two listed here silence the 'this may take a long time' message
+        # and also make it so it doesnt go back 24 hours, instead only going one
+        await a_ctx.invoke(list_cmd, no_init_mes=True, limited=True)
 
     @tasks.loop(hours=1)
     async def playerlist_loop(self):
@@ -112,26 +127,21 @@ class Playerlist(commands.Cog):
         Or, at least, in every server that's listed in the config. See `config.json` for that.
         See `cogs.config_fetch` for how the bot gets the config from that file."""
 
+        list_cmd = self.bot.get_command("playerlist")
+        to_run = []
+
         for guild_id in self.bot.config.keys():
             guild_config = self.bot.config[guild_id]
 
             if (
                 guild_config["club_id"] != "None"
-            ):  # probably could have done a null value, but old code go brr
-                chan = self.bot.get_channel(
-                    guild_config["playerlist_chan"]
-                )  # playerlist channel
-                list_cmd = self.bot.get_command("playerlist")
+            ):  # probably could have done a null value, but old code is a thing
 
-                # gets the most recent message in the playerlist channel
-                # it used to fetch a specific message from there, but honestly, this method is better
-                messages = await chan.history(limit=1).flatten()
-                a_ctx = await self.bot.get_context(messages[0])
+                to_run.append(self.auto_run_playerlist(list_cmd, guild_config))
 
-                # take advantage of the fact that users cant really use kwargs for commands
-                # the two listed here silence the 'this may take a long time' message
-                # and also make it so it doesnt go back 24 hours, instead only going two
-                await a_ctx.invoke(list_cmd, no_init_mes=True, limited=True)
+            # this gather is done so that they can all run in parallel
+            # should make things slightly faster for everyone
+            await asyncio.gather(*to_run)
 
     @playerlist_loop.error
     async def error_handle(self, *args):
@@ -167,7 +177,7 @@ class Playerlist(commands.Cog):
             "Accept-Language": "en-US",
         }
         async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(f"https://xbl.io/api/v2/clubs/" + club_id) as r:
+            async with session.get(f"https://xbl.io/api/v2/clubs/{club_id}") as r:
                 resp_json = await r.json()
 
                 try:
@@ -209,7 +219,7 @@ class Playerlist(commands.Cog):
             limited = bool(kwargs.get("limited"))  # because python is weird
 
             if limited:
-                time_delta = datetime.timedelta(hours=2)
+                time_delta = datetime.timedelta(hours=1)
             else:
                 time_delta = datetime.timedelta(days=1)
             time_ago = now - time_delta
@@ -217,8 +227,8 @@ class Playerlist(commands.Cog):
             # some initialization stuff
             player_list: typing.List[Player] = []  # hard to explain, you'll see
             unresolved_dict: typing.Dict[str, Player] = {}
-            online_list: typing.List[Player] = []  # stores currently on realm users
-            offline_list: typing.List[Player] = []  # stores recently online users
+            online_list: typing.List[str] = []  # stores currently on realm users
+            offline_list: typing.List[str] = []  # stores recently online users
             club_presence = await self.realm_club_get(guild_config["club_id"])
 
             if club_presence is None:
@@ -283,7 +293,7 @@ class Playerlist(commands.Cog):
                 len(offline_list) < 20
             ):  # if its bigger than this, we don't want to run into the chara limit
                 if limited:
-                    offline_str = "**Other people on in the last 2 hours:**\n\n"
+                    offline_str = "**Other people on in the last hour:**\n\n"
 
                 else:
                     offline_str = "**Other people on in the last 24 hours:**\n\n"
@@ -299,7 +309,7 @@ class Playerlist(commands.Cog):
 
                 if limited:
                     first_offline_str = (
-                        "**Other people on in the last 2 hours:**\n\n"
+                        "**Other people on in the last hour:**\n\n"
                         + "\n".join(chunks[0])
                     )
 
