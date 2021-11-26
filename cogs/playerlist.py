@@ -141,7 +141,13 @@ class Playerlist(commands.Cog):
 
         # this gather is done so that they can all run in parallel
         # should make things slightly faster for everyone
-        await asyncio.gather(*to_run)
+        output = await asyncio.gather(*to_run, return_exceptions=True)
+
+        # all of this to send errors to the bot owner/me without
+        # stopping this entirely
+        for message in output:
+            if isinstance(message, Exception):
+                await utils.error_handle(self.bot, message)
 
     @playerlist_loop.error
     async def error_handle(self, *args):
@@ -158,6 +164,8 @@ class Playerlist(commands.Cog):
         if profile_json.get("code"):
             description = profile_json["description"]
             desc_split = description.split(" ")
+
+            await utils.msg_to_owner(self.bot, description)
             list_xuids.remove(desc_split[1])
 
             profiles, list_xuids = await self.get_gamertags(profile, list_xuids)
