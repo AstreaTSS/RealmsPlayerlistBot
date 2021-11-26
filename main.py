@@ -103,13 +103,13 @@ class RealmsPlusBot(commands.Bot):
         self._checks.append(global_checks)
 
     async def on_ready(self):
-        utcnow = datetime.datetime.utcnow()
-        time_format = utcnow.strftime("%x %X UTC")
+        utcnow = datetime.datetime.now(tz=datetime.timezone.utc)
+        time_format = f"<t:{utcnow.timestamp()}:f>"
 
         connect_msg = (
-            f"Logged in at `{time_format}`!"
+            f"Logged in at {time_format}!"
             if self.init_load == True
-            else f"Reconnected at `{time_format}`!"
+            else f"Reconnected at {time_format}!"
         )
 
         while (
