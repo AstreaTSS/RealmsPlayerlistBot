@@ -176,7 +176,7 @@ class Playerlist(commands.Cog):
             profiles, list_xuids = await self.get_gamertags(profile, list_xuids)
             return profiles, list_xuids
 
-        profiles = ProfileResponse.parse_raw(await profile_resp.text())
+        profiles = ProfileResponse.parse_obj(profile_json)
         return profiles, list_xuids
 
     async def realm_club_get(self, club_id):
