@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.discordapp.com/attachments/775932004985208853/846987950058635274/BedrockRealmBotBanner.png" alt="Seraphim's Logo" width="700"/>
+  <img src="https://cdn.discordapp.com/attachments/775932004985208853/846987950058635274/BedrockRealmBotBanner.png" alt="Realm Plus Bot's Banner" width="700"/>
 </p>
 
 A bot that helps out owners of Minecraft: Bedrock Edition Realms, otherwise known as Realm Plus Realms.
@@ -10,9 +10,9 @@ More features are planned to be added eventually.
 
 If you wish to add this bot, join the Support Server and talk to me (Astrea) - I'll talk about how to set it up and all, since it isn't simple.
 
-Environmental vars: `MAIN_TOKEN`, `DIRECTORY_OF_FILE`, `LOG_FILE_PATH`, `OPENXBL_KEY`, `CONFIG_URL`, `BOT_COLOR`, `CLIENT_ID`, `CLIENT_SECRET`, `XAPI_TOKENS`, `JISHAKU_NO_UNDERSCORE=true` (last one is optional but recommended)
+Environmental vars: `MAIN_TOKEN`, `DIRECTORY_OF_FILE`, `LOG_FILE_PATH`, `OPENXBL_KEY`, `CONFIG_URL`, `BOT_COLOR`, `CLIENT_ID`, `CLIENT_SECRET`, `XAPI_TOKENS`, `CLIENT_ID`, `CLIENT_SECRET`, `XAPI_TOKENS`, `JISHAKU_NO_UNDERSCORE=true` (last one is optional but recommended)
 
 Links:
 
 * [Join Support Server](https://discord.gg/NSdetwGjpK)
-* [![Run on Repl.it](https://repl.it/badge/github/Se/GenericRealmBot)](https://repl.it/github/Sonic4999/GenericRealmBot)
+* [![Run on Repl.it](https://repl.it/badge/github/Se/GenericRealmBot)](https://repl.it/github/Astrea49/GenericRealmBot)
