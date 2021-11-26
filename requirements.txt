@@ -1,5 +1,5 @@
 discord.py==1.7.3
-humanize==3.11.0
+humanize==3.12.0
 jishaku==2.3.2
 python-dotenv==0.19.2
 websockets==10.1
