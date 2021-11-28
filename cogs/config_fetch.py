@@ -38,9 +38,10 @@ class FetchConfigFile(commands.Cog):
         #   }
         # }
         document_url = os.environ.get("CONFIG_URL")
+        headers = {"Cache-Control": "no-cache", "Pragma": "no-cache"}
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(document_url) as resp:
+            async with session.get(document_url, headers=headers) as resp:
                 self.bot.config = await resp.json(content_type="text/plain")
 
     @fetch_document.error
