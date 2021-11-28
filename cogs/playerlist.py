@@ -162,15 +162,15 @@ class Playerlist(commands.Cog):
         profile_json = await profile_resp.json()
 
         if profile_json.get("code"):
-            description = profile_json["description"]
-            desc_split = description.split(" ")
-
-            await utils.msg_to_owner(self.bot, description)
-            list_xuids.remove(desc_split[1])
+            description: str = profile_json["description"]
+            if description.startswith("Throttled"):
+                await asyncio.sleep(5)
+            else:
+                desc_split = description.split(" ")
+                list_xuids.remove(desc_split[1])
 
             profiles, list_xuids = await self.get_gamertags(profile, list_xuids)
             return profiles, list_xuids
-
         elif profile_json.get("limitType"):
             await asyncio.sleep(15)
             profiles, list_xuids = await self.get_gamertags(profile, list_xuids)
@@ -302,10 +302,10 @@ class Playerlist(commands.Cog):
                 len(offline_list) < 20
             ):  # if its bigger than this, we don't want to run into the chara limit
                 if limited:
-                    offline_str = "**Other people on in the last two hours:**\n\n"
+                    offline_str = "**People on in the last 2 hours:**\n\n"
 
                 else:
-                    offline_str = "**Other people on in the last 24 hours:**\n\n"
+                    offline_str = "**People on in the last 24 hours:**\n\n"
                 offline_str += "\n".join(offline_list)
                 await ctx.send(offline_str)
             else:
@@ -318,14 +318,12 @@ class Playerlist(commands.Cog):
 
                 if limited:
                     first_offline_str = (
-                        "**Other people on in the last two hours:**\n\n"
-                        + "\n".join(chunks[0])
+                        "**People on in the last 2 hours:**\n\n" + "\n".join(chunks[0])
                     )
 
                 else:
                     first_offline_str = (
-                        "**Other people on in the last 24 hours:**\n\n"
-                        + "\n".join(chunks[0])
+                        "**People on in the last 24 hours:**\n\n" + "\n".join(chunks[0])
                     )
                 await ctx.send(first_offline_str)
 
