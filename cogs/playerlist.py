@@ -101,58 +101,9 @@ async def can_run_online(ctx: commands.Context):
 class Playerlist(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
-        self.playerlist_loop.start()
-
-    def cog_unload(self):
-        self.playerlist_loop.cancel()
-
-    async def auto_run_playerlist(self, list_cmd, guild_config):
-        chan = self.bot.get_channel(
-            guild_config["playerlist_chan"]
-        )  # playerlist channel
-
-        # gets the most recent message in the playerlist channel
-        # its used to fetch a specific message from there, but honestly, this method is better
-        messages = await chan.history(limit=1).flatten()
-        a_ctx = await self.bot.get_context(messages[0])
-
-        # take advantage of the fact that users cant really use kwargs for commands
-        # the two listed here silence the 'this may take a long time' message
-        # and also make it so it doesnt go back 24 hours, instead only going one
-        await a_ctx.invoke(list_cmd, no_init_mes=True, limited=True)
-
-    @tasks.loop(hours=1)
-    async def playerlist_loop(self):
-        """A simple way of running the playerlist command every hour in every server the bot is in.
-        Or, at least, in every server that's listed in the config. See `config.json` for that.
-        See `cogs.config_fetch` for how the bot gets the config from that file."""
-
-        list_cmd = self.bot.get_command("playerlist")
-        to_run = []
-
-        for guild_id in self.bot.config.keys():
-            guild_config = self.bot.config[guild_id]
-
-            if (
-                guild_config["club_id"] != "None"
-            ):  # probably could have done a null value, but old code is a thing
-
-                to_run.append(self.auto_run_playerlist(list_cmd, guild_config))
-
-        # this gather is done so that they can all run in parallel
-        # should make things slightly faster for everyone
-        output = await asyncio.gather(*to_run, return_exceptions=True)
-
-        # all of this to send errors to the bot owner/me without
-        # stopping this entirely
-        for message in output:
-            if isinstance(message, Exception):
-                await utils.error_handle(self.bot, message)
-
-    @playerlist_loop.error
-    async def error_handle(self, *args):
-        error = args[-1]
-        await utils.error_handle(self.bot, error)
+        self.sem = asyncio.Semaphore(
+            3
+        )  # prevents bot from overloading xbox api, hopefully
 
     async def get_gamertags(
         self, profile: profile.ProfileProvider, list_xuids
@@ -282,11 +233,11 @@ class Playerlist(commands.Cog):
                     unresolved_dict[member["xuid"]] = player
 
             if unresolved_dict:
-                client_profile = self.bot.profile
+                async with self.sem:
+                    profiles = await self.get_gamertags(
+                        self.bot.profile, list(unresolved_dict.keys())
+                    )
 
-                profiles = await self.get_gamertags(
-                    client_profile, list(unresolved_dict.keys())
-                )
                 for user in profiles[0].profile_users:
                     try:
                         gamertag = tuple(
@@ -392,9 +343,11 @@ class Playerlist(commands.Cog):
                     unresolved_dict[player.xuid] = player
 
             if unresolved_dict:
-                profiles = await self.get_gamertags(
-                    self.bot.profile, list(unresolved_dict.keys())
-                )
+                async with self.sem:
+                    profiles = await self.get_gamertags(
+                        self.bot.profile, list(unresolved_dict.keys())
+                    )
+
                 for user in profiles[0].profile_users:
                     try:
                         gamertag = tuple(
