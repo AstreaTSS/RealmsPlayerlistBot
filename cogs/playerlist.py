@@ -187,7 +187,16 @@ class Playerlist(commands.Cog):
         }
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(f"https://xbl.io/api/v2/clubs/{club_id}") as r:
-                resp_json = await r.json()
+
+                try:
+                    resp_json = await r.json()
+                except aiohttp.ContentTypeError:
+                    # who knows
+                    resp = await r.text()
+                    await utils.msg_to_owner(self.bot, resp)
+                    await utils.msg_to_owner(self.bot, r.headers)
+                    await utils.msg_to_owner(self.bot, r.status)
+                    return None
 
                 try:
                     # again, the xbox live api gives every response as a list
@@ -196,7 +205,7 @@ class Playerlist(commands.Cog):
                     # not the other stuff
                     return resp_json["clubs"][0]["clubPresence"]
                 except KeyError or TypeError:
-                    # who knows
+                    # who knows x2
                     await utils.msg_to_owner(self.bot, resp_json)
                     await utils.msg_to_owner(self.bot, r.headers)
                     await utils.msg_to_owner(self.bot, r.status)
