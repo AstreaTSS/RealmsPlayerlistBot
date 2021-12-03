@@ -17,7 +17,7 @@ It looks something like this:
   <i>Replace the censored space with gamertags and you get the general gist of it.</i>
 </p>
 
-The list automatically runs/gets generated in a channel every hour, giving a useful hourly view of who all was on wt what time, though there *is* also a command you can run to get who all was on in the last 24 hours.
+The list automatically runs/gets generated in a channel every hour, giving a useful hourly view of who all was on at what time, though there *is* also a command you can run to get who all was on in the last 24 hours.
 
 The command can normally only be run by people with Manage Server permissions and is not meant to be seen by normal people - there *is* a command that can be run by everyone that allows you to view everyone currently online. Ask Astrea about that when adding the bot if you want it, since it is optional.
 
