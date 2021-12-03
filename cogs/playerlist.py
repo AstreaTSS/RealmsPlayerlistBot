@@ -201,7 +201,7 @@ class Playerlist(commands.Cog):
     @commands.command(aliases=["player_list", "get_playerlist", "get_player_list"])
     @utils.proper_permissions()
     @commands.check(can_run_playerlist)
-    @commands.cooldown(1, 240, commands.BucketType.default)
+    @commands.cooldown(1, 240, commands.BucketType.guild)
     async def playerlist(
         self,
         ctx: commands.Context,
