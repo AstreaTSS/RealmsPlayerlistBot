@@ -4,9 +4,9 @@ import logging
 import os
 
 import aiohttp
-import discord
-from discord.ext import commands
+import nextcord
 from dotenv import load_dotenv
+from nextcord.ext import commands
 from websockets import ConnectionClosedOK
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
@@ -21,7 +21,7 @@ from common.profile_custom import ProfileProvider
 # load_dotenv()
 os.system("git pull")  # stupid way of getting around replit stuff
 
-logger = logging.getLogger("discord")
+logger = logging.getLogger("nextcord")
 logger.setLevel(logging.INFO)
 handler = logging.FileHandler(
     filename=os.environ.get("LOG_FILE_PATH"), encoding="utf-8", mode="a"
@@ -32,7 +32,7 @@ handler.setFormatter(
 logger.addHandler(handler)
 
 
-async def realms_plus_prefixes(bot: commands.Bot, msg: discord.Message):
+async def realms_plus_prefixes(bot: commands.Bot, msg: nextcord.Message):
     mention_prefixes = {f"{bot.user.mention} ", f"<@!{bot.user.id}> "}
     custom_prefixes = {"!?"}
     return mention_prefixes.union(custom_prefixes)
@@ -104,8 +104,8 @@ class RealmsPlusBot(commands.Bot):
         self._checks.append(global_checks)
 
     async def on_ready(self):
-        utcnow = datetime.datetime.now(tz=datetime.timezone.utc)
-        time_format = f"<t:{int(utcnow.timestamp())}:f>"
+        utcnow = nextcord.utils.utcnow()
+        time_format = nextcord.utils.format_dt(utcnow)
 
         connect_msg = (
             f"Logged in at {time_format}!"
@@ -124,8 +124,8 @@ class RealmsPlusBot(commands.Bot):
 
         self.init_load = False
 
-        activity = discord.Activity(
-            name="over some Realms Plus realms", type=discord.ActivityType.watching
+        activity = nextcord.Activity(
+            name="over some Realms Plus realms", type=nextcord.ActivityType.watching
         )
 
         try:
@@ -134,8 +134,8 @@ class RealmsPlusBot(commands.Bot):
             await utils.msg_to_owner(self, "Reconnecting...")
 
     async def on_resumed(self):
-        activity = discord.Activity(
-            name="over some Realms Plus realms", type=discord.ActivityType.watching
+        activity = nextcord.Activity(
+            name="over some Realms Plus realms", type=nextcord.ActivityType.watching
         )
         await self.change_presence(activity=activity)
 
@@ -160,15 +160,15 @@ class RealmsPlusBot(commands.Bot):
         return await super().close()
 
 
-intents = discord.Intents.all()
-mentions = discord.AllowedMentions.all()
+intents = nextcord.Intents.all()
+mentions = nextcord.AllowedMentions.all()
 
 bot = RealmsPlusBot(
     command_prefix=realms_plus_prefixes, allowed_mentions=mentions, intents=intents,
 )
 
 bot.init_load = True
-bot.color = discord.Color(int(os.environ.get("BOT_COLOR")))  # 8ac249, aka 9093705
+bot.color = nextcord.Color(int(os.environ.get("BOT_COLOR")))  # 8ac249, aka 9093705
 bot.config = {}
 bot.gamertags = {}
 bot.pastebins = {}

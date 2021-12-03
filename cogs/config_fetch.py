@@ -2,8 +2,8 @@ import importlib
 import os
 
 import aiohttp
-from discord.ext import commands
-from discord.ext import tasks
+from nextcord.ext import commands
+from nextcord.ext import tasks
 
 import common.utils as utils
 

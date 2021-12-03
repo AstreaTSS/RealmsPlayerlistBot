@@ -5,8 +5,8 @@ import traceback
 from pathlib import Path
 
 import aiohttp
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 
 
 def proper_permissions():
@@ -69,7 +69,7 @@ def line_split(content: str, split_by=20):
     ]
 
 
-def embed_check(embed: discord.Embed) -> bool:
+def embed_check(embed: nextcord.Embed) -> bool:
     """Checks if an embed is valid, as per Discord's guidelines.
     See https://discord.com/developers/docs/resources/channel#embed-limits for details."""
     if len(embed) > 6000:
@@ -77,7 +77,7 @@ def embed_check(embed: discord.Embed) -> bool:
 
     if embed.title and len(embed.title) > 256:
         return False
-    if embed.description and len(embed.description) > 2048:
+    if embed.description and len(embed.description) > 4096:
         return False
     if embed.author and embed.author.name and len(embed.author.name) > 256:
         return False
@@ -97,7 +97,7 @@ def embed_check(embed: discord.Embed) -> bool:
 
 def deny_mentions(user):
     # generates an AllowedMentions object that only pings the user specified
-    return discord.AllowedMentions(everyone=False, users=[user], roles=False)
+    return nextcord.AllowedMentions(everyone=False, users=[user], roles=False)
 
 
 def error_format(error):

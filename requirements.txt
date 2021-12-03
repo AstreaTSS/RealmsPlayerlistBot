@@ -1,4 +1,4 @@
-discord.py==1.7.3
+git+https://github.com/nextcord/nextcord.git@9aaca1e70b932ce07b090af7f969062f88d3dd81
 humanize==3.13.1
 jishaku==2.3.2
 python-dotenv==0.19.2

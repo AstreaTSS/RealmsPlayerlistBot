@@ -1,25 +1,24 @@
 import asyncio
 import itertools
 
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 
 import common.paginator as paginator
 
 # most of this code has been copied from https://github.com/Rapptz/RoboDanny
-# or, at least, was copied over
-# ill look over commit histories one day to find out where is this from
 
 
 class HelpPaginator(paginator.Pages):
-    def __init__(self, help_command, ctx, entries, *, per_page=4):
+    def __init__(self, help_command, ctx: commands.Context, entries, *, per_page=4):
         super().__init__(ctx, entries=entries, per_page=per_page)
-        self.reaction_emojis.append(
-            ("\N{WHITE QUESTION MARK ORNAMENT}", self.show_bot_help)
-        )
+        self.reaction_emojis.append(paginator.ReactionEmoji("❔", 1, self.show_bot_help))
+        self.reaction_emojis[6] = paginator.ReactionEmoji(
+            "ℹ️", 1, self.show_help
+        )  # would use paginators version instead
         self.total = len(entries)
         self.help_command = help_command
-        self.prefix = help_command.clean_prefix
+        self.prefix = ctx.clean_prefix
         self.is_bot = False
 
     def get_bot_page(self, page):
@@ -52,13 +51,16 @@ class HelpPaginator(paginator.Pages):
                 name=f"Page {page}/{self.maximum_pages} ({self.total} commands)"
             )
 
-    async def show_help(self):
+    async def show_help(self, inter: nextcord.Interaction):
         """shows this message"""
 
         self.embed.title = "Paginator help"
         self.embed.description = "Hello! Welcome to the help page."
 
-        messages = [f"{emoji} {func.__doc__}" for emoji, func in self.reaction_emojis]
+        messages = [
+            f"{reaction.emoji} {reaction.function.__doc__}"
+            for reaction in self.reaction_emojis
+        ]
         self.embed.clear_fields()
         self.embed.add_field(
             name="What are these reactions for?",
@@ -69,15 +71,15 @@ class HelpPaginator(paginator.Pages):
         self.embed.set_footer(
             text=f"We were on page {self.current_page} before this message."
         )
-        await self.message.edit(embed=self.embed)
+        await inter.response.edit_message(embed=self.embed)
 
         async def go_back_to_current_page():
             await asyncio.sleep(30.0)
-            await self.show_current_page()
+            await self.show_current_page(inter)
 
         self.bot.loop.create_task(go_back_to_current_page())
 
-    async def show_bot_help(self):
+    async def show_bot_help(self, inter: nextcord.Interaction):
         """shows how to use the bot"""
 
         self.embed.title = "Using the bot"
@@ -107,11 +109,11 @@ class HelpPaginator(paginator.Pages):
         self.embed.set_footer(
             text=f"We were on page {self.current_page} before this message."
         )
-        await self.message.edit(embed=self.embed)
+        await inter.response.edit_message(embed=self.embed)
 
         async def go_back_to_current_page():
             await asyncio.sleep(30.0)
-            await self.show_current_page()
+            await self.show_current_page(inter)
 
         self.bot.loop.create_task(go_back_to_current_page())
 
@@ -120,7 +122,9 @@ class PaginatedHelpCommand(commands.HelpCommand):
     def __init__(self):
         super().__init__(
             command_attrs={
-                "cooldown": commands.Cooldown(1, 3.0, commands.BucketType.member),
+                "cooldown": commands.CooldownMapping.from_cooldown(
+                    1, 3.0, type=commands.BucketType.member
+                ),
                 "help": "Shows help about the bot, a command, or a category",
             }
         )
@@ -169,7 +173,9 @@ class PaginatedHelpCommand(commands.HelpCommand):
             total += len(commands)
             actual_cog = bot.get_cog(cog)
             # get the description if it exists (and the cog is valid) or return Empty embed.
-            description = (actual_cog and actual_cog.description) or discord.Embed.Empty
+            description = (
+                actual_cog and actual_cog.description
+            ) or nextcord.Embed.Empty
             nested_pages.extend(
                 (cog, description, commands[i : i + per_page])
                 for i in range(0, len(commands), per_page)
@@ -203,7 +209,7 @@ class PaginatedHelpCommand(commands.HelpCommand):
 
     async def send_command_help(self, command):
         # No pagination necessary for a single command.
-        embed = discord.Embed(colour=self.context.bot.color)
+        embed = nextcord.Embed(colour=self.context.bot.color)
         self.common_command_formatting(embed, command)
         await self.context.reply(embed=embed)
 

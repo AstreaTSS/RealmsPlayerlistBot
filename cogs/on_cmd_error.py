@@ -2,19 +2,19 @@
 import datetime
 import importlib
 
-import discord
 import humanize
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 
 import common.utils as utils
 
 
 class OnCMDError(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: commands.Bot = bot
 
     def error_embed_generate(self, error_msg):
-        return discord.Embed(colour=discord.Colour.red(), description=error_msg)
+        return nextcord.Embed(colour=nextcord.Colour.red(), description=error_msg)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
@@ -23,9 +23,17 @@ class OnCMDError(commands.Cog):
             return
 
         if isinstance(error, commands.CommandInvokeError):
-            original = error.original
-            if not isinstance(original, discord.HTTPException):
-                await utils.error_handle(self.bot, error, ctx)
+            await utils.error_handle(self.bot, error, ctx)
+        elif isinstance(error, commands.DisabledCommand):
+            await ctx.reply(
+                embed=self.error_embed_generate(
+                    (
+                        f"{error}. This was most likely due to "
+                        + "it being buggy or broken in some way - please wait for it to be re-enabled."
+                    )
+                )
+            )
+
         elif isinstance(error, commands.TooManyArguments):
             await ctx.reply(
                 embed=self.error_embed_generate(

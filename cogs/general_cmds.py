@@ -5,18 +5,18 @@ import os
 import time
 
 import aiohttp
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 
 import common.utils as utils
 
 
 class GeneralCMDS(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: commands.Bot = bot
 
     async def pastebin_cache(self, season):
-        current_time = datetime.datetime.utcnow()
+        current_time = nextcord.utils.utcnow()
 
         if self.bot.pastebins.get(season):
             entry = self.bot.pastebins[season]
@@ -79,7 +79,7 @@ class GeneralCMDS(commands.Cog):
             or the like, then you would put what you would put in X, if that makes sense.
         Might not be fully accurate, as the bot does a tiny bit of caching here and there."""
         guild_entry = self.bot.config[str(ctx.guild.id)]
-        season_x_role = discord.utils.get(
+        season_x_role = nextcord.utils.get(
             ctx.guild.roles, name=guild_entry["season_role"].replace("X", season)
         )
 
@@ -89,10 +89,11 @@ class GeneralCMDS(commands.Cog):
             cache = await self.pastebin_cache(season)
             if not cache:
                 list_of_people = [
-                    f"{member.display_name} || {str(member)} || {member.id}"
+                    f"{member.display_name} || {member} || {member.id}"
                     for member in ctx.guild.members
                     if member._roles.has(season_x_role.id)
                 ]
+
                 count = len(list_of_people)
 
                 title = f"Query about people that have the {season_x_role.name} role:"
@@ -100,7 +101,7 @@ class GeneralCMDS(commands.Cog):
                 url = await self.post_paste(title, str_of_people)
 
                 self.bot.pastebins[season] = {
-                    "time": datetime.datetime.utcnow(),
+                    "time": nextcord.utils.utcnow(),
                     "url": url,
                     "count": count,
                 }
@@ -108,7 +109,7 @@ class GeneralCMDS(commands.Cog):
             else:
                 url = cache["url"]
                 count = cache["count"]
-            stats_embed = discord.Embed(
+            stats_embed = nextcord.Embed(
                 title=f"There are {count} people that have the {season_x_role.name} role.",
                 colour=ctx.bot.color,
                 description=f"List of members: {url}",
@@ -116,7 +117,9 @@ class GeneralCMDS(commands.Cog):
 
             stats_embed.set_author(
                 name=f"{ctx.guild.me.display_name}",
-                icon_url=str(ctx.guild.me.avatar_url_as(format="jpg", size=128)),
+                icon_url=str(
+                    ctx.guild.me.display_avatar.replace(format="jpg", size=128)
+                ),
             )
 
             await ctx.send(embed=stats_embed)

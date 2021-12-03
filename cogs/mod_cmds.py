@@ -6,8 +6,8 @@ import typing
 import urllib.parse
 
 import aiohttp
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 
 import common.utils as utils
 
@@ -73,7 +73,7 @@ class ModCMDS(commands.Cog):
                     int(message_id)
                 )
                 timestamp = ori_mess.created_at.timestamp()
-            except discord.NotFound:
+            except nextcord.NotFound:
                 await ctx.send(
                     "Invalid message ID! Make sure the message is in the announcements channel for this server."
                 )
@@ -81,7 +81,7 @@ class ModCMDS(commands.Cog):
 
         guild_members = ctx.guild.members
 
-        season_x_role = discord.utils.get(
+        season_x_role = nextcord.utils.get(
             ctx.guild.roles, name=guild_entry["season_role"].replace("X", season)
         )
         if season_x_role is None:

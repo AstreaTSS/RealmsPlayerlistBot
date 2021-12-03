@@ -1,9 +1,62 @@
 import asyncio
+import typing
+import uuid
 
-import discord
-from discord.ext.commands import Paginator as CommandPaginator
+import attr
+import nextcord
+from nextcord.ext import commands
+from nextcord.ext.commands import Paginator as CommandPaginator
 
 # most of this code has been copied from https://github.com/Rapptz/RoboDanny
+
+
+def gen_uuid():
+    return str(uuid.uuid4())
+
+
+@attr.s()
+class ReactionEmoji:
+    """An easy to use wrapper around reactions."""
+
+    emoji: str
+    row: int
+    function: typing.Callable
+    uuid: str = attr.ib(factory=gen_uuid)
+
+    def to_button(self):
+        button = nextcord.ui.Button(
+            style=nextcord.ButtonStyle.primary,
+            emoji=self.emoji,
+            custom_id=self.uuid,
+            row=self.row,
+        )
+        button.callback = self.function  # very dirty
+        return button
+
+
+def generate_view(
+    emojis: typing.List[ReactionEmoji],
+    author: typing.Union[nextcord.Member, nextcord.User],
+):
+    class PaginatorView(nextcord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=120)
+
+        async def interaction_check(self, interaction: nextcord.Interaction) -> bool:
+            return interaction.user.id == author.id
+
+        async def on_timeout(self):
+            try:
+                self.stop()
+            except TypeError:
+                pass  # ??????
+
+    view = PaginatorView()
+
+    for emoji in emojis:
+        view.add_item(emoji.to_button())
+
+    return view
 
 
 class CannotPaginate(Exception):
@@ -28,15 +81,17 @@ class Pages:
         Whether to show an entry count in the footer.
     Attributes
     -----------
-    embed: discord.Embed
+    embed: nextcord.Embed
         The embed object that is being used to send pagination info.
         Feel free to modify this externally. Only the description,
         footer fields, and colour are internally modified.
-    permissions: discord.Permissions
+    permissions: nextcord.Permissions
         Our permissions for the channel.
     """
 
-    def __init__(self, ctx, *, entries, per_page=12, show_entry_count=True):
+    def __init__(
+        self, ctx: commands.Context, *, entries, per_page=12, show_entry_count=True
+    ):
         self.bot = ctx.bot
         self.context = ctx
         self.entries = entries
@@ -48,23 +103,17 @@ class Pages:
         if left_over:
             pages += 1
         self.maximum_pages = pages
-        self.embed = discord.Embed(colour=ctx.bot.color)
+        self.embed = nextcord.Embed(colour=ctx.bot.color)
         self.paginating = len(entries) > per_page
         self.show_entry_count = show_entry_count
         self.reaction_emojis = [
-            (
-                "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}",
-                self.first_page,
-            ),
-            ("\N{BLACK LEFT-POINTING TRIANGLE}", self.previous_page),
-            ("\N{BLACK RIGHT-POINTING TRIANGLE}", self.next_page),
-            (
-                "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}",
-                self.last_page,
-            ),
-            ("\N{INPUT SYMBOL FOR NUMBERS}", self.numbered_page),
-            ("\N{BLACK SQUARE FOR STOP}", self.stop_pages),
-            ("\N{INFORMATION SOURCE}", self.show_help),
+            ReactionEmoji("⏮️", 0, self.first_page),
+            ReactionEmoji("◀️", 0, self.previous_page),
+            ReactionEmoji("▶️", 0, self.next_page),
+            ReactionEmoji("⏭️", 0, self.last_page),
+            ReactionEmoji("🔢", 1, self.numbered_page),
+            ReactionEmoji("⏹️", 1, self.stop_pages),
+            ReactionEmoji("ℹ️", 1, self.show_help),
         ]
 
         if ctx.guild is not None:
@@ -115,11 +164,13 @@ class Pages:
 
         if self.paginating and first:
             p.append("")
-            p.append("Confused? React with \N{INFORMATION SOURCE} for more info.")
+            p.append("Confused? Use the \N{INFORMATION SOURCE} button for more info.")
 
         self.embed.description = "\n".join(p)
 
-    async def show_page(self, page, *, first=False):
+    async def show_page(
+        self, page, *, interaction: typing.Optional[nextcord.Interaction], first=False
+    ):
         self.current_page = page
         entries = self.get_page(page)
         content = self.get_content(entries, page, first=first)
@@ -129,44 +180,39 @@ class Pages:
             return await self.context.reply(content=content, embed=embed)
 
         if not first:
-            await self.message.edit(content=content, embed=embed)
-            return
+            return await interaction.response.edit_message(content=content, embed=embed)
 
-        self.message = await self.context.reply(content=content, embed=embed)
-        for (reaction, _) in self.reaction_emojis:
-            if self.maximum_pages == 2 and reaction in ("\u23ed", "\u23ee"):
-                # no |<< or >>| buttons if we only have two pages
-                # we can't forbid it if someone ends up using it but remove
-                # it from the default set
-                continue
+        self.message = await self.context.reply(
+            content=content,
+            embed=embed,
+            view=generate_view(self.reaction_emojis, self.author),
+        )
 
-            await self.message.add_reaction(reaction)
-
-    async def checked_show_page(self, page):
+    async def checked_show_page(self, page, inter: nextcord.Interaction):
         if page != 0 and page <= self.maximum_pages:
-            await self.show_page(page)
+            await self.show_page(page, interaction=inter)
 
-    async def first_page(self):
+    async def first_page(self, inter: nextcord.Interaction):
         """goes to the first page"""
-        await self.show_page(1)
+        await self.show_page(1, interaction=inter)
 
-    async def last_page(self):
+    async def last_page(self, inter: nextcord.Interaction):
         """goes to the last page"""
-        await self.show_page(self.maximum_pages)
+        await self.show_page(self.maximum_pages, interaction=inter)
 
-    async def next_page(self):
+    async def next_page(self, inter: nextcord.Interaction):
         """goes to the next page"""
-        await self.checked_show_page(self.current_page + 1)
+        await self.checked_show_page(self.current_page + 1, inter)
 
-    async def previous_page(self):
+    async def previous_page(self, inter: nextcord.Interaction):
         """goes to the previous page"""
-        await self.checked_show_page(self.current_page - 1)
+        await self.checked_show_page(self.current_page - 1, inter)
 
-    async def show_current_page(self):
+    async def show_current_page(self, inter: nextcord.Interaction):
         if self.paginating:
-            await self.show_page(self.current_page)
+            await self.show_page(self.current_page, interaction=inter)
 
-    async def numbered_page(self):
+    async def numbered_page(self, inter: nextcord.Interaction):
         """lets you type a page number to go to"""
         to_delete = []
         to_delete.append(await self.channel.send("What page do you want to go to?"))
@@ -187,7 +233,7 @@ class Pages:
             page = int(msg.content)
             to_delete.append(msg)
             if page != 0 and page <= self.maximum_pages:
-                await self.show_page(page)
+                await self.show_page(page, interaction=inter)
             else:
                 to_delete.append(
                     await self.channel.send(
@@ -201,7 +247,7 @@ class Pages:
         except Exception:
             pass
 
-    async def show_help(self):
+    async def show_help(self, inter: nextcord.Interaction):
         """shows this message"""
         messages = ["Welcome to the interactive paginator!\n"]
         messages.append(
@@ -209,8 +255,8 @@ class Pages:
             "reactions. They are as follows:\n"
         )
 
-        for (emoji, func) in self.reaction_emojis:
-            messages.append(f"{emoji} {func.__doc__}")
+        for reaction in self.reaction_emojis:
+            messages.append(f"{reaction.emoji} {reaction.function.__doc__}")
 
         embed = self.embed.copy()
         embed.clear_fields()
@@ -218,71 +264,33 @@ class Pages:
         embed.set_footer(
             text=f"We were on page {self.current_page} before this message."
         )
-        await self.message.edit(content=None, embed=embed)
+        await inter.response.edit_message(content=None, embed=embed)
 
         async def go_back_to_current_page():
             await asyncio.sleep(60.0)
-            await self.show_current_page()
+            await self.show_current_page(inter)
 
         self.bot.loop.create_task(go_back_to_current_page())
 
-    async def stop_pages(self):
+    async def stop_pages(self, inter: nextcord.Interaction):
         """stops the interactive pagination session"""
-        await self.message.edit(
-            content="The help command has stopped running.", embed=None
-        )
         try:
-            await self.message.clear_reactions()
+            await inter.response.edit_message(
+                content="The help command has stopped running.", embed=None, view=None,
+            )
         except:
             pass
         finally:
             self.paginating = False
 
-    def react_check(self, payload):
-        if payload.user_id != self.author.id:
-            return False
-
-        if payload.message_id != self.message.id:
-            return False
-
-        to_check = str(payload.emoji)
-        for (emoji, func) in self.reaction_emojis:
-            if to_check == emoji:
-                self.match = func
-                return True
-        return False
-
     async def paginate(self):
         """Actually paginate the entries and run the interactive loop if necessary."""
-        first_page = self.show_page(1, first=True)
+        first_page = self.show_page(1, interaction=None, first=True)
         if not self.paginating:
             await first_page
         else:
             # allow us to react to reactions right away if we're paginating
             self.bot.loop.create_task(first_page)
-
-        while self.paginating:
-            try:
-                payload = await self.bot.wait_for(
-                    "raw_reaction_add", check=self.react_check, timeout=120.0
-                )
-            except asyncio.TimeoutError:
-                self.paginating = False
-                try:
-                    await self.message.clear_reactions()
-                except:
-                    pass
-                finally:
-                    break
-
-            try:
-                await self.message.remove_reaction(
-                    payload.emoji, discord.Object(id=payload.user_id)
-                )
-            except:
-                pass  # can't remove it so don't bother doing so
-
-            await self.match()
 
 
 class FieldPages(Pages):
@@ -292,7 +300,7 @@ class FieldPages(Pages):
 
     def prepare_embed(self, entries, page, *, first=False):
         self.embed.clear_fields()
-        self.embed.description = discord.Embed.Empty
+        self.embed.description = nextcord.Embed.Empty
 
         for key, value in entries:
             self.embed.add_field(name=key, value=value, inline=False)

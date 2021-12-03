@@ -6,8 +6,8 @@ import typing
 
 import aiohttp
 import attr
-from discord.ext import commands
-from discord.ext import tasks
+import nextcord
+from nextcord.ext import commands
 from xbox.webapi.api.provider.profile.models import ProfileResponse
 
 import common.profile_custom as profile
@@ -91,7 +91,7 @@ class Player:
         if self.in_game:
             return base
         else:
-            time_format = f"<t:{int(self.last_seen.timestamp())}>"
+            time_format = nextcord.utils.format_dt(self.last_seen)
             return f"{base}: last seen {time_format}"
 
 
@@ -281,20 +281,28 @@ class Playerlist(commands.Cog):
             offline_list = [p.display for p in player_list if not p.in_game]
 
             if online_list:
-                online_str = "**People online right now:**\n\n" + "\n".join(online_list)
-                await ctx.send(online_str)
+                embed = nextcord.Embed(
+                    colour=self.bot.color,
+                    title="People online right now",
+                    description="\n".join(online_list),
+                )
+                await ctx.send(embed=embed)
 
             if offline_list:
                 if (
                     len(offline_list) < 40
                 ):  # if its bigger than this, we don't want to run into the chara limit
-                    if limited:
-                        offline_str = "**People on in the last 2 hours:**\n\n"
 
+                    embed = nextcord.Embed(
+                        colour=nextcord.Colour.lighter_gray(),
+                        description="\n".join(offline_list),
+                    )
+                    if limited:
+                        embed.title = "People on in the last 2 hours"
                     else:
-                        offline_str = "**People on in the last 24 hours:**\n\n"
-                    offline_str += "\n".join(offline_list)
-                    await ctx.send(offline_str)
+                        embed.title = "People on in the last 24 hours"
+
+                    await ctx.send(embed=embed)
                 else:
                     # gets the offline list in lines of 40
                     # basically, it's like
@@ -306,22 +314,33 @@ class Playerlist(commands.Cog):
                         for x in range(0, len(offline_list), 40)
                     ]
 
+                    embed_list = []
+
+                    first_embed = nextcord.Embed(
+                        colour=nextcord.Colour.lighter_gray(),
+                        description="\n".join(chunks[0]),
+                    )
                     if limited:
-                        first_offline_str = (
-                            "**People on in the last 2 hours:**\n\n"
-                            + "\n".join(chunks[0])
-                        )
-
+                        first_embed.title = "People on in the last 2 hours"
                     else:
-                        first_offline_str = (
-                            "**People on in the last 24 hours:**\n\n"
-                            + "\n".join(chunks[0])
-                        )
-                    await ctx.send(first_offline_str)
+                        first_embed.title = "People on in the last 24 hours"
+                    embed_list.append(first_embed)
 
-                    for chunk in chunks[1:]:
-                        offline_chunk_str = "\n".join(chunk)
-                        await ctx.send(offline_chunk_str)
+                    # bots can only send 10 embeds at a time
+                    # so split them up by... 9's because we already added one
+                    chunks = chunks[1:]
+                    chunks_by_9 = [chunks[x : x + 9] for x in range(0, len(chunks), 9)]
+
+                    for chunks in chunks_by_9:
+                        for chunk in chunks:
+                            embed = nextcord.Embed(
+                                colour=nextcord.Colour.lighter_gray(),
+                                description="\n".join(chunk),
+                            )
+                            embed_list.append(embed)
+
+                        await ctx.send(embeds=embed_list)
+                        embed_list.clear()
                         await asyncio.sleep(0.2)
 
         if not kwargs.get("no_init_mes"):
@@ -393,10 +412,12 @@ class Playerlist(commands.Cog):
         online_list = [p.display for p in player_list]
 
         if online_list:
-            online_str = f"**{len(online_list)}/10 people online:**\n\n" + "\n".join(
-                online_list
+            embed = nextcord.Embed(
+                colour=self.bot.color,
+                title=f"{len(online_list)}/10 people online",
+                description="\n".join(online_list),
             )
-            await ctx.reply(online_str)
+            await ctx.reply(embed=embed)
         else:
             raise utils.CustomCheckFailure("There's no one on the Realm right now!")
 
