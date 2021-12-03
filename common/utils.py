@@ -42,14 +42,15 @@ async def error_handle(bot, error, ctx=None):
     await msg_to_owner(bot, to_send, split)
 
     if ctx:
-        if hasattr(ctx, "reply"):
-            await ctx.reply(
-                "An internal error has occured. The bot owner has been notified."
-            )
-        else:
-            await ctx.channel.send(
-                content="An internal error has occured. The bot owner has been notified."
-            )
+        error_embed = nextcord.Embed(
+            colour=nextcord.Colour.red(),
+            description="An internal error has occured. The bot owner has been notified.\n"
+            + f"Error (for bot owner purposes): {error}",
+        )
+
+        await ctx.reply(
+            embed=error_embed, ephemeral=True,
+        )
 
 
 async def msg_to_owner(bot, content, split=True):

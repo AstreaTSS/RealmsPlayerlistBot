@@ -304,14 +304,12 @@ class Playerlist(commands.Cog):
 
                     await ctx.send(embed=embed)
                 else:
-                    # gets the offline list in lines of 40
+                    # gets the offline list in lines of 30
                     # basically, it's like
-                    # [ [list of 40 strings] [list of 40 strings] etc.]
-                    # 40 lines can equal around 1400 characters, making this under, but safe
-                    # note that in the worst case, it could be much more than 1400
+                    # [ [list of 30 strings] [list of 40 strings] etc.]
                     chunks = [
-                        offline_list[x : x + 40]
-                        for x in range(0, len(offline_list), 40)
+                        offline_list[x : x + 30]
+                        for x in range(0, len(offline_list), 30)
                     ]
 
                     embed_list = []
