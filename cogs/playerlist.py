@@ -304,15 +304,13 @@ class Playerlist(commands.Cog):
 
                     await ctx.send(embed=embed)
                 else:
-                    # gets the offline list in lines of 30
+                    # gets the offline list in lines of 40
                     # basically, it's like
-                    # [ [list of 30 strings] [list of 40 strings] etc.]
+                    # [ [list of 40 strings] [list of 40 strings] etc.]
                     chunks = [
-                        offline_list[x : x + 30]
-                        for x in range(0, len(offline_list), 30)
+                        offline_list[x : x + 40]
+                        for x in range(0, len(offline_list), 40)
                     ]
-
-                    embed_list = []
 
                     first_embed = nextcord.Embed(
                         colour=nextcord.Colour.lighter_gray(),
@@ -322,23 +320,14 @@ class Playerlist(commands.Cog):
                         first_embed.title = "People on in the last 2 hours"
                     else:
                         first_embed.title = "People on in the last 24 hours"
-                    embed_list.append(first_embed)
+                    await ctx.send(embed=first_embed)
 
-                    # bots can only send 10 embeds at a time
-                    # so split them up by... 9's because we already added one
-                    chunks = chunks[1:]
-                    chunks_by_9 = [chunks[x : x + 9] for x in range(0, len(chunks), 9)]
-
-                    for chunks in chunks_by_9:
-                        for chunk in chunks:
-                            embed = nextcord.Embed(
-                                colour=nextcord.Colour.lighter_gray(),
-                                description="\n".join(chunk),
-                            )
-                            embed_list.append(embed)
-
-                        await ctx.send(embeds=embed_list)
-                        embed_list.clear()
+                    for chunk in chunks[1:]:
+                        embed = nextcord.Embed(
+                            colour=nextcord.Colour.lighter_gray(),
+                            description="\n".join(chunk),
+                        )
+                        await ctx.send(embed=embed)
                         await asyncio.sleep(0.2)
 
         if not kwargs.get("no_init_mes"):

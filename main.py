@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import logging
 import os
 
@@ -72,7 +71,7 @@ async def on_init_load():
     xbl_client = XboxLiveClient(auth_mgr)
     bot.profile = ProfileProvider(xbl_client)
 
-    bot.load_extension("jishaku")
+    bot.load_extension("onami")
     bot.load_extension("cogs.config_fetch")
     while bot.config == {}:
         await asyncio.sleep(0.1)
