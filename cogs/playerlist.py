@@ -54,6 +54,15 @@ Good luck on your bot coding journey
 """
 
 
+class GamertagRecursionLimit(Exception):
+    def __init__(self) -> None:
+        super().__init__(
+            "Internal recursion limit reached. "
+            + "Seems like fetching the gamertags failed. Astrea "
+            + "should have the information to find out what's going on."
+        )
+
+
 @attr.s(slots=True, eq=False)
 class Player:
     xuid: str = attr.ib()
@@ -106,7 +115,7 @@ class Playerlist(commands.Cog):
         )  # prevents bot from overloading xbox api, hopefully
 
     async def get_gamertags(
-        self, profile: profile.ProfileProvider, list_xuids
+        self, profile: profile.ProfileProvider, list_xuids, limit=10,
     ) -> typing.Tuple[ProfileResponse, typing.List[str]]:
 
         profile_resp = await profile.get_profiles(list_xuids)
@@ -115,16 +124,29 @@ class Playerlist(commands.Cog):
         if profile_json.get("code"):
             description: str = profile_json["description"]
             if description.startswith("Throttled"):
+                limit -= 1
+                if limit == 0:
+                    await utils.msg_to_owner(
+                        self.bot, f"Error: ```\n{profile_json}\n```"
+                    )
+                    raise GamertagRecursionLimit()
+
                 await asyncio.sleep(5)
             else:
                 desc_split = description.split(" ")
                 list_xuids.remove(desc_split[1])
 
-            profiles, list_xuids = await self.get_gamertags(profile, list_xuids)
+            profiles, list_xuids = await self.get_gamertags(profile, list_xuids, limit)
             return profiles, list_xuids
+
         elif profile_json.get("limitType"):
+            limit -= 1
+            if limit == 0:
+                await utils.msg_to_owner(self.bot, f"Error: ```\n{profile_json}\n```")
+                raise GamertagRecursionLimit()
             await asyncio.sleep(15)
-            profiles, list_xuids = await self.get_gamertags(profile, list_xuids)
+
+            profiles, list_xuids = await self.get_gamertags(profile, list_xuids, limit)
             return profiles, list_xuids
 
         profiles = ProfileResponse.parse_obj(profile_json)
