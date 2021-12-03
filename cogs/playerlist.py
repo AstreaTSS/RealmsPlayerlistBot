@@ -257,12 +257,18 @@ class Playerlist(commands.Cog):
             if unresolved_dict:
                 xuids = list(unresolved_dict.keys())
 
-                for x in range(0, len(xuids), 25):
+                for x in range(0, len(xuids), 50):
                     # limits how many gamertags we request for at once
+                    xuids_to_get = xuids[x : x + 50]
+
                     async with self.sem:
                         profiles = await self.get_gamertags(
-                            self.bot.profile, list(xuids[x : x + 25])
+                            self.bot.profile, xuids_to_get
                         )
+
+                        if xuids[-1] != xuids_to_get[-1]:
+                            # ratelimits will complain otherwise
+                            await asyncio.sleep(15)
 
                     for user in profiles[0].profile_users:
                         try:
@@ -316,6 +322,7 @@ class Playerlist(commands.Cog):
                 for chunk in chunks[1:]:
                     offline_chunk_str = "\n".join(chunk)
                     await ctx.send(offline_chunk_str)
+                    await asyncio.sleep(0.2)
 
     @commands.command()
     @commands.cooldown(1, 300, commands.BucketType.guild)
@@ -369,23 +376,20 @@ class Playerlist(commands.Cog):
                     unresolved_dict[player.xuid] = player
 
             if unresolved_dict:
-                xuids = list(unresolved_dict.keys())
+                async with self.sem:
+                    profiles = await self.get_gamertags(
+                        self.bot.profile, list(unresolved_dict.keys())
+                    )
 
-                for x in range(0, len(xuids), 25):
-                    async with self.sem:
-                        profiles = await self.get_gamertags(
-                            self.bot.profile, list(xuids[x : x + 25])
-                        )
-
-                    for user in profiles[0].profile_users:
-                        try:
-                            gamertag = tuple(
-                                s.value for s in user.settings if s.id == "Gamertag"
-                            )[0]
-                            self.bot.gamertags[user.id] = gamertag
-                            unresolved_dict[user.id].gamertag = gamertag
-                        except KeyError or IndexError:
-                            continue
+                for user in profiles[0].profile_users:
+                    try:
+                        gamertag = tuple(
+                            s.value for s in user.settings if s.id == "Gamertag"
+                        )[0]
+                        self.bot.gamertags[user.id] = gamertag
+                        unresolved_dict[user.id].gamertag = gamertag
+                    except KeyError or IndexError:
+                        continue
 
                 player_list.extend(unresolved_dict.values())
 
