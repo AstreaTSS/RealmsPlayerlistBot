@@ -95,6 +95,20 @@ class Player:
             return f"{base}: last seen {time_format}"
 
 
+class HourConverter(commands.Converter[int], int):
+    async def convert(self, ctx: commands.Context, argument: str):
+        argument = argument.lower().replace("h", "", 1)
+
+        if not argument.isdigit():
+            raise commands.BadArgument("This argument is not a valid number!")
+
+        int_argument = int(argument)
+        if not 1 <= int_argument <= 24:
+            raise commands.BadArgument("The duration is not in between 1-24 hours!")
+
+        return int_argument
+
+
 async def can_run_playerlist(ctx: commands.Context):
     # simple check to see if a person can run the playerlist command
     guild_config = ctx.bot.config[str(ctx.guild.id)]
@@ -188,9 +202,18 @@ class Playerlist(commands.Cog):
     @utils.proper_permissions()
     @commands.check(can_run_playerlist)
     @commands.cooldown(1, 240, commands.BucketType.default)
-    async def playerlist(self, ctx: commands.Context, **kwargs):
+    async def playerlist(
+        self,
+        ctx: commands.Context,
+        hours_ago: typing.Optional[HourConverter] = 12,
+        **kwargs,
+    ):
         """Checks and makes a playerlist, a log of players who have joined and left.
-        The command version goes back 24 hours, while the autorun version only goes back 2.
+        By default, the command version goes back 12 hours.
+        If you wish for it to go back more, simply do `!?playerlist <# hours ago>`.
+        The number provided should be in between 1-24 hours.
+        The autorun version only goes back 2 hours.
+
         Has a cooldown of 4 minutes due to how intensive this command can be. May take a while to run at first.
         Requires Manage Server permissions."""
         guild_config = self.bot.config[str(ctx.guild.id)]
@@ -201,12 +224,7 @@ class Playerlist(commands.Cog):
         async with ctx.channel.typing():
             now = datetime.datetime.now(datetime.timezone.utc)
 
-            limited = bool(kwargs.get("limited"))  # because python is weird
-
-            if limited:
-                time_delta = datetime.timedelta(hours=2)
-            else:
-                time_delta = datetime.timedelta(days=1)
+            time_delta = datetime.timedelta(hours=hours_ago)
             time_ago = now - time_delta
 
             # some initialization stuff
@@ -296,11 +314,8 @@ class Playerlist(commands.Cog):
                     embed = nextcord.Embed(
                         colour=nextcord.Colour.lighter_gray(),
                         description="\n".join(offline_list),
+                        title=f"People on in the last {hours_ago} hour(s)",
                     )
-                    if limited:
-                        embed.title = "People on in the last 2 hours"
-                    else:
-                        embed.title = "People on in the last 24 hours"
 
                     await ctx.send(embed=embed)
                 else:
@@ -315,11 +330,8 @@ class Playerlist(commands.Cog):
                     first_embed = nextcord.Embed(
                         colour=nextcord.Colour.lighter_gray(),
                         description="\n".join(chunks[0]),
+                        title=f"People on in the last {hours_ago} hour(s)",
                     )
-                    if limited:
-                        first_embed.title = "People on in the last 2 hours"
-                    else:
-                        first_embed.title = "People on in the last 24 hours"
                     await ctx.send(embed=first_embed)
 
                     for chunk in chunks[1:]:
