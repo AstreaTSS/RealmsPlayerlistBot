@@ -196,13 +196,7 @@ class Playerlist(commands.Cog):
         guild_config = self.bot.config[str(ctx.guild.id)]
 
         if not kwargs.get("no_init_mes"):
-            if self.bot.gamertags == {}:
-                await ctx.send(
-                    "This will probably take a long time as the bot does not have a gamertag cache. Please be patient."
-                )
-                # it can take up to a minute on its first run
-            else:
-                await ctx.send("This might take a bit. Please be patient.")
+            await ctx.reply("This might take quite a bit. Please be patient.")
 
         async with ctx.channel.typing():
             now = datetime.datetime.now(datetime.timezone.utc)
@@ -224,8 +218,9 @@ class Playerlist(commands.Cog):
 
             if club_presence is None:
                 # this can happen
-                await ctx.send(
-                    "Seems like this command failed somehow. Astrea should have the info needed to see what's going on."
+                await ctx.reply(
+                    "Seems like this command failed somehow. Astrea should have the "
+                    + "info needed to see what's going on."
                 )
                 return
 
@@ -282,47 +277,55 @@ class Playerlist(commands.Cog):
 
                 player_list.extend(unresolved_dict.values())
 
-        online_list = [p.display for p in player_list if p.in_game]
-        offline_list = [p.display for p in player_list if not p.in_game]
+            online_list = [p.display for p in player_list if p.in_game]
+            offline_list = [p.display for p in player_list if not p.in_game]
 
-        if online_list:
-            online_str = "**People online right now:**\n\n" + "\n".join(online_list)
-            await ctx.send(online_str)
+            if online_list:
+                online_str = "**People online right now:**\n\n" + "\n".join(online_list)
+                await ctx.send(online_str)
 
-        if offline_list:
-            if (
-                len(offline_list) < 20
-            ):  # if its bigger than this, we don't want to run into the chara limit
-                if limited:
-                    offline_str = "**People on in the last 2 hours:**\n\n"
+            if offline_list:
+                if (
+                    len(offline_list) < 40
+                ):  # if its bigger than this, we don't want to run into the chara limit
+                    if limited:
+                        offline_str = "**People on in the last 2 hours:**\n\n"
 
+                    else:
+                        offline_str = "**People on in the last 24 hours:**\n\n"
+                    offline_str += "\n".join(offline_list)
+                    await ctx.send(offline_str)
                 else:
-                    offline_str = "**People on in the last 24 hours:**\n\n"
-                offline_str += "\n".join(offline_list)
-                await ctx.send(offline_str)
-            else:
-                # gets the offline list in lines of 20
-                # basically, it's like
-                # [ [list of 20 strings] [list of 20 strings] etc.]
-                chunks = [
-                    offline_list[x : x + 20] for x in range(0, len(offline_list), 20)
-                ]
+                    # gets the offline list in lines of 40
+                    # basically, it's like
+                    # [ [list of 40 strings] [list of 40 strings] etc.]
+                    # 40 lines can equal around 1400 characters, making this under, but safe
+                    # note that in the worst case, it could be much more than 1400
+                    chunks = [
+                        offline_list[x : x + 40]
+                        for x in range(0, len(offline_list), 40)
+                    ]
 
-                if limited:
-                    first_offline_str = (
-                        "**People on in the last 2 hours:**\n\n" + "\n".join(chunks[0])
-                    )
+                    if limited:
+                        first_offline_str = (
+                            "**People on in the last 2 hours:**\n\n"
+                            + "\n".join(chunks[0])
+                        )
 
-                else:
-                    first_offline_str = (
-                        "**People on in the last 24 hours:**\n\n" + "\n".join(chunks[0])
-                    )
-                await ctx.send(first_offline_str)
+                    else:
+                        first_offline_str = (
+                            "**People on in the last 24 hours:**\n\n"
+                            + "\n".join(chunks[0])
+                        )
+                    await ctx.send(first_offline_str)
 
-                for chunk in chunks[1:]:
-                    offline_chunk_str = "\n".join(chunk)
-                    await ctx.send(offline_chunk_str)
-                    await asyncio.sleep(0.2)
+                    for chunk in chunks[1:]:
+                        offline_chunk_str = "\n".join(chunk)
+                        await ctx.send(offline_chunk_str)
+                        await asyncio.sleep(0.2)
+
+        if not kwargs.get("no_init_mes"):
+            await ctx.reply("Done!")
 
     @commands.command()
     @commands.cooldown(1, 300, commands.BucketType.guild)
@@ -333,21 +336,15 @@ class Playerlist(commands.Cog):
         # uses much of the same code as playerlist
         guild_config = self.bot.config[str(ctx.guild.id)]
 
-        if self.bot.gamertags == {}:
-            await ctx.send(
-                "This will probably take a long time as the bot does not have a gamertag cache. Please be patient."
-            )
-            # it can take up to a minute on its first run
-        else:
-            await ctx.send("This might take a bit. Please be patient.")
+        await ctx.reply("This might take quite a bit. Please be patient.")
 
         async with ctx.channel.typing():
             club_presence = await self.realm_club_get(guild_config["club_id"])
 
             if club_presence is None:
                 # this can happen
-                await ctx.send(
-                    "Seems like this command failed somehow. The owner of the bot "
+                await ctx.reply(
+                    "Seems like this command failed somehow. Astrea "
                     + "should have the info needed to see what's going on."
                 )
                 return
@@ -399,7 +396,7 @@ class Playerlist(commands.Cog):
             online_str = f"**{len(online_list)}/10 people online:**\n\n" + "\n".join(
                 online_list
             )
-            await ctx.send(online_str)
+            await ctx.reply(online_str)
         else:
             raise utils.CustomCheckFailure("There's no one on the Realm right now!")
 
