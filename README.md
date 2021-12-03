@@ -2,7 +2,7 @@
   <img src="https://cdn.discordapp.com/attachments/775915758588657664/916464019227947078/RealmsPlayerlistBotBanner.png" alt="Realm Playerlist Bot's Banner" width="700"/>
 </p>
 
-A bot that helps out owners of Minecraft: Bedrock Edition Realms by showing a log of players who have joined and left
+A bot that helps out owners of Minecraft: Bedrock Edition Realms by showing a log of players who have joined and left.
 
 ## THe Playerlist
 The playerlist/player log is a *very* in-demand feature. For a good reason, too - it's *kinda* a thing not many other bots do.
