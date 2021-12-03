@@ -4,7 +4,7 @@
 
 A bot that helps out owners of Minecraft: Bedrock Edition Realms by showing a log of players who have joined and left.
 
-## THe Playerlist
+## The Playerlist
 The playerlist/player log is a *very* in-demand feature. For a good reason, too - it's *kinda* a thing not many other bots do.
 
 It looks something like this:
