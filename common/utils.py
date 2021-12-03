@@ -48,9 +48,7 @@ async def error_handle(bot, error, ctx=None):
             + f"Error (for bot owner purposes): {error}",
         )
 
-        await ctx.reply(
-            embed=error_embed, ephemeral=True,
-        )
+        await ctx.reply(embed=error_embed)
 
 
 async def msg_to_owner(bot, content, split=True):
