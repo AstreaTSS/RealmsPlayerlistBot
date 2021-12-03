@@ -7,7 +7,6 @@ from typing import List
 
 from aiohttp import ClientResponse
 from xbox.webapi.api.provider.baseprovider import BaseProvider
-from xbox.webapi.api.provider.profile.models import ProfileResponse
 from xbox.webapi.api.provider.profile.models import ProfileSettings
 
 
@@ -27,22 +26,7 @@ class ProfileProvider(BaseProvider):
             :class:`ProfileResponse`: Profile Response
         """
         post_data = {
-            "settings": [
-                ProfileSettings.GAME_DISPLAY_NAME,
-                ProfileSettings.APP_DISPLAY_NAME,
-                ProfileSettings.APP_DISPLAYPIC_RAW,
-                ProfileSettings.GAMERSCORE,
-                ProfileSettings.GAMERTAG,
-                ProfileSettings.GAME_DISPLAYPIC_RAW,
-                ProfileSettings.ACCOUNT_TIER,
-                ProfileSettings.TENURE_LEVEL,
-                ProfileSettings.XBOX_ONE_REP,
-                ProfileSettings.PREFERRED_COLOR,
-                ProfileSettings.LOCATION,
-                ProfileSettings.BIOGRAPHY,
-                ProfileSettings.WATERMARKS,
-                ProfileSettings.REAL_NAME,
-            ],
+            "settings": [ProfileSettings.GAMERTAG],
             "userIds": xuid_list,
         }
         url = self.PROFILE_URL + "/users/batch/profile/settings"
