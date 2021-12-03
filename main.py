@@ -31,7 +31,7 @@ handler.setFormatter(
 logger.addHandler(handler)
 
 
-async def realms_plus_prefixes(bot: commands.Bot, msg: nextcord.Message):
+async def realms_playerlist_prefixes(bot: commands.Bot, msg: nextcord.Message):
     mention_prefixes = {f"{bot.user.mention} ", f"<@!{bot.user.id}> "}
     custom_prefixes = {"!?"}
     return mention_prefixes.union(custom_prefixes)
@@ -86,7 +86,7 @@ async def on_init_load():
                 pass
 
 
-class RealmsPlusBot(commands.Bot):
+class RealmsPlayerlistBot(commands.Bot):
     def __init__(
         self,
         command_prefix,
@@ -124,7 +124,7 @@ class RealmsPlusBot(commands.Bot):
         self.init_load = False
 
         activity = nextcord.Activity(
-            name="over some Realms Plus realms", type=nextcord.ActivityType.watching
+            name="over some Realms", type=nextcord.ActivityType.watching
         )
 
         try:
@@ -134,7 +134,7 @@ class RealmsPlusBot(commands.Bot):
 
     async def on_resumed(self):
         activity = nextcord.Activity(
-            name="over some Realms Plus realms", type=nextcord.ActivityType.watching
+            name="over some Realms", type=nextcord.ActivityType.watching
         )
         await self.change_presence(activity=activity)
 
@@ -162,8 +162,10 @@ class RealmsPlusBot(commands.Bot):
 intents = nextcord.Intents.all()
 mentions = nextcord.AllowedMentions.all()
 
-bot = RealmsPlusBot(
-    command_prefix=realms_plus_prefixes, allowed_mentions=mentions, intents=intents,
+bot = RealmsPlayerlistBot(
+    command_prefix=realms_playerlist_prefixes,
+    allowed_mentions=mentions,
+    intents=intents,
 )
 
 bot.init_load = True

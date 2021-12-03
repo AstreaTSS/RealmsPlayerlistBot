@@ -73,6 +73,7 @@ class GeneralCMDS(commands.Cog):
         )
 
     @commands.command(aliases=["check_season", "season_stats"])
+    @utils.deprecated_cmd()
     async def check_stats(self, ctx: commands.Context, season):
         """Checks how many people have a season role and gives a list of those people.
         The season specified... well, if you have roles that follow a 'Season X' format, where X is a number \

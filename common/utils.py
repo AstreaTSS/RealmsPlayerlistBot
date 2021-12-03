@@ -18,6 +18,21 @@ def proper_permissions():
     return commands.check(predicate)
 
 
+def deprecated_cmd():
+    async def predicate(ctx: commands.Context):
+        deprecated_embed = nextcord.Embed(
+            colour=nextcord.Colour.darker_grey(),
+            description="This feature is deprecated, "
+            + "and will be removed by the end of this year."
+            + "\nDM Astrea if that is an issue.",
+        )
+
+        await ctx.reply(embed=deprecated_embed)
+        return True
+
+    return commands.check(predicate)
+
+
 async def error_handle(bot, error, ctx=None):
     # handles errors and sends them to owner
     if isinstance(error, aiohttp.ServerDisconnectedError):

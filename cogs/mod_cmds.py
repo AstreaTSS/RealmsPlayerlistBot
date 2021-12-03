@@ -55,6 +55,7 @@ class ModCMDS(commands.Cog):
 
     @commands.command()
     @utils.proper_permissions()
+    @utils.deprecated_cmd()
     async def season_add(self, ctx, season, message_id: typing.Optional[int]):
         """Adds a season role for the season specified to everyone who joined eithe before the command \
             was sent or before the message specified.
@@ -103,6 +104,7 @@ class ModCMDS(commands.Cog):
 
     @commands.command(aliases=["gtcheck"])
     @utils.proper_permissions()
+    @utils.deprecated_cmd()
     async def gt_check(self, ctx, *, gamertag):
         """Checks if the gamertag provided is valid, and also does a few other checks here and there.
         Requires Manage Server permissions to run."""
