@@ -270,9 +270,9 @@ class Playerlist(commands.Cog):
             if unresolved_dict:
                 xuids = list(unresolved_dict.keys())
 
-                for x in range(0, len(xuids), 50):
+                for x in range(0, len(xuids), 30):
                     # limits how many gamertags we request for at once
-                    xuids_to_get = xuids[x : x + 50]
+                    xuids_to_get = xuids[x : x + 30]
 
                     async with self.sem:
                         profiles = await self.get_gamertags(
