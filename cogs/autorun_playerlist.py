@@ -32,7 +32,7 @@ class AutoRunPlayerlist(commands.Cog):
         # take advantage of the fact that users cant really use kwargs for commands
         # the two listed here silence the 'this may take a long time' message
         # and also make it so it doesnt go back 24 hours, instead only going two
-        await a_ctx.invoke(list_cmd, 2, no_init_mes=True)
+        await a_ctx.invoke(list_cmd, "2", no_init_mes=True)
 
     @tasks.loop(hours=1)
     async def playerlist_loop(self):

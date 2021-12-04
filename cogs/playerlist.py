@@ -203,10 +203,7 @@ class Playerlist(commands.Cog):
     @commands.check(can_run_playerlist)
     @commands.cooldown(1, 240, commands.BucketType.guild)
     async def playerlist(
-        self,
-        ctx: commands.Context,
-        hours_ago: typing.Optional[HourConverter] = 12,
-        **kwargs,
+        self, ctx: commands.Context, hours_ago: typing.Optional[str] = None, **kwargs,
     ):
         """Checks and makes a playerlist, a log of players who have joined and left.
         By default, the command version goes back 12 hours.
@@ -216,6 +213,16 @@ class Playerlist(commands.Cog):
 
         Has a cooldown of 4 minutes due to how intensive this command can be. May take a while to run at first.
         Requires Manage Server permissions."""
+
+        # i hate doing this but otherwise no clear error code is shown
+        actual_hours_ago: int = 12
+        if hours_ago:
+            try:
+                actual_hours_ago = await HourConverter().convert(ctx, hours_ago)
+            except commands.BadArgument as e:
+                ctx.command.reset_cooldown(ctx)  # yes, this is funny
+                raise e
+
         guild_config = self.bot.config[str(ctx.guild.id)]
 
         if not kwargs.get("no_init_mes"):
@@ -224,7 +231,7 @@ class Playerlist(commands.Cog):
         async with ctx.channel.typing():
             now = datetime.datetime.now(datetime.timezone.utc)
 
-            time_delta = datetime.timedelta(hours=hours_ago)
+            time_delta = datetime.timedelta(hours=actual_hours_ago)
             time_ago = now - time_delta
 
             # some initialization stuff
@@ -314,7 +321,7 @@ class Playerlist(commands.Cog):
                     embed = nextcord.Embed(
                         colour=nextcord.Colour.lighter_gray(),
                         description="\n".join(offline_list),
-                        title=f"People on in the last {hours_ago} hour(s)",
+                        title=f"People on in the last {actual_hours_ago} hour(s)",
                     )
 
                     await ctx.send(embed=embed)
@@ -330,7 +337,7 @@ class Playerlist(commands.Cog):
                     first_embed = nextcord.Embed(
                         colour=nextcord.Colour.lighter_gray(),
                         description="\n".join(chunks[0]),
-                        title=f"People on in the last {hours_ago} hour(s)",
+                        title=f"People on in the last {actual_hours_ago} hour(s)",
                     )
                     await ctx.send(embed=first_embed)
 
