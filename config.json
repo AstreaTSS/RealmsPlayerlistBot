@@ -40,5 +40,12 @@
         "club_id": "3379852867087639",
         "announce_chan": 909515247415595063,
         "online_cmd": true
+    },
+    "914960852187226193": {
+        "season_role": "Season X",
+        "playerlist_chan": 917527650178846781,
+        "club_id": "3379880839748224",
+        "announce_chan": 917526292163862599,
+        "online_cmd": true
     }
 }
