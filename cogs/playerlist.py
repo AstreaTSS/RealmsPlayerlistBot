@@ -125,7 +125,7 @@ class Playerlist(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
         self.sem = asyncio.Semaphore(
-            3
+            2
         )  # prevents bot from overloading xbox api, hopefully
 
     async def get_gamertags(
