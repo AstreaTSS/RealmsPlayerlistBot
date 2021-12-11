@@ -111,13 +111,19 @@ class HourConverter(commands.Converter[int], int):
 
 async def can_run_playerlist(ctx: commands.Context):
     # simple check to see if a person can run the playerlist command
-    guild_config = ctx.bot.config[str(ctx.guild.id)]
+    try:
+        guild_config = ctx.bot.config[str(ctx.guild.id)]
+    except KeyError:
+        return False
     return guild_config["club_id"] != "None"
 
 
 async def can_run_online(ctx: commands.Context):
     # same, but for the online command
-    guild_config = ctx.bot.config[str(ctx.guild.id)]
+    try:
+        guild_config = ctx.bot.config[str(ctx.guild.id)]
+    except KeyError:
+        return False
     return bool(guild_config["club_id"] != "None" and guild_config["online_cmd"])
 
 
