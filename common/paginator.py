@@ -18,9 +18,9 @@ def gen_uuid():
 class ReactionEmoji:
     """An easy to use wrapper around reactions."""
 
-    emoji: str
-    row: int
-    function: typing.Callable
+    emoji: str = attr.ib()
+    row: int = attr.ib()
+    function: typing.Callable = attr.ib()
     uuid: str = attr.ib(factory=gen_uuid)
 
     def to_button(self):

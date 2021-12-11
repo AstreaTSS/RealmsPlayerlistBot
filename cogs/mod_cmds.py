@@ -55,7 +55,6 @@ class ModCMDS(commands.Cog):
 
     @commands.command()
     @utils.proper_permissions()
-    @utils.deprecated_cmd()
     async def season_add(self, ctx, season, message_id: typing.Optional[int]):
         """Adds a season role for the season specified to everyone who joined eithe before the command \
             was sent or before the message specified.
@@ -64,6 +63,8 @@ class ModCMDS(commands.Cog):
         As for the message ID, it has to be a message ID of a message in the announcements channel of that server.
         This command will take a long time to run, especially on big servers.
         Requires Manage Server permissions to run."""
+        await utils.deprecated_cmd(ctx)
+
         timestamp = datetime.datetime.utcnow().timestamp()
         guild_entry = self.bot.config[str(ctx.guild.id)]
 
@@ -104,10 +105,11 @@ class ModCMDS(commands.Cog):
 
     @commands.command(aliases=["gtcheck"])
     @utils.proper_permissions()
-    @utils.deprecated_cmd()
     async def gt_check(self, ctx, *, gamertag):
         """Checks if the gamertag provided is valid, and also does a few other checks here and there.
         Requires Manage Server permissions to run."""
+        await utils.deprecated_cmd(ctx)
+
         async with ctx.channel.typing():
             status = await self.verify_xbl_handler(gamertag)
 

@@ -73,12 +73,13 @@ class GeneralCMDS(commands.Cog):
         )
 
     @commands.command(aliases=["check_season", "season_stats"])
-    @utils.deprecated_cmd()
     async def check_stats(self, ctx: commands.Context, season):
         """Checks how many people have a season role and gives a list of those people.
         The season specified... well, if you have roles that follow a 'Season X' format, where X is a number \
             or the like, then you would put what you would put in X, if that makes sense.
         Might not be fully accurate, as the bot does a tiny bit of caching here and there."""
+        await utils.deprecated_cmd(ctx)
+
         guild_entry = self.bot.config[str(ctx.guild.id)]
         season_x_role = nextcord.utils.get(
             ctx.guild.roles, name=guild_entry["season_role"].replace("X", season)
