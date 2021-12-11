@@ -17,7 +17,7 @@ from common.help_cmd import PaginatedHelpCommand
 from common.profile_custom import ProfileProvider
 
 
-# load_dotenv()
+load_dotenv()
 os.system("git pull")  # stupid way of getting around replit stuff
 
 logger = logging.getLogger("nextcord")
@@ -175,5 +175,5 @@ bot.gamertags = {}
 bot.pastebins = {}
 
 bot.loop.create_task(on_init_load())
-keep_alive.keep_alive()
+# keep_alive.keep_alive()
 bot.run(os.environ.get("MAIN_TOKEN"))
