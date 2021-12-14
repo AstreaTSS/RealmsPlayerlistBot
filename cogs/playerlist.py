@@ -8,29 +8,22 @@ import aiohttp
 import attr
 import nextcord
 from nextcord.ext import commands
+from pydantic import ValidationError
 from xbox.webapi.api.provider.profile.models import ProfileResponse
 
 import common.profile_custom as profile
 import common.utils as utils
 
 """
-Hi, potential code viewer.
+Hey, potential code viewer!
 If you're looking at this, chances are you're interested in how this works.
-I made this code a long time ago - it's June 21st 2021 right now, and I made it roughly a year before this.
+First thing: it's December 12st 2021 right now, and I made large chunks of this a year or more back.
+Even I don't quite know every part of it - it's been lost to time and bad programming practices.
 
 Most of this code is not pretty and probably could be made better.
 But at the same time, this code works, and poking around is not fun.
-Also, this isn't exactly my favorite bot. I don't like messing around with this bot because I can't.
-Oh well.
-
-Also note that this code came from an old project called the Bappo Realm Bot
-which is now defunct as that Realm is gone.
-That bot had this, but it also had a much faster,
-if more unstable playerlist that was used for the command version (this version was used
-for the auto-run version).
-Check it out here: https://github.com/Astrea49/BappoRealmBot/blob/master/cogs/cmds/playerlist.py
-Though be warned that that version used a custom version of yet another API that communicated
-directly with the Xbox Live API.
+Also, this isn't exactly my favorite bot. It's a huge pain to maintain.
+Oh well. Honestly, it could be a lot worse.
 
 Also also (yeah), this approach is a somewhat hacky exploit of how Realms work.
 Every Realm creates a club for it to use - in Minecraft itself, you can view this by clicking
@@ -44,27 +37,20 @@ This bot basically combines all of that knowledge together, gets the club of the
 an Xbox Live thing, gets the people who were on, and puts out one easy to use playerlist to be used for
 moderation (or really, whatever you would like).
 
-I'm going to attempt to leave comments and the like to document what I was doing
-though note that I'm basically re-analyzing my own code to figure out what it all means.
-I tend to make most of my code self-documenting, so it should be understandable enough,
-but I may not be able to make you understand all of this.
+Sadly, commenting on what everything does in-depth is a waste of time, since I tend to make most of my code
+self-documenting. I don't find use in commenting what can be seen directly from the code.
+Admittedly, some parts of this are both hard to understand AND uncommented. Sorry! It's just really hard
+to comment on those things.
 
-Good luck on your bot coding journey
+Regardless, good luck on your bot coding journey!
 - Astrea
 """
 
 
-class GamertagRecursionLimit(Exception):
-    def __init__(self) -> None:
-        super().__init__(
-            "Internal recursion limit reached. "
-            + "Seems like fetching the gamertags failed. Astrea "
-            + "should have the information to find out what's going on."
-        )
-
-
 @attr.s(slots=True, eq=False)
 class Player:
+    """A simple class to represent a player on a Realm."""
+
     xuid: str = attr.ib()
     last_seen: datetime.datetime = attr.ib()
     last_seen_state: str = attr.ib()
@@ -93,6 +79,152 @@ class Player:
         else:
             time_format = nextcord.utils.format_dt(self.last_seen)
             return f"{base}: last seen {time_format}"
+
+
+class GamertagOnCooldown(Exception):
+    # used by GamertagHandler to know when to switch to the backup
+    def __init__(self) -> None:
+        # i could make this anything since this should never be exposed
+        # to the user, but who knows
+        super().__init__("The gamertag handler is on cooldown!")
+
+
+class GamertagServiceDown(Exception):
+    def __init__(self) -> None:
+        super().__init__(
+            "The gamertag service is down! The bot is unavailable at this time."
+        )
+
+
+@attr.s(slots=True)
+class GamertagHandler:
+    """A special class made to handle the complexities of getting gamertags
+    from XUIDs."""
+
+    bot: commands.Bot = attr.ib()
+    sem: asyncio.Semaphore = attr.ib()
+    xuids_to_get: typing.Tuple[str, ...] = attr.ib()
+    profile: profile.ProfileProvider = attr.ib()
+
+    index: int = attr.ib(init=False, default=0)
+    responses: typing.List[ProfileResponse] = attr.ib(init=False, factory=list)
+    event: asyncio.Event = attr.ib(init=False, factory=asyncio.Event)
+    AMOUNT_TO_GET: int = attr.ib(init=False, default=30)
+
+    async def get_gamertags(self, xuid_list: typing.List[str]) -> None:
+        # honestly, i forget what this output can look like by now -
+        # but if i remember, it's kinda weird
+        profile_resp = await self.profile.get_profiles(xuid_list)
+        profile_json = await profile_resp.json()
+
+        if profile_json.get("code"):  # usually means ratelimited or invalid xuid
+            description: str = profile_json["description"]
+
+            if description.startswith("Throttled"):  # ratelimited
+                raise GamertagOnCooldown()
+
+            # otherwise, invalid xuid
+            desc_split = description.split(" ")
+            xuid_list.remove(desc_split[1])
+
+            await self.get_gamertags(
+                xuid_list
+            )  # after removing, try getting data again
+
+        elif profile_json.get("limitType"):  # ratelimit
+            raise GamertagOnCooldown()
+
+        self.responses.append(ProfileResponse.parse_obj(profile_json))
+        self.index += self.AMOUNT_TO_GET
+
+    async def backup_get_gamertags(self):
+        # openxbl is used throughout this, and its basically a way of navigating
+        # the xbox live api in a more sane way than its actually laid out
+        # while xbox-webapi-python can also do this without using a 3rd party service,
+        # using openxbl can be more reliable at times as it has a generous 500 requests
+        # per hour limit on the free tier and is not subject to ratelimits
+        # however, there's no bulk xuid > gamertag option, and is a bit slow in general
+        headers = {
+            "X-Authorization": os.environ.get("OPENXBL_KEY"),
+            "Accept": "application/json",
+            "Accept-Language": "en-US",
+        }
+        session = aiohttp.ClientSession(headers=headers)
+
+        for xuid in self.xuids_to_get[self.index :]:
+            async with session:
+                async with session.get(f"https://xbl.io/api/v2/account/{xuid}") as r:
+                    try:
+                        resp_json = await r.json()
+                        if "code" in resp_json.keys():  # service is down
+                            await utils.msg_to_owner(self.bot, resp_json)
+                            raise GamertagServiceDown()
+                        else:
+                            try:
+                                self.responses.append(
+                                    ProfileResponse.parse_obj(resp_json)
+                                )
+                            except ValidationError:  # invalid xuid, most likely
+                                pass
+                    except aiohttp.ContentTypeError:
+                        # can happen, if not rare
+                        await utils.msg_to_owner(
+                            self.bot, f"Failed to get gamertag of user {xuid}"
+                        )
+
+            self.index += 1
+
+        if not self.event.is_set():
+            self.event.set()
+
+    async def sleep(self):
+        await asyncio.sleep(15)
+        if not self.event.is_set():
+            self.event.set()
+
+    async def run(self):
+        while self.index < len(self.xuids_to_get):
+            current_xuid_list = list(self.xuids_to_get[self.index : self.index + 30])
+
+            async with self.sem:
+                try:
+                    await self.get_gamertags(current_xuid_list)
+                except GamertagOnCooldown:
+                    pass
+
+                # clear the event that is set by these two
+                # basically, we use this event as a way of tracking if either
+                # the backup task got all gamertags or its been 15 seconds,
+                # whichever comes first
+                self.event.clear()
+
+                backup_task = self.bot.loop.create_task(self.backup_get_gamertags())
+                sleep_task = self.bot.loop.create_task(self.sleep())
+
+                # waits for either one of the two to finish
+                await self.event.wait()
+
+                if not backup_task.done():
+                    backup_task.cancel()
+                if not sleep_task.done():
+                    sleep_task.cancel()
+
+        dict_gamertags: typing.Dict[str, str] = {}
+
+        for profiles in self.responses:
+            for user in profiles.profile_users:
+                try:
+                    # really funny but efficient way of getting gamertag
+                    # from this data
+                    gamertag = next(
+                        s.value for s in user.settings if s.id == "Gamertag"
+                    )
+                    self.bot.gamertags[user.id] = gamertag
+                    dict_gamertags[user.id] = gamertag
+                except KeyError or StopIteration:
+                    continue
+
+        return dict_gamertags
 
 
 class HourConverter(commands.Converter[int], int):
@@ -134,44 +266,6 @@ class Playerlist(commands.Cog):
             2
         )  # prevents bot from overloading xbox api, hopefully
 
-    async def get_gamertags(
-        self, profile: profile.ProfileProvider, list_xuids, limit=10,
-    ) -> typing.Tuple[ProfileResponse, typing.List[str]]:
-
-        profile_resp = await profile.get_profiles(list_xuids)
-        profile_json = await profile_resp.json()
-
-        if profile_json.get("code"):
-            description: str = profile_json["description"]
-            if description.startswith("Throttled"):
-                limit -= 1
-                if limit == 0:
-                    await utils.msg_to_owner(
-                        self.bot, f"Error: ```\n{profile_json}\n```"
-                    )
-                    raise GamertagRecursionLimit()
-
-                await asyncio.sleep(5)
-            else:
-                desc_split = description.split(" ")
-                list_xuids.remove(desc_split[1])
-
-            profiles, list_xuids = await self.get_gamertags(profile, list_xuids, limit)
-            return profiles, list_xuids
-
-        elif profile_json.get("limitType"):
-            limit -= 1
-            if limit == 0:
-                await utils.msg_to_owner(self.bot, f"Error: ```\n{profile_json}\n```")
-                raise GamertagRecursionLimit()
-            await asyncio.sleep(15)
-
-            profiles, list_xuids = await self.get_gamertags(profile, list_xuids, limit)
-            return profiles, list_xuids
-
-        profiles = ProfileResponse.parse_obj(profile_json)
-        return profiles, list_xuids
-
     async def realm_club_get(self, club_id):
         headers = {  # same api as the gamerag one
             "X-Authorization": os.environ.get("OPENXBL_KEY"),
@@ -204,6 +298,58 @@ class Playerlist(commands.Cog):
                     await utils.msg_to_owner(self.bot, r.status)
                     return None
 
+    async def get_players_from_club_data(
+        self,
+        club_presence: typing.List[typing.Dict],
+        time_ago: typing.Optional[datetime.datetime] = None,
+        online_only: bool = False,
+    ):
+        player_list: typing.List[Player] = []
+        unresolved_dict: typing.Dict[str, Player] = {}
+
+        for member in club_presence:
+            # if we're online only, breaking out when we stop getting online
+            # people is a good idea
+            if online_only and member["lastSeenState"] != "InGame":
+                break
+
+            # xbox live uses a bit more precision than python can understand
+            # so we cut out that precision
+            last_seen = datetime.datetime.strptime(
+                member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f"
+            ).replace(tzinfo=datetime.timezone.utc)
+
+            # if this person was on the realm longer than the time period specified
+            # we can stop this for loop
+            # useful as otherwise we would do an absurd number of requests getting every
+            # single gamertag
+            if time_ago and last_seen <= time_ago:
+                break
+
+            player = Player(
+                member["xuid"],
+                last_seen,
+                member["lastSeenState"],
+                self.bot.gamertags.get(member["xuid"]),
+            )
+            if player.resolved:
+                player_list.append(player)
+            else:
+                unresolved_dict[member["xuid"]] = player
+
+        if unresolved_dict:
+            gamertag_handler = GamertagHandler(
+                self.bot, self.sem, tuple(unresolved_dict.keys()), self.bot.profile
+            )
+            gamertag_dict = await gamertag_handler.run()
+
+            for xuid, gamertag in gamertag_dict.items():
+                unresolved_dict[xuid].gamertag = gamertag
+
+            player_list.extend(unresolved_dict.values())
+
+        return player_list
+
     @commands.command(aliases=["player_list", "get_playerlist", "get_player_list"])
     @utils.proper_permissions()
     @commands.check(can_run_playerlist)
@@ -217,7 +363,8 @@ class Playerlist(commands.Cog):
         The number provided should be in between 1-24 hours.
         The autorun version only goes back 2 hours.
 
-        Has a cooldown of 4 minutes due to how intensive this command can be. May take a while to run at first.
+        Has a cooldown of 4 minutes due to how intensive this command can be.
+        May take a while to run at first.
         Requires Manage Server permissions."""
 
         # i hate doing this but otherwise no clear error code is shown
@@ -235,18 +382,12 @@ class Playerlist(commands.Cog):
             await ctx.reply("This might take quite a bit. Please be patient.")
 
         async with ctx.channel.typing():
-            now = datetime.datetime.now(datetime.timezone.utc)
+            now = nextcord.utils.utcnow()
 
             time_delta = datetime.timedelta(hours=actual_hours_ago)
             time_ago = now - time_delta
 
-            # some initialization stuff
-            player_list: typing.List[Player] = []  # hard to explain, you'll see
-            unresolved_dict: typing.Dict[str, Player] = {}
-            online_list: typing.List[str] = []  # stores currently on realm users
-            offline_list: typing.List[str] = []  # stores recently online users
             club_presence = await self.realm_club_get(guild_config["club_id"])
-
             if club_presence is None:
                 # this can happen
                 await ctx.reply(
@@ -255,58 +396,9 @@ class Playerlist(commands.Cog):
                 )
                 return
 
-            for member in club_presence:
-                # xbox live uses a bit more precision than python can understand
-                # so we cut out that precision
-                last_seen = datetime.datetime.strptime(
-                    member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f"
-                ).replace(tzinfo=datetime.timezone.utc)
-
-                # if this person was on the realm longer than the time period specified
-                # we can stop this for loop
-                # useful as otherwise we would do an absurd number of requests getting every
-                # single gamertag
-                if last_seen <= time_ago:
-                    break
-
-                player = Player(
-                    member["xuid"],
-                    last_seen,
-                    member["lastSeenState"],
-                    self.bot.gamertags.get(member["xuid"]),
-                )
-                if player.resolved:
-                    player_list.append(player)
-                else:
-                    unresolved_dict[member["xuid"]] = player
-
-            if unresolved_dict:
-                xuids = list(unresolved_dict.keys())
-
-                for x in range(0, len(xuids), 30):
-                    # limits how many gamertags we request for at once
-                    xuids_to_get = xuids[x : x + 30]
-
-                    async with self.sem:
-                        profiles = await self.get_gamertags(
-                            self.bot.profile, xuids_to_get
-                        )
-
-                        if xuids[-1] != xuids_to_get[-1]:
-                            # ratelimits will complain otherwise
-                            await asyncio.sleep(15)
-
-                    for user in profiles[0].profile_users:
-                        try:
-                            gamertag = tuple(
-                                s.value for s in user.settings if s.id == "Gamertag"
-                            )[0]
-                            self.bot.gamertags[user.id] = gamertag
-                            unresolved_dict[user.id].gamertag = gamertag
-                        except KeyError or IndexError:
-                            continue
-
-                player_list.extend(unresolved_dict.values())
+            player_list = await self.get_players_from_club_data(
+                club_presence, time_ago=time_ago
+            )
 
             online_list = [p.display for p in player_list if p.in_game]
             offline_list = [p.display for p in player_list if not p.in_game]
@@ -320,40 +412,27 @@ class Playerlist(commands.Cog):
                 await ctx.send(embed=embed)
 
             if offline_list:
-                if (
-                    len(offline_list) < 40
-                ):  # if its bigger than this, we don't want to run into the chara limit
+                # gets the offline list in lines of 40
+                # basically, it's like
+                # [ [list of 40 strings] [list of 40 strings] etc.]
+                chunks = [
+                    offline_list[x : x + 40] for x in range(0, len(offline_list), 40)
+                ]
 
+                first_embed = nextcord.Embed(
+                    colour=nextcord.Colour.lighter_gray(),
+                    description="\n".join(chunks[0]),
+                    title=f"People on in the last {actual_hours_ago} hour(s)",
+                )
+                await ctx.send(embed=first_embed)
+
+                for chunk in chunks[1:]:
                     embed = nextcord.Embed(
                         colour=nextcord.Colour.lighter_gray(),
-                        description="\n".join(offline_list),
-                        title=f"People on in the last {actual_hours_ago} hour(s)",
+                        description="\n".join(chunk),
                     )
-
                     await ctx.send(embed=embed)
-                else:
-                    # gets the offline list in lines of 40
-                    # basically, it's like
-                    # [ [list of 40 strings] [list of 40 strings] etc.]
-                    chunks = [
-                        offline_list[x : x + 40]
-                        for x in range(0, len(offline_list), 40)
-                    ]
-
-                    first_embed = nextcord.Embed(
-                        colour=nextcord.Colour.lighter_gray(),
-                        description="\n".join(chunks[0]),
-                        title=f"People on in the last {actual_hours_ago} hour(s)",
-                    )
-                    await ctx.send(embed=first_embed)
-
-                    for chunk in chunks[1:]:
-                        embed = nextcord.Embed(
-                            colour=nextcord.Colour.lighter_gray(),
-                            description="\n".join(chunk),
-                        )
-                        await ctx.send(embed=embed)
-                        await asyncio.sleep(0.2)
+                    await asyncio.sleep(0.2)
 
         if not kwargs.get("no_init_mes"):
             await ctx.reply("Done!")
@@ -371,7 +450,6 @@ class Playerlist(commands.Cog):
 
         async with ctx.channel.typing():
             club_presence = await self.realm_club_get(guild_config["club_id"])
-
             if club_presence is None:
                 # this can happen
                 await ctx.reply(
@@ -380,46 +458,9 @@ class Playerlist(commands.Cog):
                 )
                 return
 
-            online_list = []  # stores currently on realm users
-            player_list: typing.List[Player] = []  # hard to explain, you'll see
-            unresolved_dict: typing.Dict[str, Player] = {}
-
-            for member in club_presence:
-                if member["lastSeenState"] != "InGame":
-                    break
-
-                last_seen = datetime.datetime.strptime(
-                    member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f"
-                ).replace(tzinfo=datetime.timezone.utc)
-
-                player = Player(
-                    member["xuid"],
-                    last_seen,
-                    member["lastSeenState"],
-                    self.bot.gamertags.get(member["xuid"]),
-                )
-                if player.resolved:
-                    player_list.append(player)
-                else:
-                    unresolved_dict[player.xuid] = player
-
-            if unresolved_dict:
-                async with self.sem:
-                    profiles = await self.get_gamertags(
-                        self.bot.profile, list(unresolved_dict.keys())
-                    )
-
-                for user in profiles[0].profile_users:
-                    try:
-                        gamertag = tuple(
-                            s.value for s in user.settings if s.id == "Gamertag"
-                        )[0]
-                        self.bot.gamertags[user.id] = gamertag
-                        unresolved_dict[user.id].gamertag = gamertag
-                    except KeyError or IndexError:
-                        continue
-
-                player_list.extend(unresolved_dict.values())
+            player_list = await self.get_players_from_club_data(
+                club_presence, online_only=True
+            )
 
         online_list = [p.display for p in player_list]
 
@@ -431,7 +472,7 @@ class Playerlist(commands.Cog):
             )
             await ctx.reply(embed=embed)
         else:
-            raise utils.CustomCheckFailure("There's no one on the Realm right now!")
+            raise utils.CustomCheckFailure("No one is on the Realm right now.")
 
 
 def setup(bot):
