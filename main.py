@@ -6,7 +6,7 @@ import aiohttp
 import nextcord
 from dotenv import load_dotenv
 from nextcord.ext import commands
-from websockets import ConnectionClosedOK
+from websockets.exceptions import ConnectionClosedOK
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
@@ -18,7 +18,7 @@ from common.profile_custom import ProfileProvider
 
 
 load_dotenv()
-os.system("git pull")  # stupid way of getting around replit stuff
+# os.system("git pull")  # stupid way of getting around replit stuff
 
 logger = logging.getLogger("nextcord")
 logger.setLevel(logging.INFO)
