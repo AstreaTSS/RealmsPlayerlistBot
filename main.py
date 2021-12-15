@@ -159,7 +159,9 @@ class RealmsPlayerlistBot(commands.Bot):
         return await super().close()
 
 
-intents = nextcord.Intents.all()
+intents = nextcord.Intents(
+    guilds=True, members=True, emojis_and_stickers=True, messages=True, reactions=True
+)
 mentions = nextcord.AllowedMentions.all()
 
 bot = RealmsPlayerlistBot(
