@@ -104,10 +104,10 @@ class GamertagHandler:
     bot: commands.Bot = attr.ib()
     sem: asyncio.Semaphore = attr.ib()
     xuids_to_get: typing.Tuple[str, ...] = attr.ib()
-    profile: profile.ProfileProvider = attr.ib()
+    profile: "profile.ProfileProvider" = attr.ib()
 
     index: int = attr.ib(init=False, default=0)
-    responses: typing.List[ProfileResponse] = attr.ib(init=False, factory=list)
+    responses: typing.List["ProfileResponse"] = attr.ib(init=False, factory=list)
     event: asyncio.Event = attr.ib(init=False, factory=asyncio.Event)
     AMOUNT_TO_GET: int = attr.ib(init=False, default=30)
 
@@ -263,7 +263,7 @@ class Playerlist(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
         self.sem = asyncio.Semaphore(
-            2
+            3
         )  # prevents bot from overloading xbox api, hopefully
 
     async def realm_club_get(self, club_id):
