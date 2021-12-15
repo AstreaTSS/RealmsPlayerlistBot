@@ -435,7 +435,7 @@ class Playerlist(commands.Cog):
                     await asyncio.sleep(0.2)
 
         if not kwargs.get("no_init_mes"):
-            if not online_list or offline_list:
+            if not online_list and not offline_list:
                 raise utils.CustomCheckFailure(
                     "No one has been on the Realm for the last "
                     + f"{actual_hours_ago} hour(s)."
