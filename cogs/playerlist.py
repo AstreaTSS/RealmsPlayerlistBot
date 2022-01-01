@@ -105,6 +105,7 @@ class GamertagHandler:
     sem: asyncio.Semaphore = attr.ib()
     xuids_to_get: typing.Tuple[str, ...] = attr.ib()
     profile: "profile.ProfileProvider" = attr.ib()
+    openxbl_session: aiohttp.ClientSession = attr.ib()
 
     index: int = attr.ib(init=False, default=0)
     responses: typing.List["ProfileResponse"] = attr.ib(init=False, factory=list)
@@ -144,33 +145,26 @@ class GamertagHandler:
         # using openxbl can be more reliable at times as it has a generous 500 requests
         # per hour limit on the free tier and is not subject to ratelimits
         # however, there's no bulk xuid > gamertag option, and is a bit slow in general
-        headers = {
-            "X-Authorization": os.environ.get("OPENXBL_KEY"),
-            "Accept": "application/json",
-            "Accept-Language": "en-US",
-        }
-        session = aiohttp.ClientSession(headers=headers)
 
         for xuid in self.xuids_to_get[self.index :]:
-            async with session:
-                async with session.get(f"https://xbl.io/api/v2/account/{xuid}") as r:
-                    try:
-                        resp_json = await r.json()
-                        if "code" in resp_json.keys():  # service is down
-                            await utils.msg_to_owner(self.bot, resp_json)
-                            raise GamertagServiceDown()
-                        else:
-                            try:
-                                self.responses.append(
-                                    ProfileResponse.parse_obj(resp_json)
-                                )
-                            except ValidationError:  # invalid xuid, most likely
-                                pass
-                    except aiohttp.ContentTypeError:
-                        # can happen, if not rare
-                        await utils.msg_to_owner(
-                            self.bot, f"Failed to get gamertag of user {xuid}"
-                        )
+            async with self.openxbl_session.get(
+                f"https://xbl.io/api/v2/account/{xuid}"
+            ) as r:
+                try:
+                    resp_json = await r.json()
+                    if "code" in resp_json.keys():  # service is down
+                        await utils.msg_to_owner(self.bot, resp_json)
+                        raise GamertagServiceDown()
+                    else:
+                        try:
+                            self.responses.append(ProfileResponse.parse_obj(resp_json))
+                        except ValidationError:  # invalid xuid, most likely
+                            pass
+                except aiohttp.ContentTypeError:
+                    # can happen, if not rare
+                    await utils.msg_to_owner(
+                        self.bot, f"Failed to get gamertag of user {xuid}"
+                    )
 
             self.index += 1
 
@@ -266,6 +260,17 @@ class Playerlist(commands.Cog):
             3
         )  # prevents bot from overloading xbox api, hopefully
 
+        # headers for openxbl, used for gamertag handling
+        headers = {
+            "X-Authorization": os.environ.get("OPENXBL_KEY"),
+            "Accept": "application/json",
+            "Accept-Language": "en-US",
+        }
+        self.openxbl_session = aiohttp.ClientSession(headers=headers)
+
+    def cog_unload(self):
+        self.bot.loop.create_task(self.openxbl_session.close())
+
     async def realm_club_get(self, club_id):
         headers = {  # same api as the gamerag one
             "X-Authorization": os.environ.get("OPENXBL_KEY"),
@@ -339,7 +344,11 @@ class Playerlist(commands.Cog):
 
         if unresolved_dict:
             gamertag_handler = GamertagHandler(
-                self.bot, self.sem, tuple(unresolved_dict.keys()), self.bot.profile
+                self.bot,
+                self.sem,
+                tuple(unresolved_dict.keys()),
+                self.bot.profile,
+                self.openxbl_session,
             )
             gamertag_dict = await gamertag_handler.run()
 
