@@ -13,8 +13,8 @@ from xbox.webapi.authentication.models import OAuth2TokenResponse
 
 import common.utils as utils
 import keep_alive
+from common.custom_providers import ProfileProvider
 from common.help_cmd import PaginatedHelpCommand
-from common.profile_custom import ProfileProvider
 
 
 load_dotenv()

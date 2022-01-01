@@ -11,7 +11,7 @@ from nextcord.ext import commands
 from pydantic import ValidationError
 from xbox.webapi.api.provider.profile.models import ProfileResponse
 
-import common.profile_custom as profile
+import common.custom_providers as providers
 import common.utils as utils
 
 """
@@ -104,7 +104,7 @@ class GamertagHandler:
     bot: commands.Bot = attr.ib()
     sem: asyncio.Semaphore = attr.ib()
     xuids_to_get: typing.Tuple[str, ...] = attr.ib()
-    profile: "profile.ProfileProvider" = attr.ib()
+    profile: "providers.ProfileProvider" = attr.ib()
     openxbl_session: aiohttp.ClientSession = attr.ib()
 
     index: int = attr.ib(init=False, default=0)
