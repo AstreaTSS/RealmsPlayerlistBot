@@ -109,7 +109,6 @@ class GamertagHandler:
 
     index: int = attr.ib(init=False, default=0)
     responses: typing.List["ProfileResponse"] = attr.ib(init=False, factory=list)
-    event: asyncio.Event = attr.ib(init=False, factory=asyncio.Event)
     AMOUNT_TO_GET: int = attr.ib(init=False, default=30)
 
     async def get_gamertags(self, xuid_list: typing.List[str]) -> None:
@@ -168,14 +167,6 @@ class GamertagHandler:
 
             self.index += 1
 
-        if not self.event.is_set():
-            self.event.set()
-
-    async def sleep(self):
-        await asyncio.sleep(15)
-        if not self.event.is_set():
-            self.event.set()
-
     async def run(self):
         while self.index < len(self.xuids_to_get):
             current_xuid_list = list(self.xuids_to_get[self.index : self.index + 30])
@@ -186,22 +177,15 @@ class GamertagHandler:
                 except GamertagOnCooldown:
                     pass
 
-                # clear the event that is set by these two
-                # basically, we use this event as a way of tracking if either
-                # the backup task got all gamertags or its been 15 seconds,
-                # whichever comes first
-                self.event.clear()
-
-                backup_task = self.bot.loop.create_task(self.backup_get_gamertags())
-                sleep_task = self.bot.loop.create_task(self.sleep())
-
-                # waits for either one of the two to finish
-                await self.event.wait()
-
-                if not backup_task.done():
-                    backup_task.cancel()
-                if not sleep_task.done():
-                    sleep_task.cancel()
+                # alright, so we either got 30 gamertags or are ratelimited
+                # so now we switch to the backup getter so that we don't have
+                # to wait on the ratelimit to request for more gamertags
+                # this wait_for basically a little 'exploit` to only make the backup
+                # run for 15 seconds or until completetion, whatever comes first
+                try:
+                    await asyncio.wait_for(self.backup_get_gamertags(), timeout=15)
+                except asyncio.TimeoutError:
+                    pass
 
         dict_gamertags: typing.Dict[str, str] = {}
 
