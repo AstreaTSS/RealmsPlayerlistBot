@@ -383,7 +383,7 @@ class Playerlist(commands.Cog):
             club_presence = await self.realm_club_get(guild_config["club_id"])
             if club_presence is None:
                 # this can happen
-
+                await utils.msg_to_owner(self.bot, ctx.guild)
                 await ctx.reply(
                     "Seems like this command failed somehow. Astrea should have the "
                     + "info needed to see what's going on."
