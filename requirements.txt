@@ -1,6 +1,6 @@
 git+https://github.com/nextcord/nextcord.git@9aaca1e70b932ce07b090af7f969062f88d3dd81
 humanize==3.14.0
-git+https://github.com/ooliver1/jishaku-nextcord.git
+onami==2.4.0
 python-dotenv==0.19.2
 websockets==10.1
 flask==2.0.2
