@@ -29,6 +29,9 @@ class AutoRunPlayerlist(commands.Cog):
         messages = await chan.history(limit=1).flatten()
         a_ctx = await self.bot.get_context(messages[0])
 
+        # little hack so we dont accidentally ping a random person
+        a_ctx.reply = a_ctx.send
+
         # take advantage of the fact that users cant really use kwargs for commands
         # the two listed here silence the 'this may take a long time' message
         # and also make it so it doesnt go back 24 hours, instead only going two

@@ -385,8 +385,8 @@ class Playerlist(commands.Cog):
                 # this can happen
                 await utils.msg_to_owner(self.bot, ctx.guild)
                 await ctx.reply(
-                    "Seems like this command failed somehow. Astrea should have the "
-                    + "info needed to see what's going on."
+                    "Seems like the playerlist command failed somehow. Astrea should "
+                    + "have the info needed to see what's going on."
                 )
                 return
 
@@ -454,7 +454,7 @@ class Playerlist(commands.Cog):
                 # this can happen
                 await utils.msg_to_owner(self.bot, ctx.guild)
                 await ctx.reply(
-                    "Seems like this command failed somehow. Astrea "
+                    "Seems like the playerlist command failed somehow. Astrea "
                     + "should have the info needed to see what's going on."
                 )
                 return
