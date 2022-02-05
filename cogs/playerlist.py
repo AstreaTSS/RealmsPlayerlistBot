@@ -281,6 +281,10 @@ class Playerlist(commands.Cog):
                     return resp_json["clubs"][0]["clubPresence"]
                 except KeyError or TypeError:
                     # who knows x2
+
+                    if resp_json.get("code") and resp_json["code"] == 1018:
+                        return "Unauthorized"
+
                     await utils.msg_to_owner(self.bot, resp_json)
                     await utils.msg_to_owner(self.bot, r.headers)
                     await utils.msg_to_owner(self.bot, r.status)
@@ -382,10 +386,19 @@ class Playerlist(commands.Cog):
             club_presence = await self.realm_club_get(guild_config.club_id)
             if club_presence is None:
                 # this can happen
-                await utils.msg_to_owner(self.bot, ctx.guild)
                 await ctx.reply(
                     "Seems like the playerlist command failed somehow. Astrea should "
                     + "have the info needed to see what's going on."
+                )
+                return
+            elif club_presence == "Unauthorized":
+                await utils.msg_to_owner(self.bot, ctx.guild)
+                await ctx.reply(
+                    "The bot can't seem to read your Realm! If you changed Realms, make"
+                    " sure to let Astrea know. Also, make sure you haven't banned the"
+                    " bot's Xbox account from the Realm. If you haven't done either,"
+                    " this is probably just internal stuff being weird, and it'll fix"
+                    " itself in a bit."
                 )
                 return
 
@@ -451,10 +464,19 @@ class Playerlist(commands.Cog):
             club_presence = await self.realm_club_get(guild_config.club_id)
             if club_presence is None:
                 # this can happen
-                await utils.msg_to_owner(self.bot, ctx.guild)
                 await ctx.reply(
                     "Seems like the playerlist command failed somehow. Astrea "
                     + "should have the info needed to see what's going on."
+                )
+                return
+            elif club_presence == "Unauthorized":
+                await utils.msg_to_owner(self.bot, ctx.guild)
+                await ctx.reply(
+                    "The bot can't seem to read your Realm! If you changed Realms, make"
+                    " sure to let Astrea know. Also, make sure you haven't banned the"
+                    " bot's Xbox account from the Realm. If you haven't done either,"
+                    " this is probably just internal stuff being weird, and it'll fix"
+                    " itself in a bit."
                 )
                 return
 
