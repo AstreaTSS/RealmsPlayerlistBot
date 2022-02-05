@@ -33,7 +33,7 @@ Honestly, *good luck*. This thing is *far* from simple to get everything working
 
 But if you're willing to try... well, I won't leave a detailed guide here - just kinda poke around in the code and see what works. [`xbox-webapi-python`](https://github.com/OpenXbox/xbox-webapi-python) is worth looking if you're even considering it.
 
-Environmental vars: `MAIN_TOKEN`, `DIRECTORY_OF_FILE`, `LOG_FILE_PATH`, `OPENXBL_KEY`, `CONFIG_URL`, `BOT_COLOR`, `CLIENT_ID`, `CLIENT_SECRET`, `XAPI_TOKENS`, `CLIENT_ID`, `CLIENT_SECRET`, `XAPI_TOKENS`, `onami_NO_UNDERSCORE=true` (last one is optional but recommended)
+Environmental vars: `MAIN_TOKEN`, `DIRECTORY_OF_FILE`, `LOG_FILE_PATH`, `OPENXBL_KEY`, `DB_URL`, `BOT_COLOR`, `CLIENT_ID`, `CLIENT_SECRET`, `XAPI_TOKENS`, `CLIENT_ID`, `CLIENT_SECRET`, `XAPI_TOKENS`, `onami_NO_UNDERSCORE=true` (last one is optional but recommended)
 
 ## Links:
 

@@ -157,17 +157,11 @@ def get_all_extensions(str_path, folder="cogs"):
 
 
 def toggle_friendly_str(bool_to_convert):
-    if bool_to_convert == True:
-        return "on"
-    else:
-        return "off"
+    return "on" if bool_to_convert == True else "off"
 
 
 def yesno_friendly_str(bool_to_convert):
-    if bool_to_convert == True:
-        return "yes"
-    else:
-        return "no"
+    return "yes" if bool_to_convert == True else "no"
 
 
 class CustomCheckFailure(commands.CheckFailure):

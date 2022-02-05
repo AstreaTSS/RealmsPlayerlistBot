@@ -9,10 +9,12 @@ import attr
 import nextcord
 from nextcord.ext import commands
 from pydantic import ValidationError
+from tortoise.exceptions import DoesNotExist
 from xbox.webapi.api.provider.profile.models import ProfileResponse
 
 import common.custom_providers as providers
 import common.utils as utils
+from common.models import GuildConfig
 
 """
 Hey, potential code viewer!
@@ -57,10 +59,7 @@ class Player:
     gamertag: typing.Optional[str] = attr.ib(default=None)
 
     def __eq__(self, o: object) -> bool:
-        if not isinstance(o, self.__class__):
-            return False
-
-        return o.xuid == self.xuid
+        return False if not isinstance(o, self.__class__) else o.xuid == self.xuid
 
     @property
     def resolved(self):
@@ -222,19 +221,19 @@ class HourConverter(commands.Converter[int], int):
 async def can_run_playerlist(ctx: commands.Context):
     # simple check to see if a person can run the playerlist command
     try:
-        guild_config = ctx.bot.config[str(ctx.guild.id)]
-    except KeyError:
+        guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
+    except DoesNotExist:
         return False
-    return guild_config["club_id"] != "None"
+    return bool(guild_config.club_id)
 
 
 async def can_run_online(ctx: commands.Context):
     # same, but for the online command
     try:
-        guild_config = ctx.bot.config[str(ctx.guild.id)]
-    except KeyError:
+        guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
+    except DoesNotExist:
         return False
-    return bool(guild_config["club_id"] != "None" and guild_config["online_cmd"])
+    return bool(guild_config.club_id) and guild_config.online_cmd
 
 
 class Playerlist(commands.Cog):
@@ -369,7 +368,7 @@ class Playerlist(commands.Cog):
                 ctx.command.reset_cooldown(ctx)  # yes, this is funny
                 raise e
 
-        guild_config = self.bot.config[str(ctx.guild.id)]
+        guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
 
         if not kwargs.get("no_init_mes"):
             await ctx.reply("This might take quite a bit. Please be patient.")
@@ -380,7 +379,7 @@ class Playerlist(commands.Cog):
             time_delta = datetime.timedelta(hours=actual_hours_ago)
             time_ago = now - time_delta
 
-            club_presence = await self.realm_club_get(guild_config["club_id"])
+            club_presence = await self.realm_club_get(guild_config.club_id)
             if club_presence is None:
                 # this can happen
                 await utils.msg_to_owner(self.bot, ctx.guild)
@@ -444,12 +443,12 @@ class Playerlist(commands.Cog):
         """Allows you to see if anyone is online on the Realm right now.
         The realm must agree to this being enabled for you to use it."""
         # uses much of the same code as playerlist
-        guild_config = self.bot.config[str(ctx.guild.id)]
+        guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
 
         await ctx.reply("This might take quite a bit. Please be patient.")
 
         async with ctx.channel.typing():
-            club_presence = await self.realm_club_get(guild_config["club_id"])
+            club_presence = await self.realm_club_get(guild_config.club_id)
             if club_presence is None:
                 # this can happen
                 await utils.msg_to_owner(self.bot, ctx.guild)
@@ -463,9 +462,7 @@ class Playerlist(commands.Cog):
                 club_presence, online_only=True
             )
 
-        online_list = [p.display for p in player_list]
-
-        if online_list:
+        if online_list := [p.display for p in player_list]:
             embed = nextcord.Embed(
                 colour=self.bot.color,
                 title=f"{len(online_list)}/10 people online",

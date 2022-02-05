@@ -5,6 +5,7 @@ from nextcord.ext import commands
 from nextcord.ext import tasks
 
 import common.utils as utils
+from common.models import GuildConfig
 
 
 class AutoRunPlayerlist(commands.Cog):
@@ -19,10 +20,8 @@ class AutoRunPlayerlist(commands.Cog):
     def cog_unload(self):
         self.playerlist_loop.cancel()
 
-    async def auto_run_playerlist(self, list_cmd, guild_config):
-        chan = self.bot.get_channel(
-            guild_config["playerlist_chan"]
-        )  # playerlist channel
+    async def auto_run_playerlist(self, list_cmd, guild_config: GuildConfig):
+        chan = self.bot.get_channel(guild_config.playerlist_chan)  # playerlist channel
 
         # gets the most recent message in the playerlist channel
         # its used to fetch a specific message from there, but honestly, this method is better
@@ -46,11 +45,10 @@ class AutoRunPlayerlist(commands.Cog):
         list_cmd = self.bot.get_command("playerlist")
         to_run = []
 
-        for guild_id in self.bot.config.keys():
-            guild_config = self.bot.config[guild_id]
+        async for guild_config in GuildConfig.all():
 
-            if (
-                guild_config["club_id"] != "None"
+            if bool(
+                guild_config.club_id
             ):  # probably could have done a null value, but old code is a thing
 
                 to_run.append(self.auto_run_playerlist(list_cmd, guild_config))

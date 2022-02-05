@@ -7,11 +7,20 @@ import nextcord
 from nextcord.ext import commands
 
 import common.utils as utils
+from common.models import GuildConfig
 
 
 class OnCMDError(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
+
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild: nextcord.Guild):
+        exists = await GuildConfig.exists(guild_id=guild.id)
+        if not exists:
+            await GuildConfig.create(
+                guild_id=guild.id, prefixes={"!?"},
+            )
 
     def error_embed_generate(self, error_msg):
         return nextcord.Embed(colour=nextcord.Colour.red(), description=error_msg)

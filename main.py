@@ -6,6 +6,9 @@ import aiohttp
 import nextcord
 from dotenv import load_dotenv
 from nextcord.ext import commands
+from tortoise import Tortoise
+from tortoise.exceptions import ConfigurationError
+from tortoise.exceptions import DoesNotExist
 from websockets.exceptions import ConnectionClosedOK
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
@@ -15,6 +18,7 @@ import common.utils as utils
 import keep_alive
 from common.custom_providers import ProfileProvider
 from common.help_cmd import PaginatedHelpCommand
+from common.models import GuildConfig
 
 
 load_dotenv()
@@ -33,7 +37,24 @@ logger.addHandler(handler)
 
 async def realms_playerlist_prefixes(bot: commands.Bot, msg: nextcord.Message):
     mention_prefixes = {f"{bot.user.mention} ", f"<@!{bot.user.id}> "}
-    custom_prefixes = {"!?"}
+
+    if msg.guild and msg.guild.id == 775912554928144384:
+        custom_prefixes = {"!?"}
+    else:
+        try:
+            guild_config = await GuildConfig.get(guild_id=msg.guild.id)
+            custom_prefixes = guild_config.prefixes
+        except DoesNotExist:
+            # guild hasnt been added yet
+            custom_prefixes = set()
+        except AttributeError:
+            # prefix handling runs before command checks, so there's a chance there's no guild
+            custom_prefixes = {"!?"}
+        except ConfigurationError:  # prefix handling also runs before on_ready sometimes
+            custom_prefixes = set()
+        except KeyError:  # rare possibility, but you know
+            custom_prefixes = set()
+
     return mention_prefixes.union(custom_prefixes)
 
 
@@ -57,6 +78,10 @@ def global_checks(ctx: commands.Context):
 
 
 async def on_init_load():
+    await Tortoise.init(
+        db_url=os.environ.get("DB_URL"), modules={"models": ["common.models"]}
+    )
+
     await bot.wait_until_ready()
 
     application = await bot.application_info()
@@ -72,18 +97,13 @@ async def on_init_load():
     bot.profile = ProfileProvider(xbl_client)
 
     bot.load_extension("onami")
-    bot.load_extension("cogs.config_fetch")
-    while bot.config == {}:
-        await asyncio.sleep(0.1)
 
     cogs_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_FILE"))
-
     for cog in cogs_list:
-        if cog != "cogs.config_fetch":
-            try:
-                bot.load_extension(cog)
-            except commands.NoEntryPointError:
-                pass
+        try:
+            bot.load_extension(cog)
+        except commands.NoEntryPointError:
+            pass
 
 
 class RealmsPlayerlistBot(commands.Bot):
@@ -172,9 +192,7 @@ bot = RealmsPlayerlistBot(
 
 bot.init_load = True
 bot.color = nextcord.Color(int(os.environ.get("BOT_COLOR")))  # 8ac249, aka 9093705
-bot.config = {}
 bot.gamertags = {}
-bot.pastebins = {}
 
 bot.loop.create_task(on_init_load())
 # keep_alive.keep_alive()
