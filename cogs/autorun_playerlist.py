@@ -47,10 +47,7 @@ class AutoRunPlayerlist(commands.Cog):
 
         async for guild_config in GuildConfig.all():
 
-            if bool(
-                guild_config.club_id
-            ):  # probably could have done a null value, but old code is a thing
-
+            if bool(guild_config.club_id):
                 to_run.append(self.auto_run_playerlist(list_cmd, guild_config))
 
         # this gather is done so that they can all run in parallel
