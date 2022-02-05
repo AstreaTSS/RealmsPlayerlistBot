@@ -54,13 +54,13 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     async def view_guild(
         self,
         inter: nextcord.Interaction,
-        guild_id: int = nextcord.SlashOption(  # type: ignore
-            description="The guild id for the guild to view."
+        guild_id: str = nextcord.SlashOption(  # type: ignore
+            description="The guild ID for the guild to view."
         ),
     ):
         await inter.response.defer()
 
-        guild = self.bot.get_guild(guild_id)
+        guild = self.bot.get_guild(int(guild_id))
         guild_config = await GuildConfig.get(guild_id=guild_id)
 
         prefixes = tuple(f"`{p}`" for p in guild_config.prefixes)
@@ -86,13 +86,13 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     async def add_guild(
         self,
         inter: nextcord.Interaction,
-        guild_id: int = nextcord.SlashOption(  # type: ignore
-            description="The guild id for the guild to add."
+        guild_id: str = nextcord.SlashOption(  # type: ignore
+            description="The guild ID for the guild to add."
         ),
     ):
         await inter.response.defer()
         await GuildConfig.create(
-            guild_id=guild_id, prefixes={"!?"},
+            guild_id=int(guild_id), prefixes={"!?"},
         )
         await inter.send("Done!")
 
@@ -105,13 +105,13 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     async def edit_guild(
         self,
         inter: nextcord.Interaction,
-        guild_id: int = nextcord.SlashOption(  # type: ignore
-            description="The guild id for the guild to edit."
+        guild_id: str = nextcord.SlashOption(  # type: ignore
+            description="The guild ID for the guild to edit."
         ),
         club_id: str = nextcord.SlashOption(  # type: ignore
             description="The club ID for the Realm.", required=False
         ),
-        playerlist_chan: int = nextcord.SlashOption(  # type: ignore
+        playerlist_chan: str = nextcord.SlashOption(  # type: ignore
             description="The playerlist channel ID for this guild.", required=False
         ),
         online_cmd: bool = nextcord.SlashOption(  # type: ignore
@@ -123,9 +123,11 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
         guild_config = await GuildConfig.get(guild_id=guild_id)
 
         if club_id:
-            guild_config.club_id = club_id if club_id != "None" else None
+            guild_config.club_id = int(club_id) if club_id != "None" else None
         if playerlist_chan:
-            guild_config.playerlist_chan = playerlist_chan
+            guild_config.playerlist_chan = (
+                int(playerlist_chan) if playerlist_chan != "None" else None
+            )
         if online_cmd:
             guild_config.online_cmd = online_cmd
 
