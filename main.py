@@ -38,22 +38,19 @@ logger.addHandler(handler)
 async def realms_playerlist_prefixes(bot: commands.Bot, msg: nextcord.Message):
     mention_prefixes = {f"{bot.user.mention} ", f"<@!{bot.user.id}> "}
 
-    if msg.guild and msg.guild.id == 775912554928144384:
+    try:
+        guild_config = await GuildConfig.get(guild_id=msg.guild.id)
+        custom_prefixes = guild_config.prefixes
+    except DoesNotExist:
+        # guild hasnt been added yet
+        custom_prefixes = set()
+    except AttributeError:
+        # prefix handling runs before command checks, so there's a chance there's no guild
         custom_prefixes = {"!?"}
-    else:
-        try:
-            guild_config = await GuildConfig.get(guild_id=msg.guild.id)
-            custom_prefixes = guild_config.prefixes
-        except DoesNotExist:
-            # guild hasnt been added yet
-            custom_prefixes = set()
-        except AttributeError:
-            # prefix handling runs before command checks, so there's a chance there's no guild
-            custom_prefixes = {"!?"}
-        except ConfigurationError:  # prefix handling also runs before on_ready sometimes
-            custom_prefixes = set()
-        except KeyError:  # rare possibility, but you know
-            custom_prefixes = set()
+    except ConfigurationError:  # prefix handling also runs before on_ready sometimes
+        custom_prefixes = set()
+    except KeyError:  # rare possibility, but you know
+        custom_prefixes = set()
 
     return mention_prefixes.union(custom_prefixes)
 
