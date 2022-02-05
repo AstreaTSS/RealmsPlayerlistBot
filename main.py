@@ -84,9 +84,6 @@ async def on_init_load():
 
     await bot.wait_until_ready()
 
-    application = await bot.application_info()
-    bot.owner = application.owner
-
     bot.session = aiohttp.ClientSession()
     auth_mgr = AuthenticationManager(
         bot.session, os.environ.get("CLIENT_ID"), os.environ.get("CLIENT_SECRET"), ""
@@ -100,10 +97,14 @@ async def on_init_load():
 
     cogs_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_FILE"))
     for cog in cogs_list:
-        try:
-            bot.load_extension(cog)
-        except commands.NoEntryPointError:
-            pass
+        if cog != "cogs.owner_cmds":
+            try:
+                bot.load_extension(cog)
+            except commands.NoEntryPointError:
+                pass
+
+    application = await bot.application_info()
+    bot.owner = application.owner
 
 
 class RealmsPlayerlistBot(commands.Bot):
@@ -123,6 +124,9 @@ class RealmsPlayerlistBot(commands.Bot):
         self._checks.append(global_checks)
 
     async def on_ready(self):
+        while not hasattr(self, "owner"):
+            await asyncio.sleep(0.1)
+
         utcnow = nextcord.utils.utcnow()
         time_format = nextcord.utils.format_dt(utcnow)
 
@@ -131,13 +135,6 @@ class RealmsPlayerlistBot(commands.Bot):
             if self.init_load == True
             else f"Reconnected at {time_format}!"
         )
-
-        while (
-            not hasattr(self, "owner")
-            or not hasattr(self, "config")
-            or self.config == {}
-        ):
-            await asyncio.sleep(0.1)
 
         await self.owner.send(connect_msg)
 
@@ -194,6 +191,8 @@ bot.init_load = True
 bot.color = nextcord.Color(int(os.environ.get("BOT_COLOR")))  # 8ac249, aka 9093705
 bot.gamertags = {}
 
+
+bot.load_extension("cogs.owner_cmds")
 bot.loop.create_task(on_init_load())
 # keep_alive.keep_alive()
 bot.run(os.environ.get("MAIN_TOKEN"))

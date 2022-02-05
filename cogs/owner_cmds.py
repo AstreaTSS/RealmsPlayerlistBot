@@ -13,6 +13,9 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
         self.bot.loop.create_task(self.add_permissions())
 
     async def add_permissions(self):
+        while not hasattr(self, "owner"):
+            await asyncio.sleep(0.1)
+
         # thanks, nextcord!
         await asyncio.sleep(5)
 
@@ -112,7 +115,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
             description="The playerlist channel ID for this guild.", required=False
         ),
         online_cmd: bool = nextcord.SlashOption(  # type: ignore
-            "Should the online command be able to be used?", required=False
+            description="Should the online command be able to be used?", required=False
         ),
     ):
         await inter.response.defer()
