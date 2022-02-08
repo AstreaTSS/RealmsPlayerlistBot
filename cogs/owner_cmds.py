@@ -46,6 +46,19 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     async def cog_check(self, ctx):
         return await self.bot.is_owner(ctx.author)
 
+    async def _autocomplete_guilds(self, inter: nextcord.Interaction, argument: str):
+        guild_mapping = {guild.name: guild.id for guild in self.bot.guilds}
+
+        if not argument:
+            await inter.response.send_autocomplete(guild_mapping)
+
+        near_guilds = {
+            guild_name: guild_id
+            for guild_name, guild_id in guild_mapping.items()
+            if argument.lower() in guild_name.lower()
+        }
+        await inter.response.send_autocomplete(near_guilds)
+
     @nextcord.slash_command(
         name="view-guild",
         description="Displays a guild's config.",
@@ -55,8 +68,8 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     async def view_guild(
         self,
         inter: nextcord.Interaction,
-        guild_id: str = nextcord.SlashOption(  # type: ignore
-            description="The guild ID for the guild to view."
+        guild_id: int = nextcord.SlashOption(  # type: ignore
+            name="guild", description="The guild to view."
         ),
     ):
         await inter.response.defer()
@@ -81,6 +94,10 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
         )
 
         await inter.send(embed=embed)
+
+    @view_guild.on_autocomplete("guild_id")
+    async def view_get_guild(self, inter, argument):
+        await self._autocomplete_guilds(inter, argument)
 
     @nextcord.slash_command(
         name="add-guild",
@@ -110,8 +127,8 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     async def edit_guild(
         self,
         inter: nextcord.Interaction,
-        guild_id: str = nextcord.SlashOption(  # type: ignore
-            description="The guild ID for the guild to edit."
+        guild_id: int = nextcord.SlashOption(  # type: ignore
+            name="guild", description="The guild ID for the guild to edit."
         ),
         club_id: str = nextcord.SlashOption(  # type: ignore
             description="The club ID for the Realm.", required=False
@@ -138,6 +155,10 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
 
         await guild_config.save()
         await inter.send("Done!")
+
+    @edit_guild.on_autocomplete("guild_id")
+    async def edit_get_guild(self, inter, argument):
+        await self._autocomplete_guilds(inter, argument)
 
 
 def setup(bot):
