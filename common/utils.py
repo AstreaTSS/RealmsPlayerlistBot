@@ -6,6 +6,7 @@ import typing
 from pathlib import Path
 
 import aiohttp
+import aioredis
 import nextcord
 from nextcord.ext import commands
 
@@ -179,6 +180,7 @@ if typing.TYPE_CHECKING:
         session: aiohttp.ClientSession
         profile: ProfileProvider
         owner: nextcord.User
+        redis: aioredis.Redis
 
 
 else:
