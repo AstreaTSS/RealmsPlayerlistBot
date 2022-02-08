@@ -196,7 +196,11 @@ class GamertagHandler:
                     gamertag = next(
                         s.value for s in user.settings if s.id == "Gamertag"
                     )
-                    self.bot.gamertags[user.id] = gamertag
+                    self.bot.redis.setex(
+                        name=str(user.id),
+                        time=datetime.timedelta(days=14),
+                        value=gamertag,
+                    )
                     dict_gamertags[user.id] = gamertag
                 except KeyError or StopIteration:
                     continue
@@ -322,7 +326,7 @@ class Playerlist(commands.Cog):
                 member["xuid"],
                 last_seen,
                 member["lastSeenState"],
-                self.bot.gamertags.get(member["xuid"]),
+                await self.bot.redis.get(member["xuid"]),
             )
             if player.resolved:
                 player_list.append(player)

@@ -188,7 +188,6 @@ bot = RealmsPlayerlistBot(
 
 bot.init_load = True
 bot.color = nextcord.Color(int(os.environ.get("BOT_COLOR")))  # 8ac249, aka 9093705
-bot.gamertags = {}
 
 
 bot.load_extension("cogs.owner_cmds")

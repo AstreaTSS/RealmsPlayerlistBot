@@ -176,7 +176,6 @@ if typing.TYPE_CHECKING:
     class RealmBotBase(commands.Bot):
         init_load: bool
         color: nextcord.Color
-        gamertags: typing.Dict[str, str]
         session: aiohttp.ClientSession
         profile: ProfileProvider
         owner: nextcord.User
