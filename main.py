@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-from ctypes import util
 
 import aiohttp
 import aioredis
