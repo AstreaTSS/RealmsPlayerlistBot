@@ -9,7 +9,7 @@ from common.models import GuildConfig
 
 class GeneralCMDS(commands.Cog):
     def __init__(self, bot):
-        self.bot: commands.Bot = bot
+        self.bot: utils.RealmBotBase = bot
 
     @commands.command()
     async def ping(self, ctx):

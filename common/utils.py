@@ -1,8 +1,8 @@
 #!/usr/bin/env python3.8
 import collections
-import datetime
 import logging
 import traceback
+import typing
 from pathlib import Path
 
 import aiohttp
@@ -167,3 +167,21 @@ def yesno_friendly_str(bool_to_convert):
 class CustomCheckFailure(commands.CheckFailure):
     # custom classs for custom prerequisite failures outside of normal command checks
     pass
+
+
+if typing.TYPE_CHECKING:
+    from .custom_providers import ProfileProvider
+
+    class RealmBotBase(commands.Bot):
+        init_load: bool
+        color: nextcord.Color
+        gamertags: typing.Dict[str, str]
+        session: aiohttp.ClientSession
+        profile: ProfileProvider
+        owner: nextcord.User
+
+
+else:
+
+    class RealmBotBase(commands.Bot):
+        pass

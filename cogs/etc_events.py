@@ -12,7 +12,7 @@ from common.models import GuildConfig
 
 class OnCMDError(commands.Cog):
     def __init__(self, bot):
-        self.bot: commands.Bot = bot
+        self.bot: utils.RealmBotBase = bot
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: nextcord.Guild):

@@ -4,12 +4,13 @@ import nextcord
 from nextcord.ext import commands
 from nextcord.types.interactions import PartialGuildApplicationCommandPermissions
 
+import common.utils as utils
 from common.models import GuildConfig
 
 
 class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     def __init__(self, bot):
-        self.bot: commands.Bot = bot
+        self.bot: utils.RealmBotBase = bot
         self.bot.loop.create_task(self.add_permissions())
 
     async def add_permissions(self):

@@ -14,7 +14,7 @@ class AutoRunPlayerlist(commands.Cog):
     # resetting the autorun cycle
 
     def __init__(self, bot):
-        self.bot: commands.Bot = bot
+        self.bot: utils.RealmBotBase = bot
         self.playerlist_loop.start()
 
     def cog_unload(self):

@@ -100,7 +100,7 @@ class GamertagHandler:
     """A special class made to handle the complexities of getting gamertags
     from XUIDs."""
 
-    bot: commands.Bot = attr.ib()
+    bot: utils.RealmBotBase = attr.ib()
     sem: asyncio.Semaphore = attr.ib()
     xuids_to_get: typing.Tuple[str, ...] = attr.ib()
     profile: "providers.ProfileProvider" = attr.ib()
@@ -238,7 +238,7 @@ async def can_run_online(ctx: commands.Context):
 
 class Playerlist(commands.Cog):
     def __init__(self, bot):
-        self.bot: commands.Bot = bot
+        self.bot: utils.RealmBotBase = bot
         self.sem = asyncio.Semaphore(
             3
         )  # prevents bot from overloading xbox api, hopefully
@@ -351,7 +351,10 @@ class Playerlist(commands.Cog):
     @commands.check(can_run_playerlist)
     @commands.cooldown(1, 240, commands.BucketType.guild)
     async def playerlist(
-        self, ctx: commands.Context, hours_ago: typing.Optional[str] = None, **kwargs,
+        self,
+        ctx: commands.Context[utils.RealmBotBase],
+        hours_ago: typing.Optional[str] = None,
+        **kwargs,
     ):
         """Checks and makes a playerlist, a log of players who have joined and left.
         By default, the command version goes back 12 hours.
@@ -452,7 +455,7 @@ class Playerlist(commands.Cog):
     @commands.command()
     @commands.cooldown(1, 300, commands.BucketType.guild)
     @commands.check(can_run_online)
-    async def online(self, ctx: commands.Context):
+    async def online(self, ctx: commands.Context[utils.RealmBotBase]):
         """Allows you to see if anyone is online on the Realm right now.
         The realm must agree to this being enabled for you to use it."""
         # uses much of the same code as playerlist

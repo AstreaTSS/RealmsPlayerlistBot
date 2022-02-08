@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from ctypes import util
 
 import aiohttp
 import nextcord
@@ -55,7 +56,7 @@ async def realms_playerlist_prefixes(bot: commands.Bot, msg: nextcord.Message):
     return mention_prefixes.union(custom_prefixes)
 
 
-def global_checks(ctx: commands.Context):
+def global_checks(ctx: commands.Context[utils.RealmBotBase]):
     if not ctx.bot.is_ready():
         return False
 
@@ -104,7 +105,7 @@ async def on_init_load():
     bot.owner = application.owner
 
 
-class RealmsPlayerlistBot(commands.Bot):
+class RealmsPlayerlistBot(utils.RealmBotBase):
     def __init__(
         self,
         command_prefix,
