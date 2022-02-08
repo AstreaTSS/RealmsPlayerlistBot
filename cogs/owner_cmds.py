@@ -69,10 +69,14 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
         embed = nextcord.Embed(
             color=self.bot.color, title=f"Server Config for {guild}:"
         )
+        playerlist_channel = (
+            f"<#{guild_config.playerlist_chan}> ({guild_config.playerlist_chan})"
+            if guild_config.playerlist_chan
+            else "None"
+        )
         embed.description = (
             f"Club ID: {guild_config.club_id}\n"
-            + f"Playerlist Channel: <#{guild_config.playerlist_chan}>"
-            f" ({guild_config.playerlist_chan})\nOnline Command Enabled?"
+            + f"Playerlist Channel: {playerlist_channel}\nOnline Command Enabled?"
             f" {guild_config.online_cmd}\nPrefixes: {', '.join(prefixes)}"
         )
 
