@@ -258,7 +258,9 @@ class Playerlist(commands.Cog):
     def cog_unload(self):
         self.bot.loop.create_task(self.openxbl_session.close())
 
-    async def realm_club_get(self, club_id):
+    async def _realm_club_json(
+        self, club_id
+    ) -> typing.Tuple[typing.Optional[dict], aiohttp.ClientResponse]:
         headers = {  # same api as the gamerag one
             "X-Authorization": os.environ.get("OPENXBL_KEY"),
             "Accept": "application/json",
@@ -266,33 +268,46 @@ class Playerlist(commands.Cog):
         }
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(f"https://xbl.io/api/v2/clubs/{club_id}") as r:
-
                 try:
                     resp_json = await r.json()
+                    return resp_json, r
                 except aiohttp.ContentTypeError:
-                    # who knows
-                    resp = await r.text()
-                    await utils.msg_to_owner(self.bot, resp)
-                    await utils.msg_to_owner(self.bot, r.headers)
-                    await utils.msg_to_owner(self.bot, r.status)
-                    return None
+                    if r.status != 500:
+                        return None, r
 
-                try:
-                    # again, the xbox live api gives every response as a list
-                    # even when requesting for one thing
-                    # and we only need the presences of the users
-                    # not the other stuff
-                    return resp_json["clubs"][0]["clubPresence"]
-                except KeyError or TypeError:
-                    # who knows x2
+                    try:
+                        r = await self.bot.clubs.get_club_user_presence(club_id)
+                        resp_json = await r.json()
+                        return resp_json, r
+                    except aiohttp.ContentTypeError:
+                        return None, r
 
-                    if resp_json.get("code") and resp_json["code"] == 1018:
-                        return "Unauthorized"
+    async def realm_club_get(self, club_id):
+        resp_json, resp = await self._realm_club_json(club_id)
 
-                    await utils.msg_to_owner(self.bot, resp_json)
-                    await utils.msg_to_owner(self.bot, r.headers)
-                    await utils.msg_to_owner(self.bot, r.status)
-                    return None
+        if not resp_json:
+            resp_text = await resp.text()
+            await utils.msg_to_owner(self.bot, resp_text)
+            await utils.msg_to_owner(self.bot, resp.headers)
+            await utils.msg_to_owner(self.bot, resp.status)
+            return None
+
+        try:
+            # again, the xbox live api gives every response as a list
+            # even when requesting for one thing
+            # and we only need the presences of the users
+            # not the other stuff
+            return resp_json["clubs"][0]["clubPresence"]
+        except KeyError or TypeError:
+            # who knows x2
+
+            if resp_json.get("code") and resp_json["code"] == 1018:
+                return "Unauthorized"
+
+            await utils.msg_to_owner(self.bot, resp_json)
+            await utils.msg_to_owner(self.bot, resp.headers)
+            await utils.msg_to_owner(self.bot, resp.status)
+            return None
 
     async def get_players_from_club_data(
         self,

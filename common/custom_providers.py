@@ -42,7 +42,9 @@ class ClubsProvider(BaseProvider):
     CLUBS_URL = "https://clubhub.xboxlive.com"
     HEADERS_CLUB = {"x-xbl-contract-version": "4"}
 
-    async def get_club_user_presence(self, club_id: Union[int, str], **kwargs):
+    async def get_club_user_presence(
+        self, club_id: Union[int, str], **kwargs
+    ) -> ClientResponse:
         """
         Gets details about (at most) the last 1000 members active within a club.
         Args:
