@@ -51,6 +51,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
 
         if not argument:
             await inter.response.send_autocomplete(guild_mapping)
+            return
 
         near_guilds = {
             guild_name: guild_id
