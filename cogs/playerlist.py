@@ -196,7 +196,7 @@ class GamertagHandler:
                     gamertag = next(
                         s.value for s in user.settings if s.id == "Gamertag"
                     )
-                    self.bot.redis.setex(
+                    await self.bot.redis.setex(
                         name=str(user.id),
                         time=datetime.timedelta(days=14),
                         value=gamertag,

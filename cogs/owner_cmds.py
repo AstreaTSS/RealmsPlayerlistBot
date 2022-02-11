@@ -68,7 +68,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     async def view_guild(
         self,
         inter: nextcord.Interaction,
-        guild_id: int = nextcord.SlashOption(  # type: ignore
+        guild_id: str = nextcord.SlashOption(  # type: ignore
             name="guild", description="The guild to view."
         ),
     ):
@@ -127,7 +127,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     async def edit_guild(
         self,
         inter: nextcord.Interaction,
-        guild_id: int = nextcord.SlashOption(  # type: ignore
+        guild_id: str = nextcord.SlashOption(  # type: ignore
             name="guild", description="The guild ID for the guild to edit."
         ),
         club_id: str = nextcord.SlashOption(  # type: ignore
