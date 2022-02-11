@@ -272,7 +272,7 @@ class Playerlist(commands.Cog):
                     resp_json = await r.json()
                     return resp_json, r
                 except aiohttp.ContentTypeError:
-                    if r.status != 500:
+                    if r.status not in (500, 521):
                         return None, r
 
                     try:
