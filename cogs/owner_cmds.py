@@ -47,7 +47,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
         return await self.bot.is_owner(ctx.author)
 
     async def _autocomplete_guilds(self, inter: nextcord.Interaction, argument: str):
-        guild_mapping = {guild.name: guild.id for guild in self.bot.guilds}
+        guild_mapping = {guild.name: str(guild.id) for guild in self.bot.guilds}
 
         if not argument:
             await inter.response.send_autocomplete(guild_mapping)
@@ -75,7 +75,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
         await inter.response.defer()
 
         guild = self.bot.get_guild(int(guild_id))
-        guild_config = await GuildConfig.get(guild_id=guild_id)
+        guild_config = await GuildConfig.get(guild_id=int(guild_id))
 
         prefixes = tuple(f"`{p}`" for p in guild_config.prefixes)
 
@@ -142,7 +142,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     ):
         await inter.response.defer()
 
-        guild_config = await GuildConfig.get(guild_id=guild_id)
+        guild_config = await GuildConfig.get(guild_id=int(guild_id))
 
         if club_id:
             guild_config.club_id = int(club_id) if club_id != "None" else None
