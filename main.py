@@ -80,7 +80,7 @@ async def on_init_load():
     await Tortoise.init(
         db_url=os.environ.get("DB_URL"), modules={"models": ["common.models"]}
     )
-    bot.redis = aioredis.from_url(os.environ.get("REDIS_URL"))
+    bot.redis = aioredis.from_url(os.environ.get("REDIS_URL"), decode_responses=True)
 
     await bot.wait_until_ready()
 
