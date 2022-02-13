@@ -150,6 +150,15 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         except ConnectionClosedOK:
             await utils.msg_to_owner(self, "Reconnecting...")
 
+    async def on_disconnect(self):
+        # basically, this needs to be done as otherwise, when the bot reconnects,
+        # redis may complain that a connection was closed by a peer
+        # this isnt a great solution, but it should work
+        try:
+            await self.redis.connection_pool.disconnect(inuse_connections=False)
+        except Exception:
+            pass
+
     async def on_resumed(self):
         activity = nextcord.Activity(
             name="over some Realms", type=nextcord.ActivityType.watching
