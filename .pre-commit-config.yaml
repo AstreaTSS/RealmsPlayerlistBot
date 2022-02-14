@@ -4,9 +4,10 @@ repos:
   hooks:
     - id: reorder-python-imports
 - repo: https://github.com/psf/black
-  rev: 19.10b0
+  rev: 21.12b0
   hooks:
     - id: black
+      args: [--experimental-string-processing]
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v2.3.0
   hooks:
