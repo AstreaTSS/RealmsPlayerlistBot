@@ -37,7 +37,7 @@ class GuildConfig(Model):
         table = "realmguildconfig"
 
     guild_id: int = fields.BigIntField(pk=True)
-    club_id: str = fields.CharField(50, null=True)
-    playerlist_chan: int = fields.BigIntField(null=True)
+    club_id: typing.Optional[str] = fields.CharField(50, null=True)
+    playerlist_chan: typing.Optional[int] = fields.BigIntField(null=True)
     online_cmd: bool = fields.BooleanField(default=False)  # type: ignore
     prefixes: typing.Set[str] = SetField()
