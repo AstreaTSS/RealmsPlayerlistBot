@@ -1,4 +1,5 @@
 import asyncio
+import importlib
 
 import nextcord
 from nextcord.ext import commands
@@ -28,19 +29,24 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
                 "view-guild",
                 "add-guild",
                 "edit-guild",
+                "remove-guild",
             ):
                 cmd_id = cmd.command_ids[775912554928144384]
                 cmd_dict: PartialGuildApplicationCommandPermissions = {
                     "id": cmd_id,
                     "permissions": [
-                        {"id": self.bot.owner_id, "type": 2, "permission": True,}
+                        {
+                            "id": self.bot.owner_id,
+                            "type": 2,
+                            "permission": True,
+                        }
                     ],
                 }
                 cmd_dicts.append(cmd_dict)
 
         if cmd_dicts:
             await self.bot.http.bulk_edit_guild_application_command_permissions(
-                self.bot.application_id, 775912554928144384, cmd_dicts
+                self.bot.application_id, 775912554928144384, cmd_dicts  # type: ignore
             )
 
     async def cog_check(self, ctx):
@@ -112,11 +118,28 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
         guild_id: str = nextcord.SlashOption(  # type: ignore
             description="The guild ID for the guild to add."
         ),
+        club_id: str = nextcord.SlashOption(  # type: ignore
+            description="The club ID for the Realm.", required=False
+        ),
+        playerlist_chan: str = nextcord.SlashOption(  # type: ignore
+            description="The playerlist channel ID for this guild.", required=False
+        ),
+        online_cmd: bool = nextcord.SlashOption(  # type: ignore
+            description="Should the online command be able to be used?", required=False
+        ),
     ):
         await inter.response.defer()
-        await GuildConfig.create(
-            guild_id=int(guild_id), prefixes={"!?"},
-        )
+
+        kwargs = {"guild_id": int(guild_id), "prefixes": {"!?"}}
+
+        if club_id:
+            kwargs["club_id"] = club_id
+        if playerlist_chan:
+            kwargs["playerlist_chan"] = int(playerlist_chan)
+        if online_cmd:
+            kwargs["online_cmd"] = online_cmd
+
+        await GuildConfig.create(**kwargs)
         await inter.send("Done!")
 
     @nextcord.slash_command(
@@ -146,7 +169,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
         guild_config = await GuildConfig.get(guild_id=int(guild_id))
 
         if club_id:
-            guild_config.club_id = int(club_id) if club_id != "None" else None
+            guild_config.club_id = club_id if club_id != "None" else None
         if playerlist_chan:
             guild_config.playerlist_chan = (
                 int(playerlist_chan) if playerlist_chan != "None" else None
@@ -157,10 +180,28 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
         await guild_config.save()
         await inter.send("Done!")
 
+    @nextcord.slash_command(
+        name="remove-guild",
+        description="Removes a guild from the bot's configs.",
+        guild_ids=[775912554928144384],
+        default_permission=False,
+    )
+    async def remove_guild(
+        self,
+        inter: nextcord.Interaction,
+        guild_id: str = nextcord.SlashOption(  # type: ignore
+            name="guild", description="The guild ID for the guild to remove."
+        ),
+    ):
+        await inter.response.defer()
+        await GuildConfig.filter(guild_id=int(guild_id)).delete()
+        await inter.send("Deleted!")
+
     @edit_guild.on_autocomplete("guild_id")
     async def edit_get_guild(self, inter, argument):
         await self._autocomplete_guilds(inter, argument)
 
 
 def setup(bot):
+    importlib.reload(utils)
     bot.add_cog(OwnerCMDs(bot))

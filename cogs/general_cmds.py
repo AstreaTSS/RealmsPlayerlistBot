@@ -25,7 +25,10 @@ class GeneralCMDS(commands.Cog):
         ping_personal = round(((end_time - start_time) * 1000), 2)
 
         await mes.edit(
-            content=f"Pong!\n`{ping_discord}` ms from Discord.\n`{ping_personal}` ms personally."
+            content=(
+                f"Pong!\n`{ping_discord}` ms from Discord.\n`{ping_personal}` ms"
+                " personally."
+            )
         )
 
     @commands.group(invoke_without_command=True, aliases=["prefix"], ignore_extra=False)
@@ -38,11 +41,13 @@ class GeneralCMDS(commands.Cog):
 
         if prefixes:
             await ctx.reply(
-                f"My prefixes for this server are: {', '.join(prefixes)}, but you can also mention me."
+                f"My prefixes for this server are: {', '.join(prefixes)}, but you can"
+                " also mention me."
             )
         else:
             await ctx.reply(
-                "I have no prefixes on this server, but you can mention me to run a command."
+                "I have no prefixes on this server, but you can mention me to run a"
+                " command."
             )
 
     @prefixes.command(ignore_extra=False)
