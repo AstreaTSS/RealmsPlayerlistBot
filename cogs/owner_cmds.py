@@ -35,7 +35,11 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
                 cmd_dict: PartialGuildApplicationCommandPermissions = {
                     "id": cmd_id,
                     "permissions": [
-                        {"id": self.bot.owner_id, "type": 2, "permission": True,}
+                        {
+                            "id": self.bot.owner_id,
+                            "type": 2,
+                            "permission": True,
+                        }
                     ],
                 }
                 cmd_dicts.append(cmd_dict)

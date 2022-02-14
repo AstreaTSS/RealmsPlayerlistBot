@@ -19,7 +19,8 @@ class OnCMDError(commands.Cog):
         exists = await GuildConfig.exists(guild_id=guild.id)
         if not exists:
             await GuildConfig.create(
-                guild_id=guild.id, prefixes={"!?"},
+                guild_id=guild.id,
+                prefixes={"!?"},
             )
 
     def error_embed_generate(self, error_msg):
@@ -38,7 +39,8 @@ class OnCMDError(commands.Cog):
                 embed=self.error_embed_generate(
                     (
                         f"{error}. This was most likely due to "
-                        + "it being buggy or broken in some way - please wait for it to be re-enabled."
+                        + "it being buggy or broken in some way - please wait for it to"
+                        " be re-enabled."
                     )
                 )
             )
@@ -46,7 +48,8 @@ class OnCMDError(commands.Cog):
         elif isinstance(error, commands.TooManyArguments):
             await ctx.reply(
                 embed=self.error_embed_generate(
-                    "You passed too many arguments to that command! Please make sure you're "
+                    "You passed too many arguments to that command! Please make sure"
+                    " you're "
                     + "passing in a valid argument/subcommand."
                 )
             )
@@ -55,7 +58,8 @@ class OnCMDError(commands.Cog):
             await ctx.reply(
                 embed=self.error_embed_generate(
                     "You're doing that command too fast! "
-                    + f"Try again in `{humanize.precisedelta(delta_wait, format='%0.0f')}`."
+                    + "Try again in"
+                    f" `{humanize.precisedelta(delta_wait, format='%0.0f')}`."
                 )
             )
         elif isinstance(

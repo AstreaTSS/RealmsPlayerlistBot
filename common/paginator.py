@@ -276,7 +276,9 @@ class Pages:
         """stops the interactive pagination session"""
         try:
             await inter.response.edit_message(
-                content="The help command has stopped running.", embed=None, view=None,
+                content="The help command has stopped running.",
+                embed=None,
+                view=None,
             )
         except:
             pass

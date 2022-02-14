@@ -57,7 +57,9 @@ async def error_handle(bot, error, ctx=None):
     if ctx:
         error_embed = nextcord.Embed(
             colour=nextcord.Colour.red(),
-            description="An internal error has occured. The bot owner has been notified.\n"
+            description=(
+                "An internal error has occured. The bot owner has been notified.\n"
+            )
             + f"Error (for bot owner purposes): {error}",
         )
 
@@ -181,7 +183,6 @@ if typing.TYPE_CHECKING:
         clubs: ClubsProvider
         owner: nextcord.User
         redis: aioredis.Redis
-
 
 else:
 
