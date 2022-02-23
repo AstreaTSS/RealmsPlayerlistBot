@@ -23,9 +23,9 @@ The command can normally only be run by people with Manage Server permissions an
 
 ## Adding The Bot
 
-If you wish to add this bot, [join my Support Server](https://discord.gg/NSdetwGjpK) and DM me (Astrea) - I'll talk about how to set it up and all, since it isn't *that* simple.
+If you wish to add this bot, [join my Support Server](https://discord.gg/NSdetwGjpK) and view the instructions in the realms-playerlist-bot-info. It isn't super simple to set up the bot, so...
 
-Note that I'm not *always* available and may take a long time to get around to adding the bot to your server (though I'm *usually* quick enough), and there *may* be a couple of dealbreakers for you - I'd rather talk about those in DMs since they vary from person to person.
+Note that I'm not *always* available and may take a long time to get around to adding the bot to your server (though I'm *usually* quick enough), and there *may* be a couple of dealbreakers for you - I'd rather talk about those privately since they vary from person to person.
 
 ## Self-hosting Information
 
