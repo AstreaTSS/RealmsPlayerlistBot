@@ -29,7 +29,7 @@ Note that I'm not *always* available and may take a long time to get around to a
 
 ## Self-hosting Information
 
-Honestly, *good luck*. This thing is *far* from simple to get everything working, requiring you to know the ins-and-outs of most of the libraries I use. The code *also* assumes you're using replit.com out of all sites (mainly because I can't afford hosting this on an actual server), so that makes things *even more* difficult.
+Honestly, *good luck*. This thing is *far* from simple to get everything working, requiring you to know the ins-and-outs of most of the libraries I use. It can be a mess, and gathering the databases and servers needed even more so. There's also not much room for simplification here.
 
 But if you're willing to try... well, I won't leave a detailed guide here - just kinda poke around in the code and see what works. [`xbox-webapi-python`](https://github.com/OpenXbox/xbox-webapi-python) is worth looking if you're even considering it.
 
