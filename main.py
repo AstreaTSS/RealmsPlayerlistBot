@@ -17,7 +17,7 @@ from xbox.webapi.authentication.models import OAuth2TokenResponse
 
 import common.utils as utils
 import keep_alive
-from common.custom_providers import ClubsProvider
+from common.custom_providers import ClubProvider
 from common.custom_providers import ProfileProvider
 from common.help_cmd import PaginatedHelpCommand
 from common.models import GuildConfig
@@ -94,7 +94,7 @@ async def on_init_load():
     await auth_mgr.refresh_tokens()
     xbl_client = XboxLiveClient(auth_mgr)
     bot.profile = ProfileProvider(xbl_client)
-    bot.clubs = ClubsProvider(xbl_client)
+    bot.club = ClubProvider(xbl_client)
 
     bot.load_extension("onami")
 
