@@ -36,6 +36,8 @@ handler.setFormatter(
 )
 logger.addHandler(handler)
 
+DEV_GUILD_ID = int(os.environ.get("DEV_GUILD_ID"))
+
 
 async def realms_playerlist_prefixes(bot: commands.Bot, msg: nextcord.Message):
     mention_prefixes = {f"{bot.user.mention} ", f"<@!{bot.user.id}> "}
@@ -71,7 +73,7 @@ def global_checks(ctx: commands.Context[utils.RealmBotBase]):
         return True
 
     return not (
-        ctx.guild.id == 775912554928144384
+        ctx.guild.id == DEV_GUILD_ID
         and ctx.command.qualified_name not in ("help", "ping")
     )
 
