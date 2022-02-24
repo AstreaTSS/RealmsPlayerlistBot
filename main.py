@@ -157,7 +157,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         # redis may complain that a connection was closed by a peer
         # this isnt a great solution, but it should work
         try:
-            await self.redis.connection_pool.disconnect(inuse_connections=False)
+            await self.redis.connection_pool.disconnect(inuse_connections=True)
         except Exception:
             pass
 
