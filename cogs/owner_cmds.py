@@ -1,5 +1,6 @@
 import asyncio
 import importlib
+import os
 
 import nextcord
 from nextcord.ext import commands
@@ -7,6 +8,8 @@ from nextcord.types.interactions import PartialGuildApplicationCommandPermission
 
 import common.utils as utils
 from common.models import GuildConfig
+
+DEV_GUILD_ID = int(os.environ.get("DEV_GUILD_ID"))
 
 
 class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
@@ -31,7 +34,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
                 "edit-guild",
                 "remove-guild",
             ):
-                cmd_id = cmd.command_ids[775912554928144384]
+                cmd_id = cmd.command_ids[DEV_GUILD_ID]
                 cmd_dict: PartialGuildApplicationCommandPermissions = {
                     "id": cmd_id,
                     "permissions": [
@@ -46,7 +49,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
 
         if cmd_dicts:
             await self.bot.http.bulk_edit_guild_application_command_permissions(
-                self.bot.application_id, 775912554928144384, cmd_dicts  # type: ignore
+                self.bot.application_id, DEV_GUILD_ID, cmd_dicts  # type: ignore
             )
 
     async def cog_check(self, ctx):
@@ -69,7 +72,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     @nextcord.slash_command(
         name="view-guild",
         description="Displays a guild's config.",
-        guild_ids=[775912554928144384],
+        guild_ids=[DEV_GUILD_ID],
         default_permission=False,
     )
     async def view_guild(
@@ -109,7 +112,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     @nextcord.slash_command(
         name="add-guild",
         description="Adds a guild to the bot's configs.",
-        guild_ids=[775912554928144384],
+        guild_ids=[DEV_GUILD_ID],
         default_permission=False,
     )
     async def add_guild(
@@ -145,7 +148,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     @nextcord.slash_command(
         name="edit-guild",
         description="Edits a guild in the bot's configs.",
-        guild_ids=[775912554928144384],
+        guild_ids=[DEV_GUILD_ID],
         default_permission=False,
     )
     async def edit_guild(
@@ -183,7 +186,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     @nextcord.slash_command(
         name="remove-guild",
         description="Removes a guild from the bot's configs.",
-        guild_ids=[775912554928144384],
+        guild_ids=[DEV_GUILD_ID],
         default_permission=False,
     )
     async def remove_guild(

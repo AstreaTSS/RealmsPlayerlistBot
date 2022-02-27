@@ -38,21 +38,23 @@ class ProfileProvider(BaseProvider):
         return resp  # dirty patch to make sure this works
 
 
-class ClubsProvider(BaseProvider):
-    CLUBS_URL = "https://clubhub.xboxlive.com"
+class ClubProvider(BaseProvider):
+    CLUB_URL = "https://clubhub.xboxlive.com"
     HEADERS_CLUB = {"x-xbl-contract-version": "4"}
 
-    async def get_club_user_presence(
+    async def get_club_user_presences(
         self, club_id: Union[int, str], **kwargs
     ) -> ClientResponse:
         """
         Gets details about (at most) the last 1000 members active within a club.
+
         Args:
             club_id: id of club
+
         Returns:
             :class:`aiohttp.ClientResponse`: HTTP Response
         """
 
-        url = f"{self.CLUBS_URL}/clubs/Ids({club_id})/decoration/clubpresence"
+        url = f"{self.CLUB_URL}/clubs/Ids({club_id})/decoration/clubpresence"
         resp = await self.client.session.get(url, headers=self.HEADERS_CLUB, **kwargs)
         return resp

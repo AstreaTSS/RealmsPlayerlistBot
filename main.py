@@ -17,7 +17,7 @@ from xbox.webapi.authentication.models import OAuth2TokenResponse
 
 import common.utils as utils
 import keep_alive
-from common.custom_providers import ClubsProvider
+from common.custom_providers import ClubProvider
 from common.custom_providers import ProfileProvider
 from common.help_cmd import PaginatedHelpCommand
 from common.models import GuildConfig
@@ -35,6 +35,8 @@ handler.setFormatter(
     logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
 )
 logger.addHandler(handler)
+
+DEV_GUILD_ID = int(os.environ.get("DEV_GUILD_ID"))
 
 
 async def realms_playerlist_prefixes(bot: commands.Bot, msg: nextcord.Message):
@@ -73,7 +75,7 @@ def global_checks(ctx: commands.Context[utils.RealmBotBase]):
         return True
 
     return not (
-        ctx.guild.id == 775912554928144384
+        ctx.guild.id == DEV_GUILD_ID
         and ctx.command.qualified_name not in ("help", "ping")
     )
 
@@ -94,7 +96,7 @@ async def on_init_load():
     await auth_mgr.refresh_tokens()
     xbl_client = XboxLiveClient(auth_mgr)
     bot.profile = ProfileProvider(xbl_client)
-    bot.clubs = ClubsProvider(xbl_client)
+    bot.club = ClubProvider(xbl_client)
 
     bot.load_extension("onami")
 
@@ -157,7 +159,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         # redis may complain that a connection was closed by a peer
         # this isnt a great solution, but it should work
         try:
-            await self.redis.connection_pool.disconnect(inuse_connections=False)
+            await self.redis.connection_pool.disconnect(inuse_connections=True)
         except Exception:
             pass
 

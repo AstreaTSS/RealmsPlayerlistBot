@@ -173,14 +173,14 @@ class CustomCheckFailure(commands.CheckFailure):
 
 
 if typing.TYPE_CHECKING:
-    from .custom_providers import ProfileProvider, ClubsProvider
+    from .custom_providers import ProfileProvider, ClubProvider
 
     class RealmBotBase(commands.Bot):
         init_load: bool
         color: nextcord.Color
         session: aiohttp.ClientSession
         profile: ProfileProvider
-        clubs: ClubsProvider
+        club: ClubProvider
         owner: nextcord.User
         redis: aioredis.Redis
 

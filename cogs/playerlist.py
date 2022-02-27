@@ -276,7 +276,7 @@ class Playerlist(commands.Cog):
                         return None, r
 
                     try:
-                        r = await self.bot.clubs.get_club_user_presence(club_id)
+                        r = await self.bot.club.get_club_user_presences(club_id)
                         resp_json = await r.json()
                         return resp_json, r
                     except aiohttp.ContentTypeError:
