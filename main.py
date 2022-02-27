@@ -53,6 +53,8 @@ async def realms_playerlist_prefixes(bot: commands.Bot, msg: nextcord.Message):
         custom_prefixes = set()
     except KeyError:  # rare possibility, but you know
         custom_prefixes = set()
+    except asyncio.TimeoutError:  # happens right before reconnects
+        custom_prefixes = set()
 
     return mention_prefixes.union(custom_prefixes)
 
