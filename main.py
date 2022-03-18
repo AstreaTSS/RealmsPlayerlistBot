@@ -6,7 +6,6 @@ import aiohttp
 import aioredis
 import nextcord
 import tomli
-from dotenv import load_dotenv
 from nextcord.ext import commands
 from tortoise import Tortoise
 from tortoise.exceptions import ConfigurationError
