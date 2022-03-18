@@ -9,7 +9,7 @@ from nextcord.types.interactions import PartialGuildApplicationCommandPermission
 import common.utils as utils
 from common.models import GuildConfig
 
-DEV_GUILD_ID = int(os.environ.get("DEV_GUILD_ID"))
+DEV_GUILD_ID = int(os.environ["DEV_GUILD_ID"])
 
 
 class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):

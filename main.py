@@ -5,6 +5,7 @@ import os
 import aiohttp
 import aioredis
 import nextcord
+import tomli
 from dotenv import load_dotenv
 from nextcord.ext import commands
 from tortoise import Tortoise
@@ -23,20 +24,29 @@ from common.help_cmd import PaginatedHelpCommand
 from common.models import GuildConfig
 
 
-load_dotenv()
-# os.system("git pull")  # stupid way of getting around replit stuff
+# load the config file into environment variables
+# this allows an easy way to access these variables from any file
+# we allow the user to set a configuration location via an already-set
+# env var if they wish, but it'll default to config.toml in the running
+# directory
+CONFIG_LOCATION = os.environ.get("CONFIG_LOCATION", "config.toml")
+with open(CONFIG_LOCATION, "rb") as f:
+    toml_dict = tomli.load(f)
+    for key, value in toml_dict.items():
+        os.environ[key] = str(value)
+
 
 logger = logging.getLogger("nextcord")
 logger.setLevel(logging.INFO)
 handler = logging.FileHandler(
-    filename=os.environ.get("LOG_FILE_PATH"), encoding="utf-8", mode="a"
+    filename=os.environ["LOG_FILE_PATH"], encoding="utf-8", mode="a"
 )
 handler.setFormatter(
     logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
 )
 logger.addHandler(handler)
 
-DEV_GUILD_ID = int(os.environ.get("DEV_GUILD_ID"))
+DEV_GUILD_ID = int(os.environ["DEV_GUILD_ID"])
 
 
 async def realms_playerlist_prefixes(bot: commands.Bot, msg: nextcord.Message):
@@ -90,9 +100,9 @@ async def on_init_load():
 
     bot.session = aiohttp.ClientSession()
     auth_mgr = AuthenticationManager(
-        bot.session, os.environ.get("CLIENT_ID"), os.environ.get("CLIENT_SECRET"), ""
+        bot.session, os.environ["XBOX_CLIENT_ID"], os.environ["XBOX_CLIENT_SECRET"], ""
     )
-    auth_mgr.oauth = OAuth2TokenResponse.parse_raw(os.environ.get("XAPI_TOKENS"))
+    auth_mgr.oauth = OAuth2TokenResponse.parse_file(os.environ["XAPI_TOKENS_LOCATION"])
     await auth_mgr.refresh_tokens()
     xbl_client = XboxLiveClient(auth_mgr)
     bot.profile = ProfileProvider(xbl_client)
@@ -100,7 +110,7 @@ async def on_init_load():
 
     bot.load_extension("onami")
 
-    cogs_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_FILE"))
+    cogs_list = utils.get_all_extensions(os.environ["DIRECTORY_OF_BOT"])
     for cog in cogs_list:
         if cog != "cogs.owner_cmds":
             try:
@@ -202,10 +212,10 @@ bot = RealmsPlayerlistBot(
 )
 
 bot.init_load = True
-bot.color = nextcord.Color(int(os.environ.get("BOT_COLOR")))  # 8ac249, aka 9093705
+bot.color = nextcord.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
 
 
 bot.load_extension("cogs.owner_cmds")
 bot.loop.create_task(on_init_load())
 # keep_alive.keep_alive()
-bot.run(os.environ.get("MAIN_TOKEN"))
+bot.run(os.environ["MAIN_TOKEN"])

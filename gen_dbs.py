@@ -13,17 +13,17 @@ load_dotenv()
 
 async def init():
     await Tortoise.init(
-        db_url=os.environ.get("DB_URL"), modules={"models": ["common.models"]}
+        db_url=os.environ["DB_URL"], modules={"models": ["common.models"]}
     )
     await Tortoise.generate_schemas()
 
 
 async def port_from_file():  # optional to use if you have a config file from way back when
     await Tortoise.init(
-        db_url=os.environ.get("DB_URL"), modules={"models": ["common.models"]}
+        db_url=os.environ["DB_URL"], modules={"models": ["common.models"]}
     )
 
-    document_url = os.environ.get("CONFIG_URL")
+    document_url = os.environ["CONFIG_URL"]
     headers = {"Cache-Control": "no-cache", "Pragma": "no-cache"}
 
     async with aiohttp.ClientSession() as session:

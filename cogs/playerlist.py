@@ -249,7 +249,7 @@ class Playerlist(commands.Cog):
 
         # headers for openxbl, used for gamertag handling
         headers = {
-            "X-Authorization": os.environ.get("OPENXBL_KEY"),
+            "X-Authorization": os.environ["OPENXBL_KEY"],
             "Accept": "application/json",
             "Accept-Language": "en-US",
         }
@@ -262,7 +262,7 @@ class Playerlist(commands.Cog):
         self, club_id
     ) -> typing.Tuple[typing.Optional[dict], aiohttp.ClientResponse]:
         headers = {  # same api as the gamerag one
-            "X-Authorization": os.environ.get("OPENXBL_KEY"),
+            "X-Authorization": os.environ["OPENXBL_KEY"],
             "Accept": "application/json",
             "Accept-Language": "en-US",
         }
