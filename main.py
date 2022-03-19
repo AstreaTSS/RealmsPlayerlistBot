@@ -216,7 +216,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
 
 intents = nextcord.Intents(
-    guilds=True, members=True, emojis_and_stickers=True, messages=True, reactions=True
+    guilds=True, emojis_and_stickers=True, messages=True, reactions=True
 )
 mentions = nextcord.AllowedMentions.all()
 
