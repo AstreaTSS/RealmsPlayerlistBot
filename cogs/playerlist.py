@@ -424,12 +424,13 @@ class Playerlist(commands.Cog):
                 ctx.command.reset_cooldown(ctx)  # yes, this is funny
                 raise e
 
+        await ctx.trigger_typing()
+        guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
+
+        if not kwargs.get("no_init_mes"):
+            await ctx.reply("This might take quite a bit. Please be patient.")
+
         async with ctx.channel.typing():
-            guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
-
-            if not kwargs.get("no_init_mes"):
-                await ctx.reply("This might take quite a bit. Please be patient.")
-
             now = nextcord.utils.utcnow()
 
             time_delta = datetime.timedelta(hours=actual_hours_ago)
@@ -515,11 +516,12 @@ class Playerlist(commands.Cog):
         The realm must agree to this being enabled for you to use it."""
         # uses much of the same code as playerlist
 
+        await ctx.trigger_typing()
+        guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
+
+        await ctx.reply("This might take quite a bit. Please be patient.")
+
         async with ctx.channel.typing():
-            guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
-
-            await ctx.reply("This might take quite a bit. Please be patient.")
-
             now = nextcord.utils.utcnow()
             club_presence = await self.realm_club_get(guild_config.club_id)
             if club_presence is None:
