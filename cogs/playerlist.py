@@ -3,6 +3,7 @@ import datetime
 import importlib
 import os
 import typing
+from enum import IntEnum
 
 import aiohttp
 import attr
@@ -49,17 +50,35 @@ Regardless, good luck on your bot coding journey!
 """
 
 
+def _camel_to_const_snake(s):
+    return "".join([f"_{c}" if c.isupper() else c.upper() for c in s]).lstrip("_")
+
+
+class ClubUserPresence(IntEnum):
+    NOT_IN_CLUB = 0
+    IN_CLUB = 1
+    CHAT = 2
+    FEED = 3
+    ROSTER = 4
+    PLAY = 5
+    IN_GAME = 6
+
+    @classmethod
+    def from_xbox_api(cls, value: str):
+        return cls[_camel_to_const_snake(value)]
+
+
 @attr.s(slots=True, eq=False)
 class Player:
     """A simple class to represent a player on a Realm."""
 
     xuid: str = attr.ib()
     last_seen: datetime.datetime = attr.ib()
-    last_seen_state: str = attr.ib()
+    last_seen_state: ClubUserPresence = attr.ib()
     gamertag: typing.Optional[str] = attr.ib(default=None)
 
     def __eq__(self, o: object) -> bool:
-        return False if not isinstance(o, self.__class__) else o.xuid == self.xuid
+        return o.xuid == self.xuid if isinstance(o, self.__class__) else False
 
     @property
     def resolved(self):
@@ -67,7 +86,7 @@ class Player:
 
     @property
     def in_game(self):
-        return self.last_seen_state == "InGame"
+        return self.last_seen_state == ClubUserPresence.IN_GAME
 
     @property
     def display(self):  # sourcery skip: remove-unnecessary-else
@@ -319,9 +338,20 @@ class Playerlist(commands.Cog):
         unresolved_dict: typing.Dict[str, Player] = {}
 
         for member in club_presence:
+            last_seen_state = ClubUserPresence.from_xbox_api(member["lastSeenState"])
+
+            if last_seen_state not in {
+                ClubUserPresence.IN_GAME,
+                ClubUserPresence.NOT_IN_CLUB,
+            }:
+                # we want to ignore people causally browsing the club itself
+                # this isn't perfect, as if they stop viewing the club, they'll be put in
+                # the "NotInClub" list, but that's fine
+                continue
+
             # if we're online only, breaking out when we stop getting online
             # people is a good idea
-            if online_only and member["lastSeenState"] != "InGame":
+            if online_only and last_seen_state == ClubUserPresence.NOT_IN_CLUB:
                 break
 
             # xbox live uses a bit more precision than python can understand
@@ -340,7 +370,7 @@ class Playerlist(commands.Cog):
             player = Player(
                 member["xuid"],
                 last_seen,
-                member["lastSeenState"],
+                last_seen_state,
                 await self.bot.redis.get(member["xuid"]),
             )
             if player.resolved:
