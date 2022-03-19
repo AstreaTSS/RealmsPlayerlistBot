@@ -209,6 +209,7 @@ if typing.TYPE_CHECKING:
         club: ClubProvider
         owner: nextcord.User
         redis: aioredis.Redis
+        cached_prefixes: typing.DefaultDict[int, typing.Set[str]]
 
         async def get_context(self, message, *, cls=RealmContext) -> RealmContext:
             ...

@@ -72,6 +72,7 @@ class GeneralCMDS(commands.Cog):
 
             guild_config.prefixes.add(prefix)
             await guild_config.save()
+            ctx.bot.cached_prefixes[ctx.guild.id].add(prefix)
 
         await ctx.reply(f"Added `{prefix}`!")
 
@@ -87,6 +88,7 @@ class GeneralCMDS(commands.Cog):
                 guild_config = await ctx.fetch_config()
                 guild_config.prefixes.remove(prefix)
                 await guild_config.save()
+                ctx.bot.cached_prefixes[ctx.guild.id].remove(prefix)
 
             except KeyError:
                 raise commands.BadArgument(

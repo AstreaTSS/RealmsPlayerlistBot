@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from collections import defaultdict
 
 import aiohttp
 import aioredis
@@ -48,12 +49,23 @@ logger.addHandler(handler)
 DEV_GUILD_ID = int(os.environ["DEV_GUILD_ID"])
 
 
-async def realms_playerlist_prefixes(bot: commands.Bot, msg: nextcord.Message):
+async def _get_prefixes(bot: utils.RealmBotBase, msg: nextcord.Message):
+    if not msg.guild:
+        return set()
+
+    if prefixes := bot.cached_prefixes[msg.guild.id]:
+        return prefixes
+
+    guild_config = await GuildConfig.get(guild_id=msg.guild.id)
+    prefixes = bot.cached_prefixes[msg.guild.id] = guild_config.prefixes
+    return prefixes
+
+
+async def realms_playerlist_prefixes(bot: utils.RealmBotBase, msg: nextcord.Message):
     mention_prefixes = {f"{bot.user.mention} ", f"<@!{bot.user.id}> "}
 
     try:
-        guild_config = await GuildConfig.get(guild_id=msg.guild.id)
-        custom_prefixes = guild_config.prefixes
+        custom_prefixes = await _get_prefixes(bot, msg)
     except DoesNotExist:
         # guild hasnt been added yet
         custom_prefixes = set()
@@ -214,6 +226,7 @@ bot = RealmsPlayerlistBot(
     intents=intents,
 )
 
+bot.cached_prefixes = defaultdict(set)
 bot.init_load = True
 bot.color = nextcord.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
 
