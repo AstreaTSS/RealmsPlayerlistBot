@@ -424,12 +424,12 @@ class Playerlist(commands.Cog):
                 ctx.command.reset_cooldown(ctx)  # yes, this is funny
                 raise e
 
-        guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
-
-        if not kwargs.get("no_init_mes"):
-            await ctx.reply("This might take quite a bit. Please be patient.")
-
         async with ctx.channel.typing():
+            guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
+
+            if not kwargs.get("no_init_mes"):
+                await ctx.reply("This might take quite a bit. Please be patient.")
+
             now = nextcord.utils.utcnow()
 
             time_delta = datetime.timedelta(hours=actual_hours_ago)
@@ -466,7 +466,9 @@ class Playerlist(commands.Cog):
                     colour=self.bot.color,
                     title="People online right now",
                     description="\n".join(online_list),
+                    timestamp=now,
                 )
+                embed.set_footer(text="As of")
                 await ctx.send(embed=embed)
 
             if offline_list:
@@ -481,14 +483,18 @@ class Playerlist(commands.Cog):
                     colour=nextcord.Colour.lighter_gray(),
                     description="\n".join(chunks[0]),
                     title=f"People on in the last {actual_hours_ago} hour(s)",
+                    timestamp=now,
                 )
+                first_embed.set_footer(text="As of")
                 await ctx.send(embed=first_embed)
 
                 for chunk in chunks[1:]:
                     embed = nextcord.Embed(
                         colour=nextcord.Colour.lighter_gray(),
                         description="\n".join(chunk),
+                        timestamp=now,
                     )
+                    embed.set_footer(text="As of")
                     await ctx.send(embed=embed)
                     await asyncio.sleep(0.2)
 
@@ -508,11 +514,13 @@ class Playerlist(commands.Cog):
         """Allows you to see if anyone is online on the Realm right now.
         The realm must agree to this being enabled for you to use it."""
         # uses much of the same code as playerlist
-        guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
-
-        await ctx.reply("This might take quite a bit. Please be patient.")
 
         async with ctx.channel.typing():
+            guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
+
+            await ctx.reply("This might take quite a bit. Please be patient.")
+
+            now = nextcord.utils.utcnow()
             club_presence = await self.realm_club_get(guild_config.club_id)
             if club_presence is None:
                 # this can happen
@@ -541,7 +549,9 @@ class Playerlist(commands.Cog):
                 colour=self.bot.color,
                 title=f"{len(online_list)}/10 people online",
                 description="\n".join(online_list),
+                timestamp=now,
             )
+            embed.set_footer(text="As of")
             await ctx.reply(embed=embed)
         else:
             raise utils.CustomCheckFailure("No one is on the Realm right now.")
