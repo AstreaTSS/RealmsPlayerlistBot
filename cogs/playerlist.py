@@ -241,19 +241,19 @@ class HourConverter(commands.Converter[int], int):
         return int_argument
 
 
-async def can_run_playerlist(ctx: commands.Context):
+async def can_run_playerlist(ctx: utils.RealmContext):
     # simple check to see if a person can run the playerlist command
     try:
-        guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
+        guild_config = await ctx.fetch_config()
     except DoesNotExist:
         return False
     return bool(guild_config.club_id)
 
 
-async def can_run_online(ctx: commands.Context):
+async def can_run_online(ctx: utils.RealmContext):
     # same, but for the online command
     try:
-        guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
+        guild_config = await ctx.fetch_config()
     except DoesNotExist:
         return False
     return bool(guild_config.club_id) and guild_config.online_cmd
@@ -401,7 +401,7 @@ class Playerlist(commands.Cog):
     @commands.cooldown(1, 240, commands.BucketType.guild)
     async def playerlist(
         self,
-        ctx: commands.Context[utils.RealmBotBase],
+        ctx: utils.RealmContext,
         hours_ago: typing.Optional[str] = None,
         **kwargs,
     ):
@@ -425,7 +425,7 @@ class Playerlist(commands.Cog):
                 raise e
 
         await ctx.trigger_typing()
-        guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
+        guild_config = await ctx.fetch_config()
 
         if not kwargs.get("no_init_mes"):
             await ctx.reply("This might take quite a bit. Please be patient.")
@@ -511,13 +511,13 @@ class Playerlist(commands.Cog):
     @commands.command()
     @commands.cooldown(1, 300, commands.BucketType.guild)
     @commands.check(can_run_online)
-    async def online(self, ctx: commands.Context[utils.RealmBotBase]):
+    async def online(self, ctx: utils.RealmContext):
         """Allows you to see if anyone is online on the Realm right now.
         The realm must agree to this being enabled for you to use it."""
         # uses much of the same code as playerlist
 
         await ctx.trigger_typing()
-        guild_config = await GuildConfig.get(guild_id=ctx.guild.id)
+        guild_config = await ctx.fetch_config()
 
         await ctx.reply("This might take quite a bit. Please be patient.")
 

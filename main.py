@@ -184,9 +184,13 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         except BaseException as e:
             await utils.error_handle(self, e)
 
-    async def get_context(self, message, *, cls=commands.Context):
-        """A simple extension of get_content. If it doesn't manage to get a command, it changes the string used
-        to get the command from - to _ and retries. Convenient for the end user."""
+    async def get_context(self, message, *, cls=utils.RealmContext):
+        """
+        A simple extension of get_content. If it doesn't manage to get a command, it changes the string used
+        to get the command from - to _ and retries. Convenient for the end user.
+
+        This allows uses the bot's custom context by default.
+        """
 
         ctx = await super().get_context(message, cls=cls)
         if ctx.command is None and ctx.invoked_with:

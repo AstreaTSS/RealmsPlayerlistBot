@@ -27,6 +27,7 @@ class AutoRunPlayerlist(commands.Cog):
         # its used to fetch a specific message from there, but honestly, this method is better
         messages = await chan.history(limit=1).flatten()
         a_ctx = await self.bot.get_context(messages[0])
+        a_ctx.guild_config = guild_config  # to speed things up
 
         # little hack so we dont accidentally ping a random person
         a_ctx.reply = a_ctx.send
@@ -46,7 +47,6 @@ class AutoRunPlayerlist(commands.Cog):
         to_run = []
 
         async for guild_config in GuildConfig.all():
-
             if bool(guild_config.club_id):
                 to_run.append(self.auto_run_playerlist(list_cmd, guild_config))
 

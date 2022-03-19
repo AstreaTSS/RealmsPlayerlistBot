@@ -10,6 +10,8 @@ import aioredis
 import nextcord
 from nextcord.ext import commands
 
+from .models import GuildConfig
+
 
 def proper_permissions():
     async def predicate(ctx: commands.Context):
@@ -172,6 +174,30 @@ class CustomCheckFailure(commands.CheckFailure):
     pass
 
 
+class RealmContext(commands.Context):
+    guild: nextcord.Guild
+    guild_config: typing.Optional[GuildConfig]
+    bot: "RealmBotBase"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.guild_config = None
+
+    async def fetch_config(self) -> GuildConfig:
+        """
+        Gets the configuration for the context's guild.
+
+        Returns:
+            GuildConfig: The guild config.
+        """
+        if self.guild_config:
+            return self.guild_config
+
+        config = await GuildConfig.get(guild_id=self.guild.id)
+        self.guild_config = config
+        return config
+
+
 if typing.TYPE_CHECKING:
     from .custom_providers import ProfileProvider, ClubProvider
 
@@ -183,6 +209,9 @@ if typing.TYPE_CHECKING:
         club: ClubProvider
         owner: nextcord.User
         redis: aioredis.Redis
+
+        async def get_context(self, message, *, cls=RealmContext) -> RealmContext:
+            ...
 
 else:
 
