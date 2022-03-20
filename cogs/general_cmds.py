@@ -105,7 +105,7 @@ class GeneralCMDS(commands.Cog):
         await ctx.reply(f"Removed `{prefix}`!")
 
     @commands.command()
-    async def get_gamertag_from_xuid(self, ctx: utils.RealmContext, xuid: int):
+    async def gamertag_from_xuid(self, ctx: utils.RealmContext, xuid: int):
         """
         Gets the gamertag for a specified XUID.
 
