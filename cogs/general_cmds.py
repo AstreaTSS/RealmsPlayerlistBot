@@ -176,7 +176,7 @@ class GeneralCMDS(commands.Cog):
                     value=maybe_gamertag,
                 )
 
-            await ctx.reply(f"`{xuid}`'s gamertag: {maybe_gamertag}.")
+            await ctx.reply(f"`{xuid}`'s gamertag: `{maybe_gamertag}`.")
 
 
 def setup(bot):
