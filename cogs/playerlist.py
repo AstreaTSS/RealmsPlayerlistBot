@@ -8,6 +8,7 @@ from enum import IntEnum
 import aiohttp
 import attr
 import nextcord
+import orjson
 from nextcord.ext import commands
 from pydantic import ValidationError
 from tortoise.exceptions import DoesNotExist
@@ -133,7 +134,7 @@ class GamertagHandler:
         # honestly, i forget what this output can look like by now -
         # but if i remember, it's kinda weird
         profile_resp = await self.profile.get_profiles(xuid_list)
-        profile_json = await profile_resp.json()
+        profile_json = await profile_resp.json(loads=orjson.loads)
 
         if profile_json.get("code"):  # usually means ratelimited or invalid xuid
             description: str = profile_json["description"]
@@ -168,7 +169,7 @@ class GamertagHandler:
                 f"https://xbl.io/api/v2/account/{xuid}"
             ) as r:
                 try:
-                    resp_json = await r.json()
+                    resp_json = await r.json(loads=orjson.loads)
                     if "code" in resp_json.keys():  # service is down
                         await utils.msg_to_owner(self.bot, resp_json)
                         raise GamertagServiceDown()
@@ -288,7 +289,7 @@ class Playerlist(commands.Cog):
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(f"https://xbl.io/api/v2/clubs/{club_id}") as r:
                 try:
-                    resp_json = await r.json()
+                    resp_json = await r.json(loads=orjson.loads)
                     return resp_json, r
                 except aiohttp.ContentTypeError:
                     if r.status not in (500, 521):
@@ -296,7 +297,7 @@ class Playerlist(commands.Cog):
 
                     try:
                         r = await self.bot.club.get_club_user_presences(club_id)
-                        resp_json = await r.json()
+                        resp_json = await r.json(loads=orjson.loads)
                         return resp_json, r
                     except aiohttp.ContentTypeError:
                         return None, r
