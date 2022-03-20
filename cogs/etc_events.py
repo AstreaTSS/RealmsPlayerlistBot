@@ -22,6 +22,12 @@ class OnCMDError(commands.Cog):
                 guild_id=guild.id,
                 prefixes={"!?"},
             )
+            self.bot.cached_prefixes[guild.id] = {"!?"}
+
+    @commands.Cog.listener()
+    async def on_guild_remove(self, guild: nextcord.Guild):
+        await GuildConfig.filter(guild_id=guild.id).delete()
+        self.bot.cached_prefixes.pop(guild.id)
 
     def error_embed_generate(self, error_msg):
         return nextcord.Embed(colour=nextcord.Colour.red(), description=error_msg)
