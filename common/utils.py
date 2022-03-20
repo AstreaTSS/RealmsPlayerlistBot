@@ -197,6 +197,14 @@ class RealmContext(commands.Context):
         self.guild_config = config
         return config
 
+    async def reply(self, content: typing.Optional[str] = None, **kwargs):
+        # by default, replying will fail if the message no longer exists
+        # id rather the message still continue to send, personally
+        ref = nextcord.MessageReference.from_message(
+            self.message, fail_if_not_exists=False
+        )
+        return await self.channel.send(content, reference=ref, **kwargs)
+
 
 if typing.TYPE_CHECKING:
     from .custom_providers import ProfileProvider, ClubProvider
