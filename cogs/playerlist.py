@@ -222,7 +222,7 @@ class GamertagHandler:
                         value=gamertag,
                     )
                     dict_gamertags[user.id] = gamertag
-                except KeyError or StopIteration:
+                except (KeyError, StopIteration):
                     continue
 
         return dict_gamertags
@@ -318,7 +318,7 @@ class Playerlist(commands.Cog):
             # and we only need the presences of the users
             # not the other stuff
             return resp_json["clubs"][0]["clubPresence"]
-        except KeyError or TypeError:
+        except (KeyError, TypeError):
             # who knows x2
 
             if resp_json.get("code") and resp_json["code"] == 1018:
