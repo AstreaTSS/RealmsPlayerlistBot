@@ -40,7 +40,7 @@ class ProfileProvider(BaseProvider):
 
 class ClubProvider(BaseProvider):
     CLUB_URL = "https://clubhub.xboxlive.com"
-    HEADERS_CLUB = {"x-xbl-contract-version": "4"}
+    HEADERS_CLUB = {"x-xbl-contract-version": "4", "Accept-Language": "en-US"}
 
     async def get_club_user_presences(
         self, club_id: Union[int, str], **kwargs
