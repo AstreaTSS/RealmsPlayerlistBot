@@ -17,7 +17,6 @@ from xbox.webapi.api.provider.profile.models import ProfileResponse
 
 import common.custom_providers as providers
 import common.utils as utils
-from common.models import GuildConfig
 
 """
 Hey, potential code viewer!
