@@ -272,18 +272,15 @@ class Playerlist(commands.Cog):
     async def _realm_club_json(
         self, club_id
     ) -> typing.Tuple[typing.Optional[dict], aiohttp.ClientResponse]:
-        async with self.openxbl_session.get(
-            f"https://xbl.io/api/v2/clubs/{club_id}"
-        ) as r:
-            try:
-                resp_json = await r.json(loads=orjson.loads)
-                return resp_json, r
-            except aiohttp.ContentTypeError:
-                if r.status not in (500, 521):
-                    return None, r
-
+        try:
+            r = await self.bot.club.get_club_user_presences(club_id)
+            resp_json = await r.json(loads=orjson.loads)
+            return resp_json, r
+        except aiohttp.ContentTypeError:
+            async with self.openxbl_session.get(
+                f"https://xbl.io/api/v2/clubs/{club_id}"
+            ) as r:
                 try:
-                    r = await self.bot.club.get_club_user_presences(club_id)
                     resp_json = await r.json(loads=orjson.loads)
                     return resp_json, r
                 except aiohttp.ContentTypeError:
