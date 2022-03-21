@@ -152,10 +152,11 @@ class PaginatedHelpCommand(commands.HelpCommand):
             alias = fmt
         else:
             alias = (
-                command.name.replace("_", "-")
-                if not parent
-                else f'{parent} {command.name.replace("_", "-")}'
+                f'{parent} {command.name.replace("_", "-")}'
+                if parent
+                else command.name.replace("_", "-")
             )
+
         return f"{alias} {command.signature}"
 
     async def send_bot_help(self, mapping):

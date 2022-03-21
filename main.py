@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 import os
 from collections import defaultdict
@@ -124,11 +125,8 @@ async def on_init_load():
     cogs_list = utils.get_all_extensions(os.environ["DIRECTORY_OF_BOT"])
     for cog in cogs_list:
         if cog != "cogs.owner_cmds":
-            try:
+            with contextlib.suppress(commands.NoEntryPointError):
                 bot.load_extension(cog)
-            except commands.NoEntryPointError:
-                pass
-
     application = await bot.application_info()
     bot.owner = application.owner
 
@@ -179,10 +177,8 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         # basically, this needs to be done as otherwise, when the bot reconnects,
         # redis may complain that a connection was closed by a peer
         # this isnt a great solution, but it should work
-        try:
+        with contextlib.suppress(Exception):
             await self.redis.connection_pool.disconnect(inuse_connections=True)
-        except Exception:
-            pass
 
     async def on_resumed(self):
         activity = nextcord.Activity(

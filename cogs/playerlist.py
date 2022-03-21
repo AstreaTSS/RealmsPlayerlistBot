@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import datetime
 import importlib
 import os
@@ -174,10 +175,8 @@ class GamertagHandler:
                         await utils.msg_to_owner(self.bot, resp_json)
                         raise GamertagServiceDown()
                     else:
-                        try:
+                        with contextlib.suppress(ValidationError):
                             self.responses.append(ProfileResponse.parse_obj(resp_json))
-                        except ValidationError:  # invalid xuid, most likely
-                            pass
                 except aiohttp.ContentTypeError:
                     # can happen, if not rare
                     await utils.msg_to_owner(
@@ -191,21 +190,15 @@ class GamertagHandler:
             current_xuid_list = list(self.xuids_to_get[self.index : self.index + 30])
 
             async with self.sem:
-                try:
+                with contextlib.suppress(GamertagOnCooldown):
                     await self.get_gamertags(current_xuid_list)
-                except GamertagOnCooldown:
-                    pass
-
                 # alright, so we either got 30 gamertags or are ratelimited
                 # so now we switch to the backup getter so that we don't have
                 # to wait on the ratelimit to request for more gamertags
                 # this wait_for basically a little 'exploit` to only make the backup
                 # run for 15 seconds or until completetion, whatever comes first
-                try:
+                with contextlib.suppress(asyncio.TimeoutError):
                     await asyncio.wait_for(self.backup_get_gamertags(), timeout=15)
-                except asyncio.TimeoutError:
-                    pass
-
         dict_gamertags: typing.Dict[str, str] = {}
 
         for profiles in self.responses:
