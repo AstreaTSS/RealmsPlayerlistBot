@@ -259,7 +259,6 @@ class Playerlist(commands.Cog):
             3
         )  # prevents bot from overloading xbox api, hopefully
 
-        # headers for openxbl, used for gamertag handling
         headers = {
             "X-Authorization": os.environ["OPENXBL_KEY"],
             "Accept": "application/json",
@@ -273,26 +272,22 @@ class Playerlist(commands.Cog):
     async def _realm_club_json(
         self, club_id
     ) -> typing.Tuple[typing.Optional[dict], aiohttp.ClientResponse]:
-        headers = {  # same api as the gamerag one
-            "X-Authorization": os.environ["OPENXBL_KEY"],
-            "Accept": "application/json",
-            "Accept-Language": "en-US",
-        }
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(f"https://xbl.io/api/v2/clubs/{club_id}") as r:
+        async with self.openxbl_session.get(
+            f"https://xbl.io/api/v2/clubs/{club_id}"
+        ) as r:
+            try:
+                resp_json = await r.json(loads=orjson.loads)
+                return resp_json, r
+            except aiohttp.ContentTypeError:
+                if r.status not in (500, 521):
+                    return None, r
+
                 try:
+                    r = await self.bot.club.get_club_user_presences(club_id)
                     resp_json = await r.json(loads=orjson.loads)
                     return resp_json, r
                 except aiohttp.ContentTypeError:
-                    if r.status not in (500, 521):
-                        return None, r
-
-                    try:
-                        r = await self.bot.club.get_club_user_presences(club_id)
-                        resp_json = await r.json(loads=orjson.loads)
-                        return resp_json, r
-                    except aiohttp.ContentTypeError:
-                        return None, r
+                    return None, r
 
     async def realm_club_get(self, club_id):
         resp_json, resp = await self._realm_club_json(club_id)
