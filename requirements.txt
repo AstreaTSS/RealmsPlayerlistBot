@@ -1,4 +1,4 @@
-nextcord==2.0.0a9
+nextcord==2.0.0a10
 humanize==4.0.0
 git+https://github.com/VincentRPS/Onami.git@a2af3914af559c8ba321bae7deb38130429c6a9c
 websockets==10.2
