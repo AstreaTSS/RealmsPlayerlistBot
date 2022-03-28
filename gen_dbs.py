@@ -2,6 +2,8 @@
 import os
 
 import aiohttp
+import asyncpg
+import orjson
 from dotenv import load_dotenv
 from tortoise import run_async
 from tortoise import Tortoise
@@ -40,6 +42,32 @@ async def port_from_file():  # optional to use if you have a config file from wa
             online_cmd=config_json["online_cmd"],
             prefixes={"!?"},
         )
+
+
+async def migrate():
+    # a basic migration from byte-based sets to something more proper
+    conn: asyncpg.Connection = await asyncpg.connect(os.environ.get("DB_URL"))
+
+    async with conn.transaction():
+        await conn.execute(
+            "ALTER TABLE realmguildconfig RENAME prefixes TO old_prefixes"
+        )
+        await conn.execute(
+            "ALTER TABLE realmguildconfig ADD prefixes VARCHAR(40)[] DEFAULT '{}'"
+        )
+
+        config_data = await conn.fetch("SELECT * from realmguildconfig")
+
+        for config in config_data:
+            new_prefixes = orjson.loads(config["old_prefixes"])
+            await conn.execute(
+                "UPDATE realmguildconfig SET prefixes = $1",
+                new_prefixes,
+            )
+
+        await conn.execute("ALTER TABLE realmguildconfig DROP COLUMN old_prefixes")
+
+    await conn.close()
 
 
 run_async(init())

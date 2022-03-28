@@ -62,10 +62,15 @@ class GeneralCMDS(commands.Cog):
     async def add(self, ctx: utils.RealmContext, prefix: str):
         """Addes the prefix to the bot for the server this command is used in, allowing it to be used for commands of the bot.
         If it's more than one word or has a space at the end, surround the prefix with quotes so it doesn't get lost.
+        Prefixes must be less than 40 characters long.
         Requires Manage Guild permissions."""
 
         if not prefix:
             raise commands.BadArgument("This is an empty string! I cannot use this.")
+        if len(prefix) > 40:
+            raise commands.BadArgument(
+                "This prefix is too long! It must be less than 40 characters"
+            )
 
         async with ctx.typing():
             guild_config = await ctx.fetch_config()
