@@ -3,6 +3,7 @@ import importlib
 import os
 
 import nextcord
+from nextcord.ext import application_checks
 from nextcord.ext import commands
 from nextcord.types.interactions import PartialGuildApplicationCommandPermissions
 
@@ -69,12 +70,16 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
         }
         await inter.response.send_autocomplete(near_guilds)
 
+    def error_embed_generate(self, error_msg):
+        return nextcord.Embed(colour=nextcord.Colour.red(), description=error_msg)
+
     @nextcord.slash_command(
         name="view-guild",
-        description="Displays a guild's config.",
+        description="Displays a guild's config. Can only be used by the bot's owner.",
         guild_ids=[DEV_GUILD_ID],
         default_permission=False,
     )
+    @application_checks.is_owner()
     async def view_guild(
         self,
         inter: nextcord.Interaction,
@@ -111,10 +116,13 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
 
     @nextcord.slash_command(
         name="add-guild",
-        description="Adds a guild to the bot's configs.",
+        description=(
+            "Adds a guild to the bot's configs. Can only be used by the bot's owner."
+        ),
         guild_ids=[DEV_GUILD_ID],
         default_permission=False,
     )
+    @application_checks.is_owner()
     async def add_guild(
         self,
         inter: nextcord.Interaction,
@@ -147,10 +155,13 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
 
     @nextcord.slash_command(
         name="edit-guild",
-        description="Edits a guild in the bot's configs.",
+        description=(
+            "Edits a guild in the bot's configs. Can only be used by the bot's owner."
+        ),
         guild_ids=[DEV_GUILD_ID],
         default_permission=False,
     )
+    @application_checks.is_owner()
     async def edit_guild(
         self,
         inter: nextcord.Interaction,
@@ -185,10 +196,14 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
 
     @nextcord.slash_command(
         name="remove-guild",
-        description="Removes a guild from the bot's configs.",
+        description=(
+            "Removes a guild from the bot's configs. Can only be used by the bot's"
+            " owner."
+        ),
         guild_ids=[DEV_GUILD_ID],
         default_permission=False,
     )
+    @application_checks.is_owner()
     async def remove_guild(
         self,
         inter: nextcord.Interaction,
@@ -203,6 +218,15 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     @edit_guild.on_autocomplete("guild_id")
     async def edit_get_guild(self, inter, argument):
         await self._autocomplete_guilds(inter, argument)
+
+    @commands.Cog.listener()
+    async def on_application_command_error(
+        self, inter: nextcord.Interaction, error: Exception
+    ):
+        if isinstance(error, nextcord.ApplicationError):
+            await inter.send(embed=self.error_embed_generate(str(error)))
+        else:
+            await utils.error_handle(self.bot, error, inter)
 
 
 def setup(bot):
