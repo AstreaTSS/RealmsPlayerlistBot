@@ -34,6 +34,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
                 "add-guild",
                 "edit-guild",
                 "remove-guild",
+                "edit-guild-via-id",
             ):
                 cmd_id = cmd.command_ids[DEV_GUILD_ID]
                 cmd_dict: PartialGuildApplicationCommandPermissions = {
@@ -56,11 +57,14 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     async def cog_check(self, ctx):
         return await self.bot.is_owner(ctx.author)
 
+    def _limit_to_25(self, mapping: dict):
+        return dict(tuple(mapping.items())[:25])
+
     async def _autocomplete_guilds(self, inter: nextcord.Interaction, argument: str):
         guild_mapping = {guild.name: str(guild.id) for guild in self.bot.guilds}
 
         if not argument:
-            await inter.response.send_autocomplete(guild_mapping)
+            await inter.response.send_autocomplete(self._limit_to_25(guild_mapping))
             return
 
         near_guilds = {
@@ -68,7 +72,7 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
             for guild_name, guild_id in guild_mapping.items()
             if argument.lower() in guild_name.lower()
         }
-        await inter.response.send_autocomplete(near_guilds)
+        await inter.response.send_autocomplete(self._limit_to_25(near_guilds))
 
     def error_embed_generate(self, error_msg):
         return nextcord.Embed(colour=nextcord.Colour.red(), description=error_msg)
@@ -167,6 +171,47 @@ class OwnerCMDs(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
         inter: nextcord.Interaction,
         guild_id: str = nextcord.SlashOption(  # type: ignore
             name="guild", description="The guild ID for the guild to edit."
+        ),
+        club_id: str = nextcord.SlashOption(  # type: ignore
+            description="The club ID for the Realm.", required=False
+        ),
+        playerlist_chan: str = nextcord.SlashOption(  # type: ignore
+            description="The playerlist channel ID for this guild.", required=False
+        ),
+        online_cmd: bool = nextcord.SlashOption(  # type: ignore
+            description="Should the online command be able to be used?", required=False
+        ),
+    ):
+        await inter.response.defer()
+
+        guild_config = await GuildConfig.get(guild_id=int(guild_id))
+
+        if club_id:
+            guild_config.club_id = club_id if club_id != "None" else None
+        if playerlist_chan:
+            guild_config.playerlist_chan = (
+                int(playerlist_chan) if playerlist_chan != "None" else None
+            )
+        if online_cmd:
+            guild_config.online_cmd = online_cmd
+
+        await guild_config.save()
+        await inter.send("Done!")
+
+    @nextcord.slash_command(
+        name="edit-guild-via-id",
+        description=(
+            "Edits a guild in the bot's configs. Can only be used by the bot's owner."
+        ),
+        guild_ids=[DEV_GUILD_ID],
+        default_permission=False,
+    )
+    @application_checks.is_owner()
+    async def edit_guild_via_id(
+        self,
+        inter: nextcord.Interaction,
+        guild_id: str = nextcord.SlashOption(  # type: ignore
+            description="The guild ID for the guild to edit."
         ),
         club_id: str = nextcord.SlashOption(  # type: ignore
             description="The club ID for the Realm.", required=False
