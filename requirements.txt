@@ -2,7 +2,7 @@ nextcord==2.0.0a10
 humanize==4.0.0
 git+https://github.com/VincentRPS/Onami.git@a2af3914af559c8ba321bae7deb38130429c6a9c
 websockets==10.2
-flask==2.1.0
+flask==2.1.1
 xbox-webapi==2.0.11
 cchardet==2.1.7
 aiodns==3.0.0
