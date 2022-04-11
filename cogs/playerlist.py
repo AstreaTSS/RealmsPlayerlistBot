@@ -178,8 +178,11 @@ class GamertagHandler:
                             self.responses.append(ProfileResponse.parse_obj(resp_json))
                 except aiohttp.ContentTypeError:
                     # can happen, if not rare
+                    text = await r.text()
                     await utils.msg_to_owner(
-                        self.bot, f"Failed to get gamertag of user {xuid}"
+                        self.bot,
+                        f"Failed to get gamertag of user `{xuid}`.\nResponse code:"
+                        f" {r.status}\nText: {text}",
                     )
 
             self.index += 1
