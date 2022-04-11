@@ -56,6 +56,7 @@ def _camel_to_const_snake(s):
 
 
 class ClubUserPresence(IntEnum):
+    UNKNOWN = -1
     NOT_IN_CLUB = 0
     IN_CLUB = 1
     CHAT = 2
@@ -66,7 +67,12 @@ class ClubUserPresence(IntEnum):
 
     @classmethod
     def from_xbox_api(cls, value: str):
-        return cls[_camel_to_const_snake(value)]
+        try:
+            return cls[_camel_to_const_snake(value)]
+        except KeyError:
+            # it's not like i forgot a value, it's just that some are
+            # literally not documented
+            return cls.UNKNOWN
 
 
 @attr.s(slots=True, eq=False)
