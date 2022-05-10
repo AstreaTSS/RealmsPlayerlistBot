@@ -1,5 +1,5 @@
 nextcord==2.0.0a10
-humanize==4.0.0
+humanize==4.1.0
 git+https://github.com/VincentRPS/Onami.git@a2af3914af559c8ba321bae7deb38130429c6a9c
 websockets==10.3
 flask==2.1.1
