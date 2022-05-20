@@ -294,7 +294,7 @@ class Playerlist(commands.Cog):
 
             resp_json = await r.json(loads=orjson.loads)
             return resp_json, r
-        except aiohttp.ContentTypeError or ClubOnCooldown:
+        except (aiohttp.ContentTypeError, ClubOnCooldown):
             async with self.openxbl_session.get(
                 f"https://xbl.io/api/v2/clubs/{club_id}"
             ) as r:
