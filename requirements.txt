@@ -1,8 +1,8 @@
 nextcord==2.0.0a10
-humanize==4.0.0
+humanize==4.1.0
 git+https://github.com/VincentRPS/Onami.git@a2af3914af559c8ba321bae7deb38130429c6a9c
-websockets==10.2
-flask==2.1.1
+websockets==10.3
+flask==2.1.2
 xbox-webapi==2.0.11
 cchardet==2.1.7
 aiodns==3.0.0
@@ -12,4 +12,4 @@ asyncpg==0.25.0
 tortoise-orm==0.19.0
 aioredis[hiredis]==2.0.1
 tomli==2.0.1
-orjson==3.6.7
+orjson==3.6.8
