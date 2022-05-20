@@ -121,6 +121,11 @@ class GamertagServiceDown(Exception):
         )
 
 
+class ClubOnCooldown(Exception):
+    def __init__(self) -> None:
+        super().__init__("The club handler is on cooldown!")
+
+
 @attr.s(slots=True)
 class GamertagHandler:
     """A special class made to handle the complexities of getting gamertags
@@ -283,9 +288,13 @@ class Playerlist(commands.Cog):
     ) -> typing.Tuple[typing.Optional[dict], aiohttp.ClientResponse]:
         try:
             r = await self.bot.club.get_club_user_presences(club_id)
+            if r.status == 429:
+                # ratelimit, use openxbl instead
+                raise ClubOnCooldown()
+
             resp_json = await r.json(loads=orjson.loads)
             return resp_json, r
-        except aiohttp.ContentTypeError:
+        except aiohttp.ContentTypeError or ClubOnCooldown:
             async with self.openxbl_session.get(
                 f"https://xbl.io/api/v2/clubs/{club_id}"
             ) as r:
