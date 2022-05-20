@@ -272,6 +272,7 @@ class Playerlist(commands.Cog):
         self.sem = asyncio.Semaphore(
             3
         )  # prevents bot from overloading xbox api, hopefully
+        self.club_sem = asyncio.Semaphore(10)
 
         headers = {
             "X-Authorization": os.environ["OPENXBL_KEY"],
@@ -289,7 +290,8 @@ class Playerlist(commands.Cog):
         try:
             r = await self.bot.club.get_club_user_presences(club_id)
             if r.status == 429:
-                # ratelimit, use openxbl instead
+                # ratelimit, not much we can do here
+                await asyncio.sleep(15)
                 raise ClubOnCooldown()
 
             resp_json = await r.json(loads=orjson.loads)
@@ -305,7 +307,8 @@ class Playerlist(commands.Cog):
                     return None, r
 
     async def realm_club_get(self, club_id):
-        resp_json, resp = await self._realm_club_json(club_id)
+        async with self.club_sem:
+            resp_json, resp = await self._realm_club_json(club_id)
 
         if not resp_json:
             resp_text = await resp.text()
