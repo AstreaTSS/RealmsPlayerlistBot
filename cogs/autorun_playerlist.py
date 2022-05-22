@@ -1,6 +1,8 @@
 import asyncio
+import contextlib
 import importlib
 
+import nextcord
 from nextcord.ext import commands
 from nextcord.ext import tasks
 
@@ -21,11 +23,25 @@ class AutoRunPlayerlist(commands.Cog):
         self.playerlist_loop.cancel()
 
     async def auto_run_playerlist(self, list_cmd, guild_config: GuildConfig):
-        chan = self.bot.get_channel(guild_config.playerlist_chan)  # playerlist channel
+        chan: nextcord.TextChannel = self.bot.get_channel(
+            guild_config.playerlist_chan  # type: ignore
+        )  # type: ignore # playerlist channel
 
         # gets the most recent message in the playerlist channel
-        # its used to fetch a specific message from there, but honestly, this method is better
-        messages = await chan.history(limit=1).flatten()
+
+        try:
+            messages = await chan.history(limit=1).flatten()
+        except nextcord.HTTPException:
+            with contextlib.suppress(nextcord.HTTPException):
+                await chan.send(
+                    "I could not view message history for this channel when"
+                    " automatically running the playerlist. This is needed in order to"
+                    " run it automatically. Please make sure the bot has the ability to"
+                    " read message history for this channel."
+                )
+            await utils.msg_to_owner(self.bot, f"{chan.guild} - {chan.guild.id}")
+            return
+
         a_ctx = await self.bot.get_context(messages[0])
         a_ctx.guild_config = guild_config  # to speed things up
 
