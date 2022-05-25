@@ -39,9 +39,9 @@ class OwnerCMDs(utils.Extension):
             return
 
         near_guilds = [
-            {"name": guild_name, "value": guild_id}
-            for guild_name, guild_id in guild_mapping
-            if argument.lower() in guild_name.lower()
+            {"name": guild_dict["name"], "value": guild_dict["value"]}
+            for guild_dict in guild_mapping
+            if argument.lower() in guild_dict["name"].lower()
         ]
         await ctx.send(self._limit_to_25(near_guilds))
 
