@@ -85,7 +85,7 @@ class OwnerCMDs(utils.Extension):
         await ctx.send(embed=embed)
 
     @view_guild.autocomplete("guild")
-    async def view_get_guild(self, ctx, guild):
+    async def view_get_guild(self, ctx, guild, **kwargs):
         await self._autocomplete_guilds(ctx, guild)
 
     @naff.slash_command(
@@ -194,7 +194,7 @@ class OwnerCMDs(utils.Extension):
         await ctx.send("Done!")
 
     @edit_guild.autocomplete("guild")
-    async def edit_get_guild(self, ctx, guild):
+    async def edit_get_guild(self, ctx, guild, **kwargs):
         await self._autocomplete_guilds(ctx, guild)
 
     @naff.slash_command(
