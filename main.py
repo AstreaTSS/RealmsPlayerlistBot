@@ -1,29 +1,21 @@
 import asyncio
 import contextlib
+import importlib
 import logging
 import os
-from collections import defaultdict
 
 import aiohttp
 import aioredis
-import nextcord
+import naff
 import tomli
-from nextcord.ext import commands
 from tortoise import Tortoise
-from tortoise.exceptions import ConfigurationError
-from tortoise.exceptions import DoesNotExist
-from websockets.exceptions import ConnectionClosedOK
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
 
 import common.utils as utils
-import keep_alive
 from common.custom_providers import ClubProvider
 from common.custom_providers import ProfileProvider
-from common.help_cmd import PaginatedHelpCommand
-from common.models import GuildConfig
-
 
 # load the config file into environment variables
 # this allows an easy way to access these variables from any file
@@ -36,8 +28,9 @@ with open(CONFIG_LOCATION, "rb") as f:
     for key, value in toml_dict.items():
         os.environ[key] = str(value)
 
+importlib.reload(utils)  # refresh the dev guild id
 
-logger = logging.getLogger("nextcord")
+logger = logging.getLogger("dis.naff")
 logger.setLevel(logging.INFO)
 handler = logging.FileHandler(
     filename=os.environ["LOG_FILE_PATH"], encoding="utf-8", mode="a"
@@ -47,112 +40,63 @@ handler.setFormatter(
 )
 logger.addHandler(handler)
 
-DEV_GUILD_ID = int(os.environ["DEV_GUILD_ID"])
 
-
-async def _get_prefixes(bot: utils.RealmBotBase, msg: nextcord.Message):
-    if not msg.guild:
-        return set()
-
-    if prefixes := bot.cached_prefixes[msg.guild.id]:
-        return prefixes
-
-    guild_config = await GuildConfig.get(guild_id=msg.guild.id)
-    prefixes = bot.cached_prefixes[msg.guild.id] = guild_config.prefixes
-    return prefixes
-
-
-async def realms_playerlist_prefixes(bot: utils.RealmBotBase, msg: nextcord.Message):
-    mention_prefixes = {f"{bot.user.mention} ", f"<@!{bot.user.id}> "}
-
-    try:
-        custom_prefixes = await _get_prefixes(bot, msg)
-    except DoesNotExist:
-        # guild hasnt been added yet
-        custom_prefixes = set()
-    except AttributeError:
-        # prefix handling runs before command checks, so there's a chance there's no guild
-        custom_prefixes = {"!?"}
-    except ConfigurationError:  # prefix handling also runs before on_ready sometimes
-        custom_prefixes = set()
-    except KeyError:  # rare possibility, but you know
-        custom_prefixes = set()
-    except asyncio.TimeoutError:  # happens right before reconnects
-        custom_prefixes = set()
-
-    return mention_prefixes.union(custom_prefixes)
-
-
-def global_checks(ctx: commands.Context[utils.RealmBotBase]):
-    if not ctx.bot.is_ready():
-        return False
-
-    if ctx.bot.init_load:
-        return False
-
-    if not ctx.guild:
-        return False
-
-    if ctx.author.id == ctx.bot.owner.id:
-        return True
-
-    return not (
-        ctx.guild.id == DEV_GUILD_ID
-        and ctx.command.qualified_name not in ("help", "ping")
-    )
-
-
-async def on_init_load():
-    await Tortoise.init(
-        db_url=os.environ.get("DB_URL"), modules={"models": ["common.models"]}
-    )
-    bot.redis = aioredis.from_url(os.environ.get("REDIS_URL"), decode_responses=True)
-
-    await bot.wait_until_ready()
-
-    bot.session = aiohttp.ClientSession()
-    auth_mgr = AuthenticationManager(
-        bot.session, os.environ["XBOX_CLIENT_ID"], os.environ["XBOX_CLIENT_SECRET"], ""
-    )
-    auth_mgr.oauth = OAuth2TokenResponse.parse_file(os.environ["XAPI_TOKENS_LOCATION"])
-    await auth_mgr.refresh_tokens()
-    xbl_client = XboxLiveClient(auth_mgr)
-    bot.profile = ProfileProvider(xbl_client)
-    bot.club = ClubProvider(xbl_client)
-
-    bot.load_extension("onami")
-
-    cogs_list = utils.get_all_extensions(os.environ["DIRECTORY_OF_BOT"])
-    for cog in cogs_list:
-        if cog != "cogs.owner_cmds":
-            with contextlib.suppress(commands.NoEntryPointError):
-                bot.load_extension(cog)
-    application = await bot.application_info()
-    bot.owner = application.owner
+async def generate_prefixes(bot: utils.RealmBotBase, msg: naff.Message):
+    return (f"<@{bot.user.id}>", f"<@!{bot.user.id}>", "!?")
 
 
 class RealmsPlayerlistBot(utils.RealmBotBase):
-    def __init__(
-        self,
-        command_prefix,
-        help_command=PaginatedHelpCommand(),
-        description=None,
-        **options,
-    ):
-        super().__init__(
-            command_prefix,
-            help_command=help_command,
-            description=description,
-            **options,
+    @naff.listen("startup")
+    async def on_startup(self):
+        for cmd in self.application_commands:
+            if not isinstance(cmd, naff.SlashCommand):
+                continue
+
+            @naff.prefixed_command(name=cmd.name.default)
+            async def _removed_command(ctx: utils.RealmPrefixedContext):
+                await ctx.reply(
+                    "Hey! This command has been removed and replaced by an equivalent"
+                    f" slash command - try out `/{ctx.invoke_target}`!"
+                )
+
+            self.add_prefixed_command(_removed_command)
+
+        await Tortoise.init(
+            db_url=os.environ.get("DB_URL"), modules={"models": ["common.models"]}
         )
-        self._checks.append(global_checks)
+        self.redis = aioredis.from_url(
+            os.environ.get("REDIS_URL"), decode_responses=True
+        )
 
+        self.session = aiohttp.ClientSession()
+        auth_mgr = AuthenticationManager(
+            self.session,
+            os.environ["XBOX_CLIENT_ID"],
+            os.environ["XBOX_CLIENT_SECRET"],
+            "",
+        )
+        auth_mgr.oauth = OAuth2TokenResponse.parse_file(
+            os.environ["XAPI_TOKENS_LOCATION"]
+        )
+        await auth_mgr.refresh_tokens()
+        xbl_client = XboxLiveClient(auth_mgr)
+        self.profile = ProfileProvider(xbl_client)
+        self.club = ClubProvider(xbl_client)
+
+        headers = {
+            "X-Authorization": os.environ["OPENXBL_KEY"],
+            "Accept": "application/json",
+            "Accept-Language": "en-US",
+        }
+        self.openxbl_session = aiohttp.ClientSession(headers=headers)
+
+        for task in self._tasks:
+            task.start()
+
+    @naff.listen("ready")
     async def on_ready(self):
-        while not hasattr(self, "owner"):
-            await asyncio.sleep(0.1)
-
-        utcnow = nextcord.utils.utcnow()
-        time_format = nextcord.utils.format_dt(utcnow)
+        utcnow = naff.Timestamp.utcnow()
+        time_format = f"<t:{int(utcnow.timestamp())}:f>"
 
         connect_msg = (
             f"Logged in at {time_format}!"
@@ -164,15 +108,13 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
         self.init_load = False
 
-        activity = nextcord.Activity(
-            name="over some Realms", type=nextcord.ActivityType.watching
+        activity = naff.Activity.create(
+            name="over some Realms", type=naff.ActivityType.WATCHING
         )
 
-        try:
-            await self.change_presence(activity=activity)
-        except ConnectionClosedOK:
-            await utils.msg_to_owner(self, "Reconnecting...")
+        await self.change_presence(activity=activity)
 
+    @naff.listen("disconnect")
     async def on_disconnect(self):
         # basically, this needs to be done as otherwise, when the bot reconnects,
         # redis may complain that a connection was closed by a peer
@@ -180,54 +122,61 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         with contextlib.suppress(Exception):
             await self.redis.connection_pool.disconnect(inuse_connections=True)
 
+    @naff.listen("resume")
     async def on_resumed(self):
-        activity = nextcord.Activity(
-            name="over some Realms", type=nextcord.ActivityType.watching
+        activity = naff.Activity.create(
+            name="over some Realms", type=naff.ActivityType.WATCHING
         )
         await self.change_presence(activity=activity)
 
-    async def on_error(self, event, *args, **kwargs):
-        try:
-            raise
-        except BaseException as e:
-            await utils.error_handle(self, e)
+    async def on_error(self, source: str, error: Exception, *args, **kwargs) -> None:
+        await utils.error_handle(self, error)
 
-    async def get_context(self, message, *, cls=utils.RealmContext):
-        """
-        A simple extension of get_content. If it doesn't manage to get a command, it changes the string used
-        to get the command from - to _ and retries. Convenient for the end user.
-
-        This allows uses the bot's custom context by default.
-        """
-
-        ctx = await super().get_context(message, cls=cls)
-        if ctx.command is None and ctx.invoked_with:
-            ctx.command = self.all_commands.get(ctx.invoked_with.replace("-", "_"))
-
-        return ctx
-
-    async def close(self) -> None:
+    async def stop(self) -> None:
         await bot.session.close()
-        return await super().close()
+        return await super().stop()
+
+    def register_task(self, task: naff.Task):
+        self._tasks.add(task)
+
+        if self.is_ready:
+            task.start()
+
+    def cancel_task(self, task: naff.Task):
+        self._tasks.discard(task)
+
+        if self.is_ready:
+            task.stop()
 
 
-intents = nextcord.Intents(
-    guilds=True, emojis_and_stickers=True, messages=True, reactions=True
+# message content is temporarily on in order to transition people to slash commands
+intents = naff.Intents.new(
+    guilds=True,
+    guild_emojis_and_stickers=True,
+    messages=True,
+    reactions=True,
+    guild_message_content=True,
 )
-mentions = nextcord.AllowedMentions.all()
+mentions = naff.AllowedMentions.all()
 
 bot = RealmsPlayerlistBot(
-    command_prefix=realms_playerlist_prefixes,
+    generate_prefixes=generate_prefixes,
     allowed_mentions=mentions,
     intents=intents,
+    interaction_context=utils.RealmContext,
+    prefixed_context=utils.RealmPrefixedContext,
+    auto_defer=False,  # we already handle deferring
 )
-
-bot.cached_prefixes = defaultdict(set)
 bot.init_load = True
-bot.color = nextcord.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
+bot._tasks = set()
+bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
 
 
-bot.load_extension("cogs.owner_cmds")
-bot.loop.create_task(on_init_load())
-# keep_alive.keep_alive()
-bot.run(os.environ["MAIN_TOKEN"])
+ext_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_BOT"))
+for ext in ext_list:
+    try:
+        bot.load_extension(ext)
+    except naff.errors.ExtensionLoadException:
+        raise
+
+asyncio.run(bot.astart(os.environ.get("MAIN_TOKEN")))

@@ -3,9 +3,6 @@ Profile
 
 Get Userprofiles by XUID or Gamertag
 """
-from typing import List
-from typing import Union
-
 from aiohttp import ClientResponse
 from xbox.webapi.api.provider.baseprovider import BaseProvider
 from xbox.webapi.api.provider.profile.models import ProfileSettings
@@ -16,7 +13,7 @@ class ProfileProvider(BaseProvider):
     HEADERS_PROFILE = {"x-xbl-contract-version": "3"}
     SEPARATOR = ","
 
-    async def get_profiles(self, xuid_list: List[str], **kwargs) -> ClientResponse:
+    async def get_profiles(self, xuid_list: list[str], **kwargs) -> ClientResponse:
         """
         Get profile info for list of xuids
 
@@ -43,7 +40,7 @@ class ClubProvider(BaseProvider):
     HEADERS_CLUB = {"x-xbl-contract-version": "4", "Accept-Language": "en-US"}
 
     async def get_club_user_presences(
-        self, club_id: Union[int, str], **kwargs
+        self, club_id: int | str, **kwargs
     ) -> ClientResponse:
         """
         Gets details about (at most) the last 1000 members active within a club.

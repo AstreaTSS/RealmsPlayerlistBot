@@ -1,38 +1,50 @@
 import asyncio
 import contextlib
+import datetime
 import importlib
 
-import nextcord
-from nextcord.ext import commands
-from nextcord.ext import tasks
+import naff
 
 import common.utils as utils
 from common.models import GuildConfig
 
 
-class AutoRunPlayerlist(commands.Cog):
+class BetterIntervalTrigger(naff.IntervalTrigger):
+    def __new__(cls, *args, **kwargs) -> naff.BaseTrigger:
+        new_cls = super().__new__(cls)
+        new_cls.last_call_time = datetime.datetime.now() - datetime.timedelta(
+            hours=1, seconds=1
+        )
+        return new_cls
+
+
+class AutoRunPlayerlist(utils.Extension):
     # the cog that controls the automatic version of the playerlist
     # this way, we can fix the main playerlist command itself without
     # resetting the autorun cycle
 
     def __init__(self, bot):
         self.bot: utils.RealmBotBase = bot
-        self.playerlist_loop.start()
 
-    def cog_unload(self):
-        self.playerlist_loop.cancel()
+        self.playerlist_loop.on_error = self.error_handle
+        self.bot.register_task(self.playerlist_loop)
 
-    async def auto_run_playerlist(self, list_cmd, guild_config: GuildConfig):
-        chan: nextcord.TextChannel = self.bot.get_channel(
+    def drop(self):
+        self.bot.cancel_task(self.playerlist_loop)
+        super().drop()
+
+    async def auto_run_playerlist(
+        self, list_cmd: naff.InteractionCommand, guild_config: GuildConfig
+    ):
+        chan: naff.GuildText = self.bot.get_channel(
             guild_config.playerlist_chan  # type: ignore
         )  # type: ignore # playerlist channel
 
         # gets the most recent message in the playerlist channel
-
         try:
             messages = await chan.history(limit=1).flatten()
-        except nextcord.HTTPException:
-            with contextlib.suppress(nextcord.HTTPException):
+        except naff.errors.HTTPException:
+            with contextlib.suppress(naff.errors.HTTPException):
                 await chan.send(
                     "I could not view message history for this channel when"
                     " automatically running the playerlist. This is needed in order to"
@@ -42,24 +54,23 @@ class AutoRunPlayerlist(commands.Cog):
             await utils.msg_to_owner(self.bot, f"{chan.guild} - {chan.guild.id}")
             return
 
-        a_ctx = await self.bot.get_context(messages[0])
+        a_ctx: utils.RealmPrefixedContext = await self.bot.get_context(messages[0])  # type: ignore
         a_ctx.guild_config = guild_config  # to speed things up
-
-        # little hack so we dont accidentally ping a random person
-        a_ctx.reply = a_ctx.send
 
         # take advantage of the fact that users cant really use kwargs for commands
         # the two listed here silence the 'this may take a long time' message
-        # and also make it so it doesnt go back 24 hours, instead only going two
-        await a_ctx.invoke(list_cmd, "2", no_init_mes=True)
+        # and also make it so it doesnt go back 12 hours, instead only going two
+        await list_cmd.callback(a_ctx, "2", no_init_mes=True)
 
-    @tasks.loop(hours=1)
+    @naff.Task.create(BetterIntervalTrigger(hours=1))
     async def playerlist_loop(self):
         """A simple way of running the playerlist command every hour in every server the bot is in.
         Or, at least, in every server that's listed in the config. See `config.json` for that.
         See `cogs.config_fetch` for how the bot gets the config from that file."""
 
-        list_cmd = self.bot.get_command("playerlist")
+        list_cmd = next(
+            c for c in self.bot.application_commands if c.name.default == "playerlist"
+        )
         to_run = []
 
         async for guild_config in GuildConfig.all():
@@ -76,12 +87,10 @@ class AutoRunPlayerlist(commands.Cog):
             if isinstance(message, Exception):
                 await utils.error_handle(self.bot, message)
 
-    @playerlist_loop.error
-    async def error_handle(self, *args):
-        error = args[-1]
-        await utils.error_handle(self.bot, error)
+    def error_handle(self, error: Exception):
+        asyncio.create_task(utils.error_handle(self.bot, error))
 
 
 def setup(bot):
     importlib.reload(utils)
-    bot.add_cog(AutoRunPlayerlist(bot))
+    AutoRunPlayerlist(bot)

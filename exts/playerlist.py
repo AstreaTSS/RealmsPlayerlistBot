@@ -8,9 +8,8 @@ from enum import IntEnum
 
 import aiohttp
 import attr
-import nextcord
+import naff
 import orjson
-from nextcord.ext import commands
 from pydantic import ValidationError
 from tortoise.exceptions import DoesNotExist
 from xbox.webapi.api.provider.profile.models import ProfileResponse
@@ -53,6 +52,34 @@ Regardless, good luck on your bot coding journey!
 
 def _camel_to_const_snake(s):
     return "".join([f"_{c}" if c.isupper() else c.upper() for c in s]).lstrip("_")
+
+
+hours_ago_choices = [
+    naff.SlashCommandChoice("1", "1"),  # type: ignore
+    naff.SlashCommandChoice("2", "2"),  # type: ignore
+    naff.SlashCommandChoice("3", "3"),  # type: ignore
+    naff.SlashCommandChoice("4", "4"),  # type: ignore
+    naff.SlashCommandChoice("5", "5"),  # type: ignore
+    naff.SlashCommandChoice("6", "6"),  # type: ignore
+    naff.SlashCommandChoice("7", "7"),  # type: ignore
+    naff.SlashCommandChoice("8", "8"),  # type: ignore
+    naff.SlashCommandChoice("9", "9"),  # type: ignore
+    naff.SlashCommandChoice("10", "10"),  # type: ignore
+    naff.SlashCommandChoice("11", "11"),  # type: ignore
+    naff.SlashCommandChoice("12", "12"),  # type: ignore
+    naff.SlashCommandChoice("13", "13"),  # type: ignore
+    naff.SlashCommandChoice("14", "14"),  # type: ignore
+    naff.SlashCommandChoice("15", "15"),  # type: ignore
+    naff.SlashCommandChoice("16", "16"),  # type: ignore
+    naff.SlashCommandChoice("17", "17"),  # type: ignore
+    naff.SlashCommandChoice("18", "18"),  # type: ignore
+    naff.SlashCommandChoice("19", "19"),  # type: ignore
+    naff.SlashCommandChoice("20", "20"),  # type: ignore
+    naff.SlashCommandChoice("21", "21"),  # type: ignore
+    naff.SlashCommandChoice("22", "22"),  # type: ignore
+    naff.SlashCommandChoice("23", "23"),  # type: ignore
+    naff.SlashCommandChoice("24", "24"),  # type: ignore
+]
 
 
 class ClubUserPresence(IntEnum):
@@ -102,7 +129,7 @@ class Player:
         if self.in_game:
             return base
         else:
-            time_format = nextcord.utils.format_dt(self.last_seen)
+            time_format = naff.Timestamp.fromdatetime(self.last_seen).format("f")
             return f"{base}: last seen {time_format}"
 
 
@@ -234,21 +261,7 @@ class GamertagHandler:
         return dict_gamertags
 
 
-class HourConverter(commands.Converter[int], int):
-    async def convert(self, ctx: commands.Context, argument: str):
-        argument = argument.lower().replace("h", "", 1)
-
-        if not argument.isdigit():
-            raise commands.BadArgument("This argument is not a valid number!")
-
-        int_argument = int(argument)
-        if not 1 <= int_argument <= 24:
-            raise commands.BadArgument("The duration is not in between 1-24 hours!")
-
-        return int_argument
-
-
-async def can_run_playerlist(ctx: utils.RealmContext):
+async def can_run_playerlist(ctx: utils.RealmContext) -> typing.Any:
     # simple check to see if a person can run the playerlist command
     try:
         guild_config = await ctx.fetch_config()
@@ -257,16 +270,7 @@ async def can_run_playerlist(ctx: utils.RealmContext):
     return bool(guild_config.club_id)
 
 
-async def can_run_online(ctx: utils.RealmContext):
-    # same, but for the online command
-    try:
-        guild_config = await ctx.fetch_config()
-    except DoesNotExist:
-        return False
-    return bool(guild_config.club_id) and guild_config.online_cmd
-
-
-class Playerlist(commands.Cog):
+class Playerlist(utils.Extension):
     def __init__(self, bot):
         self.bot: utils.RealmBotBase = bot
         self.sem = asyncio.Semaphore(
@@ -274,15 +278,10 @@ class Playerlist(commands.Cog):
         )  # prevents bot from overloading xbox api, hopefully
         self.club_sem = asyncio.Semaphore(10)
 
-        headers = {
-            "X-Authorization": os.environ["OPENXBL_KEY"],
-            "Accept": "application/json",
-            "Accept-Language": "en-US",
-        }
-        self.openxbl_session = aiohttp.ClientSession(headers=headers)
-
-    def cog_unload(self):
-        self.bot.loop.create_task(self.openxbl_session.close())
+    async def _delete_after(self, msg: naff.Message):
+        await asyncio.sleep(3)
+        with contextlib.suppress(naff.errors.HTTPException):
+            await msg.delete()
 
     async def _realm_club_json(
         self, club_id
@@ -297,7 +296,7 @@ class Playerlist(commands.Cog):
             resp_json = await r.json(loads=orjson.loads)
             return resp_json, r
         except (aiohttp.ContentTypeError, ClubOnCooldown):
-            async with self.openxbl_session.get(
+            async with self.bot.openxbl_session.get(
                 f"https://xbl.io/api/v2/clubs/{club_id}"
             ) as r:
                 try:
@@ -390,7 +389,7 @@ class Playerlist(commands.Cog):
                 self.sem,
                 tuple(unresolved_dict.keys()),
                 self.bot.profile,
-                self.openxbl_session,
+                self.bot.openxbl_session,
             )
             gamertag_dict = await gamertag_handler.run()
 
@@ -401,14 +400,19 @@ class Playerlist(commands.Cog):
 
         return player_list
 
-    @commands.command(aliases=["player_list", "get_playerlist", "get_player_list"])
-    @utils.proper_permissions()
-    @commands.check(can_run_playerlist)
-    @commands.cooldown(1, 240, commands.BucketType.guild)
+    @naff.slash_command(
+        name="playerlist",
+        description="Sends a playerlist, a log of players who have joined and left.",
+        default_member_permissions=naff.Permissions.MANAGE_GUILD,
+        dm_permission=False,
+    )  # type: ignore
+    @naff.check(can_run_playerlist)  # type: ignore
+    @naff.cooldown(naff.Buckets.GUILD, 1, 240)  # type: ignore
+    @naff.slash_option("hours_ago", "How far back the playerlist should go.", naff.OptionTypes.STRING, choices=hours_ago_choices)  # type: ignore
     async def playerlist(
         self,
-        ctx: utils.RealmContext,
-        hours_ago: typing.Optional[str] = None,
+        ctx: utils.RealmContext | utils.RealmPrefixedContext,
+        hours_ago: str = "12",
         **kwargs,
     ):
         """Checks and makes a playerlist, a log of players who have joined and left.
@@ -421,89 +425,83 @@ class Playerlist(commands.Cog):
         May take a while to run at first.
         Requires Manage Server permissions."""
 
-        # i hate doing this but otherwise no clear error code is shown
-        actual_hours_ago: int = 12
-        if hours_ago:
-            try:
-                actual_hours_ago = await HourConverter().convert(ctx, hours_ago)
-            except commands.BadArgument as e:
-                ctx.command.reset_cooldown(ctx)  # yes, this is funny
-                raise e
-
-        await ctx.trigger_typing()
-        guild_config = await ctx.fetch_config()
+        if isinstance(ctx, utils.RealmContext):
+            await ctx.defer()
 
         if not kwargs.get("no_init_mes"):
-            await ctx.reply("This might take quite a bit. Please be patient.")
-
-        async with ctx.channel.typing():
-            now = nextcord.utils.utcnow()
-
-            time_delta = datetime.timedelta(hours=actual_hours_ago)
-            time_ago = now - time_delta
-
-            club_presence = await self.realm_club_get(guild_config.club_id)
-            if club_presence is None:
-                # this can happen
-                await ctx.reply(
-                    "Seems like the playerlist command failed somehow. Astrea should "
-                    + "have the info needed to see what's going on."
-                )
-                return
-            elif club_presence == "Unauthorized":
-                await utils.msg_to_owner(self.bot, ctx.guild)
-                await ctx.reply(
-                    "The bot can't seem to read your Realm! If you changed Realms, make"
-                    " sure to let Astrea know. Also, make sure you haven't banned the"
-                    " bot's Xbox account from the Realm. If you haven't done either,"
-                    " this is probably just internal stuff being weird, and it'll fix"
-                    " itself in a bit."
-                )
-                return
-
-            player_list = await self.get_players_from_club_data(
-                club_presence, time_ago=time_ago
+            msg = await ctx.channel.send(
+                f"{ctx.author.mention}, this might take quite a bit. Please be patient."
             )
+            asyncio.create_task(self._delete_after(msg))
 
-            online_list = [p.display for p in player_list if p.in_game]
-            offline_list = [p.display for p in player_list if not p.in_game]
+        actual_hours_ago: int = int(hours_ago)
+        guild_config = await ctx.fetch_config()
 
-            if online_list:
-                embed = nextcord.Embed(
-                    colour=self.bot.color,
-                    title="People online right now",
-                    description="\n".join(online_list),
+        now = naff.Timestamp.utcnow()
+
+        time_delta = datetime.timedelta(hours=actual_hours_ago)
+        time_ago = now - time_delta
+
+        club_presence = await self.realm_club_get(guild_config.club_id)
+        if club_presence is None:
+            # this can happen
+            await ctx.send(
+                "Seems like the playerlist command failed somehow. Astrea should "
+                + "have the info needed to see what's going on."
+            )
+            return
+        elif club_presence == "Unauthorized":
+            await utils.msg_to_owner(self.bot, ctx.guild)
+            await ctx.send(
+                "The bot can't seem to read your Realm! If you changed Realms, make"
+                " sure to let Astrea know. Also, make sure you haven't banned the"
+                " bot's Xbox account from the Realm. If you haven't done either,"
+                " this is probably just internal stuff being weird, and it'll fix"
+                " itself in a bit."
+            )
+            return
+
+        player_list = await self.get_players_from_club_data(
+            club_presence, time_ago=time_ago
+        )
+
+        online_list = [p.display for p in player_list if p.in_game]
+        offline_list = [p.display for p in player_list if not p.in_game]
+
+        if online_list:
+            embed = naff.Embed(
+                color=self.bot.color,
+                title="People online right now",
+                description="\n".join(online_list),
+                timestamp=now,
+            )
+            embed.set_footer(text="As of")
+            await ctx.send(embed=embed)
+
+        if offline_list:
+            # gets the offline list in lines of 40
+            # basically, it's like
+            # [ [list of 40 strings] [list of 40 strings] etc.]
+            chunks = [offline_list[x : x + 40] for x in range(0, len(offline_list), 40)]
+
+            first_embed = naff.Embed(
+                color=naff.Color.from_hex("95a5a6"),
+                description="\n".join(chunks[0]),
+                title=f"People on in the last {actual_hours_ago} hour(s)",
+                timestamp=now,
+            )
+            first_embed.set_footer(text="As of")
+            await ctx.send(embed=first_embed)
+
+            for chunk in chunks[1:]:
+                embed = naff.Embed(
+                    color=naff.Color.from_hex("95a5a6"),
+                    description="\n".join(chunk),
                     timestamp=now,
                 )
                 embed.set_footer(text="As of")
                 await ctx.send(embed=embed)
-
-            if offline_list:
-                # gets the offline list in lines of 40
-                # basically, it's like
-                # [ [list of 40 strings] [list of 40 strings] etc.]
-                chunks = [
-                    offline_list[x : x + 40] for x in range(0, len(offline_list), 40)
-                ]
-
-                first_embed = nextcord.Embed(
-                    colour=nextcord.Colour.lighter_gray(),
-                    description="\n".join(chunks[0]),
-                    title=f"People on in the last {actual_hours_ago} hour(s)",
-                    timestamp=now,
-                )
-                first_embed.set_footer(text="As of")
-                await ctx.send(embed=first_embed)
-
-                for chunk in chunks[1:]:
-                    embed = nextcord.Embed(
-                        colour=nextcord.Colour.lighter_gray(),
-                        description="\n".join(chunk),
-                        timestamp=now,
-                    )
-                    embed.set_footer(text="As of")
-                    await ctx.send(embed=embed)
-                    await asyncio.sleep(0.2)
+                await asyncio.sleep(0.2)
 
         if not kwargs.get("no_init_mes"):
             if not online_list and not offline_list:
@@ -512,59 +510,62 @@ class Playerlist(commands.Cog):
                     + f"{actual_hours_ago} hour(s)."
                 )
 
-            await ctx.reply("Done!")
+            msg = await ctx.send(f"{ctx.author.mention}, the playerlist is done!")
+            asyncio.create_task(self._delete_after(msg))
 
-    @commands.command()
-    @commands.cooldown(1, 300, commands.BucketType.guild)
-    @commands.check(can_run_online)
+    @naff.slash_command("online", description="Allows you to see if anyone is online on the Realm right now.", dm_permission=False)  # type: ignore
+    @naff.cooldown(naff.Buckets.GUILD, 1, 300)
+    @naff.check(can_run_playerlist)  # type: ignore
     async def online(self, ctx: utils.RealmContext):
-        """Allows you to see if anyone is online on the Realm right now.
-        The realm must agree to this being enabled for you to use it."""
+        """Allows you to see if anyone is online on the Realm right now."""
         # uses much of the same code as playerlist
 
-        await ctx.trigger_typing()
+        await ctx.defer()
+
+        msg = await ctx.channel.send(
+            f"{ctx.author.mention}, this might take quite a bit. Please be patient."
+        )
+        asyncio.create_task(self._delete_after(msg))
+
         guild_config = await ctx.fetch_config()
+        now = naff.Timestamp.utcnow()
 
-        await ctx.reply("This might take quite a bit. Please be patient.")
-
-        async with ctx.channel.typing():
-            now = nextcord.utils.utcnow()
-            club_presence = await self.realm_club_get(guild_config.club_id)
-            if club_presence is None:
-                # this can happen
-                await ctx.reply(
-                    "Seems like the playerlist command failed somehow. Astrea "
-                    + "should have the info needed to see what's going on."
-                )
-                return
-            elif club_presence == "Unauthorized":
-                await utils.msg_to_owner(self.bot, ctx.guild)
-                await ctx.reply(
-                    "The bot can't seem to read your Realm! If you changed Realms, make"
-                    " sure to let Astrea know. Also, make sure you haven't banned the"
-                    " bot's Xbox account from the Realm. If you haven't done either,"
-                    " this is probably just internal stuff being weird, and it'll fix"
-                    " itself in a bit."
-                )
-                return
-
-            player_list = await self.get_players_from_club_data(
-                club_presence, online_only=True
+        club_presence = await self.realm_club_get(guild_config.club_id)
+        if club_presence is None:
+            # this can happen
+            await ctx.send(
+                "Seems like the playerlist command failed somehow. Astrea "
+                + "should have the info needed to see what's going on."
             )
+            return
+        elif club_presence == "Unauthorized":
+            await utils.msg_to_owner(self.bot, ctx.guild)
+            await ctx.send(
+                "The bot can't seem to read your Realm! If you changed Realms, make"
+                " sure to let Astrea know. Also, make sure you haven't banned the"
+                " bot's Xbox account from the Realm. If you haven't done either,"
+                " this is probably just internal stuff being weird, and it'll fix"
+                " itself in a bit."
+            )
+            return
+
+        player_list = await self.get_players_from_club_data(
+            club_presence, online_only=True
+        )
 
         if online_list := [p.display for p in player_list]:
-            embed = nextcord.Embed(
-                colour=self.bot.color,
+            embed = naff.Embed(
+                color=self.bot.color,
                 title=f"{len(online_list)}/10 people online",
                 description="\n".join(online_list),
                 timestamp=now,
             )
             embed.set_footer(text="As of")
-            await ctx.reply(embed=embed)
+            await ctx.send(embed=embed)
         else:
             raise utils.CustomCheckFailure("No one is on the Realm right now.")
 
 
 def setup(bot):
     importlib.reload(utils)
-    bot.add_cog(Playerlist(bot))
+    Playerlist(bot)
