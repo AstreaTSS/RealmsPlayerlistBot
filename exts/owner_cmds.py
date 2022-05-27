@@ -70,7 +70,9 @@ class OwnerCMDs(utils.Extension):
 
         prefixes = tuple(f"`{p}`" for p in guild_config.prefixes)
 
-        embed = naff.Embed(color=self.bot.color, title=f"Server Config for {guild}:")
+        embed = naff.Embed(
+            color=self.bot.color, title=f"Server Config for {guild.name}:"
+        )
         playerlist_channel = (
             f"<#{guild_config.playerlist_chan}> ({guild_config.playerlist_chan})"
             if guild_config.playerlist_chan

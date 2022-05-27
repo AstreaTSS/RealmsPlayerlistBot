@@ -51,7 +51,7 @@ class AutoRunPlayerlist(utils.Extension):
                     " run it automatically. Please make sure the bot has the ability to"
                     " read message history for this channel."
                 )
-            await utils.msg_to_owner(self.bot, f"{chan.guild} - {chan.guild.id}")
+            await utils.msg_to_owner(self.bot, f"{chan.guild}")
             return
 
         a_ctx: utils.RealmPrefixedContext = await self.bot.get_context(messages[0])  # type: ignore
