@@ -21,7 +21,7 @@ class OnCMDError(naff.Extension):
         if not ctx.bot.is_ready:
             return
 
-        if not isinstance(ctx, (utils.RealmContext, utils.RealmPrefixedContext)):
+        if not isinstance(ctx, (naff.PrefixedContext, naff.InteractionContext)):
             return await utils.error_handle(self.bot, error)
 
         if isinstance(error, naff.errors.CommandOnCooldown):
@@ -33,12 +33,12 @@ class OnCMDError(naff.Extension):
                     f" `{humanize.precisedelta(delta_wait, format='%0.0f')}`."
                 )
             )
+        elif isinstance(error, utils.CustomCheckFailure):
+            await ctx.send(embeds=self.error_embed_generate(str(error)))
         elif isinstance(
             error,
             naff.errors.BadArgument,
         ):
-            await ctx.send(embeds=self.error_embed_generate(str(error)))
-        elif isinstance(error, utils.CustomCheckFailure):
             await ctx.send(embeds=self.error_embed_generate(str(error)))
         elif isinstance(error, naff.errors.CommandCheckFailure):
             if ctx.guild:
