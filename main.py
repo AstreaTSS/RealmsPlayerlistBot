@@ -30,6 +30,16 @@ with open(CONFIG_LOCATION, "rb") as f:
 
 importlib.reload(utils)  # refresh the dev guild id
 
+try:
+    import rook
+
+    if os.environ.get("ROOK_TOKEN"):
+        rook.start(
+            token=os.environ["ROOK_TOKEN"], labels={"env": os.environ["ROOK_ENV"]}
+        )
+except ImportError:
+    pass
+
 logger = logging.getLogger("dis.naff")
 logger.setLevel(logging.INFO)
 handler = logging.FileHandler(
