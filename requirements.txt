@@ -11,4 +11,4 @@ asyncpg==0.25.0
 tortoise-orm==0.19.0
 aioredis[hiredis]==2.0.1
 tomli==2.0.1
-orjson==3.6.8
+orjson==3.6.9
