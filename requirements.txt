@@ -1,4 +1,4 @@
-git+https://github.com/Astrea49/NAFF.git@8ae91c805cdc3a38dfe0171ac99fa25fa8001802
+naff==1.1.0
 humanize==4.1.0
 websockets==10.3
 flask==2.1.2
