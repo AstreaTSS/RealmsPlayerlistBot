@@ -175,7 +175,7 @@ bot = RealmsPlayerlistBot(
     intents=intents,
     interaction_context=utils.RealmContext,
     prefixed_context=utils.RealmPrefixedContext,
-    auto_defer=False,  # we already handle deferring
+    auto_defer=naff.AutoDefer(enabled=True, time_until_defer=0),
 )
 bot.init_load = True
 bot._tasks = set()

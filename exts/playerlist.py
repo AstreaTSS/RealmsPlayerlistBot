@@ -425,9 +425,6 @@ class Playerlist(utils.Extension):
         May take a while to run at first.
         Requires Manage Server permissions."""
 
-        if isinstance(ctx, utils.RealmContext):
-            await ctx.defer()
-
         if not kwargs.get("no_init_mes"):
             msg = await ctx.channel.send(
                 f"{ctx.author.mention}, this might take quite a bit. Please be patient."
@@ -519,8 +516,6 @@ class Playerlist(utils.Extension):
     async def online(self, ctx: utils.RealmContext):
         """Allows you to see if anyone is online on the Realm right now."""
         # uses much of the same code as playerlist
-
-        await ctx.defer()
 
         msg = await ctx.channel.send(
             f"{ctx.author.mention}, this might take quite a bit. Please be patient."

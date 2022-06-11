@@ -28,7 +28,6 @@ class GeneralCMDS(utils.Extension):
     )
     async def ping(self, ctx: utils.RealmContext):
         """Pings the bot. Great way of finding out if the bot’s working correctly, but has no real use."""
-        await ctx.defer()
 
         start_time = time.perf_counter()
         ping_discord = round((self.bot.latency * 1000), 2)
@@ -68,7 +67,6 @@ class GeneralCMDS(utils.Extension):
         This command is useful if the bot fails that lookup and displays the XUID to you. This is a reliable
         way of getting the gamertag, provided the XUID provided is correct in the first place.
         """
-        await ctx.defer()
 
         str_xuid = xuid
         maybe_gamertag: typing.Union[
