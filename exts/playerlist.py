@@ -425,12 +425,6 @@ class Playerlist(utils.Extension):
         May take a while to run at first.
         Requires Manage Server permissions."""
 
-        if not kwargs.get("no_init_mes"):
-            msg = await ctx.channel.send(
-                f"{ctx.author.mention}, this might take quite a bit. Please be patient."
-            )
-            asyncio.create_task(self._delete_after(msg))
-
         actual_hours_ago: int = int(hours_ago)
         guild_config = await ctx.fetch_config()
 
@@ -500,15 +494,11 @@ class Playerlist(utils.Extension):
                 await ctx.send(embed=embed)
                 await asyncio.sleep(0.2)
 
-        if not kwargs.get("no_init_mes"):
-            if not online_list and not offline_list:
-                raise utils.CustomCheckFailure(
-                    "No one has been on the Realm for the last "
-                    + f"{actual_hours_ago} hour(s)."
-                )
-
-            msg = await ctx.send(f"{ctx.author.mention}, the playerlist is done!")
-            asyncio.create_task(self._delete_after(msg))
+        if not kwargs.get("no_init_mes") and not online_list and not offline_list:
+            raise utils.CustomCheckFailure(
+                "No one has been on the Realm for the last "
+                + f"{actual_hours_ago} hour(s)."
+            )
 
     @naff.slash_command("online", description="Allows you to see if anyone is online on the Realm right now.", dm_permission=False)  # type: ignore
     @naff.cooldown(naff.Buckets.GUILD, 1, 300)
@@ -516,11 +506,6 @@ class Playerlist(utils.Extension):
     async def online(self, ctx: utils.RealmContext):
         """Allows you to see if anyone is online on the Realm right now."""
         # uses much of the same code as playerlist
-
-        msg = await ctx.channel.send(
-            f"{ctx.author.mention}, this might take quite a bit. Please be patient."
-        )
-        asyncio.create_task(self._delete_after(msg))
 
         guild_config = await ctx.fetch_config()
         now = naff.Timestamp.utcnow()
