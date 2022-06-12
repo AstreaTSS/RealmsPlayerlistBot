@@ -53,26 +53,9 @@ handler.setFormatter(
 logger.addHandler(handler)
 
 
-async def generate_prefixes(bot: utils.RealmBotBase, msg: naff.Message):
-    return (f"<@{bot.user.id}>", f"<@!{bot.user.id}>", "!?")
-
-
 class RealmsPlayerlistBot(utils.RealmBotBase):
     @naff.listen("startup")
     async def on_startup(self):
-        for cmd in self.application_commands:
-            if not isinstance(cmd, naff.SlashCommand):
-                continue
-
-            @naff.prefixed_command(name=cmd.name.default)
-            async def _removed_command(ctx: utils.RealmPrefixedContext):
-                await ctx.reply(
-                    "Hey! This command has been removed and replaced by an equivalent"
-                    f" slash command - try out `/{ctx.invoke_target}`!"
-                )
-
-            self.add_prefixed_command(_removed_command)
-
         await Tortoise.init(
             db_url=os.environ.get("DB_URL"), modules={"models": ["common.models"]}
         )
@@ -173,12 +156,10 @@ intents = naff.Intents.new(
     guild_emojis_and_stickers=True,
     messages=True,
     reactions=True,
-    guild_message_content=True,
 )
 mentions = naff.AllowedMentions.all()
 
 bot = RealmsPlayerlistBot(
-    generate_prefixes=generate_prefixes,
     allowed_mentions=mentions,
     intents=intents,
     interaction_context=utils.RealmContext,
