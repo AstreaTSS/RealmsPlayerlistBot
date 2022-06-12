@@ -8,6 +8,7 @@ import textwrap
 import traceback
 import typing
 
+import aiohttp
 import naff
 from naff.ext import paginators
 from naff.ext.debug_extension.utils import debug_embed
@@ -15,6 +16,7 @@ from naff.ext.debug_extension.utils import get_cache_state
 
 import common.utils as utils
 from common.models import GuildConfig
+from common.realms_api import RealmsAPIException
 
 DEV_GUILD_ID = int(os.environ["DEV_GUILD_ID"])
 
@@ -275,6 +277,32 @@ class OwnerCMDs(utils.Extension):
         await ctx.defer()
         await GuildConfig.filter(guild_id=int(guild_id)).delete()
         await ctx.send("Deleted!")
+
+    @naff.slash_command(
+        name="join-realm",
+        description="Joins a realm. Can only be used by the bot's owner.",
+        scopes=[DEV_GUILD_ID],
+        default_member_permissions=naff.Permissions.ADMINISTRATOR,
+    )
+    @naff.slash_option(
+        "realm_code",
+        "The Realm code",
+        naff.OptionTypes.STRING,
+        required=True,
+    )
+    async def join_realm(self, ctx: utils.RealmContext, realm_code: str):
+        try:
+            realm = await ctx.bot.realms.join_realm_from_code(realm_code)
+            await ctx.send(f"Club ID: {realm.club_id}")
+        except RealmsAPIException as e:
+            if isinstance(e.error, aiohttp.ClientResponseError):
+                await utils.msg_to_owner(
+                    ctx.bot,
+                    f"Status code: {e.resp.status}\nHeaders: {e.error.headers}\nText:"
+                    f" {await e.resp.text()}",
+                )
+            else:
+                await utils.error_handle(self.bot, e.error, ctx)
 
     @naff.prefixed_command(aliases=["jsk"])
     async def debug(self, ctx: naff.PrefixedContext):

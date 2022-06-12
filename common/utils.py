@@ -16,6 +16,8 @@ from .models import GuildConfig
 
 
 DEV_GUILD_ID = int(os.environ.get("DEV_GUILD_ID", "0"))
+REALMS_API_URL = "https://pocket.realms.minecraft.net/"
+MC_VERSION = "1.19.0"  # this can be a few versions behind
 
 
 async def sleep_until(dt: datetime.datetime):
@@ -229,12 +231,14 @@ class RealmPrefixedContext(naff.PrefixedContext):
 
 if typing.TYPE_CHECKING:
     from .custom_providers import ProfileProvider, ClubProvider
+    from .realms_api import RealmsAPI
 
     class RealmBotBase(naff.Client):
         init_load: bool
         color: naff.Color
         session: aiohttp.ClientSession
         openxbl_session: aiohttp.ClientSession
+        realms: RealmsAPI
         profile: ProfileProvider
         club: ClubProvider
         owner: naff.User

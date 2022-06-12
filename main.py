@@ -3,6 +3,7 @@ import contextlib
 import importlib
 import logging
 import os
+from copy import deepcopy
 
 import aiohttp
 import aioredis
@@ -16,6 +17,7 @@ from xbox.webapi.authentication.models import OAuth2TokenResponse
 import common.utils as utils
 from common.custom_providers import ClubProvider
 from common.custom_providers import ProfileProvider
+from common.realms_api import RealmsAPI
 
 # load the config file into environment variables
 # this allows an easy way to access these variables from any file
@@ -92,6 +94,12 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         xbl_client = XboxLiveClient(auth_mgr)
         self.profile = ProfileProvider(xbl_client)
         self.club = ClubProvider(xbl_client)
+
+        auth_mgr_copy = deepcopy(auth_mgr)
+        auth_mgr_copy.xsts_token = await auth_mgr.request_xsts_token(
+            relying_party=utils.REALMS_API_URL
+        )
+        self.realms = RealmsAPI(aiohttp.ClientSession(), auth_mgr_copy)
 
         headers = {
             "X-Authorization": os.environ["OPENXBL_KEY"],
