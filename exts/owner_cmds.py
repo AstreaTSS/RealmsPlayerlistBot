@@ -65,8 +65,6 @@ class OwnerCMDs(utils.Extension):
         ctx: utils.RealmContext,
         guild_id: str,
     ):
-        await ctx.defer()
-
         guild = self.bot.get_guild(int(guild_id))
         guild_config = await GuildConfig.get(guild_id=int(guild_id))
 
@@ -129,8 +127,6 @@ class OwnerCMDs(utils.Extension):
         playerlist_chan: str = None,
         online_cmd: bool = None,
     ):
-        await ctx.defer()
-
         kwargs = {"guild_id": int(guild_id), "prefixes": {"!?"}}
 
         if club_id:
@@ -181,8 +177,6 @@ class OwnerCMDs(utils.Extension):
         playerlist_chan: str = None,
         online_cmd: bool = None,
     ):
-        await ctx.defer()
-
         guild_config = await GuildConfig.get(guild_id=int(guild))
 
         if club_id:
@@ -238,8 +232,6 @@ class OwnerCMDs(utils.Extension):
         playerlist_chan: str = None,
         online_cmd: bool = None,
     ):
-        await ctx.defer()
-
         guild_config = await GuildConfig.get(guild_id=int(guild_id))
 
         if club_id:
@@ -274,7 +266,6 @@ class OwnerCMDs(utils.Extension):
         ctx: utils.RealmContext,
         guild_id: str,
     ):
-        await ctx.defer()
         await GuildConfig.filter(guild_id=int(guild_id)).delete()
         await ctx.send("Deleted!")
 
