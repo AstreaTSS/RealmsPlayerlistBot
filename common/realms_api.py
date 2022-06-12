@@ -39,7 +39,7 @@ class WorldType(Enum):
 
 
 @attrs.define()
-class Realm:
+class FullRealm:
     id: int
     remote_subscription_id: str
     owner: str
@@ -65,7 +65,7 @@ class Realm:
     motd: Optional[str] = None
 
     @staticmethod
-    def from_dict(obj: Any) -> "Realm":  # sourcery skip: avoid-builtin-shadow
+    def from_dict(obj: Any) -> "FullRealm":  # sourcery skip: avoid-builtin-shadow
         id = obj.get("id")
         remote_subscription_id = obj.get("remoteSubscriptionId")
         owner = obj.get("owner")
@@ -89,7 +89,7 @@ class Realm:
         club_id = obj.get("clubId")
         subscription_refresh_status = obj.get("subscriptionRefreshStatus")
         motd = obj.get("motd")
-        return Realm(
+        return FullRealm(
             id,
             remote_subscription_id,
             owner,
@@ -117,13 +117,64 @@ class Realm:
 
 
 @attrs.define()
-class Worlds:
-    servers: List[Realm]
+class FullWorlds:
+    servers: List[FullRealm]
 
     @staticmethod
-    def from_dict(obj: Any) -> "Worlds":
-        servers = from_list(Realm.from_dict, obj.get("servers"))
-        return Worlds(servers)
+    def from_dict(obj: Any) -> "FullWorlds":
+        servers = from_list(FullRealm.from_dict, obj.get("servers"))
+        return FullWorlds(servers)
+
+
+class Permission(Enum):
+    MEMBER = "MEMBER"
+    OPERATOR = "OPERATOR"
+    VISITOR = "VISITOR"
+
+
+@attrs.define()
+class Player:
+    uuid: str
+    name: None
+    operator: bool
+    accepted: bool
+    online: bool
+    permission: Permission
+
+    @staticmethod
+    def from_dict(obj: Any) -> "Player":
+        uuid = obj.get("uuid")
+        name = obj.get("name")
+        operator = obj.get("operator")
+        accepted = obj.get("accepted")
+        online = obj.get("online")
+        permission = Permission(obj.get("permission"))
+        return Player(uuid, name, operator, accepted, online, permission)
+
+
+@attrs.define()
+class PartialRealm:
+    id: int
+    players: List[Player]
+    full: bool
+
+    @staticmethod
+    def from_dict(obj: Any) -> "PartialRealm":
+        # sourcery skip: avoid-builtin-shadow
+        id = obj.get("id")
+        players = from_list(Player.from_dict, obj.get("players"))
+        full = obj.get("full")
+        return PartialRealm(id, players, full)
+
+
+@attrs.define()
+class ActivityList:
+    servers: List[PartialRealm]
+
+    @staticmethod
+    def from_dict(obj: Any) -> "ActivityList":
+        servers = from_list(PartialRealm.from_dict, obj.get("servers"))
+        return ActivityList(servers)
 
 
 class RealmsAPIException(Exception):
@@ -167,7 +218,10 @@ class RealmsAPI:
         return await self.request("POST", url, data=data)
 
     async def join_realm_from_code(self, code: str):
-        return Realm.from_dict(await self.post(f"invites/v1/link/accept/{code}"))
+        return FullRealm.from_dict(await self.post(f"invites/v1/link/accept/{code}"))
 
     async def fetch_realms(self):
-        return Worlds.from_dict(await self.get("worlds"))
+        return FullWorlds.from_dict(await self.get("worlds"))
+
+    async def fetch_activities(self):
+        return ActivityList.from_dict(await self.get("activities/live/players"))
