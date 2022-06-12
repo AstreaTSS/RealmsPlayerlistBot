@@ -8,7 +8,7 @@ aiodns==3.0.0
 brotlipy==0.7.0
 attrs==21.4.0
 asyncpg==0.25.0
-tortoise-orm==0.19.0
+tortoise-orm==0.19.1
 aioredis[hiredis]==2.0.1
 tomli==2.0.1
 orjson==3.7.2
