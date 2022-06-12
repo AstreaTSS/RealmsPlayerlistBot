@@ -3,7 +3,7 @@ import contextlib
 import importlib
 import logging
 import os
-from copy import deepcopy
+from copy import copy
 
 import aiohttp
 import aioredis
@@ -95,7 +95,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         self.profile = ProfileProvider(xbl_client)
         self.club = ClubProvider(xbl_client)
 
-        auth_mgr_copy = deepcopy(auth_mgr)
+        auth_mgr_copy = copy(auth_mgr)
         auth_mgr_copy.xsts_token = await auth_mgr.request_xsts_token(
             relying_party=utils.REALMS_API_URL
         )
