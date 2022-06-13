@@ -3,7 +3,7 @@ import contextlib
 import importlib
 import logging
 import os
-from copy import copy
+from functools import partial
 
 import aiohttp
 import aioredis
@@ -78,11 +78,13 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         self.profile = ProfileProvider(xbl_client)
         self.club = ClubProvider(xbl_client)
 
-        auth_mgr_copy = copy(auth_mgr)
-        auth_mgr_copy.xsts_token = await auth_mgr.request_xsts_token(
+        xsts_token = await auth_mgr.request_xsts_token(
             relying_party=utils.REALMS_API_URL
         )
-        self.realms = RealmsAPI(aiohttp.ClientSession(), auth_mgr_copy)
+        request_xsts_token = partial(
+            auth_mgr.request_xsts_token, relying_party=utils.REALMS_API_URL
+        )
+        self.realms = RealmsAPI(aiohttp.ClientSession(), xsts_token, request_xsts_token)
 
         headers = {
             "X-Authorization": os.environ["OPENXBL_KEY"],
