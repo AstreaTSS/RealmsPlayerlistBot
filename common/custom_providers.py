@@ -1,11 +1,39 @@
-"""
-Profile
-
-Get Userprofiles by XUID or Gamertag
-"""
+import orjson
 from aiohttp import ClientResponse
 from xbox.webapi.api.provider.baseprovider import BaseProvider
 from xbox.webapi.api.provider.profile.models import ProfileSettings
+from xbox.webapi.common.models import CamelCaseModel
+from xbox.webapi.common.models import PascalCaseModel
+
+
+# monkeypatching to speed things up slightly
+
+
+def to_pascal(string):
+    return "".join(word.capitalize() for word in string.split("_"))
+
+
+def to_camel(string):
+    words = string.split("_")
+    return words[0] + "".join(word.capitalize() for word in words[1:])
+
+
+class PascalCaseModelConfig:
+    arbitrary_types_allowed = True
+    allow_population_by_field_name = True
+    alias_generator = to_pascal
+    json_loads = orjson.loads
+
+
+class CamelCaseModelConfig:
+    arbitrary_types_allowed = True
+    allow_population_by_field_name = True
+    alias_generator = to_camel
+    json_loads = orjson.loads
+
+
+PascalCaseModel.Config = PascalCaseModelConfig
+CamelCaseModel.Config = CamelCaseModelConfig
 
 
 class ProfileProvider(BaseProvider):
