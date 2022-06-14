@@ -295,6 +295,19 @@ class OwnerCMDs(utils.Extension):
             else:
                 await utils.error_handle(self.bot, e.error, ctx)
 
+    @naff.slash_command(
+        name="invite-link",
+        description=(
+            "Sends the invite link for the bot. Can only be used by the bot's owner."
+        ),
+        scopes=[DEV_GUILD_ID],
+        default_member_permissions=naff.Permissions.ADMINISTRATOR,
+    )
+    async def invite_link(self, ctx: utils.RealmContext):
+        await ctx.send(
+            "https://discord.com/api/oauth2/authorize?client_id=725483868777611275&permissions=309238025280&scope=applications.commands%20bot"
+        )
+
     @naff.prefixed_command(aliases=["jsk"])
     async def debug(self, ctx: naff.PrefixedContext):
         """Get basic information about the bot."""
