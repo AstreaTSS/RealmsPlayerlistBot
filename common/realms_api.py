@@ -202,8 +202,9 @@ class RealmsAPI:
         }
 
     async def request(self, method: str, url: str, data: typing.Optional[dict] = None):
-        # we need to refresh it constantly, so...
-        self.xsts_token = await self.request_xsts_token()
+        # refresh token as needed
+        if not self.xsts_token.is_valid():
+            self.xsts_token = await self.request_xsts_token()
 
         async with self.session.request(
             method, f"{utils.REALMS_API_URL}{url}", headers=self.HEADERS, data=data
