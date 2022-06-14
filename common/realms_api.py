@@ -194,13 +194,13 @@ class RealmsAPI:
     auth_mgr: AuthenticationManager = attrs.field(init=False)
 
     def __attrs_post_init__(self):
-        auth_mgr = AuthenticationManager(
+        self.auth_mgr = AuthenticationManager(
             self.session,
             os.environ["XBOX_CLIENT_ID"],
             os.environ["XBOX_CLIENT_SECRET"],
             "",
         )
-        auth_mgr.oauth = OAuth2TokenResponse.parse_file(
+        self.auth_mgr.oauth = OAuth2TokenResponse.parse_file(
             os.environ["XAPI_TOKENS_LOCATION"]
         )
         asyncio.create_task(self.refresh_tokens())
