@@ -192,10 +192,10 @@ class RealmsAPI:
     session: aiohttp.ClientSession = attrs.field()
     xsts_token: XSTSResponse = attrs.field()
     request_xsts_token: partial[Coroutine[Any, Any, XSTSResponse]] = attrs.field()
-    HEADERS: dict = attrs.field(init=False, factory=dict)
 
-    def __attrs_post_init__(self):
-        self.HEADERS = {
+    @property
+    def HEADERS(self):
+        return {
             "Client-Version": utils.MC_VERSION,
             "User-Agent": "MCPE/UWP",
             "Authorization": self.xsts_token.authorization_header_value,
