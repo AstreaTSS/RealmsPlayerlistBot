@@ -305,7 +305,7 @@ class OwnerCMDs(utils.Extension):
     )
     async def invite_link(self, ctx: utils.RealmContext):
         await ctx.send(
-            "https://discord.com/api/oauth2/authorize?client_id=725483868777611275&permissions=309238025280&scope=applications.commands%20bot"
+            f"https://discord.com/api/oauth2/authorize?client_id={self.bot.user.id}&permissions=309238025280&scope=applications.commands%20bot"
         )
 
     @naff.prefixed_command(aliases=["jsk"])
