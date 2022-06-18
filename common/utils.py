@@ -243,13 +243,6 @@ if typing.TYPE_CHECKING:
         club: ClubProvider
         owner: naff.User
         redis: aioredis.Redis
-        _tasks: set[naff.Task]
-
-        def register_task(self, task: naff.Task):
-            ...
-
-        def cancel_task(self, task: naff.Task):
-            ...
 
 else:
 

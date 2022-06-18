@@ -86,9 +86,6 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         }
         self.openxbl_session = aiohttp.ClientSession(headers=headers)
 
-        for task in self._tasks:
-            task.start()
-
     @naff.listen("ready")
     async def on_ready(self):
         utcnow = naff.Timestamp.utcnow()
@@ -132,18 +129,6 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         await bot.session.close()
         return await super().stop()
 
-    def register_task(self, task: naff.Task):
-        self._tasks.add(task)
-
-        if self.is_ready:
-            task.start()
-
-    def cancel_task(self, task: naff.Task):
-        self._tasks.discard(task)
-
-        if self.is_ready:
-            task.stop()
-
 
 # message content is temporarily on in order to transition people to slash commands
 intents = naff.Intents.new(
@@ -162,15 +147,18 @@ bot = RealmsPlayerlistBot(
     auto_defer=naff.AutoDefer(enabled=True, time_until_defer=0),
 )
 bot.init_load = True
-bot._tasks = set()
 bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
 
 
-ext_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_BOT"))
-for ext in ext_list:
-    try:
-        bot.load_extension(ext)
-    except naff.errors.ExtensionLoadException:
-        raise
+async def start():
+    ext_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_BOT"))
+    for ext in ext_list:
+        try:
+            bot.load_extension(ext)
+        except naff.errors.ExtensionLoadException:
+            raise
 
-asyncio.run(bot.astart(os.environ.get("MAIN_TOKEN")))
+    await bot.astart(os.environ.get("MAIN_TOKEN"))
+
+
+asyncio.run(start())
