@@ -36,3 +36,4 @@ But if you're willing to try... well, I won't leave a detailed guide here - just
 ## Links:
 
 * [Join Support Server](https://discord.gg/NSdetwGjpK)
+* [Support me on Ko-fi](https://ko-fi.com/astrea49)
