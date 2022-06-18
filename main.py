@@ -130,7 +130,6 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         return await super().stop()
 
 
-# message content is temporarily on in order to transition people to slash commands
 intents = naff.Intents.new(
     guilds=True,
     guild_emojis_and_stickers=True,
