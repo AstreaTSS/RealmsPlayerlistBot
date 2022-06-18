@@ -4,6 +4,7 @@ import datetime
 import importlib
 
 import naff
+from dateutil.relativedelta import relativedelta
 
 import common.utils as utils
 from common.models import GuildConfig
@@ -25,23 +26,25 @@ class AutoRunPlayerlist(utils.Extension):
 
     def __init__(self, bot):
         self.bot: utils.RealmBotBase = bot
-
-        self.playerlist_loop.on_error = self.error_handle
-        asyncio.create_task(self._start_playerlist())
+        self.playerlist_task = asyncio.create_task(self._start_playerlist())
 
     def drop(self):
-        self.playerlist_loop.stop()
+        self.playerlist_task.cancel()
         super().drop()
 
     async def _start_playerlist(self):
         await self.bot.wait_until_ready()
-        self.playerlist_loop.start()
 
-    @naff.Task.create(BetterIntervalTrigger(hours=1))
+        while True:
+            now = naff.Timestamp.utcnow()
+            next_delta = relativedelta(hours=+1, minute=0, second=0, microsecond=0)
+            next_time = now + next_delta
+            await utils.sleep_until(next_time)
+
+            await self.playerlist_loop()
+
     async def playerlist_loop(self):
-        """A simple way of running the playerlist command every hour in every server the bot is in.
-        Or, at least, in every server that's listed in the config. See `config.json` for that.
-        See `cogs.config_fetch` for how the bot gets the config from that file."""
+        """A simple way of running the playerlist command every hour in every server the bot is in."""
 
         list_cmd = next(
             c for c in self.bot.application_commands if c.name.default == "playerlist"
