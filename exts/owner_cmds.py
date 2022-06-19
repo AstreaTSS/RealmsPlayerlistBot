@@ -80,7 +80,7 @@ class OwnerCMDs(utils.Extension):
             else "None"
         )
         embed.description = (
-            f"Club ID: {guild_config.club_id}\n"
+            f"Club ID: {guild_config.club_id}\nRealm ID: {guild_config.realm_id}\n"
             + f"Playerlist Channel: {playerlist_channel}\nOnline Command Enabled?"
             f" {guild_config.online_cmd}\nPrefixes: {', '.join(prefixes)}"
         )
