@@ -1,4 +1,5 @@
 import typing
+from datetime import datetime
 
 from tortoise import fields
 from tortoise.contrib.postgres.fields import ArrayField
@@ -28,3 +29,13 @@ class GuildConfig(Model):
     playerlist_chan: typing.Optional[int] = fields.BigIntField(null=True)
     online_cmd: bool = fields.BooleanField(default=False)  # type: ignore
     prefixes: typing.Set[str] = SetField("VARCHAR(40)")
+    realm_id: typing.Optional[str] = fields.CharField(50, null=True)
+
+
+class GuildPlayer(Model):
+    class Meta:
+        table = "realmguildplayer"
+
+    guild_xuid_id: str = fields.CharField(max_length=100, pk=True)
+    online: bool = fields.BooleanField(default=False)  # type: ignore
+    last_seen: datetime = fields.DatetimeField()

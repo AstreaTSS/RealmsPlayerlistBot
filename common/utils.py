@@ -243,6 +243,7 @@ if typing.TYPE_CHECKING:
         club: ClubProvider
         owner: naff.User
         redis: aioredis.Redis
+        fully_ready: asyncio.Event
 
 else:
 

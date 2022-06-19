@@ -2,15 +2,22 @@
 import os
 
 import aiohttp
+import aioredis
 import asyncpg
 import orjson
-from dotenv import load_dotenv
+import tomli
 from tortoise import run_async
 from tortoise import Tortoise
 
 from common.models import GuildConfig
+from common.realms_api import RealmsAPI
 
-load_dotenv()
+
+CONFIG_LOCATION = os.environ.get("CONFIG_LOCATION", "config.toml")
+with open(CONFIG_LOCATION, "rb") as f:
+    toml_dict = tomli.load(f)
+    for key, value in toml_dict.items():
+        os.environ[key] = str(value)
 
 
 async def init():
@@ -68,6 +75,43 @@ async def migrate():
         await conn.execute("ALTER TABLE realmguildconfig DROP COLUMN old_prefixes")
 
     await conn.close()
+
+
+async def club_to_realms():
+    conn: asyncpg.Connection = await asyncpg.connect(os.environ.get("DB_URL"))
+
+    async with conn.transaction():
+        await conn.execute("ALTER TABLE realmguildconfig ADD realm_id VARCHAR(50) NULL")
+    await conn.close()
+
+    await Tortoise.init(
+        db_url=os.environ["DB_URL"], modules={"models": ["common.models"]}
+    )
+
+    realms = RealmsAPI(aiohttp.ClientSession())
+    redis = aioredis.from_url(os.environ.get("REDIS_URL"), decode_responses=True)
+
+    realms_list = await realms.fetch_realms()
+
+    club_to_realm = {
+        str(realm.club_id): str(realm.id)
+        for realm in realms_list.servers
+        if realm.club_id is not None
+    }
+
+    configs = []
+
+    async for guild_config in GuildConfig.all():
+        if guild_config.club_id is not None:
+            realm_id = club_to_realm.get(guild_config.club_id)
+            if not realm_id:
+                continue
+
+            await redis.sadd(f"realm-id-{realm_id}", str(guild_config.guild_id))
+            guild_config.realm_id = realm_id
+            configs.append(guild_config)
+
+    await GuildConfig.bulk_update(configs, ["realm_id"])
 
 
 run_async(init())

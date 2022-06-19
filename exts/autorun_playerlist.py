@@ -6,8 +6,8 @@ import importlib
 import naff
 from dateutil.relativedelta import relativedelta
 
+import common.models as models
 import common.utils as utils
-from common.models import GuildConfig
 
 
 class BetterIntervalTrigger(naff.IntervalTrigger):
@@ -27,21 +27,36 @@ class AutoRunPlayerlist(utils.Extension):
     def __init__(self, bot):
         self.bot: utils.RealmBotBase = bot
         self.playerlist_task = asyncio.create_task(self._start_playerlist())
+        self.playerlist_delete.start()
 
     def drop(self):
         self.playerlist_task.cancel()
+        self.playerlist_delete.stop()
         super().drop()
 
     async def _start_playerlist(self):
-        await self.bot.wait_until_ready()
+        await self.bot.fully_ready.wait()
 
-        while True:
-            now = naff.Timestamp.utcnow()
-            next_delta = relativedelta(hours=+1, minute=0, second=0, microsecond=0)
-            next_time = now + next_delta
-            await utils.sleep_until(next_time)
+        try:
+            while True:
+                # margin of error
+                now = naff.Timestamp.utcnow() + datetime.timedelta(milliseconds=1)
+                next_delta = relativedelta(hours=+1, minute=0, second=0, microsecond=0)
+                next_time = now + next_delta
 
-            await self.playerlist_loop()
+                await utils.sleep_until(next_time)
+                await self.playerlist_loop()
+        except Exception as e:
+            if not isinstance(e, asyncio.CancelledError):
+                await utils.error_handle(self.bot, e)
+
+    @naff.Task.create(naff.IntervalTrigger(hours=6))
+    async def playerlist_delete(self):
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        very_long_back = now - datetime.timedelta(hours=25)
+        await models.GuildPlayer.filter(
+            online=False, last_seen__lt=very_long_back
+        ).delete()
 
     async def playerlist_loop(self):
         """A simple way of running the playerlist command every hour in every server the bot is in."""
@@ -51,7 +66,7 @@ class AutoRunPlayerlist(utils.Extension):
         )
         to_run = []
 
-        async for guild_config in GuildConfig.all():
+        async for guild_config in models.GuildConfig.all():
             if bool(guild_config.club_id):
                 to_run.append(self.auto_run_playerlist(list_cmd, guild_config))
 
@@ -69,7 +84,7 @@ class AutoRunPlayerlist(utils.Extension):
         asyncio.create_task(utils.error_handle(self.bot, error))
 
     async def auto_run_playerlist(
-        self, list_cmd: naff.InteractionCommand, guild_config: GuildConfig
+        self, list_cmd: naff.InteractionCommand, guild_config: models.GuildConfig
     ):
         chan: naff.GuildText = self.bot.get_channel(
             guild_config.playerlist_chan  # type: ignore

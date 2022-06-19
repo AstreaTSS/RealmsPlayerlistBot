@@ -13,6 +13,7 @@ from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
 
+import common.models as models
 import common.utils as utils
 from common.custom_providers import ClubProvider
 from common.custom_providers import ProfileProvider
@@ -86,6 +87,10 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         }
         self.openxbl_session = aiohttp.ClientSession(headers=headers)
 
+        await models.GuildPlayer.filter(online=True).update(online=False)
+
+        self.fully_ready.set()
+
     @naff.listen("ready")
     async def on_ready(self):
         utcnow = naff.Timestamp.utcnow()
@@ -144,12 +149,15 @@ bot = RealmsPlayerlistBot(
     interaction_context=utils.RealmContext,
     prefixed_context=utils.RealmPrefixedContext,
     auto_defer=naff.AutoDefer(enabled=True, time_until_defer=0),
+    debug_scope=969373835877048342,
 )
 bot.init_load = True
 bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
 
 
 async def start():
+    bot.fully_ready = asyncio.Event()
+
     ext_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_BOT"))
     for ext in ext_list:
         try:

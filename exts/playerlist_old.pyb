@@ -2,9 +2,9 @@ import asyncio
 import contextlib
 import datetime
 import importlib
-import math
+import os
 import typing
-from collections import defaultdict
+from enum import IntEnum
 
 import aiohttp
 import attr
@@ -12,12 +12,47 @@ import naff
 import orjson
 from pydantic import ValidationError
 from tortoise.exceptions import DoesNotExist
-from tortoise.expressions import Q
 from xbox.webapi.api.provider.profile.models import ProfileResponse
 
 import common.custom_providers as providers
-import common.models as models
 import common.utils as utils
+
+"""
+Hey, potential code viewer!
+If you're looking at this, chances are you're interested in how this works.
+First thing: it's December 12st 2021 right now, and I made large chunks of this a year or more back.
+Even I don't quite know every part of it - it's been lost to time and bad programming practices.
+
+Most of this code is not pretty and probably could be made better.
+But at the same time, this code works, and poking around is not fun.
+Also, this isn't exactly my favorite bot. It's a huge pain to maintain.
+Oh well. Honestly, it could be a lot worse.
+
+Also also (yeah), this approach is a somewhat hacky exploit of how Realms work.
+Every Realm creates a club for it to use - in Minecraft itself, you can view this by clicking
+the whole photo view thing while in a Realm.
+This is largely used just to share photos and info, but I did a deep dive on this and found out
+it can also be used to see who was online and who was offline.
+You can do this via the Xbox app, actually - I believe if you're in a Realm, you should automatically
+join the Relam club, so just check that and search for the section that has all of the players in it.
+The problem is that that section doesn't tell you enough - it doesn't tell you when they were last on, for example.
+This bot basically combines all of that knowledge together, gets the club of the Realm via the Xbox Live API since it is
+an Xbox Live thing, gets the people who were on, and puts out one easy to use playerlist to be used for
+moderation (or really, whatever you would like).
+
+Sadly, commenting on what everything does in-depth is a waste of time, since I tend to make most of my code
+self-documenting. I don't find use in commenting what can be seen directly from the code.
+Admittedly, some parts of this are both hard to understand AND uncommented. Sorry! It's just really hard
+to comment on those things.
+
+Regardless, good luck on your bot coding journey!
+- Astrea
+"""
+
+
+def _camel_to_const_snake(s):
+    return "".join([f"_{c}" if c.isupper() else c.upper() for c in s]).lstrip("_")
+
 
 hours_ago_choices = [
     naff.SlashCommandChoice("1", "1"),  # type: ignore
@@ -47,13 +82,33 @@ hours_ago_choices = [
 ]
 
 
+class ClubUserPresence(IntEnum):
+    UNKNOWN = -1
+    NOT_IN_CLUB = 0
+    IN_CLUB = 1
+    CHAT = 2
+    FEED = 3
+    ROSTER = 4
+    PLAY = 5
+    IN_GAME = 6
+
+    @classmethod
+    def from_xbox_api(cls, value: str):
+        try:
+            return cls[_camel_to_const_snake(value)]
+        except KeyError:
+            # it's not like i forgot a value, it's just that some are
+            # literally not documented
+            return cls.UNKNOWN
+
+
 @attr.s(slots=True, eq=False)
 class Player:
     """A simple class to represent a player on a Realm."""
 
     xuid: str = attr.ib()
     last_seen: datetime.datetime = attr.ib()
-    in_game: bool = attr.ib(default=False)
+    last_seen_state: ClubUserPresence = attr.ib()
     gamertag: typing.Optional[str] = attr.ib(default=None)
 
     def __eq__(self, o: object) -> bool:
@@ -62,6 +117,10 @@ class Player:
     @property
     def resolved(self):
         return bool(self.gamertag)
+
+    @property
+    def in_game(self):
+        return self.last_seen_state == ClubUserPresence.IN_GAME
 
     @property
     def display(self):  # sourcery skip: remove-unnecessary-else
@@ -219,154 +278,110 @@ class Playerlist(utils.Extension):
         )  # prevents bot from overloading xbox api, hopefully
         self.club_sem = asyncio.Semaphore(10)
 
-        self._previous_now = datetime.datetime.now(tz=datetime.timezone.utc)
-        self._online_cache: defaultdict[int, set[str]] = defaultdict(set)
-        self._guildplayer_queue: asyncio.Queue[
-            list[models.GuildPlayer]
-        ] = asyncio.Queue()
-
-        self.get_people_task = asyncio.create_task(self._start_get_people())
-        self.upload_players_task = asyncio.create_task(self._upload_players())
-
-    def drop(self):
-        self.get_people_task.cancel()
-        self.upload_players_task.cancel()
-        super().drop()
-
-    def _next_time(self):
-        now = naff.Timestamp.utcnow()
-        # margin of error
-        multiplicity = math.ceil((now.timestamp() + 0.1) / 60)
-        next_time = multiplicity * 60
-        return naff.Timestamp.utcfromtimestamp(next_time)
-
-    async def _start_get_people(self):
-        await self.bot.fully_ready.wait()
-        await utils.sleep_until(self._next_time())
-
-        try:
-            while True:
-                next_time = self._next_time()
-                await self._get_people_from_realms()
-                await utils.sleep_until(next_time)
-        except Exception as e:
-            if not isinstance(e, asyncio.CancelledError):
-                await utils.error_handle(self.bot, e)
-
-    async def _get_people_from_realms(self):
-        try:
-            realms = await self.bot.realms.fetch_activities()
-        except Exception as e:
-            await utils.error_handle(self.bot, e)
-            return
-
-        player_objs: list[models.GuildPlayer] = []
-        gotten_realm_ids: set[int] = set()
-        now = datetime.datetime.now(tz=datetime.timezone.utc)
-
-        for realm in realms.servers:
-            guild_ids: set[str] = await self.bot.redis.smembers(f"realm-id-{realm.id}")
-            if not guild_ids:
-                continue
-
-            gotten_realm_ids.add(realm.id)
-            player_set: set[str] = set()
-
-            for player in realm.players:
-                player_set.add(player.uuid)
-                player_objs.extend(
-                    models.GuildPlayer(
-                        guild_xuid_id=f"{guild_id}-{player.uuid}",
-                        online=True,
-                        last_seen=now,
-                    )
-                    for guild_id in guild_ids
-                )
-
-            left = self._online_cache[realm.id].difference(player_set)
-            self._online_cache[realm.id] = player_set
-
-            for guild_id in guild_ids:
-                player_objs.extend(
-                    models.GuildPlayer(
-                        guild_xuid_id=f"{guild_id}-{player}",
-                        online=False,
-                        last_seen=self._previous_now,
-                    )
-                    for player in left
-                )
-
-        online_cache_ids = set(self._online_cache.keys())
-        for missed_realm_id in online_cache_ids.difference(gotten_realm_ids):
-            now_invalid = self._online_cache[missed_realm_id]
-            guild_ids: set[str] = await self.bot.redis.smembers(
-                f"realm-id-{missed_realm_id}"
-            )
-            if not now_invalid or not guild_ids:
-                continue
-
-            for guild_id in guild_ids:
-                player_objs.extend(
-                    models.GuildPlayer(
-                        guild_xuid_id=f"{guild_id}-{player}",
-                        online=False,
-                        last_seen=self._previous_now,
-                    )
-                    for player in now_invalid
-                )
-
-            self._online_cache[missed_realm_id] = set()
-
-        self._previous_now = now
-
-        # handle this in the "background" so we don't have to worry about this
-        # taking too long
-        await self._guildplayer_queue.put(player_objs)
-
-    async def _upload_players(self):
-        while True:
-            try:
-                guildplayers = await self._guildplayer_queue.get()
-
-                await models.GuildPlayer.bulk_create(
-                    guildplayers,
-                    on_conflict=("guild_xuid_id",),
-                    update_fields=("online", "last_seen"),
-                )
-            except Exception as e:
-                if isinstance(e, asyncio.CancelledError):
-                    return
-                await utils.error_handle(self.bot, e)
-            finally:
-                if not self._guildplayer_queue.empty():
-                    self._guildplayer_queue.task_done()
-
     async def _delete_after(self, msg: naff.Message):
         await asyncio.sleep(3)
         with contextlib.suppress(naff.errors.HTTPException):
             await msg.delete()
 
-    async def get_players_from_guildplayers(
+    async def _realm_club_json(
+        self, club_id
+    ) -> typing.Tuple[typing.Optional[dict], aiohttp.ClientResponse]:
+        try:
+            r = await self.bot.club.get_club_user_presences(club_id)
+            if r.status == 429:
+                # ratelimit, not much we can do here
+                await asyncio.sleep(15)
+                raise ClubOnCooldown()
+
+            resp_json = await r.json(loads=orjson.loads)
+            return resp_json, r
+        except (aiohttp.ContentTypeError, ClubOnCooldown):
+            async with self.bot.openxbl_session.get(
+                f"https://xbl.io/api/v2/clubs/{club_id}"
+            ) as r:
+                try:
+                    resp_json = await r.json(loads=orjson.loads)
+                    return resp_json, r
+                except aiohttp.ContentTypeError:
+                    return None, r
+
+    async def realm_club_get(self, club_id):
+        async with self.club_sem:
+            resp_json, resp = await self._realm_club_json(club_id)
+
+        if not resp_json:
+            resp_text = await resp.text()
+            await utils.msg_to_owner(self.bot, resp_text)
+            await utils.msg_to_owner(self.bot, resp.headers)
+            await utils.msg_to_owner(self.bot, resp.status)
+            return None
+
+        try:
+            # again, the xbox live api gives every response as a list
+            # even when requesting for one thing
+            # and we only need the presences of the users
+            # not the other stuff
+            return resp_json["clubs"][0]["clubPresence"]
+        except (KeyError, TypeError):
+            # who knows x2
+
+            if resp_json.get("code") and resp_json["code"] == 1018:
+                return "Unauthorized"
+
+            await utils.msg_to_owner(self.bot, resp_json)
+            await utils.msg_to_owner(self.bot, resp.headers)
+            await utils.msg_to_owner(self.bot, resp.status)
+            return None
+
+    async def get_players_from_club_data(
         self,
-        guild_id: str,
-        guildplayers: list[models.GuildPlayer],
+        club_presence: typing.List[typing.Dict],
+        time_ago: typing.Optional[datetime.datetime] = None,
+        online_only: bool = False,
     ):
         player_list: typing.List[Player] = []
         unresolved_dict: typing.Dict[str, Player] = {}
 
-        for member in guildplayers:
-            xuid = member.guild_xuid_id.removeprefix(f"{guild_id}-")
+        for member in club_presence:
+            last_seen_state = ClubUserPresence.from_xbox_api(member["lastSeenState"])
+
+            if last_seen_state not in {
+                ClubUserPresence.IN_GAME,
+                ClubUserPresence.NOT_IN_CLUB,
+            }:
+                # we want to ignore people causally browsing the club itself
+                # this isn't perfect, as if they stop viewing the club, they'll be put in
+                # the "NotInClub" list, but that's fine
+                continue
+
+            # if we're online only, breaking out when we stop getting online
+            # people is a good idea
+            if online_only and last_seen_state == ClubUserPresence.NOT_IN_CLUB:
+                break
+
+            # xbox live uses a bit more precision than python can understand
+            # so we cut out that precision
+            last_seen = datetime.datetime.strptime(
+                member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f"
+            ).replace(tzinfo=datetime.timezone.utc)
+
+            # if this person was on the realm longer than the time period specified
+            # we can stop this for loop
+            # useful as otherwise we would do an absurd number of requests getting every
+            # single gamertag
+            if time_ago and last_seen <= time_ago:
+                break
 
             player = Player(
-                xuid,
-                member.last_seen,
-                member.online,
-                await self.bot.redis.get(xuid),
+                member["xuid"],
+                last_seen,
+                last_seen_state,
+                await self.bot.redis.get(member["xuid"]),
             )
             if player.resolved:
                 player_list.append(player)
             else:
-                unresolved_dict[xuid] = player
+                unresolved_dict[member["xuid"]] = player
 
         if unresolved_dict:
             gamertag_handler = GamertagHandler(
@@ -411,51 +426,45 @@ class Playerlist(utils.Extension):
         Requires Manage Server permissions."""
 
         actual_hours_ago: int = int(hours_ago)
+        guild_config = await ctx.fetch_config()
 
         now = naff.Timestamp.utcnow()
 
         time_delta = datetime.timedelta(hours=actual_hours_ago)
         time_ago = now - time_delta
 
-        guildplayers = await models.GuildPlayer.filter(
-            Q(guild_xuid_id__startswith=f"{ctx.guild_id}-"),
-            Q(Q(online=True), Q(last_seen__gte=time_ago), join_type="OR"),
-        )
-
-        if not guildplayers:
-            if not kwargs.get("no_init_mes"):
-                raise utils.CustomCheckFailure(
-                    "No one seems to have been on the Realm for the last "
-                    + f"{actual_hours_ago} hour(s). If you changed Realms, make sure to"
-                    " let the owner know. Make sure you also haven't accidentally"
-                    " banned the bot's Xbox account.\n\nIf you just invited the bot,"
-                    " this will take a while to populate - after a day or two, it'll"
-                    " be fully ready."
-                )
-            else:
-                return
-
-        player_list = await self.get_players_from_guildplayers(
-            str(ctx.guild_id), guildplayers
-        )
-
-        online_list = sorted(p.display for p in player_list if p.in_game)
-        offline_list = [
-            p.display
-            for p in sorted(
-                player_list, key=lambda p: p.last_seen.timestamp(), reverse=True
+        club_presence = await self.realm_club_get(guild_config.club_id)
+        if club_presence is None:
+            # this can happen
+            await ctx.send(
+                "Seems like the playerlist command failed somehow. Astrea should "
+                + "have the info needed to see what's going on."
             )
-            if not p.in_game
-        ]
+            return
+        elif club_presence == "Unauthorized":
+            await utils.msg_to_owner(self.bot, ctx.guild)
+            await ctx.send(
+                "The bot can't seem to read your Realm! If you changed Realms, make"
+                " sure to let Astrea know. Also, make sure you haven't banned the"
+                " bot's Xbox account from the Realm. If you haven't done either,"
+                " this is probably just internal stuff being weird, and it'll fix"
+                " itself in a bit."
+            )
+            return
 
-        timestamp = naff.Timestamp.fromdatetime(self._previous_now)
+        player_list = await self.get_players_from_club_data(
+            club_presence, time_ago=time_ago
+        )
+
+        online_list = [p.display for p in player_list if p.in_game]
+        offline_list = [p.display for p in player_list if not p.in_game]
 
         if online_list:
             embed = naff.Embed(
                 color=self.bot.color,
                 title="People online right now",
                 description="\n".join(online_list),
-                timestamp=timestamp,
+                timestamp=now,
             )
             embed.set_footer(text="As of")
             await ctx.send(embed=embed)
@@ -470,7 +479,7 @@ class Playerlist(utils.Extension):
                 color=naff.Color.from_hex("95a5a6"),
                 description="\n".join(chunks[0]),
                 title=f"People on in the last {actual_hours_ago} hour(s)",
-                timestamp=timestamp,
+                timestamp=now,
             )
             first_embed.set_footer(text="As of")
             await ctx.send(embed=first_embed)
@@ -479,7 +488,7 @@ class Playerlist(utils.Extension):
                 embed = naff.Embed(
                     color=naff.Color.from_hex("95a5a6"),
                     description="\n".join(chunk),
-                    timestamp=timestamp,
+                    timestamp=now,
                 )
                 embed.set_footer(text="As of")
                 await ctx.send(embed=embed)
@@ -492,25 +501,44 @@ class Playerlist(utils.Extension):
             )
 
     @naff.slash_command("online", description="Allows you to see if anyone is online on the Realm right now.", dm_permission=False)  # type: ignore
-    @naff.cooldown(naff.Buckets.GUILD, 1, 10)
+    @naff.cooldown(naff.Buckets.GUILD, 1, 300)
     @naff.check(can_run_playerlist)  # type: ignore
     async def online(self, ctx: utils.RealmContext):
         """Allows you to see if anyone is online on the Realm right now."""
         # uses much of the same code as playerlist
 
-        guildplayers = await models.GuildPlayer.filter(
-            guild_xuid_id__startswith=f"{ctx.guild_id}-", online=True
-        )
-        player_list = await self.get_players_from_guildplayers(
-            str(ctx.guild_id), guildplayers
+        guild_config = await ctx.fetch_config()
+        now = naff.Timestamp.utcnow()
+
+        club_presence = await self.realm_club_get(guild_config.club_id)
+        if club_presence is None:
+            # this can happen
+            await ctx.send(
+                "Seems like the playerlist command failed somehow. Astrea "
+                + "should have the info needed to see what's going on."
+            )
+            return
+        elif club_presence == "Unauthorized":
+            await utils.msg_to_owner(self.bot, ctx.guild)
+            await ctx.send(
+                "The bot can't seem to read your Realm! If you changed Realms, make"
+                " sure to let Astrea know. Also, make sure you haven't banned the"
+                " bot's Xbox account from the Realm. If you haven't done either,"
+                " this is probably just internal stuff being weird, and it'll fix"
+                " itself in a bit."
+            )
+            return
+
+        player_list = await self.get_players_from_club_data(
+            club_presence, online_only=True
         )
 
-        if online_list := sorted(p.display for p in player_list if p.in_game):
+        if online_list := [p.display for p in player_list]:
             embed = naff.Embed(
                 color=self.bot.color,
                 title=f"{len(online_list)}/10 people online",
                 description="\n".join(online_list),
-                timestamp=naff.Timestamp.fromdatetime(self._previous_now),
+                timestamp=now,
             )
             embed.set_footer(text="As of")
             await ctx.send(embed=embed)
