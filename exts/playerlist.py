@@ -439,7 +439,9 @@ class Playerlist(utils.Extension):
             str(ctx.guild_id), guildplayers
         )
 
-        online_list = sorted(p.display for p in player_list if p.in_game)
+        online_list = sorted(
+            (p.display for p in player_list if p.in_game), key=lambda g: g.lower()
+        )
         offline_list = [
             p.display
             for p in sorted(
@@ -505,7 +507,9 @@ class Playerlist(utils.Extension):
             str(ctx.guild_id), guildplayers
         )
 
-        if online_list := sorted(p.display for p in player_list if p.in_game):
+        if online_list := sorted(
+            (p.display for p in player_list if p.in_game), key=lambda g: g.lower()
+        ):
             embed = naff.Embed(
                 color=self.bot.color,
                 title=f"{len(online_list)}/10 people online",
