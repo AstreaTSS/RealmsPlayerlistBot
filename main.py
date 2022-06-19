@@ -149,7 +149,6 @@ bot = RealmsPlayerlistBot(
     interaction_context=utils.RealmContext,
     prefixed_context=utils.RealmPrefixedContext,
     auto_defer=naff.AutoDefer(enabled=True, time_until_defer=0),
-    debug_scope=969373835877048342,
 )
 bot.init_load = True
 bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
