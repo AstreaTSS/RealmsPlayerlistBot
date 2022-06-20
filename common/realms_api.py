@@ -224,6 +224,9 @@ class RealmsAPI:
                 relying_party=utils.REALMS_API_URL
             )
 
+    async def close(self):
+        await self.session.close()
+
     async def request(self, method: str, url: str, data: typing.Optional[dict] = None):
         # refresh token as needed
         await self.refresh_tokens()

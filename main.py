@@ -132,6 +132,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
     async def stop(self) -> None:
         await bot.session.close()
+        await bot.realms.close()
         return await super().stop()
 
 
