@@ -5,7 +5,7 @@
 A bot that helps out owners of Minecraft: Bedrock Edition Realms by showing a log of players who have joined and left.
 
 ## The Playerlist
-The playerlist/player log is a *very* in-demand feature. For a good reason, too - it's *kinda* a thing not many other bots do.
+The playerlist/player log is a *very* in-demand feature. For a good reason, too - it's something not many other bots do.
 
 It looks something like this:
 
@@ -32,6 +32,10 @@ Note that I'm not *always* available and may take a long time to get around to a
 Honestly, *good luck*. This thing is *far* from simple to get everything working, requiring you to know the ins-and-outs of most of the libraries I use. It can be a mess, and gathering the databases and servers needed even more so. There's also not much room for simplification here.
 
 But if you're willing to try... well, I won't leave a detailed guide here - just kinda poke around in the code and see what works. [`xbox-webapi-python`](https://github.com/OpenXbox/xbox-webapi-python) is worth looking if you're even considering it.
+
+## FAQ
+
+There's a whole section in the wiki about this! Check it out [here](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/FAQ).
 
 ## Links:
 
