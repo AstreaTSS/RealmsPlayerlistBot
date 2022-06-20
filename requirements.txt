@@ -1,5 +1,5 @@
 naff==1.2.0
-humanize==4.1.0
+humanize==4.2.0
 websockets==10.3
 flask==2.1.2
 xbox-webapi==2.0.11
