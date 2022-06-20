@@ -7,6 +7,7 @@ import platform
 import textwrap
 import traceback
 import typing
+import unicodedata
 
 import aiohttp
 import naff
@@ -29,6 +30,14 @@ class OwnerCMDs(utils.Extension):
 
         self.add_ext_check(naff.checks.is_owner())
 
+    def _ascii_name(self, name):
+        # source - https://github.com/daveoncode/python-string-utils/blob/78929d/string_utils/manipulation.py#L433
+        return (
+            unicodedata.normalize("NFKD", name.lower())
+            .encode("ascii", "ignore")
+            .decode("utf-8")
+        )
+
     def _limit_to_25(self, mapping: list[dict[str, str]]):
         return mapping[:25]
 
@@ -44,7 +53,7 @@ class OwnerCMDs(utils.Extension):
         near_guilds = [
             {"name": guild_dict["name"], "value": guild_dict["value"]}
             for guild_dict in guild_mapping
-            if argument.lower() in guild_dict["name"].lower()
+            if argument.lower() in self._ascii_name(guild_dict["name"])
         ]
         await ctx.send(self._limit_to_25(near_guilds))
 
