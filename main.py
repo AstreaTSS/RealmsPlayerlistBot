@@ -13,6 +13,7 @@ from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
 
+import common.models as models
 import common.utils as utils
 from common.custom_providers import ClubProvider
 from common.custom_providers import ProfileProvider
@@ -86,8 +87,9 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         }
         self.openxbl_session = aiohttp.ClientSession(headers=headers)
 
-        for task in self._tasks:
-            task.start()
+        await models.GuildPlayer.filter(online=True).update(online=False)
+
+        self.fully_ready.set()
 
     @naff.listen("ready")
     async def on_ready(self):
@@ -132,20 +134,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         await bot.session.close()
         return await super().stop()
 
-    def register_task(self, task: naff.Task):
-        self._tasks.add(task)
 
-        if self.is_ready:
-            task.start()
-
-    def cancel_task(self, task: naff.Task):
-        self._tasks.discard(task)
-
-        if self.is_ready:
-            task.stop()
-
-
-# message content is temporarily on in order to transition people to slash commands
 intents = naff.Intents.new(
     guilds=True,
     guild_emojis_and_stickers=True,
@@ -162,15 +151,20 @@ bot = RealmsPlayerlistBot(
     auto_defer=naff.AutoDefer(enabled=True, time_until_defer=0),
 )
 bot.init_load = True
-bot._tasks = set()
 bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
 
 
-ext_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_BOT"))
-for ext in ext_list:
-    try:
-        bot.load_extension(ext)
-    except naff.errors.ExtensionLoadException:
-        raise
+async def start():
+    bot.fully_ready = asyncio.Event()
 
-asyncio.run(bot.astart(os.environ.get("MAIN_TOKEN")))
+    ext_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_BOT"))
+    for ext in ext_list:
+        try:
+            bot.load_extension(ext)
+        except naff.errors.ExtensionLoadException:
+            raise
+
+    await bot.astart(os.environ.get("MAIN_TOKEN"))
+
+
+asyncio.run(start())

@@ -16,6 +16,7 @@ from naff.ext.debug_extension.utils import get_cache_state
 
 import common.utils as utils
 from common.models import GuildConfig
+from common.models import GuildPlayer
 from common.realms_api import RealmsAPIException
 
 DEV_GUILD_ID = int(os.environ["DEV_GUILD_ID"])
@@ -79,7 +80,7 @@ class OwnerCMDs(utils.Extension):
             else "None"
         )
         embed.description = (
-            f"Club ID: {guild_config.club_id}\n"
+            f"Club ID: {guild_config.club_id}\nRealm ID: {guild_config.realm_id}\n"
             + f"Playerlist Channel: {playerlist_channel}\nOnline Command Enabled?"
             f" {guild_config.online_cmd}\nPrefixes: {', '.join(prefixes)}"
         )
@@ -108,6 +109,12 @@ class OwnerCMDs(utils.Extension):
         "club_id", "The club ID for the Realm.", naff.OptionTypes.STRING, required=False
     )
     @naff.slash_option(
+        "realm_id",
+        "The Realm ID for the Realm.",
+        naff.OptionTypes.STRING,
+        required=False,
+    )
+    @naff.slash_option(
         "playerlist_chan",
         "The playerlist channel ID for this guild.",
         naff.OptionTypes.STRING,
@@ -124,6 +131,7 @@ class OwnerCMDs(utils.Extension):
         ctx: utils.RealmContext,
         guild_id: str,
         club_id: str = None,
+        realm_id: str = None,
         playerlist_chan: str = None,
         online_cmd: bool = None,
     ):
@@ -131,6 +139,9 @@ class OwnerCMDs(utils.Extension):
 
         if club_id:
             kwargs["club_id"] = club_id
+        if realm_id:
+            kwargs["realm_id"] = realm_id
+            await self.bot.redis.sadd(f"realm-id-{realm_id}", guild_id)
         if playerlist_chan:
             kwargs["playerlist_chan"] = int(playerlist_chan)
         if online_cmd:
@@ -158,6 +169,12 @@ class OwnerCMDs(utils.Extension):
         "club_id", "The club ID for the Realm.", naff.OptionTypes.STRING, required=False
     )
     @naff.slash_option(
+        "realm_id",
+        "The Realm ID for the Realm.",
+        naff.OptionTypes.STRING,
+        required=False,
+    )
+    @naff.slash_option(
         "playerlist_chan",
         "The playerlist channel ID for this guild.",
         naff.OptionTypes.STRING,
@@ -174,6 +191,7 @@ class OwnerCMDs(utils.Extension):
         ctx: utils.RealmContext,
         guild: str,
         club_id: str = None,
+        realm_id: str = None,
         playerlist_chan: str = None,
         online_cmd: bool = None,
     ):
@@ -181,6 +199,15 @@ class OwnerCMDs(utils.Extension):
 
         if club_id:
             guild_config.club_id = club_id if club_id != "None" else None
+        if realm_id:
+            if old_realm_id := guild_config.realm_id:
+                await self.bot.redis.srem(f"realm-id-{old_realm_id}", guild)
+
+            guild_config.realm_id = realm_id if realm_id != "None" else None
+            if realm_id != "None":
+                await self.bot.redis.sadd(f"realm-id-{realm_id}", guild)
+
+            await GuildPlayer.filter(guild_xuid_id__startswith=guild).delete()
         if playerlist_chan:
             guild_config.playerlist_chan = (
                 int(playerlist_chan) if playerlist_chan != "None" else None
@@ -213,6 +240,12 @@ class OwnerCMDs(utils.Extension):
         "club_id", "The club ID for the Realm.", naff.OptionTypes.STRING, required=False
     )
     @naff.slash_option(
+        "realm_id",
+        "The Realm ID for the Realm.",
+        naff.OptionTypes.STRING,
+        required=False,
+    )
+    @naff.slash_option(
         "playerlist_chan",
         "The playerlist channel ID for this guild.",
         naff.OptionTypes.STRING,
@@ -229,6 +262,7 @@ class OwnerCMDs(utils.Extension):
         ctx: utils.RealmContext,
         guild_id: str,
         club_id: str = None,
+        realm_id: str = None,
         playerlist_chan: str = None,
         online_cmd: bool = None,
     ):
@@ -236,6 +270,15 @@ class OwnerCMDs(utils.Extension):
 
         if club_id:
             guild_config.club_id = club_id if club_id != "None" else None
+        if realm_id:
+            if old_realm_id := guild_config.realm_id:
+                await self.bot.redis.srem(f"realm-id-{old_realm_id}", guild_id)
+
+            guild_config.realm_id = realm_id if realm_id != "None" else None
+            if realm_id != "None":
+                await self.bot.redis.sadd(f"realm-id-{realm_id}", guild_id)
+
+            await GuildPlayer.filter(guild_xuid_id__startswith=guild_id).delete()
         if playerlist_chan:
             guild_config.playerlist_chan = (
                 int(playerlist_chan) if playerlist_chan != "None" else None
@@ -284,7 +327,7 @@ class OwnerCMDs(utils.Extension):
     async def join_realm(self, ctx: utils.RealmContext, realm_code: str):
         try:
             realm = await ctx.bot.realms.join_realm_from_code(realm_code)
-            await ctx.send(f"Club ID: {realm.club_id}")
+            await ctx.send(f"Realm ID: {realm.id}\nClub ID: {realm.club_id}")
         except RealmsAPIException as e:
             if isinstance(e.error, aiohttp.ClientResponseError):
                 await utils.msg_to_owner(

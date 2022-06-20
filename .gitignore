@@ -126,3 +126,4 @@ discord.log
 env/
 config.toml
 tokens.json
+private_tests/
