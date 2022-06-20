@@ -2,9 +2,9 @@
 import os
 
 import aiohttp
-import aioredis
 import asyncpg
 import orjson
+import redis.asyncio as aioredis
 import tomli
 from tortoise import run_async
 from tortoise import Tortoise

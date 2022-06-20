@@ -5,8 +5,8 @@ import logging
 import os
 
 import aiohttp
-import aioredis
 import naff
+import redis.asyncio as aioredis
 import tomli
 from tortoise import Tortoise
 from xbox.webapi.api.client import XboxLiveClient

@@ -9,8 +9,8 @@ import typing
 from pathlib import Path
 
 import aiohttp
-import aioredis
 import naff
+import redis.asyncio as aioredis
 
 from .models import GuildConfig
 
