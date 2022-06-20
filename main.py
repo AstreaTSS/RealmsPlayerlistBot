@@ -87,6 +87,11 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         }
         self.openxbl_session = aiohttp.ClientSession(headers=headers)
 
+        # delete any unused guild entries
+        guild_ids = [int(g) for g in self.user._guild_ids]
+        await models.GuildConfig.filter(guild_id__not_in=guild_ids).delete()
+
+        # mark all players as offline
         await models.GuildPlayer.filter(online=True).update(online=False)
 
         self.fully_ready.set()
