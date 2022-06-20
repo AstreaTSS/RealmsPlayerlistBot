@@ -3,6 +3,7 @@ import asyncio
 import os
 import typing
 from enum import Enum
+from types import NoneType
 from typing import Any
 from typing import Callable
 from typing import List
@@ -12,12 +13,31 @@ from typing import TypeVar
 import aiohttp
 import attrs
 import orjson
+import pydantic
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
 
 import common.utils as utils
 
 T = TypeVar("T")
+
+
+# while we do monkeypatch the xbox api lib to make CamelCaseModel faster anyways
+# i'd rather have my own implementation just in case there's possiblities to
+# speed things up or tweak things
+
+
+def to_camel(string):
+    words = string.split("_")
+    return words[0] + "".join(word.capitalize() for word in words[1:])
+
+
+class CamelCaseModel(pydantic.BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+        allow_population_by_field_name = True
+        alias_generator = to_camel
+        json_loads = orjson.loads
 
 
 def from_list(f: Callable[[Any], T], x: Any) -> List[T]:
@@ -38,8 +58,7 @@ class WorldType(Enum):
     NORMAL = "NORMAL"
 
 
-@attrs.define()
-class FullRealm:
+class FullRealm(CamelCaseModel):
     id: int
     remote_subscription_id: str
     owner: str
@@ -52,78 +71,21 @@ class FullRealm:
     expired_trial: bool
     grace_period: bool
     world_type: WorldType
-    players: None
+    players: NoneType
     max_players: int
-    minigame_name: None
-    minigame_id: None
-    minigame_image: None
+    minigame_name: NoneType
+    minigame_id: NoneType
+    minigame_image: NoneType
     active_slot: int
-    slots: None
+    slots: NoneType
     member: bool
     club_id: int
-    subscription_refresh_status: None
+    subscription_refresh_status: NoneType
     motd: Optional[str] = None
 
-    @staticmethod
-    def from_dict(obj: Any) -> "FullRealm":  # sourcery skip: avoid-builtin-shadow
-        id = obj.get("id")
-        remote_subscription_id = obj.get("remoteSubscriptionId")
-        owner = obj.get("owner")
-        owner_uuid = obj.get("ownerUUID")
-        name = obj.get("name")
-        default_permission = DefaultPermission(obj.get("defaultPermission"))
-        state = State(obj.get("state"))
-        days_left = obj.get("daysLeft")
-        expired = obj.get("expired")
-        expired_trial = obj.get("expiredTrial")
-        grace_period = obj.get("gracePeriod")
-        world_type = WorldType(obj.get("worldType"))
-        players = obj.get("players")
-        max_players = obj.get("maxPlayers")
-        minigame_name = obj.get("minigameName")
-        minigame_id = obj.get("minigameId")
-        minigame_image = obj.get("minigameImage")
-        active_slot = obj.get("activeSlot")
-        slots = obj.get("slots")
-        member = obj.get("member")
-        club_id = obj.get("clubId")
-        subscription_refresh_status = obj.get("subscriptionRefreshStatus")
-        motd = obj.get("motd")
-        return FullRealm(
-            id,
-            remote_subscription_id,
-            owner,
-            owner_uuid,
-            name,
-            default_permission,
-            state,
-            days_left,
-            expired,
-            expired_trial,
-            grace_period,
-            world_type,
-            players,
-            max_players,
-            minigame_name,
-            minigame_id,
-            minigame_image,
-            active_slot,
-            slots,
-            member,
-            club_id,
-            subscription_refresh_status,
-            motd,
-        )
 
-
-@attrs.define()
-class FullWorlds:
+class FullWorlds(CamelCaseModel):
     servers: List[FullRealm]
-
-    @staticmethod
-    def from_dict(obj: Any) -> "FullWorlds":
-        servers = from_list(FullRealm.from_dict, obj.get("servers"))
-        return FullWorlds(servers)
 
 
 class Permission(Enum):
@@ -132,49 +94,23 @@ class Permission(Enum):
     VISITOR = "VISITOR"
 
 
-@attrs.define()
-class Player:
+class Player(CamelCaseModel):
     uuid: str
-    name: None
+    name: NoneType
     operator: bool
     accepted: bool
     online: bool
     permission: Permission
 
-    @staticmethod
-    def from_dict(obj: Any) -> "Player":
-        uuid = obj.get("uuid")
-        name = obj.get("name")
-        operator = obj.get("operator")
-        accepted = obj.get("accepted")
-        online = obj.get("online")
-        permission = Permission(obj.get("permission"))
-        return Player(uuid, name, operator, accepted, online, permission)
 
-
-@attrs.define()
-class PartialRealm:
+class PartialRealm(CamelCaseModel):
     id: int
     players: List[Player]
     full: bool
 
-    @staticmethod
-    def from_dict(obj: Any) -> "PartialRealm":
-        # sourcery skip: avoid-builtin-shadow
-        id = obj.get("id")
-        players = from_list(Player.from_dict, obj.get("players"))
-        full = obj.get("full")
-        return PartialRealm(id, players, full)
 
-
-@attrs.define()
-class ActivityList:
+class ActivityList(CamelCaseModel):
     servers: List[PartialRealm]
-
-    @staticmethod
-    def from_dict(obj: Any) -> "ActivityList":
-        servers = from_list(PartialRealm.from_dict, obj.get("servers"))
-        return ActivityList(servers)
 
 
 class RealmsAPIException(Exception):
@@ -247,10 +183,10 @@ class RealmsAPI:
         return await self.request("POST", url, data=data)
 
     async def join_realm_from_code(self, code: str):
-        return FullRealm.from_dict(await self.post(f"invites/v1/link/accept/{code}"))
+        return FullRealm.parse_obj(await self.post(f"invites/v1/link/accept/{code}"))
 
     async def fetch_realms(self):
-        return FullWorlds.from_dict(await self.get("worlds"))
+        return FullWorlds.parse_obj(await self.get("worlds"))
 
     async def fetch_activities(self):
-        return ActivityList.from_dict(await self.get("activities/live/players"))
+        return ActivityList.parse_obj(await self.get("activities/live/players"))
