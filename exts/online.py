@@ -182,7 +182,7 @@ class Online(utils.Extension):
 
     @naff.slash_command("online", description="Allows you to see if anyone is online on the Realm right now.", dm_permission=False)  # type: ignore
     @naff.cooldown(naff.Buckets.GUILD, 1, 10)
-    @naff.check(can_run_playerlist)  # type: ignore
+    @naff.check(pl_utils.can_run_playerlist)  # type: ignore
     async def online(self, ctx: utils.RealmContext):
         """Allows you to see if anyone is online on the Realm right now."""
         # uses much of the same code as playerlist
