@@ -41,7 +41,7 @@ class AutoRunPlayerlist(utils.Extension):
             if not isinstance(e, asyncio.CancelledError):
                 await utils.error_handle(self.bot, e)
 
-    @naff.Task.create(naff.IntervalTrigger(hours=6))
+    @naff.Task.create(naff.IntervalTrigger(hours=3))
     async def playerlist_realms_delete(self):
         now = datetime.datetime.now(tz=datetime.timezone.utc)
         time_back = now - datetime.timedelta(hours=1)
