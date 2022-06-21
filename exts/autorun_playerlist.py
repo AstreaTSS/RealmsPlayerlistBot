@@ -27,11 +27,11 @@ class AutoRunPlayerlist(utils.Extension):
     def __init__(self, bot):
         self.bot: utils.RealmBotBase = bot
         self.playerlist_task = asyncio.create_task(self._start_playerlist())
-        self.playerlist_delete.start()
+        self.playerlist_realms_delete.start()
 
     def drop(self):
         self.playerlist_task.cancel()
-        self.playerlist_delete.stop()
+        self.playerlist_realms_delete.stop()
         super().drop()
 
     async def _start_playerlist(self):
@@ -51,7 +51,7 @@ class AutoRunPlayerlist(utils.Extension):
                 await utils.error_handle(self.bot, e)
 
     @naff.Task.create(naff.IntervalTrigger(hours=6))
-    async def playerlist_delete(self):
+    async def playerlist_realms_delete(self):
         now = datetime.datetime.now(tz=datetime.timezone.utc)
         very_long_back = now - datetime.timedelta(hours=25)
         await models.GuildPlayer.filter(
