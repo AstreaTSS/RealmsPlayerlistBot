@@ -250,7 +250,9 @@ class Playerlist(utils.Extension):
             club_presence, time_ago=time_ago
         )
 
-        online_list = tuple(p.display for p in player_list if p.in_game)
+        online_list = sorted(
+            (p.display for p in player_list if p.in_game), key=lambda g: g.lower()
+        )
         offline_list = tuple(p.display for p in player_list if not p.in_game)
 
         if online_list:
