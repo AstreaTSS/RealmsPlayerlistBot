@@ -1,2 +1,0 @@
-language = "bash"
-run = "pip install -U -r requirements.txt && python main.py"
