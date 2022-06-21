@@ -1,20 +1,14 @@
 import asyncio
-import contextlib
 import datetime
 import importlib
-import os
 import typing
 from enum import IntEnum
 
 import aiohttp
-import attr
 import naff
 import orjson
-from pydantic import ValidationError
-from tortoise.exceptions import DoesNotExist
-from xbox.webapi.api.provider.profile.models import ProfileResponse
 
-import common.custom_providers as providers
+import common.playerlist_utils as pl_utils
 import common.utils as utils
 
 
@@ -70,172 +64,9 @@ class ClubUserPresence(IntEnum):
             return cls.UNKNOWN
 
 
-@attr.s(slots=True, eq=False)
-class Player:
-    """A simple class to represent a player on a Realm."""
-
-    xuid: str = attr.ib()
-    last_seen: datetime.datetime = attr.ib()
-    last_seen_state: ClubUserPresence = attr.ib()
-    gamertag: typing.Optional[str] = attr.ib(default=None)
-
-    def __eq__(self, o: object) -> bool:
-        return o.xuid == self.xuid if isinstance(o, self.__class__) else False
-
-    @property
-    def resolved(self):
-        return bool(self.gamertag)
-
-    @property
-    def in_game(self):
-        return self.last_seen_state == ClubUserPresence.IN_GAME
-
-    @property
-    def display(self):  # sourcery skip: remove-unnecessary-else
-        base = f"`{self.gamertag}`" if self.gamertag else f"User with XUID {self.xuid}"
-
-        if self.in_game:
-            return base
-        else:
-            time_format = naff.Timestamp.fromdatetime(self.last_seen).format("f")
-            return f"{base}: last seen {time_format}"
-
-
-class GamertagOnCooldown(Exception):
-    # used by GamertagHandler to know when to switch to the backup
-    def __init__(self) -> None:
-        # i could make this anything since this should never be exposed
-        # to the user, but who knows
-        super().__init__("The gamertag handler is on cooldown!")
-
-
-class GamertagServiceDown(Exception):
-    def __init__(self) -> None:
-        super().__init__(
-            "The gamertag service is down! The bot is unavailable at this time."
-        )
-
-
 class ClubOnCooldown(Exception):
     def __init__(self) -> None:
         super().__init__("The club handler is on cooldown!")
-
-
-@attr.s(slots=True)
-class GamertagHandler:
-    """A special class made to handle the complexities of getting gamertags
-    from XUIDs."""
-
-    bot: utils.RealmBotBase = attr.ib()
-    sem: asyncio.Semaphore = attr.ib()
-    xuids_to_get: typing.Tuple[str, ...] = attr.ib()
-    profile: "providers.ProfileProvider" = attr.ib()
-    openxbl_session: aiohttp.ClientSession = attr.ib()
-
-    index: int = attr.ib(init=False, default=0)
-    responses: typing.List["ProfileResponse"] = attr.ib(init=False, factory=list)
-    AMOUNT_TO_GET: int = attr.ib(init=False, default=30)
-
-    async def get_gamertags(self, xuid_list: typing.List[str]) -> None:
-        # honestly, i forget what this output can look like by now -
-        # but if i remember, it's kinda weird
-        profile_resp = await self.profile.get_profiles(xuid_list)
-        profile_json = await profile_resp.json(loads=orjson.loads)
-
-        if profile_json.get("code"):  # usually means ratelimited or invalid xuid
-            description: str = profile_json["description"]
-
-            if description.startswith("Throttled"):  # ratelimited
-                raise GamertagOnCooldown()
-
-            # otherwise, invalid xuid
-            desc_split = description.split(" ")
-            xuid_list.remove(desc_split[1])
-
-            await self.get_gamertags(
-                xuid_list
-            )  # after removing, try getting data again
-
-        elif profile_json.get("limitType"):  # ratelimit
-            raise GamertagOnCooldown()
-
-        self.responses.append(ProfileResponse.parse_obj(profile_json))
-        self.index += self.AMOUNT_TO_GET
-
-    async def backup_get_gamertags(self):
-        # openxbl is used throughout this, and its basically a way of navigating
-        # the xbox live api in a more sane way than its actually laid out
-        # while xbox-webapi-python can also do this without using a 3rd party service,
-        # using openxbl can be more reliable at times as it has a generous 500 requests
-        # per hour limit on the free tier and is not subject to ratelimits
-        # however, there's no bulk xuid > gamertag option, and is a bit slow in general
-
-        for xuid in self.xuids_to_get[self.index :]:
-            async with self.openxbl_session.get(
-                f"https://xbl.io/api/v2/account/{xuid}"
-            ) as r:
-                try:
-                    resp_json = await r.json(loads=orjson.loads)
-                    if "code" in resp_json.keys():  # service is down
-                        await utils.msg_to_owner(self.bot, resp_json)
-                        raise GamertagServiceDown()
-                    else:
-                        with contextlib.suppress(ValidationError):
-                            self.responses.append(ProfileResponse.parse_obj(resp_json))
-                except aiohttp.ContentTypeError:
-                    # can happen, if not rare
-                    text = await r.text()
-                    await utils.msg_to_owner(
-                        self.bot,
-                        f"Failed to get gamertag of user `{xuid}`.\nResponse code:"
-                        f" {r.status}\nText: {text}",
-                    )
-
-            self.index += 1
-
-    async def run(self):
-        while self.index < len(self.xuids_to_get):
-            current_xuid_list = list(self.xuids_to_get[self.index : self.index + 30])
-
-            async with self.sem:
-                with contextlib.suppress(GamertagOnCooldown):
-                    await self.get_gamertags(current_xuid_list)
-                # alright, so we either got 30 gamertags or are ratelimited
-                # so now we switch to the backup getter so that we don't have
-                # to wait on the ratelimit to request for more gamertags
-                # this wait_for basically a little 'exploit` to only make the backup
-                # run for 15 seconds or until completetion, whatever comes first
-                with contextlib.suppress(asyncio.TimeoutError):
-                    await asyncio.wait_for(self.backup_get_gamertags(), timeout=15)
-        dict_gamertags: typing.Dict[str, str] = {}
-
-        for profiles in self.responses:
-            for user in profiles.profile_users:
-                try:
-                    # really funny but efficient way of getting gamertag
-                    # from this data
-                    gamertag = next(
-                        s.value for s in user.settings if s.id == "Gamertag"
-                    )
-                    await self.bot.redis.setex(
-                        name=str(user.id),
-                        time=datetime.timedelta(days=14),
-                        value=gamertag,
-                    )
-                    dict_gamertags[user.id] = gamertag
-                except (KeyError, StopIteration):
-                    continue
-
-        return dict_gamertags
-
-
-async def can_run_playerlist(ctx: utils.RealmContext) -> typing.Any:
-    # simple check to see if a person can run the playerlist command
-    try:
-        guild_config = await ctx.fetch_config()
-    except DoesNotExist:
-        return False
-    return bool(guild_config.club_id)
 
 
 class Playerlist(utils.Extension):
@@ -302,8 +133,8 @@ class Playerlist(utils.Extension):
         time_ago: typing.Optional[datetime.datetime] = None,
         online_only: bool = False,
     ):
-        player_list: typing.List[Player] = []
-        unresolved_dict: typing.Dict[str, Player] = {}
+        player_list: typing.List[pl_utils.Player] = []
+        unresolved_dict: typing.Dict[str, pl_utils.Player] = {}
 
         for member in club_presence:
             last_seen_state = ClubUserPresence.from_xbox_api(member["lastSeenState"])
@@ -335,10 +166,10 @@ class Playerlist(utils.Extension):
             if time_ago and last_seen <= time_ago:
                 break
 
-            player = Player(
+            player = pl_utils.Player(
                 member["xuid"],
                 last_seen,
-                last_seen_state,
+                last_seen_state == ClubUserPresence.IN_GAME,
                 await self.bot.redis.get(member["xuid"]),
             )
             if player.resolved:
@@ -347,7 +178,7 @@ class Playerlist(utils.Extension):
                 unresolved_dict[member["xuid"]] = player
 
         if unresolved_dict:
-            gamertag_handler = GamertagHandler(
+            gamertag_handler = pl_utils.GamertagHandler(
                 self.bot,
                 self.sem,
                 tuple(unresolved_dict.keys()),
@@ -369,7 +200,7 @@ class Playerlist(utils.Extension):
         default_member_permissions=naff.Permissions.MANAGE_GUILD,
         dm_permission=False,
     )  # type: ignore
-    @naff.check(can_run_playerlist)  # type: ignore
+    @naff.check(pl_utils.can_run_playerlist)  # type: ignore
     @naff.cooldown(naff.Buckets.GUILD, 1, 240)  # type: ignore
     @naff.slash_option("hours_ago", "How far back the playerlist should go.", naff.OptionTypes.STRING, choices=hours_ago_choices)  # type: ignore
     async def playerlist(
@@ -463,52 +294,8 @@ class Playerlist(utils.Extension):
                 + f"{actual_hours_ago} hour(s)."
             )
 
-    @naff.slash_command("online", description="Allows you to see if anyone is online on the Realm right now.", dm_permission=False)  # type: ignore
-    @naff.cooldown(naff.Buckets.GUILD, 1, 60)
-    @naff.check(can_run_playerlist)  # type: ignore
-    async def online(self, ctx: utils.RealmContext):
-        """Allows you to see if anyone is online on the Realm right now."""
-        # uses much of the same code as playerlist
-
-        guild_config = await ctx.fetch_config()
-        now = naff.Timestamp.utcnow()
-
-        club_presence = await self.realm_club_get(guild_config.club_id)
-        if club_presence is None:
-            # this can happen
-            await ctx.send(
-                "Seems like the playerlist command failed somehow. Astrea "
-                + "should have the info needed to see what's going on."
-            )
-            return
-        elif club_presence == "Unauthorized":
-            await utils.msg_to_owner(self.bot, ctx.guild)
-            await ctx.send(
-                "The bot can't seem to read your Realm! If you changed Realms, make"
-                " sure to let Astrea know. Also, make sure you haven't banned the"
-                " bot's Xbox account from the Realm. If you haven't done either,"
-                " this is probably just internal stuff being weird, and it'll fix"
-                " itself in a bit."
-            )
-            return
-
-        player_list = await self.get_players_from_club_data(
-            club_presence, online_only=True
-        )
-
-        if online_list := tuple(p.display for p in player_list):
-            embed = naff.Embed(
-                color=self.bot.color,
-                title=f"{len(online_list)}/10 people online",
-                description="\n".join(online_list),
-                timestamp=now,
-            )
-            embed.set_footer(text="As of")
-            await ctx.send(embed=embed)
-        else:
-            raise utils.CustomCheckFailure("No one is on the Realm right now.")
-
 
 def setup(bot):
     importlib.reload(utils)
+    importlib.reload(pl_utils)
     Playerlist(bot)

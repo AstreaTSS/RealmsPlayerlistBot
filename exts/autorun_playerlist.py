@@ -10,15 +10,6 @@ import common.models as models
 import common.utils as utils
 
 
-class BetterIntervalTrigger(naff.IntervalTrigger):
-    def __new__(cls, *args, **kwargs) -> naff.BaseTrigger:
-        new_cls = super().__new__(cls)
-        new_cls.last_call_time = datetime.datetime.now() - datetime.timedelta(
-            hours=1, seconds=1
-        )
-        return new_cls
-
-
 class AutoRunPlayerlist(utils.Extension):
     # the cog that controls the automatic version of the playerlist
     # this way, we can fix the main playerlist command itself without
@@ -53,9 +44,10 @@ class AutoRunPlayerlist(utils.Extension):
     @naff.Task.create(naff.IntervalTrigger(hours=6))
     async def playerlist_realms_delete(self):
         now = datetime.datetime.now(tz=datetime.timezone.utc)
-        very_long_back = now - datetime.timedelta(hours=25)
+        time_back = now - datetime.timedelta(hours=1)
         await models.GuildPlayer.filter(
-            online=False, last_seen__lt=very_long_back
+            online=False,
+            last_seen__lt=time_back,
         ).delete()
 
     async def playerlist_loop(self):
