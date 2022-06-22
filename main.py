@@ -173,4 +173,9 @@ async def start():
     await bot.astart(os.environ.get("MAIN_TOKEN"))
 
 
+with contextlib.suppress(ImportError):
+    import uvloop  # type: ignore
+
+    uvloop.install()
+
 asyncio.run(start())
