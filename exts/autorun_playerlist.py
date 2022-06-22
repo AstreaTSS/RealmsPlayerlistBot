@@ -59,7 +59,7 @@ class AutoRunPlayerlist(utils.Extension):
         to_run = []
 
         async for guild_config in models.GuildConfig.all():
-            if bool(guild_config.club_id):
+            if guild_config.club_id and guild_config.realm_id:
                 to_run.append(self.auto_run_playerlist(list_cmd, guild_config))
 
         # this gather is done so that they can all run in parallel
