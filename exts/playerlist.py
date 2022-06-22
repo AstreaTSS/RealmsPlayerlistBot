@@ -90,7 +90,7 @@ class Playerlist(utils.Extension):
             resp_json = await r.json(loads=orjson.loads)
 
             if resp_json.get("limitType") is not None:
-                # 50 requests in 300 ratelimit, use openxbl instead
+                # 50 requests in 300 seconds ratelimit, use openxbl instead
                 raise ClubOnCooldown()
 
             return resp_json, r
