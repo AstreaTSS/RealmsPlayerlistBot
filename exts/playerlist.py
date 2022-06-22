@@ -88,6 +88,11 @@ class Playerlist(utils.Extension):
                 raise ClubOnCooldown()
 
             resp_json = await r.json(loads=orjson.loads)
+
+            if resp_json.get("limitType") is not None:
+                # 50 requests in 300 ratelimit, use openxbl instead
+                raise ClubOnCooldown()
+
             return resp_json, r
         except (aiohttp.ContentTypeError, ClubOnCooldown):
             async with self.bot.openxbl_session.get(
