@@ -61,8 +61,8 @@ class WorldType(Enum):
 class FullRealm(CamelCaseModel):
     id: int
     remote_subscription_id: str
-    owner: str
-    owner_uuid: str
+    owner: Optional[str]
+    owner_uuid: Optional[str] = None
     name: str
     default_permission: DefaultPermission
     state: State
