@@ -84,7 +84,7 @@ class Playerlist(utils.Extension):
             r = await self.bot.club.get_club_user_presences(club_id)
             resp_json = await r.json(loads=orjson.loads)
 
-            if r.status == 429:
+            if resp_json.get("limitType"):
                 # ratelimit, not much we can do here
                 if (seconds := resp_json.get("periodInSeconds")):
                     await asyncio.sleep(int(seconds))
