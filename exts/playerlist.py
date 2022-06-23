@@ -86,8 +86,8 @@ class Playerlist(utils.Extension):
 
             if r.status == 429:
                 # ratelimit, not much we can do here
-                if (seconds := resp_json.get("limitType")):
-                    await asyncio.sleep(seconds)
+                if (seconds := resp_json.get("periodInSeconds")):
+                    await asyncio.sleep(int(seconds))
                 else:
                     await asyncio.sleep(15)
                 raise ClubOnCooldown()
