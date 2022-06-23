@@ -89,8 +89,9 @@ class Playerlist(utils.Extension):
 
             resp_json = await r.json(loads=orjson.loads)
 
-            if resp_json.get("limitType") is not None:
-                # 50 requests in 300 seconds ratelimit, use openxbl instead
+            if r.status == 200 and resp_json.get("limitType") is not None:
+                # 50 requests in 300 seconds ratelimit
+                await asyncio.sleep(300) # this is unideal
                 raise ClubOnCooldown()
 
             return resp_json, r
