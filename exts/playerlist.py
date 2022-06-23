@@ -82,16 +82,14 @@ class Playerlist(utils.Extension):
     ) -> typing.Tuple[typing.Optional[dict], aiohttp.ClientResponse]:
         try:
             r = await self.bot.club.get_club_user_presences(club_id)
-            if r.status == 429:
-                # ratelimit, not much we can do here
-                await asyncio.sleep(15)
-                raise ClubOnCooldown()
-
             resp_json = await r.json(loads=orjson.loads)
 
-            if r.status == 200 and resp_json.get("limitType") is not None:
-                # 50 requests in 300 seconds ratelimit
-                await asyncio.sleep(300) # this is unideal
+            if r.status == 429:
+                # ratelimit, not much we can do here
+                if (seconds := resp_json.get("limitType")):
+                    await asyncio.sleep(seconds)
+                else:
+                    await asyncio.sleep(15)
                 raise ClubOnCooldown()
 
             return resp_json, r
