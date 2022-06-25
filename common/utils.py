@@ -1,4 +1,3 @@
-#!/usr/bin/env python3.8
 import asyncio
 import collections
 import datetime

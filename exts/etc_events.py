@@ -1,4 +1,3 @@
-#!/usr/bin/env python3.8
 import importlib
 
 import naff
