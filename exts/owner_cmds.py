@@ -16,6 +16,7 @@ from naff.ext.debug_extension.utils import debug_embed
 from naff.ext.debug_extension.utils import get_cache_state
 
 import common.utils as utils
+from common.clubs_playerlist import fill_in_data_from_clubs
 from common.models import GuildConfig
 from common.models import GuildPlayer
 from common.realms_api import RealmsAPIException
@@ -148,6 +149,8 @@ class OwnerCMDs(utils.Extension):
 
         if club_id:
             kwargs["club_id"] = club_id
+            if club_id != "None":
+                await fill_in_data_from_clubs(self.bot, int(club_id), club_id)
         if realm_id:
             kwargs["realm_id"] = realm_id
             await self.bot.redis.sadd(f"realm-id-{realm_id}", guild_id)
@@ -206,8 +209,6 @@ class OwnerCMDs(utils.Extension):
     ):
         guild_config = await GuildConfig.get(guild_id=int(guild))
 
-        if club_id:
-            guild_config.club_id = club_id if club_id != "None" else None
         if realm_id:
             if old_realm_id := guild_config.realm_id:
                 await self.bot.redis.srem(f"realm-id-{old_realm_id}", guild)
@@ -217,6 +218,10 @@ class OwnerCMDs(utils.Extension):
                 await self.bot.redis.sadd(f"realm-id-{realm_id}", guild)
 
             await GuildPlayer.filter(guild_xuid_id__startswith=guild).delete()
+        if club_id:
+            guild_config.club_id = club_id if club_id != "None" else None
+            if club_id != "None":
+                await fill_in_data_from_clubs(self.bot, int(guild), club_id)
         if playerlist_chan:
             guild_config.playerlist_chan = (
                 int(playerlist_chan) if playerlist_chan != "None" else None
@@ -277,8 +282,6 @@ class OwnerCMDs(utils.Extension):
     ):
         guild_config = await GuildConfig.get(guild_id=int(guild_id))
 
-        if club_id:
-            guild_config.club_id = club_id if club_id != "None" else None
         if realm_id:
             if old_realm_id := guild_config.realm_id:
                 await self.bot.redis.srem(f"realm-id-{old_realm_id}", guild_id)
@@ -288,6 +291,10 @@ class OwnerCMDs(utils.Extension):
                 await self.bot.redis.sadd(f"realm-id-{realm_id}", guild_id)
 
             await GuildPlayer.filter(guild_xuid_id__startswith=guild_id).delete()
+        if club_id:
+            guild_config.club_id = club_id if club_id != "None" else None
+            if club_id != "None":
+                await fill_in_data_from_clubs(self.bot, int(guild_id), club_id)
         if playerlist_chan:
             guild_config.playerlist_chan = (
                 int(playerlist_chan) if playerlist_chan != "None" else None
@@ -319,6 +326,7 @@ class OwnerCMDs(utils.Extension):
         guild_id: str,
     ):
         await GuildConfig.filter(guild_id=int(guild_id)).delete()
+        await GuildPlayer.filter(guild_xuid_id__startswith=guild_id).delete()
         await ctx.send("Deleted!")
 
     @naff.slash_command(
