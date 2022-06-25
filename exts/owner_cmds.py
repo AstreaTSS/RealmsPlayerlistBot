@@ -18,7 +18,6 @@ from naff.ext.debug_extension.utils import get_cache_state
 import common.utils as utils
 from common.clubs_playerlist import fill_in_data_from_clubs
 from common.models import GuildConfig
-from common.models import RealmPlayer
 from common.realms_api import RealmsAPIException
 
 DEV_GUILD_ID = int(os.environ["DEV_GUILD_ID"])

@@ -4,7 +4,6 @@ import typing
 from enum import IntEnum
 
 import aiohttp
-import naff
 import orjson
 
 import common.models as models
