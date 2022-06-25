@@ -13,6 +13,34 @@ import common.playerlist_utils as pl_utils
 import common.utils as utils
 
 
+hours_ago_choices = [
+    naff.SlashCommandChoice("1", "1"),  # type: ignore
+    naff.SlashCommandChoice("2", "2"),  # type: ignore
+    naff.SlashCommandChoice("3", "3"),  # type: ignore
+    naff.SlashCommandChoice("4", "4"),  # type: ignore
+    naff.SlashCommandChoice("5", "5"),  # type: ignore
+    naff.SlashCommandChoice("6", "6"),  # type: ignore
+    naff.SlashCommandChoice("7", "7"),  # type: ignore
+    naff.SlashCommandChoice("8", "8"),  # type: ignore
+    naff.SlashCommandChoice("9", "9"),  # type: ignore
+    naff.SlashCommandChoice("10", "10"),  # type: ignore
+    naff.SlashCommandChoice("11", "11"),  # type: ignore
+    naff.SlashCommandChoice("12", "12"),  # type: ignore
+    naff.SlashCommandChoice("13", "13"),  # type: ignore
+    naff.SlashCommandChoice("14", "14"),  # type: ignore
+    naff.SlashCommandChoice("15", "15"),  # type: ignore
+    naff.SlashCommandChoice("16", "16"),  # type: ignore
+    naff.SlashCommandChoice("17", "17"),  # type: ignore
+    naff.SlashCommandChoice("18", "18"),  # type: ignore
+    naff.SlashCommandChoice("19", "19"),  # type: ignore
+    naff.SlashCommandChoice("20", "20"),  # type: ignore
+    naff.SlashCommandChoice("21", "21"),  # type: ignore
+    naff.SlashCommandChoice("22", "22"),  # type: ignore
+    naff.SlashCommandChoice("23", "23"),  # type: ignore
+    naff.SlashCommandChoice("24", "24"),  # type: ignore
+]
+
+
 class Playerlist(utils.Extension):
     def __init__(self, bot):
         self.bot: utils.RealmBotBase = bot
