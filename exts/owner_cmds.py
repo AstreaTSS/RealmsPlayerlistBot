@@ -153,7 +153,6 @@ class OwnerCMDs(utils.Extension):
                 await fill_in_data_from_clubs(self.bot, int(club_id), club_id)
         if realm_id:
             kwargs["realm_id"] = realm_id
-            await self.bot.redis.sadd(f"realm-id-{realm_id}", guild_id)
         if playerlist_chan:
             kwargs["playerlist_chan"] = int(playerlist_chan)
         if online_cmd:
@@ -210,15 +209,7 @@ class OwnerCMDs(utils.Extension):
         guild_config = await GuildConfig.get(guild_id=int(guild))
 
         if realm_id:
-            if old_realm_id := guild_config.realm_id:
-                await self.bot.redis.srem(f"realm-id-{old_realm_id}", guild)
-                await RealmPlayer.filter(
-                    realm_xuid_id__startswith=old_realm_id
-                ).delete()
-
             guild_config.realm_id = realm_id if realm_id != "None" else None
-            if realm_id != "None":
-                await self.bot.redis.sadd(f"realm-id-{realm_id}", guild)
         if club_id:
             guild_config.club_id = club_id if club_id != "None" else None
             if club_id != "None":
@@ -284,15 +275,7 @@ class OwnerCMDs(utils.Extension):
         guild_config = await GuildConfig.get(guild_id=int(guild_id))
 
         if realm_id:
-            if old_realm_id := guild_config.realm_id:
-                await self.bot.redis.srem(f"realm-id-{old_realm_id}", guild_id)
-                await RealmPlayer.filter(
-                    realm_xuid_id__startswith=old_realm_id
-                ).delete()
-
             guild_config.realm_id = realm_id if realm_id != "None" else None
-            if realm_id != "None":
-                await self.bot.redis.sadd(f"realm-id-{realm_id}", guild_id)
         if club_id:
             guild_config.club_id = club_id if club_id != "None" else None
             if club_id != "None":
@@ -327,12 +310,7 @@ class OwnerCMDs(utils.Extension):
         ctx: utils.RealmContext,
         guild_id: str,
     ):
-        config = await GuildConfig.get(guild_id=int(guild_id))
-
-        if config.realm_id:
-            await RealmPlayer.filter(realm_xuid_id__startswith=config.realm_id).delete()
-
-        await config.delete()
+        await GuildConfig.filter(guild_id=int(guild_id)).delete()
         await ctx.send("Deleted!")
 
     @naff.slash_command(
