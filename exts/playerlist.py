@@ -50,8 +50,8 @@ class Playerlist(utils.Extension):
 
         self._previous_now = datetime.datetime.now(tz=datetime.timezone.utc)
         self._online_cache: defaultdict[int, set[str]] = defaultdict(set)
-        self._guildplayer_queue: asyncio.Queue[
-            list[models.GuildPlayer]
+        self._realmplayer_queue: asyncio.Queue[
+            list[models.RealmPlayer]
         ] = asyncio.Queue()
 
         self.get_people_task = asyncio.create_task(self._start_get_people())
@@ -89,60 +89,49 @@ class Playerlist(utils.Extension):
             await utils.error_handle(self.bot, e)
             return
 
-        player_objs: list[models.GuildPlayer] = []
+        player_objs: list[models.RealmPlayer] = []
         gotten_realm_ids: set[int] = set()
         now = datetime.datetime.now(tz=datetime.timezone.utc)
 
         for realm in realms.servers:
-            guild_ids: set[str] = await self.bot.redis.smembers(f"realm-id-{realm.id}")
-            if not guild_ids:
-                continue
-
             gotten_realm_ids.add(realm.id)
             player_set: set[str] = set()
 
             for player in realm.players:
                 player_set.add(player.uuid)
-                player_objs.extend(
-                    models.GuildPlayer(
-                        guild_xuid_id=f"{guild_id}-{player.uuid}",
+                player_objs.append(
+                    models.RealmPlayer(
+                        realm_xuid_id=f"{realm.id}-{player.uuid}",
                         online=True,
                         last_seen=now,
                     )
-                    for guild_id in guild_ids
                 )
 
             left = self._online_cache[realm.id].difference(player_set)
             self._online_cache[realm.id] = player_set
 
-            for guild_id in guild_ids:
-                player_objs.extend(
-                    models.GuildPlayer(
-                        guild_xuid_id=f"{guild_id}-{player}",
-                        online=False,
-                        last_seen=self._previous_now,
-                    )
-                    for player in left
+            player_objs.extend(
+                models.RealmPlayer(
+                    realm_xuid_id=f"{realm.id}-{player}",
+                    online=False,
+                    last_seen=self._previous_now,
                 )
-
+                for player in left
+            )
         online_cache_ids = set(self._online_cache.keys())
         for missed_realm_id in online_cache_ids.difference(gotten_realm_ids):
             now_invalid = self._online_cache[missed_realm_id]
-            guild_ids: set[str] = await self.bot.redis.smembers(
-                f"realm-id-{missed_realm_id}"
-            )
-            if not now_invalid or not guild_ids:
+            if not now_invalid:
                 continue
 
-            for guild_id in guild_ids:
-                player_objs.extend(
-                    models.GuildPlayer(
-                        guild_xuid_id=f"{guild_id}-{player}",
-                        online=False,
-                        last_seen=self._previous_now,
-                    )
-                    for player in now_invalid
+            player_objs.extend(
+                models.RealmPlayer(
+                    realm_xuid_id=f"{missed_realm_id}-{player}",
+                    online=False,
+                    last_seen=self._previous_now,
                 )
+                for player in now_invalid
+            )
 
             self._online_cache[missed_realm_id] = set()
 
@@ -150,16 +139,16 @@ class Playerlist(utils.Extension):
 
         # handle this in the "background" so we don't have to worry about this
         # taking too long
-        await self._guildplayer_queue.put(player_objs)
+        await self._realmplayer_queue.put(player_objs)
 
     async def _upload_players(self):
         while True:
             try:
-                guildplayers = await self._guildplayer_queue.get()
+                realmplayers = await self._realmplayer_queue.get()
 
-                await models.GuildPlayer.bulk_create(
-                    guildplayers,
-                    on_conflict=("guild_xuid_id",),
+                await models.RealmPlayer.bulk_create(
+                    realmplayers,
+                    on_conflict=("realm_xuid_id",),
                     update_fields=("online", "last_seen"),
                 )
             except Exception as e:
@@ -167,19 +156,19 @@ class Playerlist(utils.Extension):
                     return
                 await utils.error_handle(self.bot, e)
             finally:
-                if not self._guildplayer_queue.empty():
-                    self._guildplayer_queue.task_done()
+                if not self._realmplayer_queue.empty():
+                    self._realmplayer_queue.task_done()
 
-    async def get_players_from_guildplayers(
+    async def get_players_from_realmplayers(
         self,
-        guild_id: str,
-        guildplayers: list[models.GuildPlayer],
+        realm_id: str,
+        realmplayers: list[models.RealmPlayer],
     ):
         player_list: typing.List[pl_utils.Player] = []
         unresolved_dict: typing.Dict[str, pl_utils.Player] = {}
 
-        for member in guildplayers:
-            xuid = member.guild_xuid_id.removeprefix(f"{guild_id}-")
+        for member in realmplayers:
+            xuid = member.realm_xuid_id.removeprefix(f"{realm_id}-")
 
             player = pl_utils.Player(
                 xuid,
@@ -233,19 +222,19 @@ class Playerlist(utils.Extension):
         May take a while to run at first.
         Requires Manage Server permissions."""
 
+        guild_config = await ctx.fetch_config()
+
         actual_hours_ago: int = int(hours_ago)
-
         now = naff.Timestamp.utcnow()
-
         time_delta = datetime.timedelta(hours=actual_hours_ago)
         time_ago = now - time_delta
 
-        guildplayers = await models.GuildPlayer.filter(
-            Q(guild_xuid_id__startswith=f"{ctx.guild_id}-"),
+        realmplayers = await models.RealmPlayer.filter(
+            Q(realm_xuid_id__startswith=f"{guild_config.realm_id}-"),
             Q(Q(online=True), Q(last_seen__gte=time_ago), join_type="OR"),
         )
 
-        if not guildplayers:
+        if not realmplayers:
             if not kwargs.get("no_init_mes"):
                 raise utils.CustomCheckFailure(
                     "No one seems to have been on the Realm for the last "
@@ -258,8 +247,8 @@ class Playerlist(utils.Extension):
             else:
                 return
 
-        player_list = await self.get_players_from_guildplayers(
-            str(ctx.guild_id), guildplayers
+        player_list = await self.get_players_from_realmplayers(
+            guild_config.realm_id, realmplayers  # type: ignore
         )
 
         online_list = sorted(
@@ -323,11 +312,13 @@ class Playerlist(utils.Extension):
         """Allows you to see if anyone is online on the Realm right now."""
         # uses much of the same code as playerlist
 
-        guildplayers = await models.GuildPlayer.filter(
-            guild_xuid_id__startswith=f"{ctx.guild_id}-", online=True
+        guild_config = await ctx.fetch_config()
+
+        realmplayers = await models.RealmPlayer.filter(
+            realm_xuid_id__startswith=f"{guild_config.realm_id}-", online=True
         )
-        player_list = await self.get_players_from_guildplayers(
-            str(ctx.guild_id), guildplayers
+        player_list = await self.get_players_from_realmplayers(
+            guild_config.realm_id, realmplayers  # type: ignore
         )
 
         if online_list := sorted(

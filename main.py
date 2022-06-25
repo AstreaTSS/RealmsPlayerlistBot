@@ -92,7 +92,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         await models.GuildConfig.filter(guild_id__not_in=guild_ids).delete()
 
         # mark all players as offline
-        await models.GuildPlayer.filter(online=True).update(online=False)
+        await models.RealmPlayer.filter(online=True).update(online=False)
 
         self.fully_ready.set()
 

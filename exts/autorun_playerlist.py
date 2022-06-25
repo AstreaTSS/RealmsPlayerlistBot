@@ -45,7 +45,7 @@ class AutoRunPlayerlist(utils.Extension):
     async def playerlist_realms_delete(self):
         now = datetime.datetime.now(tz=datetime.timezone.utc)
         time_back = now - datetime.timedelta(hours=25)
-        await models.GuildPlayer.filter(
+        await models.RealmPlayer.filter(
             online=False,
             last_seen__lt=time_back,
         ).delete()

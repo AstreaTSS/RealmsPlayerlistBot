@@ -32,10 +32,10 @@ class GuildConfig(Model):
     realm_id: typing.Optional[str] = fields.CharField(50, null=True)
 
 
-class GuildPlayer(Model):
+class RealmPlayer(Model):
     class Meta:
-        table = "realmguildplayer"
+        table = "realmplayer"
 
-    guild_xuid_id: str = fields.CharField(max_length=100, pk=True)
+    realm_xuid_id: str = fields.CharField(max_length=100, pk=True)
     online: bool = fields.BooleanField(default=False)  # type: ignore
     last_seen: datetime = fields.DatetimeField()

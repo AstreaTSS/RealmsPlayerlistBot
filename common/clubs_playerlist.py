@@ -166,16 +166,16 @@ async def fill_in_data_from_clubs(
 
     now = datetime.datetime.now(tz=datetime.timezone.utc)
 
-    guildplayers = [
-        models.GuildPlayer(
-            guild_xuid_id=f"{guild_id}-{p.xuid}",
+    realmplayers = [
+        models.RealmPlayer(
+            realm_xuid_id=f"{guild_id}-{p.xuid}",
             online=p.in_game,
             last_seen=now if p.in_game else p.last_seen,
         )
         for p in player_list
     ]
-    await models.GuildPlayer.bulk_create(
-        guildplayers,
-        on_conflict=("guild_xuid_id",),
+    await models.RealmPlayer.bulk_create(
+        realmplayers,
+        on_conflict=("realm_xuid_id",),
         update_fields=("online", "last_seen"),
     )
