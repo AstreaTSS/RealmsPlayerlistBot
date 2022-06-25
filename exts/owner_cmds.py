@@ -149,8 +149,8 @@ class OwnerCMDs(utils.Extension):
 
         if club_id:
             kwargs["club_id"] = club_id
-            if club_id != "None":
-                await fill_in_data_from_clubs(self.bot, int(club_id), club_id)
+            if club_id != "None" and realm_id and realm_id != "None":
+                await fill_in_data_from_clubs(self.bot, realm_id, club_id)
         if realm_id:
             kwargs["realm_id"] = realm_id
         if playerlist_chan:
@@ -212,8 +212,8 @@ class OwnerCMDs(utils.Extension):
             guild_config.realm_id = realm_id if realm_id != "None" else None
         if club_id:
             guild_config.club_id = club_id if club_id != "None" else None
-            if club_id != "None":
-                await fill_in_data_from_clubs(self.bot, int(guild), club_id)
+            if club_id != "None" and guild_config.realm_id:
+                await fill_in_data_from_clubs(self.bot, guild_config.realm_id, club_id)
         if playerlist_chan:
             guild_config.playerlist_chan = (
                 int(playerlist_chan) if playerlist_chan != "None" else None
@@ -278,8 +278,8 @@ class OwnerCMDs(utils.Extension):
             guild_config.realm_id = realm_id if realm_id != "None" else None
         if club_id:
             guild_config.club_id = club_id if club_id != "None" else None
-            if club_id != "None":
-                await fill_in_data_from_clubs(self.bot, int(guild_id), club_id)
+            if club_id != "None" and guild_config.realm_id:
+                await fill_in_data_from_clubs(self.bot, guild_config.realm_id, club_id)
         if playerlist_chan:
             guild_config.playerlist_chan = (
                 int(playerlist_chan) if playerlist_chan != "None" else None

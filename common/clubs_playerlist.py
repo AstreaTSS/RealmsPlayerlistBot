@@ -155,7 +155,7 @@ async def get_players_from_club_data(
 
 async def fill_in_data_from_clubs(
     bot: utils.RealmBotBase,
-    guild_id: int,
+    realm_id: str,
     club_id: str,
 ):
     t = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(hours=24)
@@ -168,7 +168,7 @@ async def fill_in_data_from_clubs(
 
     realmplayers = [
         models.RealmPlayer(
-            realm_xuid_id=f"{guild_id}-{p.xuid}",
+            realm_xuid_id=f"{realm_id}-{p.xuid}",
             online=p.in_game,
             last_seen=now if p.in_game else p.last_seen,
         )
