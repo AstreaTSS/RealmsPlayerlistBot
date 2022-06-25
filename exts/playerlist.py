@@ -86,7 +86,7 @@ class Playerlist(utils.Extension):
 
             if resp_json.get("limitType"):
                 # ratelimit, not much we can do here
-                if (seconds := resp_json.get("periodInSeconds")):
+                if seconds := resp_json.get("periodInSeconds"):
                     await asyncio.sleep(int(seconds))
                 else:
                     await asyncio.sleep(15)
@@ -99,6 +99,16 @@ class Playerlist(utils.Extension):
             ) as r:
                 try:
                     resp_json = await r.json(loads=orjson.loads)
+
+                    if resp_json.get("limitType"):
+                        # ratelimit, not much we can do here
+                        if seconds := resp_json.get("periodInSeconds"):
+                            await asyncio.sleep(int(seconds))
+                        else:
+                            await asyncio.sleep(15)
+
+                        return await self._realm_club_json(club_id)
+
                     return resp_json, r
                 except aiohttp.ContentTypeError:
                     return None, r
