@@ -93,7 +93,12 @@ class AutoRunPlayerlist(utils.Extension):
                     " run it automatically. Please make sure the bot has the ability to"
                     " read message history for this channel."
                 )
-            await utils.msg_to_owner(self.bot, f"{chan.guild}")
+            await utils.msg_to_owner(
+                self.bot, f"{chan.guild} - cannot send to channel."
+            )
+            return
+        except AttributeError:
+            await utils.msg_to_owner(self.bot, f"{guild_config.guild_id} - no channel.")
             return
 
         a_ctx: utils.RealmPrefixedContext = await self.bot.get_context(messages[0])  # type: ignore
