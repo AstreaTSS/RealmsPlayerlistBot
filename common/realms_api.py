@@ -149,27 +149,52 @@ class RealmsAPI:
             "Authorization": self.auth_mgr.xsts_token.authorization_header_value,
         }
 
-    async def refresh_tokens(self):
+    async def refresh_tokens(self, force_refresh: bool = False):
         """Refresh all tokens."""
-        if not (self.auth_mgr.oauth and self.auth_mgr.oauth.is_valid()):
+        if force_refresh:
             self.auth_mgr.oauth = await self.auth_mgr.refresh_oauth_token()
-        if not (self.auth_mgr.user_token and self.auth_mgr.user_token.is_valid()):
             self.auth_mgr.user_token = await self.auth_mgr.request_user_token()
-        if not (self.auth_mgr.xsts_token and self.auth_mgr.xsts_token.is_valid()):
             self.auth_mgr.xsts_token = await self.auth_mgr.request_xsts_token(
                 relying_party=utils.REALMS_API_URL
             )
+        else:
+            if not (self.auth_mgr.oauth and self.auth_mgr.oauth.is_valid()):
+                self.auth_mgr.oauth = await self.auth_mgr.refresh_oauth_token()
+            if not (self.auth_mgr.user_token and self.auth_mgr.user_token.is_valid()):
+                self.auth_mgr.user_token = await self.auth_mgr.request_user_token()
+            if not (self.auth_mgr.xsts_token and self.auth_mgr.xsts_token.is_valid()):
+                self.auth_mgr.xsts_token = await self.auth_mgr.request_xsts_token(
+                    relying_party=utils.REALMS_API_URL
+                )
 
     async def close(self):
         await self.session.close()
 
-    async def request(self, method: str, url: str, data: typing.Optional[dict] = None):
+    async def request(
+        self,
+        method: str,
+        url: str,
+        data: typing.Optional[dict] = None,
+        *,
+        force_refresh: bool = False,
+        times: int = 1,
+    ):
         # refresh token as needed
-        await self.refresh_tokens()
+        await self.refresh_tokens(force_refresh=force_refresh)
 
         async with self.session.request(
             method, f"{utils.REALMS_API_URL}{url}", headers=self.HEADERS, data=data
         ) as resp:
+            if resp.status == 401:  # unauthorized
+                return await self.request(
+                    method, url, data, force_refresh=True, times=times
+                )
+            if resp.status == 502 and times < 4:  # bad gateway
+                await asyncio.sleep(1)
+                return await self.request(
+                    method, url, data, force_refresh=force_refresh, times=times + 1
+                )
+
             try:
                 resp.raise_for_status()
                 return await resp.json(loads=orjson.loads)
