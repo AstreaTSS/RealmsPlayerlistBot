@@ -1,4 +1,4 @@
-naff==1.4.0
+naff==1.4.1
 humanize==4.2.1
 websockets==10.3
 xbox-webapi==2.0.11
