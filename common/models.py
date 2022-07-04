@@ -47,6 +47,7 @@ class RealmPlayer(Model):
     realm_xuid_id: str = fields.CharField(max_length=100, pk=True)
     online: bool = fields.BooleanField(default=False)  # type: ignore
     last_seen: datetime = fields.DatetimeField()
+    last_joined: typing.Optional[datetime] = fields.DatetimeField(null=True)
 
 
 class PremiumCode(Model):

@@ -5,6 +5,7 @@ import math
 import typing
 from collections import defaultdict
 
+import attrs
 import naff
 from tortoise.expressions import Q
 
@@ -41,6 +42,16 @@ hours_ago_choices = [
 ]
 
 
+def _convert_fields(value: tuple[str, ...]) -> tuple[str, ...]:
+    return ("online", "last_seen") + value if value else ("online", "last_seen")
+
+
+@attrs.define(kw_only=True)
+class RealmPlayersContainer:
+    realmplayers: list[models.RealmPlayer] = attrs.field()
+    fields: tuple[str, ...] = attrs.field(default=None, converter=_convert_fields)
+
+
 class Playerlist(utils.Extension):
     def __init__(self, bot):
         self.bot: utils.RealmBotBase = bot
@@ -50,9 +61,7 @@ class Playerlist(utils.Extension):
 
         self._previous_now = datetime.datetime.now(tz=datetime.timezone.utc)
         self._online_cache: defaultdict[int, set[str]] = defaultdict(set)
-        self._realmplayer_queue: asyncio.Queue[
-            list[models.RealmPlayer]
-        ] = asyncio.Queue()
+        self._realmplayer_queue: asyncio.Queue[RealmPlayersContainer] = asyncio.Queue()
 
         self.get_people_task = asyncio.create_task(self._start_get_people())
         self.upload_players_task = asyncio.create_task(self._upload_players())
@@ -90,6 +99,7 @@ class Playerlist(utils.Extension):
             return
 
         player_objs: list[models.RealmPlayer] = []
+        joined_player_objs: list[models.RealmPlayer] = []
         gotten_realm_ids: set[int] = set()
         now = datetime.datetime.now(tz=datetime.timezone.utc)
 
@@ -99,13 +109,18 @@ class Playerlist(utils.Extension):
 
             for player in realm.players:
                 player_set.add(player.uuid)
-                player_objs.append(
-                    models.RealmPlayer(
-                        realm_xuid_id=f"{realm.id}-{player.uuid}",
-                        online=True,
-                        last_seen=now,
-                    )
-                )
+
+                kwargs = {
+                    "realm_xuid_id": f"{realm.id}-{player.uuid}",
+                    "online": True,
+                    "last_seen": now,
+                }
+
+                if player.uuid not in self._online_cache[realm.id]:
+                    kwargs["last_joined"] = now
+                    joined_player_objs.append(models.RealmPlayer(**kwargs))
+                else:
+                    player_objs.append(models.RealmPlayer(**kwargs))
 
             left = self._online_cache[realm.id].difference(player_set)
             self._online_cache[realm.id] = player_set
@@ -118,6 +133,7 @@ class Playerlist(utils.Extension):
                 )
                 for player in left
             )
+
         online_cache_ids = set(self._online_cache.keys())
         for missed_realm_id in online_cache_ids.difference(gotten_realm_ids):
             now_invalid = self._online_cache[missed_realm_id]
@@ -139,17 +155,24 @@ class Playerlist(utils.Extension):
 
         # handle this in the "background" so we don't have to worry about this
         # taking too long
-        await self._realmplayer_queue.put(player_objs)
+        await self._realmplayer_queue.put(
+            RealmPlayersContainer(realmplayers=player_objs)
+        )
+        await self._realmplayer_queue.put(
+            RealmPlayersContainer(
+                realmplayers=joined_player_objs, fields=("last_joined",)
+            )
+        )
 
     async def _upload_players(self):
         while True:
             try:
-                realmplayers = await self._realmplayer_queue.get()
+                container = await self._realmplayer_queue.get()
 
                 await models.RealmPlayer.bulk_create(
-                    realmplayers,
+                    container.realmplayers,
                     on_conflict=("realm_xuid_id",),
-                    update_fields=("online", "last_seen"),
+                    update_fields=container.fields,
                 )
             except Exception as e:
                 if isinstance(e, asyncio.CancelledError):
@@ -175,6 +198,7 @@ class Playerlist(utils.Extension):
                 member.last_seen,
                 member.online,
                 await self.bot.redis.get(xuid),
+                member.last_joined,
             )
             if player.resolved:
                 player_list.append(player)
@@ -275,10 +299,10 @@ class Playerlist(utils.Extension):
             await ctx.send(embed=embed)
 
         if offline_list:
-            # gets the offline list in lines of 40
+            # gets the offline list in lines of 25
             # basically, it's like
-            # [ [list of 40 strings] [list of 40 strings] etc.]
-            chunks = [offline_list[x : x + 40] for x in range(0, len(offline_list), 40)]
+            # [ [list of 25 strings] [list of 25 strings] etc.]
+            chunks = [offline_list[x : x + 25] for x in range(0, len(offline_list), 25)]
 
             first_embed = naff.Embed(
                 color=naff.Color.from_hex("95a5a6"),

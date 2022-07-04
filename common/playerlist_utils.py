@@ -23,6 +23,7 @@ class Player:
     last_seen: datetime.datetime = attrs.field()
     in_game: bool = attrs.field(default=False)
     gamertag: typing.Optional[str] = attrs.field(default=None)
+    last_joined: typing.Optional[datetime.datetime] = attrs.field(default=None)
 
     def __eq__(self, o: object) -> bool:
         return o.xuid == self.xuid if isinstance(o, self.__class__) else False
@@ -35,11 +36,18 @@ class Player:
     def display(self):  # sourcery skip: remove-unnecessary-else
         base = f"`{self.gamertag}`" if self.gamertag else f"User with XUID {self.xuid}"
 
-        if self.in_game:
-            return base
-        else:
-            time_format = naff.Timestamp.fromdatetime(self.last_seen).format("f")
-            return f"{base}: last seen {time_format}"
+        notes = []
+        if self.last_joined:
+            notes.append(
+                f"joined {naff.Timestamp.fromdatetime(self.last_joined).format('f')}"
+            )
+
+        if not self.in_game:
+            notes.append(
+                f"left {naff.Timestamp.fromdatetime(self.last_seen).format('f')}"
+            )
+
+        return f"{base}: {', '.join(notes)}" if notes else base
 
 
 class GamertagOnCooldown(Exception):
