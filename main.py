@@ -1,8 +1,10 @@
 import asyncio
 import contextlib
+import datetime
 import importlib
 import logging
 import os
+from collections import defaultdict
 
 import aiohttp
 import naff
@@ -56,9 +58,6 @@ logger.addHandler(handler)
 class RealmsPlayerlistBot(utils.RealmBotBase):
     @naff.listen("startup")
     async def on_startup(self):
-        await Tortoise.init(
-            db_url=os.environ.get("DB_URL"), modules={"models": ["common.models"]}
-        )
         self.redis = aioredis.from_url(
             os.environ.get("REDIS_URL"), decode_responses=True
         )
@@ -86,10 +85,6 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
             "Accept-Language": "en-US",
         }
         self.openxbl_session = aiohttp.ClientSession(headers=headers)
-
-        # delete any unused guild entries
-        guild_ids = [int(g) for g in self.user._guild_ids]
-        await models.GuildConfig.filter(guild_id__not_in=guild_ids).delete()
 
         # mark all players as offline
         await models.RealmPlayer.filter(online=True).update(online=False)
@@ -157,9 +152,25 @@ bot = RealmsPlayerlistBot(
 )
 bot.init_load = True
 bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
+bot.online_cache = defaultdict(set)
 
 
 async def start():
+    await Tortoise.init(
+        db_url=os.environ.get("DB_URL"), modules={"models": ["common.models"]}
+    )
+
+    # mark players as offline if they were online more than 5 minutes ago
+    five_minutes_ago = naff.Timestamp.utcnow() - datetime.timedelta(minutes=5)
+    await models.RealmPlayer.filter(online=True, last_seen__lt=five_minutes_ago).update(
+        online=False
+    )
+
+    # add all online players to the online cache
+    async for player in models.RealmPlayer.filter(online=True):
+        realm_id, xuid = player.realm_xuid_id.split("-")
+        bot.online_cache[int(realm_id)].add(xuid)
+
     bot.fully_ready = asyncio.Event()
 
     ext_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_BOT"))

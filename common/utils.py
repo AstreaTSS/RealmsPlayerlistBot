@@ -5,6 +5,7 @@ import logging
 import os
 import traceback
 import typing
+from collections import defaultdict
 from pathlib import Path
 
 import aiohttp
@@ -251,6 +252,7 @@ if typing.TYPE_CHECKING:
         owner: naff.User
         redis: aioredis.Redis
         fully_ready: asyncio.Event
+        online_cache: defaultdict[int, set[str]]
 
 else:
 

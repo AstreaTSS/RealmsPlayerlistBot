@@ -60,7 +60,6 @@ class Playerlist(utils.Extension):
         )  # prevents bot from overloading xbox api, hopefully
 
         self._previous_now = datetime.datetime.now(tz=datetime.timezone.utc)
-        self._online_cache: defaultdict[int, set[str]] = defaultdict(set)
         self._realmplayer_queue: asyncio.Queue[RealmPlayersContainer] = asyncio.Queue()
 
         self.get_people_task = asyncio.create_task(self._start_get_people())
@@ -116,14 +115,14 @@ class Playerlist(utils.Extension):
                     "last_seen": now,
                 }
 
-                if player.uuid not in self._online_cache[realm.id]:
+                if player.uuid not in self.bot.online_cache[realm.id]:
                     kwargs["last_joined"] = now
                     joined_player_objs.append(models.RealmPlayer(**kwargs))
                 else:
                     player_objs.append(models.RealmPlayer(**kwargs))
 
-            left = self._online_cache[realm.id].difference(player_set)
-            self._online_cache[realm.id] = player_set
+            left = self.bot.online_cache[realm.id].difference(player_set)
+            self.bot.online_cache[realm.id] = player_set
 
             player_objs.extend(
                 models.RealmPlayer(
@@ -134,9 +133,9 @@ class Playerlist(utils.Extension):
                 for player in left
             )
 
-        online_cache_ids = set(self._online_cache.keys())
+        online_cache_ids = set(self.bot.online_cache.keys())
         for missed_realm_id in online_cache_ids.difference(gotten_realm_ids):
-            now_invalid = self._online_cache[missed_realm_id]
+            now_invalid = self.bot.online_cache[missed_realm_id]
             if not now_invalid:
                 continue
 
@@ -149,7 +148,7 @@ class Playerlist(utils.Extension):
                 for player in now_invalid
             )
 
-            self._online_cache[missed_realm_id] = set()
+            self.bot.online_cache[missed_realm_id] = set()
 
         self._previous_now = now
 
