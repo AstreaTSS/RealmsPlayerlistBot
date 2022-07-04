@@ -192,7 +192,7 @@ class RealmsAPI:
             if resp.status == 502 and times < 4:  # bad gateway
                 await asyncio.sleep(1)
                 return await self.request(
-                    method, url, data, force_refresh=force_refresh, times=times + 1
+                    method, url, data, force_refresh=True, times=times + 1
                 )
 
             try:
