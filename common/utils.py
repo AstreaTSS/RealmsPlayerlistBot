@@ -195,7 +195,11 @@ class RealmContext(naff.InteractionContext):
         if self.guild_config:
             return self.guild_config
 
-        config = await GuildConfig.get(guild_id=self.guild.id)
+        config: GuildConfig = await GuildConfig.get(
+            guild_id=self.guild.id
+        ).prefetch_related(
+            "premium_code"
+        )  # type: ignore
         self.guild_config = config
         return config
 
@@ -223,7 +227,11 @@ class RealmPrefixedContext(naff.PrefixedContext):
         if self.guild_config:
             return self.guild_config
 
-        config = await GuildConfig.get(guild_id=self.guild.id)
+        config: GuildConfig = await GuildConfig.get(
+            guild_id=self.guild.id
+        ).prefetch_related(
+            "premium_code"
+        )  # type: ignore
         self.guild_config = config
         return config
 
