@@ -86,9 +86,6 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         }
         self.openxbl_session = aiohttp.ClientSession(headers=headers)
 
-        # mark all players as offline
-        await models.RealmPlayer.filter(online=True).update(online=False)
-
         self.fully_ready.set()
 
     @naff.listen("ready")
