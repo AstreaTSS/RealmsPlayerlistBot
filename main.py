@@ -143,9 +143,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
 intents = naff.Intents.new(
     guilds=True,
-    guild_emojis_and_stickers=True,
     messages=True,
-    reactions=True,
 )
 mentions = naff.AllowedMentions.all()
 
@@ -155,6 +153,7 @@ bot = RealmsPlayerlistBot(
     interaction_context=utils.RealmContext,
     prefixed_context=utils.RealmPrefixedContext,
     auto_defer=naff.AutoDefer(enabled=True, time_until_defer=0),
+    message_cache=naff.utils.TTLCache(10, 5, 5),  # we do not need messages
 )
 bot.init_load = True
 bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
