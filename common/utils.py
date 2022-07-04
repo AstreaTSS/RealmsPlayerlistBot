@@ -264,7 +264,7 @@ async def _global_checks(ctx: naff.Context):
     if not ctx.bot.is_ready:
         return False
 
-    if ctx.bot.init_load:  # type: ignore
+    if not ctx.bot.fully_ready.is_set():  # type: ignore
         return False
 
     if not ctx.guild:
