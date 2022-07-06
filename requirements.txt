@@ -10,6 +10,6 @@ asyncpg==0.25.0
 tortoise-orm==0.19.1
 redis[hiredis]==4.3.4
 tomli==2.0.1
-orjson==3.7.6
+orjson==3.7.7
 python-dateutil==2.8.2
 uvloop==0.16.0; platform_system == "Linux"
