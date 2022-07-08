@@ -44,7 +44,7 @@ try:
 except ImportError:
     pass
 
-logger = logging.getLogger("dis.naff")
+logger = logging.getLogger("realms_bot")
 logger.setLevel(logging.INFO)
 handler = logging.FileHandler(
     filename=os.environ["LOG_FILE_PATH"], encoding="utf-8", mode="a"
@@ -146,6 +146,7 @@ bot = RealmsPlayerlistBot(
     prefixed_context=utils.RealmPrefixedContext,
     auto_defer=naff.AutoDefer(enabled=True, time_until_defer=0),
     message_cache=naff.utils.TTLCache(10, 5, 5),  # we do not need messages
+    logger=logger,
 )
 bot.init_load = True
 bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
