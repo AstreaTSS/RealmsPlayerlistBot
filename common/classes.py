@@ -43,7 +43,7 @@ class TimedDict(typing.Generic[KT, VT]):
 
     @property
     def empty(self) -> bool:
-        return bool(self._dict)
+        return not self._dict
 
     def _clear(self):
         self._dict.clear()
