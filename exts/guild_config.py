@@ -39,7 +39,7 @@ class GuildConfig(utils.Extension):
             color=self.bot.color, title=f"Server Config for {ctx.guild.name}:"
         )
         playerlist_channel = (
-            f"<#{config.playerlist_chan}> ({config.playerlist_chan})"
+            f"<#{config.playerlist_chan}> (ID: {config.playerlist_chan})"
             if config.playerlist_chan
             else "N/A"
         )
