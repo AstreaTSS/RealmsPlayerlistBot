@@ -60,7 +60,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     @naff.listen("startup")
     async def on_startup(self):
         self.redis = aioredis.from_url(
-            os.environ.get("REDIS_URL"), decode_responses=True
+            os.environ.get("REDIS_URL"), max_connections=15, decode_responses=True
         )
 
         self.session = aiohttp.ClientSession()
