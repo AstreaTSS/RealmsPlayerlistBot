@@ -152,7 +152,6 @@ bot = RealmsPlayerlistBot(
 bot.init_load = True
 bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
 bot.online_cache = defaultdict(set)
-bot.realm_name_cache = TimedDict(expires=300)
 
 
 async def start():
@@ -171,6 +170,7 @@ async def start():
         realm_id, xuid = player.realm_xuid_id.split("-")
         bot.online_cache[int(realm_id)].add(xuid)
 
+    bot.realm_name_cache = TimedDict(expires=300)
     bot.fully_ready = asyncio.Event()
 
     ext_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_BOT"))
