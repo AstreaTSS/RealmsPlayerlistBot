@@ -17,6 +17,7 @@ from xbox.webapi.authentication.models import OAuth2TokenResponse
 
 import common.models as models
 import common.utils as utils
+from common.classes import TimedDict
 from common.custom_providers import ClubProvider
 from common.custom_providers import ProfileProvider
 from common.realms_api import RealmsAPI
@@ -151,6 +152,7 @@ bot = RealmsPlayerlistBot(
 bot.init_load = True
 bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
 bot.online_cache = defaultdict(set)
+bot.realm_name_cache = TimedDict(expires=300)
 
 
 async def start():
