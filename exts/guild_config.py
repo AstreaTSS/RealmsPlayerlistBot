@@ -50,6 +50,8 @@ class GuildConfig(utils.Extension):
         realm_name = utils.na_friendly_str(
             self.bot.realm_name_cache.get(config.realm_id)
         )
+        if realm_name != "N/A":
+            realm_name = f"`{realm_name}`"
 
         autorunner = utils.toggle_friendly_str(
             bool(config.club_id and config.realm_id and config.playerlist_chan)
@@ -57,7 +59,7 @@ class GuildConfig(utils.Extension):
 
         embed.description = (
             f"Autorun Playerlist Channel: {playerlist_channel}\nRealm Name:"
-            f" `{realm_name}`\nAutorunner: {autorunner}\nPremium Activated:"
+            f" {realm_name}\nAutorunner: {autorunner}\nPremium Activated:"
             f" {utils.yesno_friendly_str(bool(config.premium_code))}\n\nExtra"
             f" Info:\nRealm ID: {utils.na_friendly_str(config.realm_id)}\nClub ID:"
             f" {utils.na_friendly_str(config.club_id)}"
