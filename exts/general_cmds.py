@@ -69,9 +69,11 @@ class GeneralCMDS(utils.Extension):
         """
 
         str_xuid = xuid
-        maybe_gamertag: typing.Union[
-            str, ProfileResponse, None
-        ] = await self.bot.redis.get(str_xuid)
+
+        async with self.bot.redis_semaphore:
+            maybe_gamertag: typing.Union[
+                str, ProfileResponse, None
+            ] = await self.bot.redis.get(str_xuid)
 
         if not maybe_gamertag:
             async with aiohttp.ClientSession(
@@ -113,11 +115,13 @@ class GeneralCMDS(utils.Extension):
                 for s in maybe_gamertag.profile_users[0].settings
                 if s.id == "Gamertag"
             )
-            await self.bot.redis.setex(
-                name=str_xuid,
-                time=datetime.timedelta(days=14),
-                value=maybe_gamertag,
-            )
+
+            async with self.bot.redis_semaphore:
+                await self.bot.redis.setex(
+                    name=str_xuid,
+                    time=datetime.timedelta(days=14),
+                    value=maybe_gamertag,
+                )
 
         await ctx.send(f"`{xuid}`'s gamertag: `{maybe_gamertag}`.")
 

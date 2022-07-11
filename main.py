@@ -60,7 +60,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     @naff.listen("startup")
     async def on_startup(self):
         self.redis = aioredis.from_url(
-            os.environ.get("REDIS_URL"), max_connections=15, decode_responses=True
+            os.environ.get("REDIS_URL"), decode_responses=True
         )
 
         self.session = aiohttp.ClientSession()
@@ -170,6 +170,7 @@ async def start():
         realm_id, xuid = player.realm_xuid_id.split("-")
         bot.online_cache[int(realm_id)].add(xuid)
 
+    bot.redis_sephamore = asyncio.BoundedSemaphore(value=15)
     bot.realm_name_cache = TimedDict(expires=300)
     bot.fully_ready = asyncio.Event()
 
