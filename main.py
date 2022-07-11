@@ -170,7 +170,7 @@ async def start():
         realm_id, xuid = player.realm_xuid_id.split("-")
         bot.online_cache[int(realm_id)].add(xuid)
 
-    bot.redis_sephamore = asyncio.BoundedSemaphore(value=15)
+    bot.redis_semaphore = asyncio.BoundedSemaphore(value=15)
     bot.realm_name_cache = TimedDict(expires=300)
     bot.fully_ready = asyncio.Event()
 
