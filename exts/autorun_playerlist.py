@@ -6,6 +6,7 @@ import importlib
 import naff
 from dateutil.relativedelta import relativedelta
 
+import common.classes as cclasses
 import common.models as models
 import common.utils as utils
 
@@ -59,7 +60,11 @@ class AutoRunPlayerlist(utils.Extension):
         to_run = []
 
         async for guild_config in models.GuildConfig.all():
-            if guild_config.club_id and guild_config.realm_id:
+            if (
+                guild_config.club_id
+                and guild_config.realm_id
+                and guild_config.playerlist_chan
+            ):
                 to_run.append(self.auto_run_playerlist(list_cmd, guild_config))
 
         # this gather is done so that they can all run in parallel
@@ -78,14 +83,17 @@ class AutoRunPlayerlist(utils.Extension):
     async def auto_run_playerlist(
         self, list_cmd: naff.InteractionCommand, guild_config: models.GuildConfig
     ):
-        chan: naff.GuildText = self.bot.get_channel(
-            guild_config.playerlist_chan  # type: ignore
-        )  # type: ignore # playerlist channel
-
-        # gets the most recent message in the playerlist channel
         try:
-            messages = await chan.history(limit=1).flatten()
+            chan = await self.bot.cache.fetch_channel(guild_config.playerlist_chan)  # type: ignore
         except naff.errors.HTTPException:
+            return
+
+        if not isinstance(chan, naff.GuildText):
+            return
+
+        try:
+            chan = cclasses.valid_channel_check(chan)
+        except naff.errors.BadArgument:
             with contextlib.suppress(naff.errors.HTTPException):
                 await chan.send(
                     "I could not view message history for this channel when"
@@ -93,16 +101,16 @@ class AutoRunPlayerlist(utils.Extension):
                     " run it automatically. Please make sure the bot has the ability to"
                     " read message history for this channel."
                 )
-            await utils.msg_to_owner(
-                self.bot, f"{chan.guild} - cannot send to channel."
-            )
-            return
-        except AttributeError:
-            await utils.msg_to_owner(self.bot, f"{guild_config.guild_id} - no channel.")
             return
 
-        a_ctx: utils.RealmPrefixedContext = await self.bot.get_context(messages[0])  # type: ignore
-        a_ctx.guild_config = guild_config  # to speed things up
+        # make a fake context to make things easier
+        a_ctx: utils.RealmPrefixedContext = utils.RealmPrefixedContext(
+            client=self.bot,  # type: ignore
+            author=chan.guild.me,
+            channel=chan,
+            guild_id=chan._guild_id,
+            guild_config=guild_config,
+        )
 
         # take advantage of the fact that users cant really use kwargs for commands
         # the two listed here silence the 'this may take a long time' message
@@ -112,4 +120,5 @@ class AutoRunPlayerlist(utils.Extension):
 
 def setup(bot):
     importlib.reload(utils)
+    importlib.reload(cclasses)
     AutoRunPlayerlist(bot)

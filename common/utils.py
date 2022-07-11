@@ -35,7 +35,7 @@ async def error_handle(bot: "RealmBotBase", error: Exception, ctx: naff.Context 
         split = True
     else:
         error_str = error_format(error)
-        logging.getLogger(naff.const.logger_name).error(error_str)
+        logging.getLogger("realms_bot").error(error_str)
 
         chunks = line_split(error_str)
         for i in range(len(chunks)):
@@ -164,6 +164,10 @@ def yesno_friendly_str(bool_to_convert):
     return "yes" if bool_to_convert == True else "no"
 
 
+def na_friendly_str(obj: typing.Any):
+    return str(obj) if obj else "N/A"
+
+
 def error_embed_generate(error_msg):
     return naff.Embed(color=naff.MaterialColors.RED, description=error_msg)
 
@@ -240,6 +244,7 @@ class RealmPrefixedContext(naff.PrefixedContext):
 if typing.TYPE_CHECKING:
     from .custom_providers import ProfileProvider, ClubProvider
     from .realms_api import RealmsAPI
+    from .classes import TimedDict
 
     class RealmBotBase(naff.Client):
         init_load: bool
@@ -253,6 +258,7 @@ if typing.TYPE_CHECKING:
         redis: aioredis.Redis
         fully_ready: asyncio.Event
         online_cache: defaultdict[int, set[str]]
+        realm_name_cache: TimedDict[typing.Optional[str], str]
 
 else:
 

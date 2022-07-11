@@ -8,7 +8,6 @@ from collections import defaultdict
 
 import aiohttp
 import naff
-import redis.asyncio as aioredis
 import tomli
 from tortoise import Tortoise
 from xbox.webapi.api.client import XboxLiveClient
@@ -17,6 +16,8 @@ from xbox.webapi.authentication.models import OAuth2TokenResponse
 
 import common.models as models
 import common.utils as utils
+from common.classes import SemaphoreRedis
+from common.classes import TimedDict
 from common.custom_providers import ClubProvider
 from common.custom_providers import ProfileProvider
 from common.realms_api import RealmsAPI
@@ -44,7 +45,7 @@ try:
 except ImportError:
     pass
 
-logger = logging.getLogger("dis.naff")
+logger = logging.getLogger("realms_bot")
 logger.setLevel(logging.INFO)
 handler = logging.FileHandler(
     filename=os.environ["LOG_FILE_PATH"], encoding="utf-8", mode="a"
@@ -58,8 +59,8 @@ logger.addHandler(handler)
 class RealmsPlayerlistBot(utils.RealmBotBase):
     @naff.listen("startup")
     async def on_startup(self):
-        self.redis = aioredis.from_url(
-            os.environ.get("REDIS_URL"), decode_responses=True
+        self.redis = SemaphoreRedis.from_url(
+            os.environ["REDIS_URL"], decode_responses=True, semaphore_value=15
         )
 
         self.session = aiohttp.ClientSession()
@@ -146,6 +147,7 @@ bot = RealmsPlayerlistBot(
     prefixed_context=utils.RealmPrefixedContext,
     auto_defer=naff.AutoDefer(enabled=True, time_until_defer=0),
     message_cache=naff.utils.TTLCache(10, 5, 5),  # we do not need messages
+    logger=logger,
 )
 bot.init_load = True
 bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
@@ -168,6 +170,7 @@ async def start():
         realm_id, xuid = player.realm_xuid_id.split("-")
         bot.online_cache[int(realm_id)].add(xuid)
 
+    bot.realm_name_cache = TimedDict(expires=300)
     bot.fully_ready = asyncio.Event()
 
     ext_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_BOT"))

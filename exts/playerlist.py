@@ -3,7 +3,6 @@ import datetime
 import importlib
 import math
 import typing
-from collections import defaultdict
 
 import attrs
 import naff

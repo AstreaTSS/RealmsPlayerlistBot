@@ -1,15 +1,16 @@
-naff==1.4.1
+naff==1.6.0
 humanize==4.2.3
 websockets==10.3
 xbox-webapi==2.0.11
 cchardet==2.1.7
 aiodns==3.0.0
-brotlipy==0.7.0
 attrs==21.4.0
+Brotli==1.0.9
 asyncpg==0.26.0
-tortoise-orm==0.19.1
+tortoise-orm==0.19.2
 redis[hiredis]==4.3.4
+types-redis==4.3.3
 tomli==2.0.1
-orjson==3.7.6
+orjson==3.7.7
 python-dateutil==2.8.2
 uvloop==0.16.0; platform_system == "Linux"

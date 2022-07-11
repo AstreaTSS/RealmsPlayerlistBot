@@ -69,6 +69,7 @@ class GeneralCMDS(utils.Extension):
         """
 
         str_xuid = xuid
+
         maybe_gamertag: typing.Union[
             str, ProfileResponse, None
         ] = await self.bot.redis.get(str_xuid)
@@ -113,6 +114,7 @@ class GeneralCMDS(utils.Extension):
                 for s in maybe_gamertag.profile_users[0].settings
                 if s.id == "Gamertag"
             )
+
             await self.bot.redis.setex(
                 name=str_xuid,
                 time=datetime.timedelta(days=14),
