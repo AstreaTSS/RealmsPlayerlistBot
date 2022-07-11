@@ -87,6 +87,7 @@ class SemaphoreRedis(aioredis.Redis):
     def __init__(self, **kwargs):
         semaphore_value = kwargs.pop("semaphore_value", 1)
         super().__init__(**kwargs)
+        self.connection_pool.connection_kwargs.pop("semaphore_value", None)
         self.semaphore = asyncio.BoundedSemaphore(semaphore_value)
 
     async def execute_command(self, *args, **options):
