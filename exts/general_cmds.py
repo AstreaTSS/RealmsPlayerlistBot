@@ -168,14 +168,21 @@ class GeneralCMDS(utils.Extension):
                         "Accept": "application/json",
                         "Accept-Language": "en-US",
                     }
-                    async with session.get(
-                        f"https://xbl.io/api/v2/account/{xuid}", headers=headers
-                    ) as r:
-                        with contextlib.suppress(pydantic.ValidationError):
-                            maybe_gamertag = ProfileResponse.parse_raw(await r.read())
+                    with contextlib.suppress(asyncio.TimeoutError):
+                        async with session.get(
+                            f"https://xbl.io/api/v2/account/{xuid}", headers=headers
+                        ) as r:
+                            with contextlib.suppress(pydantic.ValidationError):
+                                maybe_gamertag = ProfileResponse.parse_raw(
+                                    await r.read()
+                                )
 
                 if not maybe_gamertag:
-                    with contextlib.suppress(aiohttp.ClientResponseError):
+                    with contextlib.suppress(
+                        aiohttp.ClientResponseError,
+                        asyncio.TimeoutError,
+                        pydantic.ValidationError,
+                    ):
                         maybe_gamertag = (
                             await self.bot.profile.client.profile.get_profile_by_xuid(
                                 xuid
