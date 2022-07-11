@@ -3,6 +3,7 @@ import typing
 
 import attrs
 import naff
+import redis.asyncio as aioredis
 
 KT = typing.TypeVar("KT")
 VT = typing.TypeVar("VT")
@@ -80,3 +81,13 @@ def valid_channel_check(channel: naff.GuildText):
 class ValidChannelConverter(naff.Converter):
     async def convert(self, ctx: naff.InteractionContext, argument: naff.GuildText):
         return valid_channel_check(argument)
+
+
+class SemaphoreRedis(aioredis.Redis):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.semaphore = asyncio.BoundedSemaphore(kwargs.get("semaphore_value", 1))
+
+    async def execute_command(self, *args, **options):
+        async with self.semaphore:
+            return await super().execute_command(*args, **options)

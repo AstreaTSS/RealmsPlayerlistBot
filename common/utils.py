@@ -256,7 +256,6 @@ if typing.TYPE_CHECKING:
         club: ClubProvider
         owner: naff.User
         redis: aioredis.Redis
-        redis_semaphore: asyncio.BoundedSemaphore
         fully_ready: asyncio.Event
         online_cache: defaultdict[int, set[str]]
         realm_name_cache: TimedDict[typing.Optional[str], str]

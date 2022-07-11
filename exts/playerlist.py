@@ -191,14 +191,13 @@ class Playerlist(utils.Extension):
         for member in realmplayers:
             xuid = member.realm_xuid_id.removeprefix(f"{realm_id}-")
 
-            async with self.bot.redis_semaphore:
-                player = pl_utils.Player(
-                    xuid,
-                    member.last_seen,
-                    member.online,
-                    await self.bot.redis.get(xuid),
-                    member.last_joined,
-                )
+            player = pl_utils.Player(
+                xuid,
+                member.last_seen,
+                member.online,
+                await self.bot.redis.get(xuid),
+                member.last_joined,
+            )
             if player.resolved:
                 player_list.append(player)
             else:

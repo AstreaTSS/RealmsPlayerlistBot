@@ -161,12 +161,11 @@ class GamertagHandler:
                     gamertag = next(
                         s.value for s in user.settings if s.id == "Gamertag"
                     )
-                    async with self.bot.redis_semaphore:
-                        await self.bot.redis.setex(
-                            name=str(user.id),
-                            time=datetime.timedelta(days=14),
-                            value=gamertag,
-                        )
+                    await self.bot.redis.setex(
+                        name=str(user.id),
+                        time=datetime.timedelta(days=14),
+                        value=gamertag,
+                    )
                     dict_gamertags[user.id] = gamertag
                 except (KeyError, StopIteration):
                     continue
