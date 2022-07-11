@@ -90,26 +90,34 @@ class GeneralCMDS(utils.Extension):
         )
 
         about_embed.add_field(
-            name="Support Server", value="[Link](https://discord.gg/NSdetwGjpK)"
+            name="Support Server",
+            value="[Link](https://discord.gg/NSdetwGjpK)",
+            inline=True,
         )
         about_embed.add_field(
             name="Source Code",
             value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot)",
+            inline=True,
         )
         about_embed.add_field(
-            name="Support Astrea on Ko-Fi!", value="[Link](https://ko-fi.com/astrea49)"
+            name="Support Astrea on Ko-Fi!",
+            value="[Link](https://ko-fi.com/astrea49)",
+            inline=True,
         )
         about_embed.add_field(
             name="FAQ",
             value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/FAQ)",
+            inline=True,
         )
         about_embed.add_field(
             name="Privacy Policy",
             value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Privacy-Policy)",
+            inline=True,
         )
         about_embed.add_field(
             name="ToS",
             value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Terms-of-Service)",
+            inline=True,
         )
 
         await ctx.send(embed=about_embed)
