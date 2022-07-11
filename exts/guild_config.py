@@ -51,10 +51,14 @@ class GuildConfig(utils.Extension):
             self.bot.realm_name_cache.get(config.realm_id)
         )
 
+        autorunner = utils.toggle_friendly_str(
+            bool(config.club_id and config.realm_id and config.playerlist_chan)
+        )
+
         embed.description = (
             f"Autorun Playerlist Channel: {playerlist_channel}\nRealm Name:"
-            f" {realm_name}\nAutorunner:"
-            f" {utils.toggle_friendly_str(bool(config.club_id and config.realm_id and config.playerlist_chan))}\n\nExtra"
+            f" `{realm_name}`\nAutorunner: {autorunner}\nPremium Activated:"
+            f" {utils.yesno_friendly_str(bool(config.premium_code))}\n\nExtra"
             f" Info:\nRealm ID: {utils.na_friendly_str(config.realm_id)}\nClub ID:"
             f" {utils.na_friendly_str(config.club_id)}"
         )
@@ -82,12 +86,13 @@ class GuildConfig(utils.Extension):
 
             config.realm_id = str(realm.id)
             config.club_id = str(realm.club_id)
+            self.bot.realm_name_cache.add_one(config.realm_id, realm.name)
             await clubs_playerlist.fill_in_data_from_clubs(
                 self.bot, config.realm_id, config.club_id
             )
 
             await config.save()
-            await ctx.send(f"Linked this server to the Realm: {realm.name}.")
+            await ctx.send(f"Linked this server to the Realm: `{realm.name}`.")
         except RealmsAPIException as e:
             if (
                 isinstance(e.error, aiohttp.ClientResponseError)

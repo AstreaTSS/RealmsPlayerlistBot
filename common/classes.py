@@ -56,6 +56,9 @@ class TimedDict(typing.Generic[KT, VT]):
         if not self._timer or self._loop.time() > self._timer.when():
             self._timer = self._loop.call_later(self.expires, self._clear)
 
+    def add_one(self, key: KT, value: VT):
+        self._dict[key] = value
+
     def cancel_timer(self):
         if self._timer:
             self._timer.cancel()

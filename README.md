@@ -23,9 +23,7 @@ The command can normally only be run by people with Manage Server permissions an
 
 ## Adding The Bot
 
-If you wish to add this bot, [join my Support Server](https://discord.gg/NSdetwGjpK) and view the instructions in the #realms-playerlist-bot-info channel. It isn't *super* simple to set up the bot, so...
-
-Note that I'm not *always* available and may take a long time to get around to adding the bot to your server. There *may* also be a couple of dealbreakers for you - I'd rather talk about those privately since they vary from person to person.
+If you wish to add this bot, just [use the link here!](https://discord.com/api/oauth2/authorize?client_id=725483868777611275&permissions=309238025280&scope=applications.commands%20bot)
 
 ## Self-hosting Information
 
@@ -39,5 +37,6 @@ There's a whole section in the wiki about this! Check it out [here](https://gith
 
 ## Links:
 
+* [Invite Bot](https://discord.com/api/oauth2/authorize?client_id=725483868777611275&permissions=309238025280&scope=applications.commands%20bot)
 * [Join Support Server](https://discord.gg/NSdetwGjpK)
 * [Support me on Ko-fi](https://ko-fi.com/astrea49)

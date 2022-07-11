@@ -47,7 +47,76 @@ class GeneralCMDS(utils.Extension):
         )
 
     @naff.slash_command(
-        "gamertag_from_xuid", description="Gets the gamertag for a specified XUID."
+        name="invite",
+        description="Sends the invite link for the bot.",
+    )
+    async def invite(self, ctx: utils.RealmContext):
+        await ctx.send(
+            f"https://discord.com/api/oauth2/authorize?client_id={self.bot.user.id}"
+            "&permissions=309238025280&scope=applications.commands%20bot"
+        )
+
+    @naff.slash_command(
+        "support", description="Gives an invite link to the support server."
+    )
+    async def support(self, ctx: naff.InteractionContext):
+        await ctx.send("Support server:\nhttps://discord.gg/NSdetwGjpK")
+
+    @naff.slash_command("about", description="Gives information about the bot.")
+    async def about(self, ctx: naff.InteractionContext):
+        msg_list = [
+            "Hi! I'm the Realms Playerlist Bot, a bot that helps out owners of"
+            " Minecraft: Bedrock Edition Realms by showing a log of players who have"
+            " joined and left.",
+            "I was originally created as a port of another bot that was made for a"
+            " singular Realm, but since then I've grown into what you see today.",
+            "My usages are largely statistical and informative, as I can be used to"
+            " narrow down timeframes or just for tracking activity.",
+            "If you want to use me, go ahead and invite me to your server and take a"
+            " look at `/config help`!\n",
+            "Bot made by Astrea#7171.",
+        ]
+
+        about_embed = naff.Embed(
+            title="About",
+            color=self.bot.color,
+            description="\n".join(msg_list),
+        )
+        about_embed.set_author(
+            name=f"{self.bot.user.username}",
+            icon_url=(
+                f"{ctx.guild.me.display_avatar.url if ctx.guild else self.bot.user.display_avatar.url}"
+            ),
+        )
+
+        about_embed.add_field(
+            name="Support Server", value="[Link](https://discord.gg/NSdetwGjpK)"
+        )
+        about_embed.add_field(
+            name="Source Code",
+            value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot)",
+        )
+        about_embed.add_field(
+            name="Support Astrea on Ko-Fi!", value="[Link](https://ko-fi.com/astrea49)"
+        )
+        about_embed.add_field(
+            name="FAQ",
+            value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/FAQ)",
+        )
+        about_embed.add_field(
+            name="Privacy Policy",
+            value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Privacy-Policy)",
+        )
+        about_embed.add_field(
+            name="ToS",
+            value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Terms-of-Service)",
+        )
+
+        await ctx.send(embed=about_embed)
+
+    @naff.slash_command(
+        "gamertag_from_xuid",
+        description="Gets the gamertag for a specified XUID.",
     )
     @naff.slash_option(
         "xuid", "The XUID of the player to get.", naff.OptionTypes.STRING, required=True
