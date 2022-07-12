@@ -27,7 +27,9 @@ class GeneralCMDS(utils.Extension):
         ),
     )
     async def ping(self, ctx: utils.RealmContext):
-        """Pings the bot. Great way of finding out if the bot’s working correctly, but has no real use."""
+        """
+        Pings the bot. Great way of finding out if the bot’s working correctly, but has no real use.
+        """
 
         start_time = time.perf_counter()
         ping_discord = round((self.bot.latency * 1000), 2)

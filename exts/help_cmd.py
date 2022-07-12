@@ -53,7 +53,9 @@ class HelpCMD(utils.Extension):
     async def _custom_can_run(
         self, ctx: naff.PrefixedContext, cmd: naff.PrefixedCommand
     ):
-        """Determines if this command can be run, but ignores cooldowns and concurrency."""
+        """
+        Determines if this command can be run, but ignores cooldowns and concurrency.
+        """
         if not cmd.enabled:
             return False
 

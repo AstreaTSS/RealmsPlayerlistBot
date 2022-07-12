@@ -81,8 +81,10 @@ def line_split(content: str, split_by=20):
 
 
 def embed_check(embed: naff.Embed) -> bool:
-    """Checks if an embed is valid, as per Discord's guidelines.
-    See https://discord.com/developers/docs/resources/channel#embed-limits for details."""
+    """
+    Checks if an embed is valid, as per Discord's guidelines.
+    See https://discord.com/developers/docs/resources/channel#embed-limits for details.
+    """
     if len(embed) > 6000:
         return False
 

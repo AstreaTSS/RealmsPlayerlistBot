@@ -52,7 +52,9 @@ class AutoRunPlayerlist(utils.Extension):
         ).delete()
 
     async def playerlist_loop(self):
-        """A simple way of running the playerlist command every hour in every server the bot is in."""
+        """
+        A simple way of running the playerlist command every hour in every server the bot is in.
+        """
 
         list_cmd = next(
             c for c in self.bot.application_commands if c.name.default == "playerlist"
