@@ -11,6 +11,7 @@ from tortoise.expressions import Q
 import common.models as models
 import common.playerlist_utils as pl_utils
 import common.utils as utils
+from common.realms_api import RealmsAPIException
 
 
 hours_ago_choices = [
@@ -93,6 +94,9 @@ class Playerlist(utils.Extension):
         try:
             realms = await self.bot.realms.fetch_activities()
         except Exception as e:
+            if isinstance(e, RealmsAPIException) and e.resp.status == 502:
+                # bad gateway, can't do much about it
+                return
             await utils.error_handle(self.bot, e)
             return
 
