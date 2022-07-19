@@ -9,7 +9,7 @@ Brotli==1.0.9
 asyncpg==0.26.0
 tortoise-orm==0.19.2
 redis[hiredis]==4.3.4
-types-redis==4.3.3
+types-redis==4.3.6
 tomli==2.0.1
 orjson==3.7.7
 python-dateutil==2.8.2
