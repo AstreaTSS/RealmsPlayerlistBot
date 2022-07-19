@@ -248,7 +248,18 @@ class Playerlist(utils.Extension):
         May take a while to run at first.
         Requires Manage Server permissions."""
 
+        init_mes = not kwargs.get("no_init_mes", False)
+
         guild_config = await ctx.fetch_config()
+
+        if not bool(guild_config.club_id and guild_config.realm_id):
+            if init_mes:
+                raise utils.CustomCheckFailure(
+                    "This bot isn't fully configured! Take a look at `/config help` for"
+                    " how to configure the bot."
+                )
+            else:
+                return
 
         actual_hours_ago: int = int(hours_ago)
         now = naff.Timestamp.utcnow()
@@ -264,11 +275,9 @@ class Playerlist(utils.Extension):
             if not kwargs.get("no_init_mes"):
                 raise utils.CustomCheckFailure(
                     "No one seems to have been on the Realm for the last "
-                    + f"{actual_hours_ago} hour(s). If you changed Realms, make sure to"
-                    " let the owner know. Make sure you also haven't accidentally"
-                    " banned the bot's Xbox account.\n\nIf you just invited the bot,"
-                    " this will take a while to populate - after a day or two, it'll"
-                    " be fully ready."
+                    + f"{actual_hours_ago} hour(s). Make sure you haven't changed"
+                    " Realms or kicked the bot's account - try relinking the Realm"
+                    " via `/config link-realm` if that happens."
                 )
             else:
                 return
