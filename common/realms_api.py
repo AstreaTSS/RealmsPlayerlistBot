@@ -44,10 +44,10 @@ def from_list(f: Callable[[Any], T], x: Any) -> List[T]:
     return [f(y) for y in x]
 
 
-class DefaultPermission(Enum):
+class Permission(Enum):
+    VISITOR = "VISITOR"
     MEMBER = "MEMBER"
     OPERATOR = "OPERATOR"
-    VISITOR = "VISITOR"
 
 
 class State(Enum):
@@ -65,7 +65,7 @@ class FullRealm(CamelCaseModel):
     owner: Optional[str]
     owner_uuid: Optional[str] = None
     name: str
-    default_permission: DefaultPermission
+    default_permission: Permission
     state: State
     days_left: int
     expired: bool
@@ -87,12 +87,6 @@ class FullRealm(CamelCaseModel):
 
 class FullWorlds(CamelCaseModel):
     servers: List[FullRealm]
-
-
-class Permission(Enum):
-    MEMBER = "MEMBER"
-    OPERATOR = "OPERATOR"
-    VISITOR = "VISITOR"
 
 
 class Player(CamelCaseModel):
