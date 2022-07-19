@@ -1,5 +1,6 @@
 import importlib
 import os
+import re
 import typing
 
 import aiohttp
@@ -9,6 +10,10 @@ import common.classes as cclasses
 import common.clubs_playerlist as clubs_playerlist
 import common.utils as utils
 from common.realms_api import RealmsAPIException
+
+REALMS_LINK_REGEX = re.compile(
+    r"(?:http:|https:\/\/)?(www\.)?realms\.gg\/([a-zA-Z_-]{7,16})|(?:http:|https:\/\/)?open\.minecraft\.net\/pocket\/realms\/invite\/([a-zA-Z_-]{7,16})|(?:minecraft:\/\/)?acceptRealmInvite\?inviteID=([a-zA-Z_-]{7,16})|([a-zA-Z_-]{7,16})"
+)
 
 
 class GuildConfig(utils.Extension):
@@ -75,16 +80,21 @@ class GuildConfig(utils.Extension):
     )
     @naff.slash_option(
         "realm-code",
-        "The Realm code.",
+        "The Realm code or link.",
         naff.OptionTypes.STRING,
         required=True,
     )
     async def link_realm(self, ctx: utils.RealmContext, **kwargs):
         config = await ctx.fetch_config()
-        realm_code: str = kwargs["realm-code"]
+        _realm_code: str = kwargs["realm-code"]
+
+        realm_code = REALMS_LINK_REGEX.match(_realm_code)
+
+        if not realm_code:
+            raise naff.errors.BadArgument("Invalid Realm code!")
 
         try:
-            realm = await ctx.bot.realms.join_realm_from_code(realm_code)
+            realm = await ctx.bot.realms.join_realm_from_code(realm_code.group(0))
 
             config.realm_id = str(realm.id)
             config.club_id = str(realm.club_id)
