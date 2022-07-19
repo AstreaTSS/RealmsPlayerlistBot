@@ -46,6 +46,7 @@ def from_list(f: Callable[[Any], T], x: Any) -> List[T]:
 
 class DefaultPermission(Enum):
     MEMBER = "MEMBER"
+    OPERATOR = "OPERATOR"
     VISITOR = "VISITOR"
 
 
