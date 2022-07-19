@@ -272,7 +272,7 @@ class Playerlist(utils.Extension):
         )
 
         if not realmplayers:
-            if not kwargs.get("no_init_mes"):
+            if init_mes:
                 raise utils.CustomCheckFailure(
                     "No one seems to have been on the Realm for the last "
                     + f"{actual_hours_ago} hour(s). Make sure you haven't changed"
@@ -334,7 +334,7 @@ class Playerlist(utils.Extension):
                 await ctx.send(embed=embed)
                 await asyncio.sleep(0.2)
 
-        if not kwargs.get("no_init_mes") and not online_list and not offline_list:
+        if init_mes and not online_list and not offline_list:
             raise utils.CustomCheckFailure(
                 "No one has been on the Realm for the last "
                 + f"{actual_hours_ago} hour(s)."
