@@ -43,8 +43,8 @@ class TimedDict(typing.Generic[KT, VT]):
         return self._dict.get(key, default)
 
     @property
-    def empty(self) -> bool:
-        return True
+    def filled(self) -> bool:
+        return bool(self._timer) and self._loop.time() <= self._timer.when()
 
     def _clear(self):
         self._dict.clear()
@@ -53,7 +53,7 @@ class TimedDict(typing.Generic[KT, VT]):
     def insert(self, dict: dict[KT, VT]):
         self._dict.update(dict)
 
-        if not self._timer or self._loop.time() > self._timer.when():
+        if not self.filled:
             self._timer = self._loop.call_later(self.expires, self._clear)
 
     def add_one(self, key: KT, value: VT):

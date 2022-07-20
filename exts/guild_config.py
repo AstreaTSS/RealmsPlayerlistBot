@@ -62,7 +62,7 @@ class GuildConfig(utils.Extension):
             else "N/A"
         )
 
-        if self.bot.realm_name_cache.empty:
+        if not self.bot.realm_name_cache.filled:
             await self._gather_realm_names()
 
         realm_name = utils.na_friendly_str(
