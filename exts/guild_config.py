@@ -11,8 +11,21 @@ import common.clubs_playerlist as clubs_playerlist
 import common.utils as utils
 from common.realms_api import RealmsAPIException
 
+
+# regex that takes in:
+# - https://realms.gg/XXXXXXX
+# - https://open.minecraft.net/pocket/realms/invite/XXXXXXX
+# - minecraft://acceptRealmInvite?inviteID=XXXXXXX
+# - XXXXXXX
+
+# where XXXXXXX is a string that only can have:
+# - the alphabet, lower and upper
+# - numbers
+# - underscores and dashes
 REALMS_LINK_REGEX = re.compile(
-    r"(?:http:|https:\/\/)?(www\.)?realms\.gg\/([a-zA-Z0-9_-]{7,16})|(?:http:|https:\/\/)?open\.minecraft\.net\/pocket\/realms\/invite\/([a-zA-Z0-9_-]{7,16})|(?:minecraft:\/\/)?acceptRealmInvite\?inviteID=([a-zA-Z0-9_-]{7,16})|([a-zA-Z0-9_-]{7,16})"
+    r"(?:http:|https:\/\/)?(www\.)?realms\.gg\/([a-zA-Z0-9_-]{7,16})|(?:http:|https:\/\/)"
+    r"?open\.minecraft\.net\/pocket\/realms\/invite\/([a-zA-Z0-9_-]{7,16})|(?:minecraft:\/\/)"
+    r"?acceptRealmInvite\?inviteID=([a-zA-Z0-9_-]{7,16})|([a-zA-Z0-9_-]{7,16})"
 )
 
 
