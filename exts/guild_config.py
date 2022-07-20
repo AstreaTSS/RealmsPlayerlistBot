@@ -12,7 +12,7 @@ import common.utils as utils
 from common.realms_api import RealmsAPIException
 
 REALMS_LINK_REGEX = re.compile(
-    r"(?:http:|https:\/\/)?(www\.)?realms\.gg\/([a-zA-Z_-]{7,16})|(?:http:|https:\/\/)?open\.minecraft\.net\/pocket\/realms\/invite\/([a-zA-Z_-]{7,16})|(?:minecraft:\/\/)?acceptRealmInvite\?inviteID=([a-zA-Z_-]{7,16})|([a-zA-Z_-]{7,16})"
+    r"(?:http:|https:\/\/)?(www\.)?realms\.gg\/([a-zA-Z0-9_-]{7,16})|(?:http:|https:\/\/)?open\.minecraft\.net\/pocket\/realms\/invite\/([a-zA-Z0-9_-]{7,16})|(?:minecraft:\/\/)?acceptRealmInvite\?inviteID=([a-zA-Z0-9_-]{7,16})|([a-zA-Z0-9_-]{7,16})"
 )
 
 
@@ -94,7 +94,7 @@ class GuildConfig(utils.Extension):
             raise naff.errors.BadArgument("Invalid Realm code!")
 
         try:
-            realm = await ctx.bot.realms.join_realm_from_code(realm_code.group(0))
+            realm = await ctx.bot.realms.join_realm_from_code(realm_code[0])
 
             config.realm_id = str(realm.id)
             config.club_id = str(realm.club_id)
