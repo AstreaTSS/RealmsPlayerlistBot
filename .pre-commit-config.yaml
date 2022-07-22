@@ -13,6 +13,6 @@ repos:
   hooks:
     - id: trailing-whitespace
 ci:
-  autofix_commit_msg: '[chore] auto fixes from pre-commit.com hooks'
+  autofix_commit_msg: 'ci: auto fixes from pre-commit.com hooks'
   autoupdate_branch: 'master'
-  autoupdate_commit_msg: '[chore] pre-commit autoupdate'
+  autoupdate_commit_msg: 'ci: pre-commit autoupdate'
