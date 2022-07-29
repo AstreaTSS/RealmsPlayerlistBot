@@ -11,6 +11,7 @@ from pathlib import Path
 import aiohttp
 import naff
 import redis.asyncio as aioredis
+import sentry_sdk
 
 from .models import GuildConfig
 
@@ -29,27 +30,10 @@ async def sleep_until(dt: datetime.datetime):
 
 
 async def error_handle(bot: "RealmBotBase", error: Exception, ctx: naff.Context = None):
-    # handles errors and sends them to owner
-    if isinstance(error, aiohttp.ServerDisconnectedError):
-        to_send = "Disconnected from server!"
-        split = True
-    else:
-        error_str = error_format(error)
-        logging.getLogger("realms_bot").error(error_str)
+    error_str = error_format(error)
+    logging.getLogger("realms_bot").error(error_str)
 
-        chunks = line_split(error_str)
-        for i in range(len(chunks)):
-            chunks[i][0] = f"```py\n{chunks[i][0]}"
-            chunks[i][len(chunks[i]) - 1] += "\n```"
-
-        final_chunks = ["\n".join(chunk) for chunk in chunks]
-        if ctx and hasattr(ctx, "message") and hasattr(ctx.message, "jump_url"):
-            final_chunks.insert(0, f"Error on: {ctx.message.jump_url}")
-
-        to_send = final_chunks
-        split = False
-
-    await msg_to_owner(bot, to_send, split)
+    sentry_sdk.capture_exception(error)
 
     if ctx:
         if isinstance(ctx, naff.PrefixedContext):

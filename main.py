@@ -8,7 +8,9 @@ from collections import defaultdict
 
 import aiohttp
 import naff
+import sentry_sdk
 import tomli
+from sentry_sdk.integrations.logging import ignore_logger
 from tortoise import Tortoise
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
@@ -54,6 +56,10 @@ handler.setFormatter(
     logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
 )
 logger.addHandler(handler)
+
+
+sentry_sdk.init(dsn=os.environ["SENTRY_DSN"])
+ignore_logger("realms_bot")
 
 
 class RealmsPlayerlistBot(utils.RealmBotBase):
