@@ -33,7 +33,8 @@ async def error_handle(bot: "RealmBotBase", error: Exception, ctx: naff.Context 
     error_str = error_format(error)
     logging.getLogger("realms_bot").error(error_str)
 
-    sentry_sdk.capture_exception(error)
+    if not isinstance(error, aiohttp.ServerDisconnectedError):
+        sentry_sdk.capture_exception(error)
 
     if ctx:
         if isinstance(ctx, naff.PrefixedContext):
