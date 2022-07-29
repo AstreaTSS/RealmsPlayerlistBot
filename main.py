@@ -60,6 +60,7 @@ logger.addHandler(handler)
 
 sentry_sdk.init(dsn=os.environ["SENTRY_DSN"])
 ignore_logger("realms_bot")
+ignore_logger("naff")
 
 
 class RealmsPlayerlistBot(utils.RealmBotBase):
