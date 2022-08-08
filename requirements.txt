@@ -1,5 +1,5 @@
 naff==1.7.1
-humanize==4.2.3
+humanize==4.3.0
 websockets==10.3
 xbox-webapi==2.0.11
 cchardet==2.1.7
