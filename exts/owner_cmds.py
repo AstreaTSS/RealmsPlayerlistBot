@@ -484,13 +484,13 @@ class OwnerCMDs(utils.Extension):
             return await ctx.message.reply(file=result)
 
         if isinstance(result, paginators.Paginator):
-            return await result.send(ctx)
+            return await result.reply(ctx)
 
         if hasattr(result, "__iter__"):
             l_result = list(result)
             if all(isinstance(r, naff.Embed) for r in result):
                 paginator = paginators.Paginator.create_from_embeds(self.bot, *l_result)
-                return await paginator.send(ctx)
+                return await paginator.reply(ctx)
 
         if not isinstance(result, str):
             result = repr(result)
@@ -504,7 +504,7 @@ class OwnerCMDs(utils.Extension):
         paginator = paginators.Paginator.create_from_string(
             self.bot, result, prefix="```py", suffix="```", page_size=4000
         )
-        return await paginator.send(ctx)
+        return await paginator.reply(ctx)
 
     @debug.subcommand()
     async def shell(self, ctx: naff.PrefixedContext, *, cmd: str):
@@ -524,7 +524,7 @@ class OwnerCMDs(utils.Extension):
         paginator = paginators.Paginator.create_from_string(
             self.bot, output_str, prefix="```sh", suffix="```", page_size=4000
         )
-        return await paginator.send(ctx)
+        return await paginator.reply(ctx)
 
     @debug.subcommand()
     async def git(self, ctx: naff.PrefixedContext, *, cmd: str):
