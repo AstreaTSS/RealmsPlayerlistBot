@@ -536,7 +536,7 @@ class OwnerCMDs(utils.Extension):
         """Shortcut for 'debug shell pip'. Invokes the system shell."""
         await self.shell.callback(ctx, cmd=f"pip {cmd}" if cmd else "pip")
 
-    @debug.subcommand()
+    @debug.subcommand(aliases=["sync-interactions", "sync-cmds", "sync_cmds"])
     async def sync_interactions(self, ctx: naff.PrefixedContext):
         """
         Synchronizes all interaction commands with Discord.
