@@ -527,14 +527,14 @@ class OwnerCMDs(utils.Extension):
         return await paginator.reply(ctx)
 
     @debug.subcommand()
-    async def git(self, ctx: naff.PrefixedContext, *, cmd: str):
+    async def git(self, ctx: naff.PrefixedContext, *, cmd: typing.Optional[str] = None):
         """Shortcut for 'debug shell git'. Invokes the system shell."""
-        await self.shell.callback(ctx, cmd=f"git {cmd}")
+        await self.shell.callback(ctx, cmd=f"git {cmd}" if cmd else "git")
 
     @debug.subcommand()
-    async def pip(self, ctx: naff.PrefixedContext, *, cmd: str):
+    async def pip(self, ctx: naff.PrefixedContext, *, cmd: typing.Optional[str] = None):
         """Shortcut for 'debug shell pip'. Invokes the system shell."""
-        await self.shell.callback(ctx, cmd=f"pip {cmd}")
+        await self.shell.callback(ctx, cmd=f"pip {cmd}" if cmd else "pip")
 
     @debug.subcommand()
     async def sync_interactions(self, ctx: naff.PrefixedContext):
