@@ -536,6 +536,28 @@ class OwnerCMDs(utils.Extension):
         """Shortcut for 'debug shell pip'. Invokes the system shell."""
         await self.shell.callback(ctx, cmd=f"pip {cmd}")
 
+    @debug.subcommand()
+    async def sync_interactions(self, ctx: naff.PrefixedContext):
+        """
+        Synchronizes all interaction commands with Discord.
+
+        Should not be used lightly.
+        """
+        # syncing interactions in inherently intensive and
+        # has a high risk of running into the ratelimit
+        # while this is fine for a small bot where it's unlikely
+        # to even matter, for big bots, running into this ratelimit
+        # can cause havoc on other functions
+
+        # we only sync to the global scope to make delete_commands
+        # a lot better in the ratelimiting department, but i
+        # would still advise caution to any self-hosters, and would
+        # only suggest using this when necessary
+        await self.bot.synchronise_interactions(
+            scopes=[naff.const.GlobalScope], delete_commands=True  # type: ignore
+        )
+        await ctx.reply("Done!")
+
 
 def setup(bot):
     importlib.reload(utils)
