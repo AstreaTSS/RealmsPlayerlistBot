@@ -467,7 +467,7 @@ class OwnerCMDs(utils.Extension):
                 e.description = result.content
                 e.set_author(
                     result.author.tag,
-                    icon_url=(result.author.guild_avatar or result.author.avatar).url,
+                    icon_url=result.author.display_avatar.url,
                 )
                 e.add_field(
                     "\u200b", f"[Jump To]({result.jump_url})\n{result.channel.mention}"

@@ -98,20 +98,3 @@ class HelpPaginator(paginators.Paginator):
             "embeds": [page.to_dict()],
             "components": [c.to_dict() for c in self.create_components()],
         }
-
-    async def send(self, ctx: naff.PrefixedContext) -> naff.Message:
-        """
-        Send this paginator.
-        Args:
-            ctx: The context to send this paginator with
-        Returns:
-            The resulting message
-        """
-        self._message = await ctx.reply(**self.to_dict())
-        self._author_id = ctx.author.id
-
-        if self.timeout_interval > 1:
-            self._timeout_task = paginators.Timeout(self)
-            asyncio.create_task(self._timeout_task())
-
-        return self._message

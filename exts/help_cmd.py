@@ -206,7 +206,7 @@ class HelpCMD(utils.Extension):
             return
 
         pag = paginator.HelpPaginator.create_from_embeds(self.bot, *embeds, timeout=60)
-        await pag.send(ctx)
+        await pag.reply(ctx)
 
 
 def setup(bot):
