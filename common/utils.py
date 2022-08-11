@@ -195,13 +195,15 @@ class RealmContext(naff.InteractionContext):
     async def edit(
         self,
         content: typing.Optional[str] = None,
-        embeds: typing.Optional[list["naff.Embed" | dict] | "naff.Embed" | dict] = None,
-        embed: typing.Optional["naff.Embed" | dict] = None,
+        embeds: typing.Optional["list[naff.Embed | dict] | naff.Embed | dict"] = None,
+        embed: typing.Optional["naff.Embed | dict"] = None,
         components: typing.Optional[
-            list[list["naff.BaseComponent" | dict]]
-            | list["naff.BaseComponent" | dict]
-            | "naff.BaseComponent"
-            | dict,
+            typing.Union[
+                typing.List[typing.List[typing.Union["naff.BaseComponent", dict]]],
+                typing.List[typing.Union["naff.BaseComponent", dict]],
+                "naff.BaseComponent",
+                dict,
+            ]
         ] = None,
         allowed_mentions: typing.Optional[
             typing.Union[naff.AllowedMentions, dict]
