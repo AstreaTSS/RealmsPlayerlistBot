@@ -11,7 +11,7 @@ from pathlib import Path
 import aiohttp
 import naff
 import redis.asyncio as aioredis
-import sentry_sdk
+from naff.models.discord.message import process_message_payload
 
 from .models import GuildConfig
 
@@ -191,6 +191,61 @@ class RealmContext(naff.InteractionContext):
         )  # type: ignore
         self.guild_config = config
         return config
+
+    async def edit(
+        self,
+        content: typing.Optional[str] = None,
+        embeds: typing.Optional[list["naff.Embed" | dict] | "naff.Embed" | dict] = None,
+        embed: typing.Optional["naff.Embed" | dict] = None,
+        components: typing.Optional[
+            list[list["naff.BaseComponent" | dict]]
+            | list["naff.BaseComponent" | dict]
+            | "naff.BaseComponent"
+            | dict,
+        ] = None,
+        allowed_mentions: typing.Optional[
+            typing.Union[naff.AllowedMentions, dict]
+        ] = None,
+        attachments: typing.Optional[list[typing.Union[naff.Attachment, dict]]] = None,
+        files: typing.Optional[typing.List[naff.UPLOADABLE_TYPE]] = None,
+        tts: bool = False,
+        flags: typing.Optional[typing.Union[int, naff.MessageFlags]] = None,
+    ):
+        """
+        Edits the message.
+
+        Args:
+            content: Message text content.
+            embeds: Embedded rich content (up to 6000 characters).
+            embed: Embedded rich content (up to 6000 characters).
+            components: The components to include with the message.
+            allowed_mentions: Allowed mentions for the message.
+            attachments: The attachments to keep, only used when editing message.
+            files: Files to send, the path, bytes or File() instance, defaults to None. You may have up to 10 files.
+            tts: Should this message use Text To Speech.
+            flags: Message flags to apply.
+
+        Returns:
+            New message object with edits applied
+        """
+        message_payload = process_message_payload(
+            content=content,
+            embeds=embeds or embed,
+            components=components,
+            allowed_mentions=allowed_mentions,
+            attachments=attachments,
+            tts=tts,
+            flags=flags,
+        )
+
+        if self.message.flags == naff.MessageFlags.EPHEMERAL:
+            raise naff.errors.EphemeralEditException
+
+        message_data = await self._client.http.edit_interaction_message(
+            message_payload, self._client.app.id, self._token, files=files
+        )
+        if message_data:
+            return self._client.cache.place_message_data(message_data)
 
 
 @naff.utils.define
