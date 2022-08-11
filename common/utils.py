@@ -11,6 +11,7 @@ from pathlib import Path
 import aiohttp
 import naff
 import redis.asyncio as aioredis
+import sentry_sdk
 from naff.models.discord.message import process_message_payload
 
 from .models import GuildConfig
@@ -30,8 +31,8 @@ async def sleep_until(dt: datetime.datetime):
 
 
 async def error_handle(bot: "RealmBotBase", error: Exception, ctx: naff.Context = None):
-    error_str = error_format(error)
-    logging.getLogger("realms_bot").error(error_str)
+    if not isinstance(error, aiohttp.ServerDisconnectedError):
+        sentry_sdk.capture_exception(error)  # logging doesn't work for some reason?
 
     if ctx:
         if isinstance(ctx, naff.PrefixedContext):
