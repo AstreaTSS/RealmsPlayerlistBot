@@ -241,7 +241,7 @@ class RealmContext(naff.InteractionContext):
             flags=flags,
         )
 
-        if self.message.flags == naff.MessageFlags.EPHEMERAL:
+        if self.ephemeral:
             raise naff.errors.EphemeralEditException
 
         message_data = await self._client.http.edit_interaction_message(
