@@ -84,6 +84,10 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         self.profile = ProfileProvider(xbl_client)
         self.club = ClubProvider(xbl_client)
 
+        profile = await xbl_client.profile.get_profile_by_xuid(str(xbl_client.xuid))
+        user = profile.profile_users[0]
+        self.own_gamertag = next(s.value for s in user.settings if s.id == "Gamertag")
+
         self.realms = RealmsAPI(aiohttp.ClientSession())
 
         headers = {

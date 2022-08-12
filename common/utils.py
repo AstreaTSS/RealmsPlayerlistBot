@@ -301,6 +301,7 @@ if typing.TYPE_CHECKING:
         fully_ready: asyncio.Event
         online_cache: defaultdict[int, set[str]]
         realm_name_cache: TimedDict[typing.Optional[str], str]
+        own_gamertag: str
 
 else:
 

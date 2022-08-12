@@ -68,8 +68,12 @@ class GuildConfig(utils.Extension):
         realm_name = utils.na_friendly_str(
             self.bot.realm_name_cache.get(config.realm_id)
         )
+        realm_not_found = False
         if realm_name != "N/A":
             realm_name = f"`{realm_name}`"
+        elif config.realm_id:
+            realm_not_found = True
+            realm_name = "Not Found"
 
         autorunner = utils.toggle_friendly_str(
             bool(config.club_id and config.realm_id and config.playerlist_chan)
@@ -82,7 +86,27 @@ class GuildConfig(utils.Extension):
             f" Info:\nRealm ID: {utils.na_friendly_str(config.realm_id)}\nClub ID:"
             f" {utils.na_friendly_str(config.club_id)}"
         )
-        await ctx.send(embed=embed)
+
+        embeds: list[naff.Embed] = []
+
+        if realm_not_found:
+            warning_embed = naff.Embed(
+                title="Warning!",
+                description=(
+                    "There is a Realm ID associated with this Realm, but I could not"
+                    " find the Realm itself. This may just be a problem that resolves"
+                    " itself, but check that you haven't switched Realms or"
+                    f" kicked the account `{self.bot.own_gamertag}`. If you did, try"
+                    " relinking the Realm via `/config link-realm`.\nFor more"
+                    " information, please check"
+                    " https://github.com/Astrea49/RealmsPlayerlistBot/wiki/FAQ#help-"
+                    "the-playerlistonline-comamnd-isnt-working."
+                ),
+            )
+            embeds.append(warning_embed)
+        embeds.append(embed)
+
+        await ctx.send(embeds=embeds)
 
     @config.subcommand(
         sub_cmd_name="link-realm",
