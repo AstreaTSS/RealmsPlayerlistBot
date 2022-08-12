@@ -151,8 +151,11 @@ class GuildConfig(utils.Extension):
     async def set_playerlist_channel(
         self,
         ctx: utils.RealmContext,
-        channel: typing.Annotated[naff.GuildText, cclasses.ValidChannelConverter],
+        channel: cclasses.ValidChannelConverter,
     ):
+        if typing.TYPE_CHECKING:
+            assert isinstance(channel, naff.GuildText)
+
         config = await ctx.fetch_config()
         config.playerlist_chan = channel.id
         await config.save()
