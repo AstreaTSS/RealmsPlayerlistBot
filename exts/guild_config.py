@@ -183,6 +183,7 @@ class GuildConfig(utils.Extension):
         config = await ctx.fetch_config()
         config.playerlist_chan = channel.id
         await config.save()
+        await self.bot.redis.delete(f"invalid-playerlist-{config.guild_id}")
 
         await ctx.send(f"Set the playerlist channel to {channel.mention}.")
 
@@ -197,6 +198,7 @@ class GuildConfig(utils.Extension):
         config = await ctx.fetch_config()
         config.playerlist_chan = None
         await config.save()
+        await self.bot.redis.delete(f"invalid-playerlist-{config.guild_id}")
 
         await ctx.send("Unset the playerlist channel.")
 

@@ -1,4 +1,5 @@
 import asyncio
+import collections
 import contextlib
 import datetime
 import importlib
@@ -25,6 +26,19 @@ class AutoRunPlayerlist(utils.Extension):
         self.playerlist_task.cancel()
         self.playerlist_realms_delete.stop()
         super().drop()
+
+    async def _eventually_invalidate(self, guild_config: models.GuildConfig):
+        # the idea here is to invalidate autorunners that simply can't be run
+        # there's a bit of generousity here, as the code gives a total of 3 hours
+        # before actually doing it
+        num_times = await self.bot.redis.incr(
+            f"invalid-playerlist-{guild_config.guild_id}"
+        )
+
+        if num_times > 3:
+            guild_config.playerlist_chan = None
+            await guild_config.save()
+            await self.bot.redis.delete(f"invalid-playerlist-{guild_config.guild_id}")
 
     async def _start_playerlist(self):
         await self.bot.fully_ready.wait()
@@ -90,6 +104,7 @@ class AutoRunPlayerlist(utils.Extension):
         try:
             chan = await self.bot.cache.fetch_channel(guild_config.playerlist_chan)  # type: ignore
         except naff.errors.HTTPException:
+            await self._eventually_invalidate(guild_config)
             return
 
         if not isinstance(chan, naff.GuildText):
@@ -105,6 +120,8 @@ class AutoRunPlayerlist(utils.Extension):
                     " run it automatically. Please make sure the bot has the ability to"
                     " read message history for this channel."
                 )
+
+            await self._eventually_invalidate(guild_config)
             return
 
         # make a fake context to make things easier
