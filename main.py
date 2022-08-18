@@ -57,6 +57,10 @@ handler.setFormatter(
 )
 logger.addHandler(handler)
 
+naff_logger = logging.getLogger("naff")
+naff_logger.setLevel(logging.INFO)
+naff_logger.addHandler(handler)
+
 
 sentry_sdk.init(dsn=os.environ["SENTRY_DSN"])
 ignore_logger("naff")
