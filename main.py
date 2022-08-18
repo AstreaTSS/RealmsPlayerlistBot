@@ -58,7 +58,7 @@ handler.setFormatter(
 logger.addHandler(handler)
 
 naff_logger = logging.getLogger("naff")
-naff_logger.setLevel(logging.INFO)
+naff_logger.setLevel(logging.DEBUG)
 naff_logger.addHandler(handler)
 
 
