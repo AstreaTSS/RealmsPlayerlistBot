@@ -149,6 +149,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
 
 intents = naff.Intents.new(
+    default=False,
     guilds=True,
     messages=True,
 )
