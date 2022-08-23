@@ -75,9 +75,9 @@ class AutoRunPlayerlist(utils.Extension):
         )
         to_run = []
 
-        async for guild_config in models.GuildConfig.all().prefetch_related(
-            "premium_code"
-        ):
+        async for guild_config in models.GuildConfig.filter(
+            guild_id__in=list(self.bot.user._guild_ids)
+        ).prefetch_related("premium_code"):
             if (
                 guild_config.club_id
                 and guild_config.realm_id
