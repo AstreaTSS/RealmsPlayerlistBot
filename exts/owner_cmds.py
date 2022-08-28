@@ -28,6 +28,7 @@ class OwnerCMDs(utils.Extension):
         self.bot: utils.RealmBotBase = bot
         self.name = "Owner"
 
+        self.set_extension_error(self.ext_error)
         self.add_ext_check(naff.checks.is_owner())
 
     def _ascii_name(self, name):
@@ -556,7 +557,7 @@ class OwnerCMDs(utils.Extension):
         )
         await ctx.reply("Done!")
 
-    async def extension_error(self, error: Exception, ctx: naff.Context):
+    async def ext_error(self, error: Exception, ctx: naff.Context):
         error_str = utils.error_format(error)
         chunks = utils.line_split(error_str)
 
