@@ -443,11 +443,9 @@ class OwnerCMDs(utils.Extension):
         try:
             with contextlib.redirect_stdout(stdout):
                 ret = await func()  # noqa
-        except Exception:
+        except Exception as e:
             await ctx.message.add_reaction("❌")
-            return await ctx.message.reply(
-                f"```py\n{stdout.getvalue()}{traceback.format_exc()}\n```"
-            )
+            raise
         else:
             return await self.handle_exec_result(ctx, ret, stdout.getvalue())
 
@@ -557,6 +555,28 @@ class OwnerCMDs(utils.Extension):
             scopes=[naff.const.GlobalScope], delete_commands=True  # type: ignore
         )
         await ctx.reply("Done!")
+
+    async def extension_error(self, error: Exception, ctx: naff.Context):
+        error_str = utils.error_format(error)
+        chunks = utils.line_split(error_str)
+
+        for i in range(len(chunks)):
+            chunks[i][0] = f"```py\n{chunks[i][0]}"
+            chunks[i][len(chunks[i]) - 1] += "\n```"
+
+        final_chunks = ["\n".join(chunk) for chunk in chunks]
+        if ctx and hasattr(ctx, "message") and hasattr(ctx.message, "jump_url"):
+            final_chunks.insert(0, f"Error on: {ctx.message.jump_url}")
+
+        to_send = final_chunks
+        split = False
+
+        await utils.msg_to_owner(self.bot, to_send, split)
+
+        if isinstance(ctx, naff.PrefixedContext):
+            await ctx.reply("An error occured. Please check your DMs.")
+        elif hasattr(ctx, "send"):
+            await ctx.send("An error occured. Please check your DMs.")
 
 
 def setup(bot):

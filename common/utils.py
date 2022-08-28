@@ -49,7 +49,7 @@ async def error_handle(bot: "RealmBotBase", error: Exception, ctx: naff.Context 
 
 async def msg_to_owner(bot: "RealmBotBase", content, split=True):
     # sends a message to the owner
-    string = str(content)
+    string = str(content) if split else content
 
     str_chunks = string_split(string) if split else content
     for chunk in str_chunks:
