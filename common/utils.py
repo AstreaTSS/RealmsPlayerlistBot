@@ -1,7 +1,6 @@
 import asyncio
 import collections
 import datetime
-import logging
 import os
 import traceback
 import typing
@@ -32,7 +31,17 @@ async def sleep_until(dt: datetime.datetime):
 
 async def error_handle(bot: "RealmBotBase", error: Exception, ctx: naff.Context = None):
     if not isinstance(error, aiohttp.ServerDisconnectedError):
-        sentry_sdk.capture_exception(error)  # logging doesn't work for some reason?
+        with sentry_sdk.configure_scope() as scope:
+            if ctx:
+                scope.set_context(
+                    type(ctx).__name__,
+                    {
+                        "args": ctx.args,
+                        "kwargs": ctx.kwargs,
+                        "message": ctx.message,
+                    },
+                )
+            sentry_sdk.capture_exception(error)
 
     if ctx:
         if isinstance(ctx, naff.PrefixedContext):

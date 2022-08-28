@@ -10,7 +10,7 @@ import aiohttp
 import naff
 import sentry_sdk
 import tomli
-from sentry_sdk.integrations.logging import ignore_logger
+from naff.ext.sentry import default_sentry_filter
 from tortoise import Tortoise
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
@@ -62,8 +62,7 @@ naff_logger.setLevel(logging.INFO)
 naff_logger.addHandler(handler)
 
 
-sentry_sdk.init(dsn=os.environ["SENTRY_DSN"])
-ignore_logger("naff")
+sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], before_send=default_sentry_filter)
 
 
 class RealmsPlayerlistBot(utils.RealmBotBase):

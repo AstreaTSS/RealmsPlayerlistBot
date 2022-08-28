@@ -112,9 +112,6 @@ class AutoRunPlayerlist(utils.Extension):
             if isinstance(message, Exception):
                 await utils.error_handle(self.bot, message)
 
-    def error_handle(self, error: Exception):
-        asyncio.create_task(utils.error_handle(self.bot, error))
-
     async def auto_run_playerlist(
         self,
         list_cmd: naff.InteractionCommand,
