@@ -148,7 +148,18 @@ class GuildConfig(utils.Extension):
             )
 
             await config.save()
-            await ctx.send(f"Linked this server to the Realm: `{realm.name}`.")
+
+            confirm_embed = naff.Embed(
+                title="Linked!",
+                description=(
+                    f"Linked this server to the Realm: `{realm.name}`\n\n**IMPORTANT"
+                    " NOTE:** There will now be an account called"
+                    f" `{self.bot.own_gamertag}` on your Realm. *Do not ban or kick"
+                    " them.* The bot will not work with your Realm if you do so.."
+                ),
+                color=naff.RoleColors.GREEN,
+            )
+            await ctx.send(embeds=confirm_embed)
         except RealmsAPIException as e:
             if (
                 isinstance(e.error, aiohttp.ClientResponseError)
