@@ -125,7 +125,7 @@ class GeneralCMDS(utils.Extension):
         await ctx.send(embed=about_embed)
 
     @naff.slash_command(
-        "gamertag_from_xuid",
+        "gamertag-from-xuid",
         description="Gets the gamertag for a specified XUID.",
     )
     @naff.slash_option(
