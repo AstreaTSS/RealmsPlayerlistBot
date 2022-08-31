@@ -4,13 +4,13 @@ import datetime
 import importlib
 import logging
 import os
+import typing
 from collections import defaultdict
 
 import aiohttp
 import naff
 import sentry_sdk
 import tomli
-from naff.ext.sentry import default_sentry_filter
 from tortoise import Tortoise
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
@@ -60,6 +60,28 @@ logger.addHandler(handler)
 naff_logger = logging.getLogger("naff")
 naff_logger.setLevel(logging.INFO)
 naff_logger.addHandler(handler)
+
+
+def default_sentry_filter(
+    event: dict[str, typing.Any], hint: dict[str, typing.Any]
+) -> typing.Optional[dict[str, typing.Any]]:
+    if "log_record" in hint:
+        record: logging.LogRecord = hint["log_record"]
+        if "naff" in record.name:
+            #  There are some logging messages that are not worth sending to sentry.
+            if ": 403" in record.message:
+                return None
+            if ": 404" in record.message:
+                return None
+            if record.message.startswith("Ignoring exception in "):
+                return None
+
+    if "exc_info" in hint:
+        exc_type, exc_value, tb = hint["exc_info"]
+        if isinstance(exc_value, KeyboardInterrupt):
+            #  We don't need to report a ctrl+c
+            return None
+    return event
 
 
 sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], before_send=default_sentry_filter)
