@@ -24,22 +24,7 @@ def extract_from_list(
                 score_cutoff=score_cutoff,
             ):
                 combined_entries = [e[0] for e in combined_list]
-
-                if (
-                    processor == fuzz.WRatio
-                ):  # WRatio isn't the best, so we add in extra filters to make sure everythings turns out ok
-                    new_members = [
-                        e
-                        for e in fuzzy_list
-                        if e[0] not in combined_entries
-                        and (len(processor(e[0])) >= 2 or len(argument) <= 2)
-                    ]
-
-                else:
-                    new_members = [
-                        e for e in fuzzy_list if e[0] not in combined_entries
-                    ]
-
+                new_members = [e for e in fuzzy_list if e[0] not in combined_entries]
                 combined_list.extend(new_members)
 
     return combined_list
