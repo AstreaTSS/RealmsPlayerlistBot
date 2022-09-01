@@ -1,3 +1,4 @@
+import rapidfuzz
 from rapidfuzz import fuzz
 from rapidfuzz import process
 
@@ -6,12 +7,12 @@ def extract_from_list(
     argument,
     list_of_items,
     processors,
-    score_cutoff=80,
+    score_cutoff=0.8,
     scorers=None,
 ):
     """Uses multiple scorers and processors for a good mix of accuracy and fuzzy-ness"""
     if scorers is None:
-        scorers = [fuzz.partial_token_ratio]
+        scorers = [rapidfuzz.distance.JaroWinkler.similarity]
     combined_list = []
 
     for scorer in scorers:

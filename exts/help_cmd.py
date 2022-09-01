@@ -56,23 +56,29 @@ class HelpCMD(utils.Extension):
 
     async def extract_commands(
         self, ctx: naff.AutocompleteContext, argument: typing.Optional[str]
-    ):
+    ) -> tuple[str, ...]:
         cmds = help_tools.get_mini_commands_for_scope(self.bot, int(ctx.guild_id))
 
         runnable_cmds = [v for v in cmds.values() if await self._custom_can_run(ctx, v)]
-        valid_exts = list({c.extension.name for c in runnable_cmds if c.extension})
-        combined = sorted(valid_exts) + sorted([c.resolved_name for c in runnable_cmds])
+        valid_exts = {c.extension.name for c in runnable_cmds if c.extension}
+        sorted_exts = {e.lower(): e for e in sorted(valid_exts)}
+        resolved_names = {
+            c.resolved_name.lower(): c.resolved_name
+            for c in sorted(runnable_cmds, key=lambda c: c.resolved_name)
+        }
+
+        combined = sorted_exts | resolved_names
 
         if not argument:
-            return combined[:25]
+            return tuple(combined.values())[:25]
 
         queried_cmds: list[list[str]] = fuzzy.extract_from_list(
             argument=argument.lower(),
-            list_of_items=tuple(combined),
+            list_of_items=tuple(combined.keys()),
             processors=[lambda x: x.lower()],
-            score_cutoff=60,
+            score_cutoff=0.7,
         )
-        return [c[0] for c in queried_cmds]
+        return tuple(combined[c[0]] for c in queried_cmds)[:25]
 
     async def get_multi_command_embeds(
         self,
