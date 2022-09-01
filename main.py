@@ -211,6 +211,7 @@ bot.init_load = True
 bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
 bot.online_cache = defaultdict(set)
 bot.slash_perms_cache = defaultdict(dict)
+bot.mini_commands_per_scope = {}
 
 
 async def start():

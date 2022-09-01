@@ -328,7 +328,7 @@ if typing.TYPE_CHECKING:
     from .custom_providers import ProfileProvider, ClubProvider
     from .realms_api import RealmsAPI
     from .classes import TimedDict
-    from .help_tools import PermissionsResolver
+    from .help_tools import PermissionsResolver, MiniCommand
 
     class RealmBotBase(naff.Client):
         init_load: bool
@@ -345,6 +345,7 @@ if typing.TYPE_CHECKING:
         realm_name_cache: TimedDict[typing.Optional[str], str]
         own_gamertag: str
         slash_perms_cache: defaultdict[int, dict[int, PermissionsResolver]]
+        mini_commands_per_scope: dict[int, dict[str, MiniCommand]]
 
 else:
 

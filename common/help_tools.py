@@ -427,7 +427,14 @@ def get_commands_for_scope_by_ids(bot: utils.RealmBotBase, guild_id: int):
     }
 
 
-def get_mini_commands_for_scope(bot: utils.RealmBotBase, guild_id: int):
+def get_mini_commands_for_scope(
+    bot: utils.RealmBotBase, guild_id: int
+) -> dict[str, MiniCommand]:
+    if (
+        mini_cmds := bot.mini_commands_per_scope.get(guild_id, naff.MISSING)
+    ) is not naff.MISSING:
+        return mini_cmds  # type: ignore
+
     # sourcery skip: dict-comprehension
     scope_cmds = bot.interactions.get(
         naff.const.GLOBAL_SCOPE, {}
@@ -471,4 +478,5 @@ def get_mini_commands_for_scope(bot: utils.RealmBotBase, guild_id: int):
         group_mini_cmd.add_subcommand(mini_cmd)
         commands_dict[cmd.resolved_name] = mini_cmd
 
+    bot.mini_commands_per_scope[guild_id] = commands_dict
     return commands_dict

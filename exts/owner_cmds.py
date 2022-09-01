@@ -1,4 +1,5 @@
 import asyncio
+import collections
 import contextlib
 import importlib
 import io
@@ -383,18 +384,24 @@ class OwnerCMDs(utils.Extension):
     async def reload(self, ctx: naff.PrefixedContext, *, module: str):
         """Regrows an extension."""
         self.bot.reload_extension(module)
+        self.bot.slash_perms_cache = collections.defaultdict(dict)
+        self.bot.mini_commands_per_scope = {}
         await ctx.reply(f"Reloaded `{module}`.")
 
     @debug.subcommand()
     async def load(self, ctx: naff.PrefixedContext, *, module: str):
         """Grows a scale."""
         self.bot.load_extension(module)
+        self.bot.slash_perms_cache = collections.defaultdict(dict)
+        self.bot.mini_commands_per_scope = {}
         await ctx.reply(f"Loaded `{module}`.")
 
     @debug.subcommand()
     async def unload(self, ctx: naff.PrefixedContext, *, module: str) -> None:
         """Sheds a scale."""
         self.bot.unload_extension(module)
+        self.bot.slash_perms_cache = collections.defaultdict(dict)
+        self.bot.mini_commands_per_scope = {}
         await ctx.reply(f"Unloaded `{module}`.")
 
     @naff.prefixed_command(aliases=["reloadallextensions"])
@@ -553,6 +560,9 @@ class OwnerCMDs(utils.Extension):
         # would still advise caution to any self-hosters, and would
         # only suggest using this when necessary
         await self.bot.synchronise_interactions(scopes=[scope], delete_commands=True)
+        self.bot.slash_perms_cache = collections.defaultdict(dict)
+        self.bot.mini_commands_per_scope = {}
+
         await ctx.reply("Done!")
 
     async def ext_error(self, error: Exception, ctx: naff.Context):
