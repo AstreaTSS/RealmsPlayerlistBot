@@ -14,4 +14,5 @@ tomli==2.0.1
 orjson==3.8.0
 python-dateutil==2.8.2
 sentry-sdk==1.9.5
+rapidfuzz==2.6.0
 uvloop==0.16.0; platform_system == "Linux"

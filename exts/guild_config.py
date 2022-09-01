@@ -116,14 +116,14 @@ class GuildConfig(utils.Extension):
         ),
     )
     @naff.slash_option(
-        "realm-code",
+        "realm_code",
         "The Realm code or link.",
         naff.OptionTypes.STRING,
         required=True,
     )
     async def link_realm(self, ctx: utils.RealmContext, **kwargs):
         config = await ctx.fetch_config()
-        _realm_code: str = kwargs["realm-code"]
+        _realm_code: str = kwargs["realm_code"]
 
         realm_code_matches = REALMS_LINK_REGEX.match(_realm_code)
 

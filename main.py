@@ -8,6 +8,7 @@ import typing
 from collections import defaultdict
 
 import aiohttp
+import discord_typings
 import naff
 import sentry_sdk
 import tomli
@@ -16,6 +17,7 @@ from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
 
+import common.help_tools as help_tools
 import common.models as models
 import common.utils as utils
 from common.classes import SemaphoreRedis
@@ -160,6 +162,24 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         )
         await self.change_presence(activity=activity)
 
+    @naff.listen("raw_application_command_permissions_update")
+    async def i_like_my_events_very_raw(self, event: naff.events.RawGatewayEvent):
+        data: discord_typings.GuildApplicationCommandPermissionData = event.data  # type: ignore
+
+        guild_id = int(data["guild_id"])
+
+        if not self.slash_perms_cache[guild_id]:
+            await help_tools.process_bulk_slash_perms(self, guild_id)
+            return
+
+        cmds = help_tools.get_commands_for_scope_by_ids(self, guild_id)
+        cmd = cmds[int(data["id"])]
+        self.slash_perms_cache[guild_id][
+            int(data["id"])
+        ] = help_tools.PermissionsResolver(
+            cmd.default_member_permissions, guild_id, data["permissions"]  # type: ignore
+        )
+
     async def on_error(self, source: str, error: Exception, *args, **kwargs) -> None:
         await utils.error_handle(self, error)
 
@@ -189,6 +209,7 @@ bot = RealmsPlayerlistBot(
 bot.init_load = True
 bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
 bot.online_cache = defaultdict(set)
+bot.slash_perms_cache = defaultdict(dict)
 
 
 async def start():

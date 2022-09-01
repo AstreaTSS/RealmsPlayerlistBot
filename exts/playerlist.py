@@ -55,6 +55,7 @@ class RealmPlayersContainer:
 class Playerlist(utils.Extension):
     def __init__(self, bot):
         self.bot: utils.RealmBotBase = bot
+        self.name = "Playerlist Related"
         self.sem = asyncio.Semaphore(
             3
         )  # prevents bot from overloading xbox api, hopefully
@@ -239,14 +240,16 @@ class Playerlist(utils.Extension):
         hours_ago: str = "12",
         **kwargs,
     ):
-        """Checks and makes a playerlist, a log of players who have joined and left.
+        """
+        Checks and makes a playerlist, a log of players who have joined and left.
         By default, the command version goes back 12 hours.
-        If you wish for it to go back more, simply do `!?playerlist <# hours ago>`.
+        If you wish for it to go back more, simply do `/playerlist hours_ago: <# hours ago>`.
         The number provided should be in between 1-24 hours.
         The autorun version only goes back 2 hours.
+
         Has a cooldown of 4 minutes due to how intensive this command can be.
         May take a while to run at first.
-        Requires Manage Server permissions."""
+        """
 
         init_mes = not kwargs.get("no_init_mes", False)
 
@@ -358,7 +361,10 @@ class Playerlist(utils.Extension):
     @naff.cooldown(naff.Buckets.GUILD, 1, 10)
     @naff.check(pl_utils.can_run_playerlist)  # type: ignore
     async def online(self, ctx: utils.RealmContext):
-        """Allows you to see if anyone is online on the Realm right now."""
+        """
+        Allows you to see if anyone is online on the Realm right now.
+        Has a cooldown of 10 seconds.
+        """
         # uses much of the same code as playerlist
 
         guild_config = await ctx.fetch_config()

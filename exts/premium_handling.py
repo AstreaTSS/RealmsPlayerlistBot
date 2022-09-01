@@ -11,6 +11,7 @@ import common.utils as utils
 class PremiumHandling(naff.Extension):
     def __init__(self, bot):
         self.bot: utils.RealmBotBase = bot
+        self.name = "Premium Handling"
 
     @naff.slash_command(
         name="generate-code",
