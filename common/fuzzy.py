@@ -11,7 +11,7 @@ def extract_from_list(
 ):
     """Uses multiple scorers and processors for a good mix of accuracy and fuzzy-ness"""
     if scorers is None:
-        scorers = [fuzz.WRatio]
+        scorers = [fuzz.partial_token_ratio]
     combined_list = []
 
     for scorer in scorers:
