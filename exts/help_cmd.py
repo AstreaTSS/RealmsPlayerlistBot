@@ -205,7 +205,7 @@ class HelpCMD(utils.Extension):
             )
             if not ext:
                 raise naff.errors.BadArgument(
-                    f"No valid command called `{query}`` found."
+                    f"No valid command called `{query}` found."
                 )
 
             embeds = await self.get_ext_cmd_embeds(ctx, cmds, ext)
