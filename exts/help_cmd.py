@@ -194,7 +194,7 @@ class HelpCMD(utils.Extension):
 
         if not query:
             embeds = await self.get_all_cmd_embeds(ctx, cmds, self.bot)
-        elif (command := cmds.get(query.lower())) and self._custom_can_run(
+        elif (command := cmds.get(query.lower())) and await self._custom_can_run(
             ctx, command
         ):
             embeds = await self.get_command_embeds(ctx, command)
