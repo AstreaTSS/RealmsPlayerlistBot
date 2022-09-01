@@ -228,7 +228,7 @@ class HelpCMD(utils.Extension):
     @help_cmd.autocomplete("query")
     async def query_autocomplete(
         self,
-        ctx: naff.AutocompleteContext,
+        ctx: utils.RealmAutocompleteContext,
         query: typing.Optional[str] = None,
         **kwargs,
     ):

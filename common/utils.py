@@ -292,6 +292,38 @@ class RealmPrefixedContext(naff.PrefixedContext):
         return config
 
 
+@naff.utils.define
+class RealmAutocompleteContext(naff.AutocompleteContext):
+    guild_config: typing.Optional[GuildConfig] = naff.utils.field(default=None)
+
+    @property
+    def guild(self) -> naff.Guild:
+        return self._client.cache.get_guild(self.guild_id)  # type: ignore
+
+    @property
+    def bot(self) -> "RealmBotBase":
+        """A reference to the bot instance."""
+        return self._client  # type: ignore
+
+    async def fetch_config(self) -> GuildConfig:
+        """
+        Gets the configuration for the context's guild.
+
+        Returns:
+            GuildConfig: The guild config.
+        """
+        if self.guild_config:
+            return self.guild_config
+
+        config: GuildConfig = await GuildConfig.get(
+            guild_id=self.guild.id
+        ).prefetch_related(
+            "premium_code"
+        )  # type: ignore
+        self.guild_config = config
+        return config
+
+
 if typing.TYPE_CHECKING:
     from .custom_providers import ProfileProvider, ClubProvider
     from .realms_api import RealmsAPI

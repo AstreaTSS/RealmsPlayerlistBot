@@ -201,6 +201,7 @@ bot = RealmsPlayerlistBot(
     allowed_mentions=mentions,
     intents=intents,
     interaction_context=utils.RealmContext,
+    autocomplete_context=utils.RealmAutocompleteContext,
     prefixed_context=utils.RealmPrefixedContext,
     auto_defer=naff.AutoDefer(enabled=True, time_until_defer=0),
     message_cache=naff.utils.TTLCache(10, 5, 5),  # we do not need messages
