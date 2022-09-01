@@ -326,6 +326,24 @@ def _generate_signature(cmd: naff.SlashCommand):
     return " ".join(signatures)
 
 
+def _generate_bottom_text(cmd: naff.SlashCommand):
+    if not cmd.options:
+        return ""
+
+    standardized_options = (
+        (naff.SlashCommandOption(**o) if isinstance(o, dict) else o)
+        for o in cmd.options
+    )
+    str_builder = ["__Options:__"]
+    str_builder.extend(
+        f"`{str(option.name)}` {'' if option.required else '(optional)'} -"
+        f" {str(option.description)}"
+        for option in standardized_options
+    )
+
+    return "\n".join(str_builder)
+
+
 @attrs.define()
 class MiniCommand:
     name: str = attrs.field()
@@ -370,6 +388,9 @@ class MiniCommand:
 
         if not desc:
             desc = str(getattr(cmd, f"{prefix}description"))
+
+        if use_docstring:
+            desc = desc + "\n\n" + _generate_bottom_text(cmd)
 
         return cls(
             name=name,
