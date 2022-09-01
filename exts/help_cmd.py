@@ -61,7 +61,7 @@ class HelpCMD(utils.Extension):
 
         runnable_cmds = [v for v in cmds.values() if await self._custom_can_run(ctx, v)]
         valid_exts = list({c.extension.name for c in runnable_cmds if c.extension})
-        combined = valid_exts + [c.resolved_name for c in runnable_cmds]
+        combined = sorted(valid_exts) + sorted([c.resolved_name for c in runnable_cmds])
 
         if not argument:
             return combined[:25]
