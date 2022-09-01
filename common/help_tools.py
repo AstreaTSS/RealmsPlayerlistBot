@@ -171,12 +171,12 @@ class PermissionsResolver:
 
     disabled_for_all_roles: bool = attrs.field(default=False)
     disabled_for_all_channels: bool = attrs.field(default=False)
-    allowed_channels: list[int] = attrs.field(factory=list)
-    denied_channels: list[int] = attrs.field(factory=list)
-    allowed_roles: list[int] = attrs.field(factory=list)
-    denied_roles: list[int] = attrs.field(factory=list)
-    allowed_users: list[int] = attrs.field(factory=list)
-    denied_users: list[int] = attrs.field(factory=list)
+    allowed_channels: set[int] = attrs.field(factory=set)
+    denied_channels: set[int] = attrs.field(factory=set)
+    allowed_roles: set[int] = attrs.field(factory=set)
+    denied_roles: set[int] = attrs.field(factory=set)
+    allowed_users: set[int] = attrs.field(factory=set)
+    denied_users: set[int] = attrs.field(factory=set)
 
     def __init__(
         self,
@@ -207,17 +207,17 @@ class PermissionsResolver:
 
             match permission["type"]:
                 case 1:  # role
-                    self.allowed_roles.append(object_id) if permission[
+                    self.allowed_roles.add(object_id) if permission[
                         "permission"
-                    ] else self.denied_roles.append(object_id)
+                    ] else self.denied_roles.add(object_id)
                 case 2:  # user
-                    self.allowed_users.append(object_id) if permission[
+                    self.allowed_users.add(object_id) if permission[
                         "permission"
-                    ] else self.denied_users.append(object_id)
+                    ] else self.denied_users.add(object_id)
                 case 3:  # channel
-                    self.allowed_channels.append(object_id) if permission[
+                    self.allowed_channels.add(object_id) if permission[
                         "permission"
-                    ] else self.denied_channels.append(object_id)
+                    ] else self.denied_channels.add(object_id)
 
     def has_permission(
         self,
@@ -246,12 +246,10 @@ class PermissionsResolver:
         elif int(author.id) in self.denied_users:
             return False
 
-        author_roles = author.roles
+        author_roles = author._role_ids
         if self.disabled_for_all_roles:
             # it does not matter if a role above another role re-disables it
-            valid_role = any(
-                int(role.id) in self.allowed_roles for role in author_roles
-            )
+            valid_role = any(int(role) in self.allowed_roles for role in author_roles)
         else:
             # so here's where discord becomes weird
             # if this is enabled for any role explictly, it really does not matter
@@ -260,8 +258,8 @@ class PermissionsResolver:
             # however, if they are only disabled and never enabled for a command,
             # then its disabled for real
             valid_role = any(
-                int(role.id) in self.allowed_roles for role in author_roles
-            ) or all(int(role.id) not in self.denied_roles for role in author_roles)
+                int(role) in self.allowed_roles for role in author_roles
+            ) or all(int(role) not in self.denied_roles for role in author_roles)
 
         if not valid_role:
             return False
