@@ -12,7 +12,7 @@ class HelpCMD(utils.Extension):
     """The cog that handles the help command."""
 
     def __init__(self, bot):
-        self.name = "Help"
+        self.name = "Help Category"
         self.bot: utils.RealmBotBase = bot
 
     async def _check_wrapper(self, ctx: naff.Context, check: typing.Callable) -> bool:
@@ -61,7 +61,7 @@ class HelpCMD(utils.Extension):
 
         runnable_cmds = [v for v in cmds.values() if await self._custom_can_run(ctx, v)]
         valid_exts = list({c.extension.name for c in runnable_cmds if c.extension})
-        combined = [c.resolved_name for c in runnable_cmds] + valid_exts
+        combined = valid_exts + [c.resolved_name for c in runnable_cmds]
 
         if not argument:
             return combined[:25]
