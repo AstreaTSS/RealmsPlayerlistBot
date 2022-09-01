@@ -147,11 +147,16 @@ class GeneralCMDS(utils.Extension):
         way of getting the gamertag, provided the XUID provided is correct in the first place.
         """
 
-        str_xuid = xuid
+        try:
+            if len(xuid) > 64:
+                raise ValueError()
+            valid_xuid = int(xuid)
+        except ValueError:
+            raise naff.errors.BadArgument(f'"{xuid}" is not a valid XUID.')
 
         maybe_gamertag: typing.Union[
             str, ProfileResponse, None
-        ] = await self.bot.redis.get(str_xuid)
+        ] = await self.bot.redis.get(str(valid_xuid))
 
         if not maybe_gamertag:
             async with aiohttp.ClientSession(
@@ -159,7 +164,7 @@ class GeneralCMDS(utils.Extension):
             ) as session:
                 with contextlib.suppress(asyncio.TimeoutError):
                     async with session.get(
-                        f"https://xbl-api.prouser123.me/profile/xuid/{xuid}"
+                        f"https://xbl-api.prouser123.me/profile/xuid/{valid_xuid}"
                     ) as r:
                         with contextlib.suppress(pydantic.ValidationError):
                             maybe_gamertag = ProfileResponse.parse_raw(await r.read())
@@ -172,7 +177,8 @@ class GeneralCMDS(utils.Extension):
                     }
                     with contextlib.suppress(asyncio.TimeoutError):
                         async with session.get(
-                            f"https://xbl.io/api/v2/account/{xuid}", headers=headers
+                            f"https://xbl.io/api/v2/account/{valid_xuid}",
+                            headers=headers,
                         ) as r:
                             with contextlib.suppress(pydantic.ValidationError):
                                 maybe_gamertag = ProfileResponse.parse_raw(
@@ -187,12 +193,14 @@ class GeneralCMDS(utils.Extension):
                     ):
                         maybe_gamertag = (
                             await self.bot.profile.client.profile.get_profile_by_xuid(
-                                xuid
+                                str(valid_xuid)
                             )
                         )
 
         if not maybe_gamertag:
-            raise naff.errors.BadArgument(f"Could not find gamertag of XUID `{xuid}`!")
+            raise naff.errors.BadArgument(
+                f"Could not find gamertag of XUID `{valid_xuid}`!"
+            )
 
         if isinstance(maybe_gamertag, ProfileResponse):
             maybe_gamertag = next(
@@ -202,12 +210,12 @@ class GeneralCMDS(utils.Extension):
             )
 
             await self.bot.redis.setex(
-                name=str_xuid,
+                name=str(valid_xuid),
                 time=datetime.timedelta(days=14),
                 value=maybe_gamertag,
             )
 
-        await ctx.send(f"`{xuid}`'s gamertag: `{maybe_gamertag}`.")
+        await ctx.send(f"`{valid_xuid}`'s gamertag: `{maybe_gamertag}`.")
 
 
 def setup(bot):
