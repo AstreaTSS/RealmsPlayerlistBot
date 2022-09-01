@@ -536,7 +536,7 @@ class OwnerCMDs(utils.Extension):
         await self.shell.callback(ctx, cmd=f"pip {cmd}" if cmd else "pip")
 
     @debug.subcommand(aliases=["sync-interactions", "sync-cmds", "sync_cmds"])
-    async def sync_interactions(self, ctx: naff.PrefixedContext):
+    async def sync_interactions(self, ctx: naff.PrefixedContext, scope: int = 0):
         """
         Synchronizes all interaction commands with Discord.
 
@@ -552,9 +552,7 @@ class OwnerCMDs(utils.Extension):
         # a lot better in the ratelimiting department, but i
         # would still advise caution to any self-hosters, and would
         # only suggest using this when necessary
-        await self.bot.synchronise_interactions(
-            scopes=[naff.const.GlobalScope], delete_commands=True  # type: ignore
-        )
+        await self.bot.synchronise_interactions(scopes=[scope], delete_commands=True)
         await ctx.reply("Done!")
 
     async def ext_error(self, error: Exception, ctx: naff.Context):
