@@ -135,15 +135,15 @@ class GeneralCMDS(utils.Extension):
         """
         Gets the gamertag for a specified XUID.
 
-        Think of XUIDs as Discord user IDs but for Xbox Live -
+        Think of XUIDs as Discord user IDs but for Xbox Live - \
         they are frequently used both in Minecraft and with this bot.
         Gamertags are like the user's username in a sense.
 
         For technical reasons, when using the playerlist, the bot has to do a XUID > gamertag lookup.
-        This lookup usually works well, but on the rare occasion it does fail, the bot will show
+        This lookup usually works well, but on the rare occasion it does fail, the bot will show \
         the XUID of a player instead of their gamertag to at least make sure something is shown about them.
 
-        This command is useful if the bot fails that lookup and displays the XUID to you. This is a reliable
+        This command is useful if the bot fails that lookup and displays the XUID to you. This is a reliable \
         way of getting the gamertag, provided the XUID provided is correct in the first place.
         """
 
