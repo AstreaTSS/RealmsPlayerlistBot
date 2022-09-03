@@ -173,12 +173,12 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
             return
 
         cmds = help_tools.get_commands_for_scope_by_ids(self, guild_id)
-        cmd = cmds[int(data["id"])]
-        self.slash_perms_cache[guild_id][
-            int(data["id"])
-        ] = help_tools.PermissionsResolver(
-            cmd.default_member_permissions, guild_id, data["permissions"]  # type: ignore
-        )
+        if cmd := cmds.get(int(data["id"])):
+            self.slash_perms_cache[guild_id][
+                int(data["id"])
+            ] = help_tools.PermissionsResolver(
+                cmd.default_member_permissions, guild_id, data["permissions"]  # type: ignore
+            )
 
     async def on_error(self, source: str, error: Exception, *args, **kwargs) -> None:
         await utils.error_handle(self, error)
