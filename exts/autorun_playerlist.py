@@ -118,14 +118,25 @@ class AutoRunPlayerlist(utils.Extension):
         guild_config: models.GuildConfig,
         premium_run: bool,
     ):
+        guild = self.bot.get_guild(guild_config.guild_id)
+        if not guild:
+            # could just be it's offline or something
+            return
+
         try:
-            chan = await self.bot.cache.fetch_channel(guild_config.playerlist_chan)  # type: ignore
+            chan = await guild.fetch_channel(guild_config.playerlist_chan)  # type: ignore
         except naff.errors.HTTPException:
             await self._eventually_invalidate(guild_config)
             return
-
-        if not isinstance(chan, naff.GuildText):
-            return
+        else:
+            if (
+                not chan
+                or chan.type is naff.MISSING
+                or not isinstance(chan, naff.GuildText)
+            ):
+                # invalid channel
+                await self._eventually_invalidate(guild_config)
+                return
 
         try:
             chan = cclasses.valid_channel_check(chan)
