@@ -23,7 +23,7 @@ class CustomTimeout(paginators.Timeout):
                 )
             except asyncio.TimeoutError:
                 if self.paginator.message:
-                    with contextlib.suppress(naff.errors.NotFound):
+                    with contextlib.suppress(naff.errors.HTTPException):
                         await self.paginator.message.edit(
                             components=self.paginator.create_components(True)
                         )
