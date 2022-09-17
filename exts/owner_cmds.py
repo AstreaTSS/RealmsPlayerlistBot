@@ -80,8 +80,6 @@ class OwnerCMDs(utils.Extension):
         guild = self.bot.get_guild(int(guild_id))
         guild_config = await GuildConfig.get(guild_id=int(guild_id))
 
-        prefixes = tuple(f"`{p}`" for p in guild_config.prefixes)
-
         embed = naff.Embed(
             color=self.bot.color, title=f"Server Config for {guild.name}:"
         )
@@ -92,8 +90,7 @@ class OwnerCMDs(utils.Extension):
         )
         embed.description = (
             f"Club ID: {guild_config.club_id}\nRealm ID: {guild_config.realm_id}\n"
-            + f"Playerlist Channel: {playerlist_channel}\nOnline Command Enabled?"
-            f" {guild_config.online_cmd}\nPrefixes: {', '.join(prefixes)}"
+            + f"Playerlist Channel: {playerlist_channel}"
         )
 
         await ctx.send(embed=embed)
@@ -131,12 +128,6 @@ class OwnerCMDs(utils.Extension):
         naff.OptionTypes.STRING,
         required=False,
     )
-    @naff.slash_option(
-        "online_cmd",
-        "Should the online command be able to be used?",
-        naff.OptionTypes.BOOLEAN,
-        required=False,
-    )
     async def add_guild(
         self,
         ctx: utils.RealmContext,
@@ -144,9 +135,8 @@ class OwnerCMDs(utils.Extension):
         club_id: str = None,
         realm_id: str = None,
         playerlist_chan: str = None,
-        online_cmd: bool = None,
     ):
-        kwargs = {"guild_id": int(guild_id), "prefixes": {"!?"}}
+        kwargs: dict[str, int | str] = {"guild_id": int(guild_id)}
 
         if club_id:
             kwargs["club_id"] = club_id
@@ -156,8 +146,6 @@ class OwnerCMDs(utils.Extension):
             kwargs["realm_id"] = realm_id
         if playerlist_chan:
             kwargs["playerlist_chan"] = int(playerlist_chan)
-        if online_cmd:
-            kwargs["online_cmd"] = online_cmd
 
         await GuildConfig.create(**kwargs)
         await ctx.send("Done!")
@@ -192,12 +180,6 @@ class OwnerCMDs(utils.Extension):
         naff.OptionTypes.STRING,
         required=False,
     )
-    @naff.slash_option(
-        "online_cmd",
-        "Should the online command be able to be used?",
-        naff.OptionTypes.BOOLEAN,
-        required=False,
-    )
     async def edit_guild(
         self,
         ctx: utils.RealmContext,
@@ -205,7 +187,6 @@ class OwnerCMDs(utils.Extension):
         club_id: str = None,
         realm_id: str = None,
         playerlist_chan: str = None,
-        online_cmd: bool = None,
     ):
         guild_config = await GuildConfig.get(guild_id=int(guild))
 
@@ -219,8 +200,6 @@ class OwnerCMDs(utils.Extension):
             guild_config.playerlist_chan = (
                 int(playerlist_chan) if playerlist_chan != "None" else None
             )
-        if online_cmd:
-            guild_config.online_cmd = online_cmd
 
         await guild_config.save()
         await ctx.send("Done!")
@@ -258,12 +237,6 @@ class OwnerCMDs(utils.Extension):
         naff.OptionTypes.STRING,
         required=False,
     )
-    @naff.slash_option(
-        "online_cmd",
-        "Should the online command be able to be used?",
-        naff.OptionTypes.BOOLEAN,
-        required=False,
-    )
     async def edit_guild_via_id(
         self,
         ctx: utils.RealmContext,
@@ -271,7 +244,6 @@ class OwnerCMDs(utils.Extension):
         club_id: str = None,
         realm_id: str = None,
         playerlist_chan: str = None,
-        online_cmd: bool = None,
     ):
         guild_config = await GuildConfig.get(guild_id=int(guild_id))
 
@@ -285,8 +257,6 @@ class OwnerCMDs(utils.Extension):
             guild_config.playerlist_chan = (
                 int(playerlist_chan) if playerlist_chan != "None" else None
             )
-        if online_cmd:
-            guild_config.online_cmd = online_cmd
 
         await guild_config.save()
         await ctx.send("Done!")
