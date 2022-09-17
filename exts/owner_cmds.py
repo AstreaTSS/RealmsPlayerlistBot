@@ -110,8 +110,7 @@ class OwnerCMDs(utils.Extension):
             f" {utils.na_friendly_str(config.club_id)}"
         )
 
-        embeds: list[naff.Embed] = [embed]
-        await ctx.send(embeds=embeds)
+        await ctx.send(embeds=[embed])
 
     @view_guild.autocomplete("guild")
     async def view_get_guild(self, ctx, guild, **kwargs):
