@@ -1,14 +1,15 @@
 import asyncio
+import collections
 import contextlib
 import datetime
 import importlib
-import typing
 
 import naff
 from dateutil.relativedelta import relativedelta
 
 import common.classes as cclasses
 import common.models as models
+import common.playerlist_utils as pl_utils
 import common.utils as utils
 
 
@@ -27,39 +28,18 @@ class AutoRunPlayerlist(utils.Extension):
         self.playerlist_realms_delete.stop()
         super().drop()
 
-    async def _eventually_invalidate(self, guild_config: models.GuildConfig):
-        # the idea here is to invalidate autorunners that simply can't be run
-        # there's a bit of generousity here, as the code gives a total of 3 hours
-        # before actually doing it
-        num_times = await self.bot.redis.incr(
-            f"invalid-playerlist-{guild_config.guild_id}"
-        )
-
-        if num_times > 3:
-            guild_config.playerlist_chan = None
-            await guild_config.save()
-            await self.bot.redis.delete(f"invalid-playerlist-{guild_config.guild_id}")
-
     async def _start_playerlist(self):
         await self.bot.fully_ready.wait()
 
         try:
             while True:
-                premium_run = False
-
                 # margin of error
                 now = naff.Timestamp.utcnow() + datetime.timedelta(milliseconds=1)
-                if now.minute >= 30:
-                    next_delta = relativedelta(
-                        hours=+1, minute=0, second=0, microsecond=0
-                    )
-                else:
-                    premium_run = True
-                    next_delta = relativedelta(minute=30, second=0, microsecond=0)
+                next_delta = relativedelta(hours=+1, minute=0, second=0, microsecond=0)
                 next_time = now + next_delta
 
                 await utils.sleep_until(next_time)
-                await self.playerlist_loop(premium_run)
+                await self.playerlist_loop()
         except Exception as e:
             if not isinstance(e, asyncio.CancelledError):
                 await utils.error_handle(self.bot, e)
@@ -73,7 +53,7 @@ class AutoRunPlayerlist(utils.Extension):
             last_seen__lt=time_back,
         ).delete()
 
-    async def playerlist_loop(self, premium_run: bool):
+    async def playerlist_loop(self):
         """
         A simple way of running the playerlist command every hour in every server the bot is in.
         """
@@ -83,24 +63,14 @@ class AutoRunPlayerlist(utils.Extension):
         )
         to_run = []
 
-        kwargs: dict[typing.Any, typing.Any] = {
-            "guild_id__in": list(self.bot.user._guild_ids)
-        }
-
-        if premium_run:
-            kwargs["premium_code__id__not_isnull"] = True
-
-        async for guild_config in models.GuildConfig.filter(**kwargs).prefetch_related(
-            "premium_code"
-        ):
-            if (
-                guild_config.club_id
-                and guild_config.realm_id
-                and guild_config.playerlist_chan
-            ):
-                to_run.append(
-                    self.auto_run_playerlist(list_cmd, guild_config, premium_run)
-                )
+        async for guild_config in models.GuildConfig.filter(
+            guild_id__in=list(self.bot.user._guild_ids),
+            club_id__not_isnull=True,
+            realm_id__not_isnull=True,
+            playerlist_chan__not_isnull=True,
+            live_playerlist=False,
+        ).prefetch_related("premium_code"):
+            to_run.append(self.auto_run_playerlist(list_cmd, guild_config))
 
         # this gather is done so that they can all run in parallel
         # should make things slightly faster for everyone
@@ -113,10 +83,7 @@ class AutoRunPlayerlist(utils.Extension):
                 await utils.error_handle(self.bot, message)
 
     async def auto_run_playerlist(
-        self,
-        list_cmd: naff.InteractionCommand,
-        guild_config: models.GuildConfig,
-        premium_run: bool,
+        self, list_cmd: naff.InteractionCommand, guild_config: models.GuildConfig
     ):
         guild = self.bot.get_guild(guild_config.guild_id)
         if not guild:
@@ -126,16 +93,12 @@ class AutoRunPlayerlist(utils.Extension):
         try:
             chan = await guild.fetch_channel(guild_config.playerlist_chan)  # type: ignore
         except naff.errors.HTTPException:
-            await self._eventually_invalidate(guild_config)
+            await pl_utils.eventually_invalidate(self.bot, guild_config)
             return
         else:
-            if (
-                not chan
-                or chan.type is naff.MISSING
-                or not isinstance(chan, naff.GuildText)
-            ):
+            if not chan or not isinstance(chan, naff.GuildText):
                 # invalid channel
-                await self._eventually_invalidate(guild_config)
+                await pl_utils.eventually_invalidate(self.bot, guild_config)
                 return
 
         try:
@@ -149,7 +112,7 @@ class AutoRunPlayerlist(utils.Extension):
                     " read message history for this channel."
                 )
 
-            await self._eventually_invalidate(guild_config)
+            await pl_utils.eventually_invalidate(self.bot, guild_config)
             return
 
         # make a fake context to make things easier
@@ -164,11 +127,7 @@ class AutoRunPlayerlist(utils.Extension):
         # take advantage of the fact that users cant really use kwargs for commands
         # the two listed here silence the 'this may take a long time' message
         # and also make it so it doesnt go back 12 hours, instead only going two
-
-        if premium_run:
-            await list_cmd.callback(a_ctx, "1", no_init_mes=True)
-        else:
-            await list_cmd.callback(a_ctx, "2", no_init_mes=True)
+        await list_cmd.callback(a_ctx, "2", no_init_mes=True)
 
 
 def setup(bot):

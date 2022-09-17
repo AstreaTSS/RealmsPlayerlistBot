@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import datetime
 import importlib
 import math
@@ -109,6 +110,7 @@ class Playerlist(utils.Extension):
         for realm in realms.servers:
             gotten_realm_ids.add(realm.id)
             player_set: set[str] = set()
+            joined: set[str] = set()
 
             for player in realm.players:
                 player_set.add(player.uuid)
@@ -120,6 +122,7 @@ class Playerlist(utils.Extension):
                 }
 
                 if player.uuid not in self.bot.online_cache[realm.id]:
+                    joined.add(player.uuid)
                     kwargs["last_joined"] = now
                     joined_player_objs.append(models.RealmPlayer(**kwargs))
                 else:
@@ -136,6 +139,11 @@ class Playerlist(utils.Extension):
                 )
                 for player in left
             )
+
+            if self.bot.live_playerlist_store[str(realm.id)] and (joined or left):
+                asyncio.create_task(
+                    self._send_live_playerlist(str(realm.id), joined, left)
+                )
 
         online_cache_ids = set(self.bot.online_cache.keys())
         for missed_realm_id in online_cache_ids.difference(gotten_realm_ids):
@@ -184,6 +192,68 @@ class Playerlist(utils.Extension):
             finally:
                 if not self._realmplayer_queue.empty():
                     self._realmplayer_queue.task_done()
+
+    async def _send_live_playerlist(
+        self, realm_id: str, joined: set[str], left: set[str]
+    ):
+        try:
+            now = naff.Timestamp.utcnow()
+
+            realmplayers = [
+                models.RealmPlayer(
+                    realm_xuid_id=f"{realm_id}-{p}",
+                    online=True,
+                    last_seen=self._previous_now,
+                )
+                for p in joined.union(left)
+            ]
+            players = await self.get_players_from_realmplayers(realm_id, realmplayers)
+            gamertag_mapping = {p.xuid: p.base_display for p in players}
+
+            joined_embed = naff.Embed(
+                title="Joined",
+                description="\n".join(gamertag_mapping[p] for p in joined),
+                color=self.bot.color,
+            )
+            left_embed = naff.Embed(
+                title="Left",
+                description="\n".join(gamertag_mapping[p] for p in left),
+                color=naff.Color.from_hex("95a5a6"),
+                timestamp=now,
+            )
+            left_embed.set_footer(text="As of")
+
+            for guild_id in self.bot.live_playerlist_store[realm_id]:
+                config = await models.GuildConfig.get(
+                    guild_id=guild_id
+                ).prefetch_related("premium_code")
+
+                if not config.premium_code:
+                    self.bot.live_playerlist_store[realm_id].discard(guild_id)
+                    continue
+
+                guild = self.bot.get_guild(guild_id)
+                if not guild:
+                    # could just be it's offline or something
+                    continue
+
+                try:
+                    chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
+
+                    if not chan or not isinstance(chan, naff.GuildText):
+                        # invalid channel
+                        await pl_utils.eventually_invalidate(self.bot, config)
+                        continue
+
+                    await chan.send(embeds=[joined_embed, left_embed])
+                except naff.errors.HTTPException:
+                    await pl_utils.eventually_invalidate(self.bot, config)
+                    continue
+
+        except Exception as e:
+            if isinstance(e, asyncio.CancelledError):
+                return
+            await utils.error_handle(self.bot, e)
 
     async def get_players_from_realmplayers(
         self,

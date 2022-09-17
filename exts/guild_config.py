@@ -81,10 +81,9 @@ class GuildConfig(utils.Extension):
 
         embed.description = (
             f"Autorun Playerlist Channel: {playerlist_channel}\nRealm Name:"
-            f" {realm_name}\nAutorunner: {autorunner}\nPremium Activated:"
-            f" {utils.yesno_friendly_str(bool(config.premium_code))}\n\nExtra"
-            f" Info:\nRealm ID: {utils.na_friendly_str(config.realm_id)}\nClub ID:"
-            f" {utils.na_friendly_str(config.club_id)}"
+            f" {realm_name}\nAutorunner: {autorunner}\n\nPremium Activated:"
+            f" {utils.yesno_friendly_str(bool(config.premium_code))}\nLive Playerlist:"
+            f" {utils.toggle_friendly_str(config.live_playerlist)}"
         )
 
         embeds: list[naff.Embed] = []
@@ -211,7 +210,47 @@ class GuildConfig(utils.Extension):
         await config.save()
         await self.bot.redis.delete(f"invalid-playerlist-{config.guild_id}")
 
+        if config.realm_id:
+            self.bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
+
         await ctx.send("Unset the playerlist channel.")
+
+    @config.subcommand(
+        sub_cmd_name="live-playerlist",
+        sub_cmd_description=(
+            "Sets or unsets the live playerlist. Can only be run for servers with"
+            " premium activated."
+        ),
+    )
+    @naff.slash_option(
+        "toggle",
+        "Should it be on (true) or off (false)?",
+        naff.OptionTypes.BOOLEAN,
+        required=True,
+    )
+    async def toggle_live_playerlist(self, ctx: utils.RealmContext, toggle: bool):
+        config = await ctx.fetch_config()
+
+        if not config.premium_code:
+            raise utils.CustomCheckFailure(
+                "This server does not have premium activated!"
+            )
+
+        if not (config.realm_id and config.playerlist_chan and config.club_id):
+            raise utils.CustomCheckFailure(
+                "You need to link your Realm and set a playerlist channel before"
+                " running this!"
+            )
+
+        if toggle:
+            self.bot.live_playerlist_store[config.realm_id].add(config.guild_id)
+        else:
+            self.bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
+
+        config.live_playerlist = toggle
+        await ctx.send(
+            f"Turned {utils.toggle_friendly_str(toggle)} the live playerlist!"
+        )
 
     @config.subcommand(
         sub_cmd_name="help",

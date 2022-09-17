@@ -12,6 +12,7 @@ from tortoise.exceptions import DoesNotExist
 from xbox.webapi.api.provider.profile.models import ProfileResponse
 
 import common.custom_providers as providers
+import common.models as models
 import common.utils as utils
 
 
@@ -33,9 +34,11 @@ class Player:
         return bool(self.gamertag)
 
     @property
-    def display(self):  # sourcery skip: remove-unnecessary-else
-        base = f"`{self.gamertag}`" if self.gamertag else f"User with XUID {self.xuid}"
+    def base_display(self):
+        return f"`{self.gamertag}`" if self.gamertag else f"User with XUID {self.xuid}"
 
+    @property
+    def display(self):  # sourcery skip: remove-unnecessary-else
         notes = []
         if self.last_joined:
             notes.append(
@@ -47,7 +50,9 @@ class Player:
                 f"left {naff.Timestamp.fromdatetime(self.last_seen).format('f')}"
             )
 
-        return f"{base}: {', '.join(notes)}" if notes else base
+        return (
+            f"{self.base_display}: {', '.join(notes)}" if notes else self.base_display
+        )
 
 
 class GamertagOnCooldown(Exception):
@@ -180,3 +185,22 @@ async def can_run_playerlist(ctx: utils.RealmContext) -> typing.Any:
     except DoesNotExist:
         return False
     return bool(guild_config.club_id and guild_config.realm_id)
+
+
+async def eventually_invalidate(
+    bot: utils.RealmBotBase, guild_config: models.GuildConfig
+):
+    # the idea here is to invalidate autorunners that simply can't be run
+    # there's a bit of generousity here, as the code gives a total of 3 tries
+    # before actually doing it
+    num_times = await bot.redis.incr(f"invalid-playerlist-{guild_config.guild_id}")
+
+    if num_times > 3:
+        guild_config.playerlist_chan = None
+        await guild_config.save()
+        await bot.redis.delete(f"invalid-playerlist-{guild_config.guild_id}")
+
+        if guild_config.realm_id and guild_config.live_playerlist:
+            bot.live_playerlist_store[guild_config.realm_id].discard(
+                guild_config.guild_id
+            )

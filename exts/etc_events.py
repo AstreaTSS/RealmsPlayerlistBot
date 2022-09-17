@@ -19,7 +19,6 @@ class OnCMDError(naff.Extension):
         if not exists:
             await GuildConfig.create(
                 guild_id=event.guild.id,
-                prefixes={"!?"},
             )
 
     @naff.listen("guild_left")
