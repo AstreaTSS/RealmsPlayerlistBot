@@ -104,8 +104,9 @@ class OwnerCMDs(utils.Extension):
 
         embed.description = (
             f"Autorun Playerlist Channel: {playerlist_channel}\nRealm Name:"
-            f" {realm_name}\nAutorunner: {autorunner}\nPremium Activated:"
-            f" {utils.yesno_friendly_str(bool(config.premium_code))}\n\nExtra"
+            f" {realm_name}\nAutorunner: {autorunner}\n\nPremium Activated:"
+            f" {utils.yesno_friendly_str(bool(config.premium_code))}\nLive Playerlist:"
+            f" {utils.toggle_friendly_str(config.live_playerlist)}\n\nExtra"
             f" Info:\nRealm ID: {utils.na_friendly_str(config.realm_id)}\nClub ID:"
             f" {utils.na_friendly_str(config.club_id)}"
         )

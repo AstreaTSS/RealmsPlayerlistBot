@@ -211,6 +211,7 @@ bot.init_load = True
 bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
 bot.online_cache = defaultdict(set)
 bot.slash_perms_cache = defaultdict(dict)
+bot.live_playerlist_store = defaultdict(set)
 bot.mini_commands_per_scope = {}
 
 
@@ -229,6 +230,17 @@ async def start():
     async for player in models.RealmPlayer.filter(online=True):
         realm_id, xuid = player.realm_xuid_id.split("-")
         bot.online_cache[int(realm_id)].add(xuid)
+
+    # add info for who has live playerlist on, as we can't rely on anything other than
+    # pure memory for the playerlist getting code
+    async for config in models.GuildConfig.filter(
+        premium_code__id__not_isnull=True,
+        club_id__not_isnull=True,
+        realm_id__not_isnull=True,
+        playerlist_chan__not_isnull=True,
+        live_playerlist=True,
+    ).prefetch_related("premium_code"):
+        bot.live_playerlist_store[config.realm_id].add(config.guild_id)  # type: ignore
 
     bot.realm_name_cache = TimedDict(expires=300)
     bot.fully_ready = asyncio.Event()
