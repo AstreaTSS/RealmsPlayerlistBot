@@ -77,23 +77,41 @@ class OwnerCMDs(utils.Extension):
         ctx: utils.RealmContext,
         guild_id: str,
     ):
-        guild = self.bot.get_guild(int(guild_id))
-        guild_config = await GuildConfig.get(guild_id=int(guild_id))
+        config = await GuildConfig.get(guild_id=int(guild_id)).prefetch_related(
+            "premium_code"
+        )
 
         embed = naff.Embed(
-            color=self.bot.color, title=f"Server Config for {guild.name}:"
+            color=self.bot.color, title=f"Server Config for {ctx.guild.name}:"
         )
         playerlist_channel = (
-            f"<#{guild_config.playerlist_chan}> ({guild_config.playerlist_chan})"
-            if guild_config.playerlist_chan
-            else "None"
-        )
-        embed.description = (
-            f"Club ID: {guild_config.club_id}\nRealm ID: {guild_config.realm_id}\n"
-            + f"Playerlist Channel: {playerlist_channel}"
+            f"<#{config.playerlist_chan}> (ID: {config.playerlist_chan})"
+            if config.playerlist_chan
+            else "N/A"
         )
 
-        await ctx.send(embed=embed)
+        realm_name = utils.na_friendly_str(
+            self.bot.realm_name_cache.get(config.realm_id)
+        )
+        if realm_name != "N/A":
+            realm_name = f"`{realm_name}`"
+        elif config.realm_id:
+            realm_name = "Unknown/Not Found"
+
+        autorunner = utils.toggle_friendly_str(
+            bool(config.club_id and config.realm_id and config.playerlist_chan)
+        )
+
+        embed.description = (
+            f"Autorun Playerlist Channel: {playerlist_channel}\nRealm Name:"
+            f" {realm_name}\nAutorunner: {autorunner}\nPremium Activated:"
+            f" {utils.yesno_friendly_str(bool(config.premium_code))}\n\nExtra"
+            f" Info:\nRealm ID: {utils.na_friendly_str(config.realm_id)}\nClub ID:"
+            f" {utils.na_friendly_str(config.club_id)}"
+        )
+
+        embeds: list[naff.Embed] = [embed]
+        await ctx.send(embeds=embeds)
 
     @view_guild.autocomplete("guild")
     async def view_get_guild(self, ctx, guild, **kwargs):
