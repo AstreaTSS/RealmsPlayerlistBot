@@ -12,6 +12,8 @@ import discord_typings
 import naff
 import sentry_sdk
 import tomli
+from naff.ext.sentry import HookedTask
+from naff.models.naff.tasks.task import Task
 from tortoise import Tortoise
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
@@ -86,6 +88,8 @@ def default_sentry_filter(
     return event
 
 
+# im so sorry
+Task.on_error_sentry_hook = HookedTask.on_error_sentry_hook
 sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], before_send=default_sentry_filter)
 
 
