@@ -37,7 +37,7 @@ class PremiumHandling(naff.Extension):
         # mind you, it isn't TOO important that this is secure - really, i just want
         # to make sure your average tech person couldn't brute force a code
         actual_user_id = int(user_id) if user_id is not None else None
-        code = secrets.token_urlsafe(64)
+        code = secrets.token_urlsafe(32)
         await models.PremiumCode.create(
             code=code, user_id=actual_user_id, max_uses=max_uses
         )
