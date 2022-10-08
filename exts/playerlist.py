@@ -219,11 +219,10 @@ class Playerlist(utils.Extension):
                 title="Left",
                 description="\n".join(gamertag_mapping[p] for p in left),
                 color=naff.Color.from_hex("95a5a6"),
-                timestamp=now,
             )
 
             # create list of embeds, only putting in embeds with actual info
-            embeds = []
+            embeds: list[naff.Embed] = []
             if joined:
                 embeds.append(joined_embed)
             if left:
@@ -231,6 +230,7 @@ class Playerlist(utils.Extension):
 
             # always want the last one to be the embed with the time
             embeds[-1].set_footer(text="As of")
+            embeds[-1].timestamp = now
 
             if embeds:  # don't do this if there's nothing to report
                 for guild_id in self.bot.live_playerlist_store[realm_id]:
