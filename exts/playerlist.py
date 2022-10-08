@@ -221,34 +221,44 @@ class Playerlist(utils.Extension):
                 color=naff.Color.from_hex("95a5a6"),
                 timestamp=now,
             )
-            left_embed.set_footer(text="As of")
 
-            for guild_id in self.bot.live_playerlist_store[realm_id]:
-                config = await models.GuildConfig.get(
-                    guild_id=guild_id
-                ).prefetch_related("premium_code")
+            # create list of embeds, only putting in embeds with actual info
+            embeds = []
+            if joined:
+                embeds.append(joined_embed)
+            if left:
+                embeds.append(left_embed)
 
-                if not config.premium_code:
-                    self.bot.live_playerlist_store[realm_id].discard(guild_id)
-                    continue
+            # always want the last one to be the embed with the time
+            embeds[-1].set_footer(text="As of")
 
-                guild = self.bot.get_guild(guild_id)
-                if not guild:
-                    # could just be it's offline or something
-                    continue
+            if embeds:  # don't do this if there's nothing to report
+                for guild_id in self.bot.live_playerlist_store[realm_id]:
+                    config = await models.GuildConfig.get(
+                        guild_id=guild_id
+                    ).prefetch_related("premium_code")
 
-                try:
-                    chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
-
-                    if not chan or not isinstance(chan, naff.GuildText):
-                        # invalid channel
-                        await pl_utils.eventually_invalidate(self.bot, config)
+                    if not config.premium_code:
+                        self.bot.live_playerlist_store[realm_id].discard(guild_id)
                         continue
 
-                    await chan.send(embeds=[joined_embed, left_embed])
-                except naff.errors.HTTPException:
-                    await pl_utils.eventually_invalidate(self.bot, config)
-                    continue
+                    guild = self.bot.get_guild(guild_id)
+                    if not guild:
+                        # could just be it's offline or something
+                        continue
+
+                    try:
+                        chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
+
+                        if not chan or not isinstance(chan, naff.GuildText):
+                            # invalid channel
+                            await pl_utils.eventually_invalidate(self.bot, config)
+                            continue
+
+                        await chan.send(embeds=embeds)
+                    except naff.errors.HTTPException:
+                        await pl_utils.eventually_invalidate(self.bot, config)
+                        continue
 
         except Exception as e:
             if isinstance(e, asyncio.CancelledError):
