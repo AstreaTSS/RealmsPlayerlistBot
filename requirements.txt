@@ -1,5 +1,5 @@
 naff==1.10.0
-humanize==4.3.0
+humanize==4.4.0
 websockets==10.3
 xbox-webapi==2.0.11
 cchardet==2.1.7
@@ -14,5 +14,5 @@ tomli==2.0.1
 orjson==3.8.0
 python-dateutil==2.8.2
 sentry-sdk==1.9.8
-rapidfuzz==2.9.0
+rapidfuzz==2.10.0
 uvloop==0.17.0; platform_system == "Linux"
