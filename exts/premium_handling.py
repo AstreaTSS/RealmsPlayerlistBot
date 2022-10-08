@@ -87,7 +87,7 @@ class PremiumHandling(naff.Extension):
 
         await ctx.send(
             "Code redeemed for this server!\nThis code has"
-            f" {remaining_uses} {uses_str}."
+            f" {remaining_uses} {uses_str} remaining."
         )
 
 
