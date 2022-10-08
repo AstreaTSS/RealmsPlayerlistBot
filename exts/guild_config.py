@@ -248,6 +248,7 @@ class GuildConfig(utils.Extension):
             self.bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
 
         config.live_playerlist = toggle
+        await config.save()
         await ctx.send(
             f"Turned {utils.toggle_friendly_str(toggle)} the live playerlist!"
         )
