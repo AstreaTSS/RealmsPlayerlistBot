@@ -24,3 +24,7 @@ OPENXBL_KEY = "KEY"  # register an account at https://xbl.io/ and you'll get a t
 # you'll get a file with tokens that you can now use
 # tokens.json is what you're looking for
 XAPI_TOKENS_LOCATION = "FILE_PATH"
+
+# various emojis used throughout the bot. more or less self explanatory
+GREEN_CIRCLE_EMOJI="RAW EMOJI STRING"
+GRAY_CIRCLE_EMOJI="RAW EMOJI STRING"

@@ -1,8 +1,8 @@
 import asyncio
-import contextlib
 import datetime
 import importlib
 import math
+import os
 import typing
 
 import attrs
@@ -220,11 +220,13 @@ class Playerlist(utils.Extension):
 
             if joined:
                 embed.add_field(
-                    name="Joined", value="\n".join(gamertag_mapping[p] for p in joined)
+                    name=f"{os.environ['GREEN_CIRCLE_EMOJI']} Joined",
+                    value="\n".join(gamertag_mapping[p] for p in joined),
                 )
             if left:
                 embed.add_field(
-                    name="Left", value="\n".join(gamertag_mapping[p] for p in left)
+                    name=f"{os.environ['GRAY_CIRCLE_EMOJI']} Left",
+                    value="\n".join(gamertag_mapping[p] for p in left),
                 )
 
             for guild_id in self.bot.live_playerlist_store[realm_id]:
