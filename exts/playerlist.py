@@ -210,55 +210,50 @@ class Playerlist(utils.Extension):
             players = await self.get_players_from_realmplayers(realm_id, realmplayers)
             gamertag_mapping = {p.xuid: p.base_display for p in players}
 
-            joined_embed = naff.Embed(
-                title="Joined",
-                description="\n".join(gamertag_mapping[p] for p in joined),
-                color=self.bot.color,
-            )
-            left_embed = naff.Embed(
-                title="Left",
-                description="\n".join(gamertag_mapping[p] for p in left),
-                color=naff.Color.from_hex("95a5a6"),
-            )
-
-            # create list of embeds, only putting in embeds with actual info
-            embeds: list[naff.Embed] = []
+            str_builder = []
             if joined:
-                embeds.append(joined_embed)
+                str_builder.append("**Joined:**")
+                str_builder.extend(gamertag_mapping[p] for p in joined)
+                str_builder.append("")
             if left:
-                embeds.append(left_embed)
+                str_builder.append("**Left:**")
+                str_builder.extend(gamertag_mapping[p] for p in left)
 
-            # always want the last one to be the embed with the time
-            embeds[-1].set_footer(text="As of")
-            embeds[-1].timestamp = now
+            embed = naff.Embed(
+                description="\n".join(str_builder),
+                color=self.bot.color,
+                timestamp=now,
+            )
+            embed.set_footer(
+                f"{len(self.bot.online_cache[int(realm_id)])} players online as of"
+            )
 
-            if embeds:  # don't do this if there's nothing to report
-                for guild_id in self.bot.live_playerlist_store[realm_id]:
-                    config = await models.GuildConfig.get(
-                        guild_id=guild_id
-                    ).prefetch_related("premium_code")
+            for guild_id in self.bot.live_playerlist_store[realm_id]:
+                config = await models.GuildConfig.get(
+                    guild_id=guild_id
+                ).prefetch_related("premium_code")
 
-                    if not config.premium_code:
-                        self.bot.live_playerlist_store[realm_id].discard(guild_id)
-                        continue
+                if not config.premium_code:
+                    self.bot.live_playerlist_store[realm_id].discard(guild_id)
+                    continue
 
-                    guild = self.bot.get_guild(guild_id)
-                    if not guild:
-                        # could just be it's offline or something
-                        continue
+                guild = self.bot.get_guild(guild_id)
+                if not guild:
+                    # could just be it's offline or something
+                    continue
 
-                    try:
-                        chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
+                try:
+                    chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
 
-                        if not chan or not isinstance(chan, naff.GuildText):
-                            # invalid channel
-                            await pl_utils.eventually_invalidate(self.bot, config)
-                            continue
-
-                        await chan.send(embeds=embeds)
-                    except naff.errors.HTTPException:
+                    if not chan or not isinstance(chan, naff.GuildText):
+                        # invalid channel
                         await pl_utils.eventually_invalidate(self.bot, config)
                         continue
+
+                    await chan.send(embeds=embed)
+                except naff.errors.HTTPException:
+                    await pl_utils.eventually_invalidate(self.bot, config)
+                    continue
 
         except Exception as e:
             if isinstance(e, asyncio.CancelledError):
