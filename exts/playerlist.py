@@ -210,23 +210,22 @@ class Playerlist(utils.Extension):
             players = await self.get_players_from_realmplayers(realm_id, realmplayers)
             gamertag_mapping = {p.xuid: p.base_display for p in players}
 
-            str_builder = []
-            if joined:
-                str_builder.append("**Joined:**")
-                str_builder.extend(gamertag_mapping[p] for p in joined)
-                str_builder.append("")
-            if left:
-                str_builder.append("**Left:**")
-                str_builder.extend(gamertag_mapping[p] for p in left)
-
             embed = naff.Embed(
-                description="\n".join(str_builder),
                 color=self.bot.color,
                 timestamp=now,
             )
             embed.set_footer(
                 f"{len(self.bot.online_cache[int(realm_id)])} players online as of"
             )
+
+            if joined:
+                embed.add_field(
+                    name="Joined", value="\n".join(gamertag_mapping[p] for p in joined)
+                )
+            if left:
+                embed.add_field(
+                    name="Left", value="\n".join(gamertag_mapping[p] for p in left)
+                )
 
             for guild_id in self.bot.live_playerlist_store[realm_id]:
                 config = await models.GuildConfig.get(
