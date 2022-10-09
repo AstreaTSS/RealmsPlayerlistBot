@@ -161,6 +161,9 @@ class Playerlist(utils.Extension):
             )
 
             self.bot.online_cache[missed_realm_id] = set()
+            asyncio.create_task(
+                self._send_live_playerlist(str(missed_realm_id), set(), now_invalid)
+            )
 
         self._previous_now = now
 
