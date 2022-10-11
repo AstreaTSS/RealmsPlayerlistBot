@@ -1,6 +1,6 @@
 import importlib
+import os
 import secrets
-import typing
 
 import naff
 
@@ -43,10 +43,18 @@ class PremiumHandling(naff.Extension):
         )
         await ctx.send(f"Code created!\nCode: `{code}`")
 
-    @naff.slash_command(
-        name="redeem-premium",
-        description="Redeems the premium code for the server this command is run in.",
+    premium = naff.SlashCommand(
+        name="premium",  # type: ignore
+        description="Handles the configuration for Realms Playerlist Premium.",  # type: ignore
         default_member_permissions=naff.Permissions.MANAGE_GUILD,
+        dm_permission=False,
+    )
+
+    @premium.subcommand(
+        sub_cmd_name="redeem",
+        sub_cmd_description=(
+            "Redeems the premium code for the server this command is run in."
+        ),
     )
     @naff.slash_option(
         "code",
@@ -74,7 +82,7 @@ class PremiumHandling(naff.Extension):
 
         config = await ctx.fetch_config()
 
-        if config.premium_code == code:
+        if config.premium_code and config.premium_code.code == code:
             raise naff.errors.BadArgument("This code has already been redeem here.")
 
         config.premium_code = code_obj
@@ -89,6 +97,15 @@ class PremiumHandling(naff.Extension):
             "Code redeemed for this server!\nThis code has"
             f" {remaining_uses} {uses_str} remaining."
         )
+
+    @premium.subcommand(
+        sub_cmd_name="info",
+        sub_cmd_description=(
+            "Gives you information about Realms Playerlist Premium and how to get it."
+        ),
+    )
+    async def premium_info(self, ctx: utils.RealmContext):
+        await ctx.send(os.environ["PREMIUM_INFO_LINK"])
 
 
 def setup(bot):
