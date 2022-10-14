@@ -21,6 +21,22 @@ The list automatically runs/gets generated in a channel every hour, giving a use
 
 The command can normally only be run by people with Manage Server permissions and is not meant to be seen by normal people - there *is* a command that can be run by everyone that allows you to view everyone currently online, though.
 
+## Premium
+
+**Realms Playerlist Premium** allows for extra features that otherwise could not be provided by the bot without funding. While this is very basic for now, it is planned to expand heavily in the future.
+
+There's only one feature right now, but it's probably the one most demanded for - a **live playerlist**! Basically, instead of making the bot send a summary of people on every hour, a live playerlist shows who joined and left a Realm every minute, basically making it a live join/leave logger.
+
+It looks something like this (minus the obvious censoring):
+
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/25420078/194965554-7e0b15a4-2186-4797-bd1d-9645c1caee79.png" alt="Preview on how the live playerlist looks like" height=420/>
+</p>
+
+This has a variety of uses, from statistical to moderation - it's really up to you what you do with this information. I know of one Realm owner who uses it both to narrow down subjects to a precise degree while also tracking active Realm times. Using Discord's search functionality (heavily suggest looking into that if you haven't use it, by the way), the possibilities are near endless.
+
+Take a closer look at Premium [here.](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Playerlist-Premium-and-How-to-Get-It)
+
 ## Adding The Bot
 
 If you wish to add this bot, just [use the link here!](https://discord.com/api/oauth2/authorize?client_id=725483868777611275&permissions=309238025280&scope=applications.commands%20bot)
