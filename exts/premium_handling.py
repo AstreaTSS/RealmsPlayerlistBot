@@ -1,5 +1,4 @@
 import asyncio
-import base64
 import importlib
 import os
 import secrets
