@@ -233,13 +233,14 @@ class GuildConfig(utils.Extension):
 
         if not config.premium_code:
             raise utils.CustomCheckFailure(
-                "This server does not have premium activated!"
+                "This server does not have premium activated! Check out `/premium info`"
+                " for more information about it."
             )
 
         if not (config.realm_id and config.playerlist_chan and config.club_id):
             raise utils.CustomCheckFailure(
                 "You need to link your Realm and set a playerlist channel before"
-                " running this!"
+                " running this."
             )
 
         if toggle:

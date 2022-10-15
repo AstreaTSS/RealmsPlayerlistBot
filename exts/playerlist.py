@@ -331,6 +331,7 @@ class Playerlist(utils.Extension):
         """
 
         init_mes = not kwargs.get("no_init_mes", False)
+        upsell = kwargs.get("upsell", False)
 
         guild_config = await ctx.fetch_config()
 
@@ -402,7 +403,16 @@ class Playerlist(utils.Extension):
                 description="\n".join(online_list),
                 timestamp=timestamp,
             )
-            embed.set_footer(text="As of")
+
+            if upsell and not guild_config.premium_code:
+                embed.set_footer(
+                    text=(
+                        "Want minute-to-minute updates on your Realm? Check out Live"
+                        " Playerlist on Playerlist Premium: /premium info"
+                    )
+                )
+            else:
+                embed.set_footer(text="As of")
             await ctx.send(embed=embed)
 
         if offline_list:

@@ -39,7 +39,9 @@ class AutoRunPlayerlist(utils.Extension):
                 next_time = now + next_delta
 
                 await utils.sleep_until(next_time)
-                await self.playerlist_loop()
+
+                upsell = next_time.hour % 8 == 0
+                await self.playerlist_loop(upsell)
         except Exception as e:
             if not isinstance(e, asyncio.CancelledError):
                 await utils.error_handle(self.bot, e)
@@ -53,7 +55,7 @@ class AutoRunPlayerlist(utils.Extension):
             last_seen__lt=time_back,
         ).delete()
 
-    async def playerlist_loop(self):
+    async def playerlist_loop(self, upsell: bool = False):
         """
         A simple way of running the playerlist command every hour in every server the bot is in.
         """
@@ -70,7 +72,7 @@ class AutoRunPlayerlist(utils.Extension):
             playerlist_chan__not_isnull=True,
             live_playerlist=False,
         ).prefetch_related("premium_code"):
-            to_run.append(self.auto_run_playerlist(list_cmd, guild_config))
+            to_run.append(self.auto_run_playerlist(list_cmd, guild_config, upsell))
 
         # this gather is done so that they can all run in parallel
         # should make things slightly faster for everyone
@@ -83,7 +85,10 @@ class AutoRunPlayerlist(utils.Extension):
                 await utils.error_handle(self.bot, message)
 
     async def auto_run_playerlist(
-        self, list_cmd: naff.InteractionCommand, guild_config: models.GuildConfig
+        self,
+        list_cmd: naff.InteractionCommand,
+        guild_config: models.GuildConfig,
+        upsell: bool = False,
     ):
         guild = self.bot.get_guild(guild_config.guild_id)
         if not guild:
@@ -127,7 +132,7 @@ class AutoRunPlayerlist(utils.Extension):
         # take advantage of the fact that users cant really use kwargs for commands
         # the two listed here silence the 'this may take a long time' message
         # and also make it so it doesnt go back 12 hours, instead only going two
-        await list_cmd.callback(a_ctx, "2", no_init_mes=True)
+        await list_cmd.callback(a_ctx, "2", no_init_mes=True, upsell=upsell)
 
 
 def setup(bot):

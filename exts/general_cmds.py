@@ -71,12 +71,14 @@ class GeneralCMDS(utils.Extension):
             " Minecraft: Bedrock Edition Realms by showing a log of players who have"
             " joined and left.",
             "I was originally created as a port of another bot that was made for a"
-            " singular Realm, but since then I've grown into what you see today.",
+            " singular Realm, but since then I've grown into what you see today.\n",
             "My usages are largely statistical and informative, as I can be used to"
-            " narrow down timeframes or just for tracking activity.",
+            " narrow down timeframes or just for tracking activity.\n",
             "If you want to use me, go ahead and invite me to your server and take a"
             " look at `/config help`!\n",
-            "Bot made by Astrea#7171.",
+            "There is also Realms Playerlist Premium, a way of adding extra features to"
+            " your server that otherwise would not be possible. Take a look at"
+            " `/premium info` for more information.\nBot made by Astrea#7171.",
         ]
 
         about_embed = naff.Embed(
@@ -102,8 +104,8 @@ class GeneralCMDS(utils.Extension):
             inline=True,
         )
         about_embed.add_field(
-            name="Support Astrea on Ko-Fi!",
-            value="[Link](https://ko-fi.com/astrea49)",
+            name="Playerlist Premium Information",
+            value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Playerlist-Premium-and-How-to-Get-It)",
             inline=True,
         )
         about_embed.add_field(
