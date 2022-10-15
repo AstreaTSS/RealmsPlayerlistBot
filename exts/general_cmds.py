@@ -78,7 +78,8 @@ class GeneralCMDS(utils.Extension):
             " look at `/config help`!\n",
             "There is also Realms Playerlist Premium, a way of adding extra features to"
             " your server that otherwise would not be possible. Take a look at"
-            " `/premium info` for more information.\nBot made by Astrea#7171.",
+            " `/premium info` for more information.\n",
+            "Bot made by Astrea49.",
         ]
 
         about_embed = naff.Embed(
@@ -104,7 +105,7 @@ class GeneralCMDS(utils.Extension):
             inline=True,
         )
         about_embed.add_field(
-            name="Playerlist Premium Information",
+            name="Premium Information",
             value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Playerlist-Premium-and-How-to-Get-It)",
             inline=True,
         )
