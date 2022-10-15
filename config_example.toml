@@ -29,3 +29,6 @@ XAPI_TOKENS_LOCATION = "FILE_PATH"
 # various emojis used throughout the bot. more or less self explanatory
 GREEN_CIRCLE_EMOJI="RAW EMOJI STRING"
 GRAY_CIRCLE_EMOJI="RAW EMOJI STRING"
+
+# the key used to encrypt premium codes. make this a very strong and random 64 character code
+PREMIUM_ENCRYPTION_KEY = "KEY"

@@ -1,8 +1,11 @@
+import asyncio
+import base64
 import importlib
 import os
 import secrets
 
 import naff
+from Crypto.Cipher import AES
 
 import common.models as models
 import common.utils as utils
@@ -12,6 +15,22 @@ class PremiumHandling(naff.Extension):
     def __init__(self, bot):
         self.bot: utils.RealmBotBase = bot
         self.name = "Premium Handling"
+
+    def _encrypt_input(self, code: str):
+        key = bytes(os.environ["PREMIUM_ENCRYPTION_KEY"], "utf-8")
+        # siv is best when we don't want nonces
+        # we can't exactly use anything as a nonce since we have no way of obtaining
+        # info about a code without the code itself - there's no username that a database
+        # can look up to get the nonce
+        aes = AES.new(key, AES.MODE_SIV)
+
+        # the database stores values in keys - furthermore, only the first part of
+        # the tuple given is actually the key
+        return str(aes.encrypt_and_digest(bytes(code, "utf-8"))[0])  # type: ignore
+
+    async def encrypt_input(self, code: str):
+        # just because this is a technically complex function by design - aes isn't cheap
+        return await asyncio.to_thread(self._encrypt_input, code)
 
     @naff.slash_command(
         name="generate-code",
@@ -36,10 +55,15 @@ class PremiumHandling(naff.Extension):
     ):
         # mind you, it isn't TOO important that this is secure - really, i just want
         # to make sure your average tech person couldn't brute force a code
+        # regardless, we do try to use aes here just in case
+
         actual_user_id = int(user_id) if user_id is not None else None
-        code = secrets.token_urlsafe(32)
+
+        code = secrets.token_urlsafe(16)
+        encrypted_code = await self.encrypt_input(code)
+
         await models.PremiumCode.create(
-            code=code, user_id=actual_user_id, max_uses=max_uses
+            code=encrypted_code, user_id=actual_user_id, max_uses=max_uses
         )
         await ctx.send(f"Code created!\nCode: `{code}`")
 
@@ -63,7 +87,8 @@ class PremiumHandling(naff.Extension):
         required=True,
     )
     async def redeem_premium(self, ctx: utils.RealmContext, code: str):
-        code_obj = await models.PremiumCode.get_or_none(code=code)
+        encrypted_code = await self.encrypt_input(code)
+        code_obj = await models.PremiumCode.get_or_none(code=encrypted_code)
 
         if not code_obj:
             raise naff.errors.BadArgument(
