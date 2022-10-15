@@ -404,7 +404,7 @@ class Playerlist(utils.Extension):
                 timestamp=timestamp,
             )
 
-            if upsell and not guild_config.premium_code:
+            if not offline_list and upsell and not guild_config.premium_code:
                 embed.set_footer(
                     text=(
                         "Want minute-to-minute updates on your Realm? Check out Live"
@@ -420,6 +420,7 @@ class Playerlist(utils.Extension):
             # basically, it's like
             # [ [list of 25 strings] [list of 25 strings] etc.]
             chunks = [offline_list[x : x + 25] for x in range(0, len(offline_list), 25)]
+            last_chunk_index = len(chunks) - 1
 
             first_embed = naff.Embed(
                 color=naff.Color.from_hex("95a5a6"),
@@ -427,16 +428,39 @@ class Playerlist(utils.Extension):
                 title=f"People on in the last {actual_hours_ago} hour(s)",
                 timestamp=timestamp,
             )
-            first_embed.set_footer(text="As of")
+
+            if last_chunk_index == 0 and upsell and not guild_config.premium_code:
+                first_embed.set_footer(
+                    text=(
+                        "Want minute-to-minute updates on your Realm? Check out Live"
+                        " Playerlist on Playerlist Premium: /premium info"
+                    )
+                )
+            else:
+                first_embed.set_footer(text="As of")
             await ctx.send(embed=first_embed)
 
-            for chunk in chunks[1:]:
+            for index, chunk in enumerate(chunks[1:]):
                 embed = naff.Embed(
                     color=naff.Color.from_hex("95a5a6"),
                     description="\n".join(chunk),
                     timestamp=timestamp,
                 )
-                embed.set_footer(text="As of")
+
+                if (
+                    last_chunk_index == (index + 1)
+                    and upsell
+                    and not guild_config.premium_code
+                ):
+                    embed.set_footer(
+                        text=(
+                            "Want minute-to-minute updates on your Realm? Check out"
+                            " Live Playerlist on Playerlist Premium: /premium info"
+                        )
+                    )
+                else:
+                    embed.set_footer(text="As of")
+
                 await ctx.send(embed=embed)
                 await asyncio.sleep(0.2)
 
