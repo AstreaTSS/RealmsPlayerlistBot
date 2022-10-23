@@ -85,6 +85,10 @@ class GamertagHandler:
     responses: typing.List["ProfileResponse"] = attrs.field(init=False, factory=list)
     AMOUNT_TO_GET: int = attrs.field(init=False, default=30)
 
+    def __attrs_post_init__(self):
+        # filter out empty strings, because that's possible somehow?
+        self.xuids_to_get = tuple(x for x in self.xuids_to_get if x)
+
     async def get_gamertags(self, xuid_list: typing.List[str]) -> None:
         # honestly, i forget what this output can look like by now -
         # but if i remember, it's kinda weird
