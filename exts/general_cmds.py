@@ -50,13 +50,10 @@ class GeneralCMDS(utils.Extension):
 
     @naff.slash_command(
         name="invite",
-        description="Sends the invite link for the bot.",
+        description="Sends instructions on how to invite the bot.",
     )
     async def invite(self, ctx: utils.RealmContext):
-        await ctx.send(
-            f"https://discord.com/api/oauth2/authorize?client_id={self.bot.user.id}"
-            "&permissions=309238025280&scope=applications.commands%20bot"
-        )
+        await ctx.send(os.environ["SETUP_LINK"])
 
     @naff.slash_command(
         "support", description="Gives an invite link to the support server."

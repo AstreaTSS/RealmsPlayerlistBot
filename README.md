@@ -39,7 +39,7 @@ Take a closer look at Premium [here.](https://github.com/Astrea49/RealmsPlayerli
 
 ## Adding The Bot
 
-If you wish to add this bot, just [use the link here!](https://discord.com/api/oauth2/authorize?client_id=725483868777611275&permissions=309238025280&scope=applications.commands%20bot)
+If you wish to add this bot, just [use this guide on how to do so!](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Server-Setup)
 
 ## Self-hosting Information
 
@@ -53,6 +53,6 @@ There's a whole section in the wiki about this! Check it out [here](https://gith
 
 ## Links:
 
-* [Invite Bot](https://discord.com/api/oauth2/authorize?client_id=725483868777611275&permissions=309238025280&scope=applications.commands%20bot)
+* [Bot Setup Guide](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Server-Setup)
 * [Join Support Server](https://discord.gg/NSdetwGjpK)
 * [Support me on Ko-fi](https://ko-fi.com/astrea49)
