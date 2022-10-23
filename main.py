@@ -251,6 +251,10 @@ async def start():
 
     ext_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_BOT"))
     for ext in ext_list:
+        # skip loading voting ext if token doesn't exist
+        if "voting" in ext and not os.environ.get("TOP_GG_TOKEN"):
+            continue
+
         try:
             bot.load_extension(ext)
         except naff.errors.ExtensionLoadException:

@@ -104,11 +104,20 @@ class GeneralCMDS(utils.Extension):
             value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot)",
             inline=True,
         )
-        about_embed.add_field(
-            name="Premium Information",
-            value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Playerlist-Premium-and-How-to-Get-It)",
-            inline=True,
-        )
+
+        if os.environ.get("TOP_GG_TOKEN"):
+            about_embed.add_field(
+                name="Top.gg Page",
+                value=f"[Link](https://top.gg/bot/{self.bot.user.id})",
+                inline=True,
+            )
+        else:
+            about_embed.add_field(
+                name="Premium Information",
+                value=f"[Link]({os.environ['PREMIUM_INFO_LINK']})",
+                inline=True,
+            )
+
         about_embed.add_field(
             name="FAQ",
             value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/FAQ)",

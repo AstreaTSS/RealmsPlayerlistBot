@@ -19,6 +19,7 @@ XBOX_CLIENT_ID = "ID"
 XBOX_CLIENT_SECRET = "SECRET"
 
 OPENXBL_KEY = "KEY"  # register an account at https://xbl.io/ and you'll get a token to use
+TOP_GG_TOKEN = ""  # optional, allows top.gg integration if it exists
 
 # when you use the authentication snippet here:
 # https://github.com/OpenXbox/xbox-webapi-python#how-to-use
