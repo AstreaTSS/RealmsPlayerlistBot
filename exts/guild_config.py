@@ -169,8 +169,9 @@ class GuildConfig(utils.Extension):
                 description=(
                     f"Linked this server to the Realm: `{realm.name}`\n\n**IMPORTANT"
                     " NOTE:** There will now be an account called"
-                    f" `{self.bot.own_gamertag}` on your Realm. *Do not ban or kick"
-                    " them.* The bot will not work with your Realm if you do so."
+                    f" `{self.bot.own_gamertag}` on your Realm's player roster (and"
+                    " even the playerlist). *Do not ban or kick them.* The bot will"
+                    " not work with your Realm if you do so."
                 ),
                 color=naff.RoleColors.GREEN,
             )
