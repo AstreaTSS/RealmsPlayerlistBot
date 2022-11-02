@@ -384,6 +384,7 @@ class Playerlist(utils.Extension):
 
         init_mes = not kwargs.get("no_init_mes", False)
         upsell = kwargs.get("upsell", False)
+        upsell_type: int = kwargs.get("upsell_type", -1)
 
         guild_config = await ctx.fetch_config()
 
@@ -457,12 +458,17 @@ class Playerlist(utils.Extension):
             )
 
             if not offline_list and upsell and not guild_config.premium_code:
-                embed.set_footer(
-                    text=(
-                        "Want minute-to-minute updates on your Realm? Check out Live"
-                        " Playerlist on Playerlist Premium: /premium info"
+                if upsell_type == 1:
+                    embed.set_footer(
+                        text=(
+                            "Want minute-to-minute updates on your Realm? Check out"
+                            " Live Playerlist on Playerlist Premium: /premium info"
+                        )
                     )
-                )
+                elif upsell_type == 2:
+                    embed.set_footer(
+                        "If you like the bot, you can vote for it via /vote!"
+                    )
             else:
                 embed.set_footer(text="As of")
             await ctx.send(embed=embed)
@@ -504,12 +510,17 @@ class Playerlist(utils.Extension):
                     and upsell
                     and not guild_config.premium_code
                 ):
-                    embed.set_footer(
-                        text=(
-                            "Want minute-to-minute updates on your Realm? Check out"
-                            " Live Playerlist on Playerlist Premium: /premium info"
+                    if upsell_type == 1:
+                        embed.set_footer(
+                            text=(
+                                "Want minute-to-minute updates on your Realm? Check out"
+                                " Live Playerlist on Playerlist Premium: /premium info"
+                            )
                         )
-                    )
+                    elif upsell_type == 2:
+                        embed.set_footer(
+                            "If you like the bot, you can vote for it via /vote!"
+                        )
                 else:
                     embed.set_footer(text="As of")
 

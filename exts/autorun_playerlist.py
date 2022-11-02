@@ -40,8 +40,12 @@ class AutoRunPlayerlist(utils.Extension):
 
                 await utils.sleep_until(next_time)
 
-                upsell = next_time.hour % 8 == 0
-                await self.playerlist_loop(upsell)
+                upsell = next_time.hour % 4 == 0
+                upsell_type = -1
+                if upsell:
+                    upsell_type = 1 if next_time.hour % 8 == 0 else 2
+
+                await self.playerlist_loop(upsell, upsell_type)
         except Exception as e:
             if not isinstance(e, asyncio.CancelledError):
                 await utils.error_handle(self.bot, e)
@@ -55,7 +59,7 @@ class AutoRunPlayerlist(utils.Extension):
             last_seen__lt=time_back,
         ).delete()
 
-    async def playerlist_loop(self, upsell: bool = False):
+    async def playerlist_loop(self, upsell: bool = False, upsell_type: int = -1):
         """
         A simple way of running the playerlist command every hour in every server the bot is in.
         """
@@ -72,7 +76,9 @@ class AutoRunPlayerlist(utils.Extension):
             playerlist_chan__not_isnull=True,
             live_playerlist=False,
         ).prefetch_related("premium_code"):
-            to_run.append(self.auto_run_playerlist(list_cmd, guild_config, upsell))
+            to_run.append(
+                self.auto_run_playerlist(list_cmd, guild_config, upsell, upsell_type)
+            )
 
         # this gather is done so that they can all run in parallel
         # should make things slightly faster for everyone
@@ -89,6 +95,7 @@ class AutoRunPlayerlist(utils.Extension):
         list_cmd: naff.InteractionCommand,
         guild_config: models.GuildConfig,
         upsell: bool = False,
+        upsell_type: int = -1,
     ):
         guild = self.bot.get_guild(guild_config.guild_id)
         if not guild:
@@ -132,7 +139,9 @@ class AutoRunPlayerlist(utils.Extension):
         # take advantage of the fact that users cant really use kwargs for commands
         # the two listed here silence the 'this may take a long time' message
         # and also make it so it doesnt go back 12 hours, instead only going two
-        await list_cmd.callback(a_ctx, "2", no_init_mes=True, upsell=upsell)
+        await list_cmd.callback(
+            a_ctx, "2", no_init_mes=True, upsell=upsell, upsell_type=upsell_type
+        )
 
 
 def setup(bot):
