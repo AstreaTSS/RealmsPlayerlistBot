@@ -1,3 +1,4 @@
+import collections
 import importlib
 import os
 import re
@@ -140,11 +141,26 @@ class GuildConfig(utils.Extension):
             realm = await ctx.bot.realms.join_realm_from_code(realm_code)
 
             config.realm_id = str(realm.id)
-            config.club_id = str(realm.club_id)
             self.bot.realm_name_cache.add_one(config.realm_id, realm.name)
-            await clubs_playerlist.fill_in_data_from_clubs(
-                self.bot, config.realm_id, config.club_id
-            )
+
+            embeds: collections.deque[naff.Embed] = collections.deque()
+
+            if realm.club_id:
+                config.club_id = str(realm.club_id)
+                await clubs_playerlist.fill_in_data_from_clubs(
+                    self.bot, config.realm_id, config.club_id
+                )
+            else:
+                warning_embed = naff.Embed(
+                    title="Warning",
+                    description=(
+                        "I was unable to backfill player data for this Realm. If you"
+                        " use `/playerlist`, it may show imcomplete player data."
+                        " This should resolve itself in about 24 hours."
+                    ),
+                    color=naff.RoleColors.YELLOW,
+                )
+                embeds.appendleft(warning_embed)
 
             await config.save()
 
@@ -154,11 +170,12 @@ class GuildConfig(utils.Extension):
                     f"Linked this server to the Realm: `{realm.name}`\n\n**IMPORTANT"
                     " NOTE:** There will now be an account called"
                     f" `{self.bot.own_gamertag}` on your Realm. *Do not ban or kick"
-                    " them.* The bot will not work with your Realm if you do so.."
+                    " them.* The bot will not work with your Realm if you do so."
                 ),
                 color=naff.RoleColors.GREEN,
             )
-            await ctx.send(embeds=confirm_embed)
+            embeds.appendleft(confirm_embed)
+            await ctx.send(embeds=list(embeds))
         except RealmsAPIException as e:
             if (
                 isinstance(e.error, aiohttp.ClientResponseError)

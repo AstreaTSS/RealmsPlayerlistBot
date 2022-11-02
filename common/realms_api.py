@@ -80,7 +80,7 @@ class FullRealm(CamelCaseModel):
     active_slot: int
     slots: NoneType
     member: bool
-    club_id: int
+    club_id: Optional[int] = None
     subscription_refresh_status: NoneType
     motd: Optional[str] = None
 
