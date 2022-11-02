@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import datetime
 import importlib
 import math
@@ -130,6 +131,7 @@ class Playerlist(utils.Extension):
 
             left = self.bot.online_cache[realm.id].difference(player_set)
             self.bot.online_cache[realm.id] = player_set
+            self.bot.offline_realm_time.pop(realm.id, None)
 
             player_objs.extend(
                 models.RealmPlayer(
@@ -147,6 +149,9 @@ class Playerlist(utils.Extension):
 
         online_cache_ids = set(self.bot.online_cache.keys())
         for missed_realm_id in online_cache_ids.difference(gotten_realm_ids):
+            # adds the missing realm id to the countdown timer dict
+            self.bot.offline_realm_time[missed_realm_id] = 0
+
             now_invalid = self.bot.online_cache[missed_realm_id]
             if not now_invalid:
                 continue
@@ -167,8 +172,9 @@ class Playerlist(utils.Extension):
 
         self._previous_now = now
 
-        # handle this in the "background" so we don't have to worry about this
+        # handle these in the "background" so we don't have to worry about these
         # taking too long
+        asyncio.create_task(self._handle_missing_warning())
         await self._realmplayer_queue.put(
             RealmPlayersContainer(realmplayers=player_objs)
         )
@@ -263,6 +269,52 @@ class Playerlist(utils.Extension):
             if isinstance(e, asyncio.CancelledError):
                 return
             await utils.error_handle(self.bot, e)
+
+    async def _handle_missing_warning(self):
+        # basically, for every realm that has been determined to be offline/missing -
+        # increase its value by one. if it increases more than a set value,
+        # try to warn the user about the realm not being there
+        # ideally, this should run every minute
+
+        for key, value in self.bot.offline_realm_time.items():
+            if value <= 10799:  # around 3 hours
+                self.bot.offline_realm_time[key] += 1
+                continue
+
+            async for config in models.GuildConfig.filter(realm_id=str(key)):
+                guild = self.bot.get_guild(config.guild_id)
+                if not guild:
+                    # could just be it's offline or something
+                    continue
+
+                try:
+                    chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
+                except naff.errors.HTTPException:
+                    await pl_utils.eventually_invalidate(self.bot, config)
+                    continue
+                else:
+                    if not chan or not isinstance(chan, naff.GuildText):
+                        # invalid channel
+                        await pl_utils.eventually_invalidate(self.bot, config)
+                        continue
+
+                with contextlib.suppress(naff.errors.HTTPException):
+                    embed = naff.Embed(
+                        title="Warning",
+                        description=(
+                            "I have been unable to get any information about your"
+                            " Realm for the last 3 hours. This could be because the"
+                            " Realm has been turned off, but if it hasn't, make sure"
+                            f" you haven't banned or kick `{self.bot.own_gamertag}`. If"
+                            " you have, please unban the account if needed and run"
+                            " `/config link-realm` again to fix it."
+                        ),
+                        color=naff.RoleColors.YELLOW,
+                    )
+                    await chan.send(embeds=embed)
+
+                self.bot.offline_realm_time.pop(key, None)
+                await pl_utils.eventually_invalidate(self.bot, config)
 
     async def get_players_from_realmplayers(
         self,

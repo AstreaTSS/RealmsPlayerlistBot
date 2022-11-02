@@ -217,6 +217,7 @@ bot.online_cache = defaultdict(set)
 bot.slash_perms_cache = defaultdict(dict)
 bot.live_playerlist_store = defaultdict(set)
 bot.mini_commands_per_scope = {}
+bot.offline_realm_time = {}
 
 
 async def start():

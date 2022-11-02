@@ -347,6 +347,7 @@ if typing.TYPE_CHECKING:
         slash_perms_cache: defaultdict[int, dict[int, PermissionsResolver]]
         mini_commands_per_scope: dict[int, dict[str, MiniCommand]]
         live_playerlist_store: defaultdict[str, set[int]]
+        offline_realm_time: dict[int, int]
 
 else:
 
