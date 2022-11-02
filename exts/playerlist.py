@@ -150,7 +150,9 @@ class Playerlist(utils.Extension):
         online_cache_ids = set(self.bot.online_cache.keys())
         for missed_realm_id in online_cache_ids.difference(gotten_realm_ids):
             # adds the missing realm id to the countdown timer dict
-            self.bot.offline_realm_time[missed_realm_id] = 0
+
+            if self.bot.offline_realm_time.get(missed_realm_id, -1) == -1:
+                self.bot.offline_realm_time[missed_realm_id] = 0
 
             now_invalid = self.bot.online_cache[missed_realm_id]
             if not now_invalid:
@@ -165,7 +167,7 @@ class Playerlist(utils.Extension):
                 for player in now_invalid
             )
 
-            self.bot.online_cache[missed_realm_id] = set()
+            self.bot.online_cache.pop(missed_realm_id, None)
             asyncio.create_task(
                 self._send_live_playerlist(str(missed_realm_id), set(), now_invalid)
             )
