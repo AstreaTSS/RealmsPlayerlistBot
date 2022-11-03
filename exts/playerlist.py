@@ -512,12 +512,17 @@ class Playerlist(utils.Extension):
             )
 
             if last_chunk_index == 0 and upsell and not guild_config.premium_code:
-                first_embed.set_footer(
-                    text=(
-                        "Want minute-to-minute updates on your Realm? Check out Live"
-                        " Playerlist on Playerlist Premium: /premium info"
+                if upsell_type == 1:
+                    first_embed.set_footer(
+                        text=(
+                            "Want minute-to-minute updates on your Realm? Check out"
+                            " Live Playerlist on Playerlist Premium: /premium info"
+                        )
                     )
-                )
+                elif upsell_type == 2:
+                    first_embed.set_footer(
+                        "If you like the bot, you can vote for it via /vote!"
+                    )
             else:
                 first_embed.set_footer(text="As of")
             await ctx.send(embed=first_embed)
