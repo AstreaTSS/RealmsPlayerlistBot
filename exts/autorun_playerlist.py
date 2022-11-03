@@ -103,15 +103,11 @@ class AutoRunPlayerlist(utils.Extension):
             return
 
         try:
-            chan = await guild.fetch_channel(guild_config.playerlist_chan)  # type: ignore
-        except naff.errors.HTTPException:
-            await pl_utils.eventually_invalidate(self.bot, guild_config)
+            chan = await pl_utils.fetch_playerlist_channel(
+                self.bot, guild, guild_config
+            )
+        except ValueError:
             return
-        else:
-            if not chan or not isinstance(chan, naff.GuildText):
-                # invalid channel
-                await pl_utils.eventually_invalidate(self.bot, guild_config)
-                return
 
         try:
             chan = cclasses.valid_channel_check(chan)

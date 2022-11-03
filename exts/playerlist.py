@@ -253,14 +253,12 @@ class Playerlist(utils.Extension):
                     continue
 
                 try:
-                    chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
-
-                    if not chan or not isinstance(chan, naff.GuildText):
-                        # invalid channel
-                        await pl_utils.eventually_invalidate(self.bot, config)
-                        continue
-
+                    chan = await pl_utils.fetch_playerlist_channel(
+                        self.bot, guild, config
+                    )
                     await chan.send(embeds=embed)
+                except ValueError:
+                    continue
                 except naff.errors.HTTPException:
                     await pl_utils.eventually_invalidate(self.bot, config)
                     continue
@@ -288,15 +286,11 @@ class Playerlist(utils.Extension):
                     continue
 
                 try:
-                    chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
-                except naff.errors.HTTPException:
-                    await pl_utils.eventually_invalidate(self.bot, config)
+                    chan = await pl_utils.fetch_playerlist_channel(
+                        self.bot, guild, config
+                    )
+                except ValueError:
                     continue
-                else:
-                    if not chan or not isinstance(chan, naff.GuildText):
-                        # invalid channel
-                        await pl_utils.eventually_invalidate(self.bot, config)
-                        continue
 
                 with contextlib.suppress(naff.errors.HTTPException):
                     embed = naff.Embed(

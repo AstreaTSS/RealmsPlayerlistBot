@@ -208,3 +208,20 @@ async def eventually_invalidate(
             bot.live_playerlist_store[guild_config.realm_id].discard(
                 guild_config.guild_id
             )
+
+
+async def fetch_playerlist_channel(
+    bot: utils.RealmBotBase, guild: naff.Guild, config: models.GuildConfig
+):
+    try:
+        chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
+    except naff.errors.HTTPException as e:
+        await eventually_invalidate(bot, config)
+        raise ValueError() from e
+    else:
+        if not chan or not isinstance(chan, naff.GuildText):
+            # invalid channel
+            await eventually_invalidate(bot, config)
+            raise ValueError()
+
+    return chan
