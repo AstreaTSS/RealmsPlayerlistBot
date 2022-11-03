@@ -2,6 +2,7 @@ import asyncio
 import contextlib
 import datetime
 import importlib
+import logging
 import math
 import os
 import typing
@@ -331,6 +332,9 @@ class Playerlist(utils.Extension):
                 except RealmsAPIException as e:
                     # might be an invalid id somehow? who knows
                     if e.resp.status == 404:
+                        logging.getLogger("realms_bot").warning(
+                            f"Could not leave Realm with ID {key}."
+                        )
                         continue
                     raise
 
