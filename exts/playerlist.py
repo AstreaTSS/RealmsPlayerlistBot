@@ -208,8 +208,6 @@ class Playerlist(utils.Extension):
         self, realm_id: str, joined: set[str], left: set[str]
     ):
         try:
-            now = naff.Timestamp.utcnow()
-
             realmplayers = [
                 models.RealmPlayer(
                     realm_xuid_id=f"{realm_id}-{p}",
@@ -223,7 +221,7 @@ class Playerlist(utils.Extension):
 
             embed = naff.Embed(
                 color=self.bot.color,
-                timestamp=now,
+                timestamp=naff.Timestamp.fromdatetime(self._previous_now),
             )
             embed.set_footer(
                 f"{len(self.bot.online_cache[int(realm_id)])} players online as of"
