@@ -213,6 +213,10 @@ async def eventually_invalidate(
 async def fetch_playerlist_channel(
     bot: utils.RealmBotBase, guild: naff.Guild, config: models.GuildConfig
 ):
+    if not config.playerlist_chan:
+        await eventually_invalidate(bot, config)
+        raise ValueError()
+
     try:
         chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
     except naff.errors.HTTPException as e:
