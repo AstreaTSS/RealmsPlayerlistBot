@@ -279,12 +279,18 @@ class Playerlist(utils.Extension):
                 self.bot.offline_realm_time[key] += 1
                 continue
 
+            no_playerlist_chan: list[bool] = []
+
             async for config in models.GuildConfig.filter(realm_id=str(key)):
                 if not config.playerlist_chan:
                     config.realm_id = None
                     config.club_id = None
                     await config.save()
+
+                    no_playerlist_chan.append(True)
                     continue
+
+                no_playerlist_chan.append(False)
 
                 guild = self.bot.get_guild(config.guild_id)
                 if not guild:
@@ -316,6 +322,17 @@ class Playerlist(utils.Extension):
                     await chan.send(embeds=embed)
 
                 await pl_utils.eventually_invalidate(self.bot, config)
+
+            if all(no_playerlist_chan):
+                # we don't want to stop the whole thing, but as of right now i would
+                # like to know what happens with invalid stuff
+                try:
+                    await self.bot.realms.leave_realm(key)
+                except RealmsAPIException as e:
+                    # might be an invalid id somehow? who knows
+                    if e.resp.status == 404:
+                        continue
+                    raise
 
             self.bot.offline_realm_time.pop(key, None)
 

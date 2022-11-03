@@ -192,6 +192,8 @@ class RealmsAPI:
 
             try:
                 resp.raise_for_status()
+                if resp.status == 204:  # no content
+                    return None
                 return await resp.json(loads=orjson.loads)
             except Exception as e:
                 raise RealmsAPIException(resp, e)
@@ -202,6 +204,9 @@ class RealmsAPI:
     async def post(self, url: str, data: typing.Optional[dict] = None):
         return await self.request("POST", url, data=data)
 
+    async def delete(self, url: str, data: typing.Optional[dict] = None):
+        return await self.request("DELETE", url, data=data)
+
     async def join_realm_from_code(self, code: str):
         return FullRealm.parse_obj(await self.post(f"invites/v1/link/accept/{code}"))
 
@@ -210,3 +215,7 @@ class RealmsAPI:
 
     async def fetch_activities(self):
         return ActivityList.parse_obj(await self.get("activities/live/players"))
+
+    async def leave_realm(self, realm_id: int | str):
+        await self.delete(f"invites/{realm_id}")
+        return None
