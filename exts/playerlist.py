@@ -276,8 +276,8 @@ class Playerlist(utils.Extension):
         # try to warn the user about the realm not being there
         # ideally, this should run every minute
 
-        for key, value in self.bot.offline_realm_time.items():
-            if value <= 179:  # around 3 hours
+        for key, value in self.bot.offline_realm_time.copy().items():
+            if value < 179:  # around 3 hours
                 self.bot.offline_realm_time[key] += 1
                 continue
 
