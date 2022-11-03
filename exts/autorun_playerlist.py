@@ -142,5 +142,6 @@ class AutoRunPlayerlist(utils.Extension):
 
 def setup(bot):
     importlib.reload(utils)
+    importlib.reload(pl_utils)
     importlib.reload(cclasses)
     AutoRunPlayerlist(bot)
