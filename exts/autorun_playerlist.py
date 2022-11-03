@@ -35,7 +35,7 @@ class AutoRunPlayerlist(utils.Extension):
             while True:
                 # margin of error
                 now = naff.Timestamp.utcnow() + datetime.timedelta(milliseconds=1)
-                next_delta = relativedelta(hours=+1, minute=0, second=0, microsecond=0)
+                next_delta = relativedelta(hours=+1, minute=0, second=5, microsecond=0)
                 next_time = now + next_delta
 
                 await utils.sleep_until(next_time)
