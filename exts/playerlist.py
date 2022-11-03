@@ -280,6 +280,12 @@ class Playerlist(utils.Extension):
                 continue
 
             async for config in models.GuildConfig.filter(realm_id=str(key)):
+                if not config.playerlist_chan:
+                    config.realm_id = None
+                    config.club_id = None
+                    await config.save()
+                    continue
+
                 guild = self.bot.get_guild(config.guild_id)
                 if not guild:
                     # could just be it's offline or something
@@ -307,8 +313,9 @@ class Playerlist(utils.Extension):
                     )
                     await chan.send(embeds=embed)
 
-                self.bot.offline_realm_time.pop(key, None)
                 await pl_utils.eventually_invalidate(self.bot, config)
+
+            self.bot.offline_realm_time.pop(key, None)
 
     async def get_players_from_realmplayers(
         self,
