@@ -2,7 +2,6 @@ naff==1.12.0
 humanize==4.4.0
 websockets==10.3
 xbox-webapi==2.0.11
-cchardet==2.1.7
 aiodns==3.0.0
 attrs==22.1.0
 Brotli==1.0.9
