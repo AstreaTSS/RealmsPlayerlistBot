@@ -243,7 +243,7 @@ class Playerlist(utils.Extension):
                     guild_id=guild_id
                 ).prefetch_related("premium_code")
 
-                if not config.premium_code:
+                if not config.premium_code or not config.playerlist_chan:
                     self.bot.live_playerlist_store[realm_id].discard(guild_id)
                     continue
 
