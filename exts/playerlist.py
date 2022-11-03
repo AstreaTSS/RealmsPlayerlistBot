@@ -323,7 +323,7 @@ class Playerlist(utils.Extension):
 
                 await pl_utils.eventually_invalidate(self.bot, config)
 
-            if all(no_playerlist_chan):
+            if all(no_playerlist_chan) or not no_playerlist_chan:
                 # we don't want to stop the whole thing, but as of right now i would
                 # like to know what happens with invalid stuff
                 try:
