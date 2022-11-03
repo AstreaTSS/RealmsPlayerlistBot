@@ -307,7 +307,9 @@ class Playerlist(utils.Extension):
                             " Realm has been turned off, but if it hasn't, make sure"
                             f" you haven't banned or kick `{self.bot.own_gamertag}`. If"
                             " you have, please unban the account if needed and run"
-                            " `/config link-realm` again to fix it."
+                            " `/config link-realm` again to fix it.\n\nAlternatively,"
+                            " if you want to disable the autorunner entirely, you can"
+                            " use `/config unset-playerlist-channel` to do so."
                         ),
                         color=naff.RoleColors.YELLOW,
                     )
