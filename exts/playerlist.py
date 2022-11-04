@@ -276,7 +276,7 @@ class Playerlist(utils.Extension):
         # ideally, this should run every minute
 
         for key, value in self.bot.offline_realm_time.copy().items():
-            if value < 179:  # around 3 hours
+            if value < 1439:  # around 24 hours
                 self.bot.offline_realm_time[key] += 1
                 continue
 
@@ -310,19 +310,20 @@ class Playerlist(utils.Extension):
                         title="Warning",
                         description=(
                             "I have been unable to get any information about your"
-                            " Realm for the last 3 hours. This could be because the"
-                            " Realm has been turned off, but if it hasn't, make sure"
-                            f" you haven't banned or kick `{self.bot.own_gamertag}`. If"
-                            " you have, please unban the account if needed and run"
-                            " `/config link-realm` again to fix it.\n\nAlternatively,"
-                            " if you want to disable the autorunner entirely, you can"
-                            " use `/config unset-playerlist-channel` to do so."
+                            " Realm for the last 24 hours. This could be because the"
+                            " Realm has been turned off or because it's inactive, but"
+                            " if it hasn't, make sure you haven't banned or kick"
+                            f" `{self.bot.own_gamertag}`. If you have, please unban the"
+                            " account if needed and run `/config link-realm` again to"
+                            " fix it.\n\nAlternatively, if you want to disable the"
+                            " autorunner entirely, you can use `/config"
+                            " unset-playerlist-channel` to do so."
                         ),
                         color=naff.RoleColors.YELLOW,
                     )
                     await chan.send(embeds=embed)
 
-                await pl_utils.eventually_invalidate(self.bot, config)
+                await pl_utils.eventually_invalidate(self.bot, config, limit=7)
 
             if all(no_playerlist_chan) or not no_playerlist_chan:
                 # we don't want to stop the whole thing, but as of right now i would

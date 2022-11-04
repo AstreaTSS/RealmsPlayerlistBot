@@ -192,14 +192,16 @@ async def can_run_playerlist(ctx: utils.RealmContext) -> typing.Any:
 
 
 async def eventually_invalidate(
-    bot: utils.RealmBotBase, guild_config: models.GuildConfig
+    bot: utils.RealmBotBase,
+    guild_config: models.GuildConfig,
+    limit=3,
 ):
     # the idea here is to invalidate autorunners that simply can't be run
     # there's a bit of generousity here, as the code gives a total of 3 tries
     # before actually doing it
     num_times = await bot.redis.incr(f"invalid-playerlist-{guild_config.guild_id}")
 
-    if num_times > 3:
+    if num_times > limit:
         guild_config.playerlist_chan = None
         await guild_config.save()
         await bot.redis.delete(f"invalid-playerlist-{guild_config.guild_id}")
