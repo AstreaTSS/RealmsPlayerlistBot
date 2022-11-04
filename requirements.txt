@@ -15,4 +15,5 @@ python-dateutil==2.8.2
 sentry-sdk==1.10.1
 rapidfuzz==2.13.0
 pycryptodome==3.15.0
+apischema==0.17.5
 uvloop==0.17.0; platform_system == "Linux"

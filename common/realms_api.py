@@ -2,46 +2,22 @@
 import asyncio
 import os
 import typing
+from dataclasses import dataclass
 from enum import Enum
 from types import NoneType
-from typing import Any
-from typing import Callable
-from typing import List
-from typing import Optional
-from typing import TypeVar
 
 import aiohttp
+import apischema
 import attrs
 import orjson
-import pydantic
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
 
 import common.utils as utils
 
-T = TypeVar("T")
 
-
-# while we do monkeypatch the xbox api lib to make CamelCaseModel faster anyways
-# i'd rather have my own implementation just in case there's possiblities to
-# speed things up or tweak things
-
-
-def to_camel(string):
-    words = string.split("_")
-    return words[0] + "".join(word.capitalize() for word in words[1:])
-
-
-class CamelCaseModel(pydantic.BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-        allow_population_by_field_name = True
-        alias_generator = to_camel
-        json_loads = orjson.loads
-
-
-def from_list(f: Callable[[Any], T], x: Any) -> List[T]:
-    return [f(y) for y in x]
+apischema.settings.additional_properties = True
+apischema.settings.camel_case = True
 
 
 class Permission(Enum):
@@ -59,11 +35,11 @@ class WorldType(Enum):
     NORMAL = "NORMAL"
 
 
-class FullRealm(CamelCaseModel):
+@dataclass
+class FullRealm:
     id: int
     remote_subscription_id: str
-    owner: Optional[str]
-    owner_uuid: Optional[str] = None
+    owner: typing.Optional[str]
     name: str
     default_permission: Permission
     state: State
@@ -80,16 +56,19 @@ class FullRealm(CamelCaseModel):
     active_slot: int
     slots: NoneType
     member: bool
-    club_id: Optional[int] = None
     subscription_refresh_status: NoneType
-    motd: Optional[str] = None
+    club_id: typing.Optional[int] = None
+    owner_uuid: typing.Optional[str] = None
+    motd: typing.Optional[str] = None
 
 
-class FullWorlds(CamelCaseModel):
-    servers: List[FullRealm]
+@dataclass
+class FullWorlds:
+    servers: list[FullRealm]
 
 
-class Player(CamelCaseModel):
+@dataclass
+class Player:
     uuid: str
     name: NoneType
     operator: bool
@@ -98,14 +77,16 @@ class Player(CamelCaseModel):
     permission: Permission
 
 
-class PartialRealm(CamelCaseModel):
+@dataclass
+class PartialRealm:
     id: int
-    players: List[Player]
+    players: list[Player]
     full: bool
 
 
-class ActivityList(CamelCaseModel):
-    servers: List[PartialRealm]
+@dataclass
+class ActivityList:
+    servers: list[PartialRealm]
 
 
 class RealmsAPIException(Exception):
@@ -208,13 +189,17 @@ class RealmsAPI:
         return await self.request("DELETE", url, data=data)
 
     async def join_realm_from_code(self, code: str):
-        return FullRealm.parse_obj(await self.post(f"invites/v1/link/accept/{code}"))
+        return apischema.deserialize(
+            FullRealm, await self.post(f"invites/v1/link/accept/{code}")
+        )
 
     async def fetch_realms(self):
-        return FullWorlds.parse_obj(await self.get("worlds"))
+        return apischema.deserialize(FullWorlds, await self.get("worlds"))
 
     async def fetch_activities(self):
-        return ActivityList.parse_obj(await self.get("activities/live/players"))
+        return apischema.deserialize(
+            ActivityList, await self.get("activities/live/players")
+        )
 
     async def leave_realm(self, realm_id: int | str):
         await self.delete(f"invites/{realm_id}")
