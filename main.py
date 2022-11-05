@@ -22,6 +22,7 @@ import common.utils as utils
 from common.classes import SemaphoreRedis
 from common.classes import TimedDict
 from common.realms_api import RealmsAPI
+from common.xbox_api import parse_profile_response
 from common.xbox_api import XboxAPI
 
 # load the config file into environment variables
@@ -98,6 +99,12 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
         self.xbox = XboxAPI()
         self.realms = RealmsAPI()
+
+        profile = parse_profile_response(
+            await self.xbox.fetch_profile_by_xuid(self.xbox.auth_mgr.xsts_token.xuid)
+        )
+        user = profile.profile_users[0]
+        self.own_gamertag = next(s.value for s in user.settings if s.id == "Gamertag")
 
         self.session = aiohttp.ClientSession()
         headers = {
