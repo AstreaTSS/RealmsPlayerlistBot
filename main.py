@@ -100,6 +100,8 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         self.xbox = XboxAPI()
         self.realms = RealmsAPI()
 
+        await asyncio.sleep(0.25)
+
         profile = parse_profile_response(
             await self.xbox.fetch_profile_by_xuid(self.xbox.auth_mgr.xsts_token.xuid)
         )
