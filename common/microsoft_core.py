@@ -107,6 +107,7 @@ def _orjson_dumps_wrapper(obj: typing.Any) -> str:
 class BaseMicrosoftAPI:
     relying_party: str = attrs.field(default="http://xboxlive.com")
     base_url: str = attrs.field(default="")
+    set_up: asyncio.Event = attrs.field(factory=asyncio.Event)
     session: aiohttp.ClientSession = attrs.field(init=False)
     auth_mgr: AuthenticationManager = attrs.field(init=False)
 
@@ -150,6 +151,8 @@ class BaseMicrosoftAPI:
                     self.auth_mgr,
                     relying_party=self.relying_party,
                 )
+
+        self.set_up.set()
 
     async def request(
         self,

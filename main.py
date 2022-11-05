@@ -100,7 +100,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         self.xbox = XboxAPI()
         self.realms = RealmsAPI()
 
-        await asyncio.sleep(0.25)
+        await self.xbox.set_up.wait()
 
         profile = parse_profile_response(
             await self.xbox.fetch_profile_by_xuid(self.xbox.auth_mgr.xsts_token.xuid)
@@ -214,10 +214,10 @@ async def start():
     )
 
     # mark players as offline if they were online more than 5 minutes ago
-    five_minutes_ago = naff.Timestamp.utcnow() - datetime.timedelta(minutes=5)
-    await models.RealmPlayer.filter(online=True, last_seen__lt=five_minutes_ago).update(
-        online=False
-    )
+    # five_minutes_ago = naff.Timestamp.utcnow() - datetime.timedelta(minutes=5)
+    # await models.RealmPlayer.filter(online=True, last_seen__lt=five_minutes_ago).update(
+    #     online=False
+    # )
 
     # add all online players to the online cache
     async for player in models.RealmPlayer.filter(online=True):
