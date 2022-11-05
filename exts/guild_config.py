@@ -10,7 +10,7 @@ import naff
 import common.classes as cclasses
 import common.clubs_playerlist as clubs_playerlist
 import common.utils as utils
-from common.realms_api import RealmsAPIException
+from common.microsoft_core import MicrosoftAPIException
 
 
 # regex that takes in:
@@ -177,7 +177,7 @@ class GuildConfig(utils.Extension):
             )
             embeds.appendleft(confirm_embed)
             await ctx.send(embeds=list(embeds))
-        except RealmsAPIException as e:
+        except MicrosoftAPIException as e:
             if (
                 isinstance(e.error, aiohttp.ClientResponseError)
                 and e.resp.status == 403

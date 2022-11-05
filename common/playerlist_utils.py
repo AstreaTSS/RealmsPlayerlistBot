@@ -1,19 +1,19 @@
 import asyncio
 import contextlib
 import datetime
+import logging
 import typing
 
 import aiohttp
 import attrs
 import naff
 import orjson
-import pydantic
+from apischema import ValidationError
 from tortoise.exceptions import DoesNotExist
-from xbox.webapi.api.provider.profile.models import ProfileResponse
 
-import common.custom_providers as providers
 import common.models as models
 import common.utils as utils
+import common.xbox_api as xbox_api
 
 
 @attrs.define(eq=False)
@@ -78,11 +78,10 @@ class GamertagHandler:
     bot: utils.RealmBotBase = attrs.field()
     sem: asyncio.Semaphore = attrs.field()
     xuids_to_get: typing.Tuple[str, ...] = attrs.field()
-    profile: "providers.ProfileProvider" = attrs.field()
     openxbl_session: aiohttp.ClientSession = attrs.field()
 
     index: int = attrs.field(init=False, default=0)
-    responses: typing.List["ProfileResponse"] = attrs.field(init=False, factory=list)
+    responses: list[xbox_api.ProfileResponse] = attrs.field(init=False, factory=list)
     AMOUNT_TO_GET: int = attrs.field(init=False, default=30)
 
     def __attrs_post_init__(self):
@@ -92,8 +91,7 @@ class GamertagHandler:
     async def get_gamertags(self, xuid_list: typing.List[str]) -> None:
         # honestly, i forget what this output can look like by now -
         # but if i remember, it's kinda weird
-        profile_resp = await self.profile.get_profiles(xuid_list)
-        profile_json = await profile_resp.json(loads=orjson.loads)
+        profile_json = await self.bot.xbox.fetch_profiles(xuid_list)
 
         if profile_json.get("code"):  # usually means ratelimited or invalid xuid
             description: str = profile_json["description"]
@@ -112,7 +110,7 @@ class GamertagHandler:
         elif profile_json.get("limitType"):  # ratelimit
             raise GamertagOnCooldown()
 
-        self.responses.append(ProfileResponse.parse_obj(profile_json))
+        self.responses.append(xbox_api.parse_profile_response(profile_json))
         self.index += self.AMOUNT_TO_GET
 
     async def backup_get_gamertags(self):
@@ -133,13 +131,16 @@ class GamertagHandler:
                         await utils.msg_to_owner(self.bot, resp_json)
                         raise GamertagServiceDown()
                     else:
-                        with contextlib.suppress(pydantic.ValidationError):
-                            self.responses.append(ProfileResponse.parse_obj(resp_json))
+                        with contextlib.suppress(ValidationError):
+                            self.responses.append(
+                                xbox_api.parse_profile_response(resp_json)
+                            )
                 except aiohttp.ContentTypeError:
                     # can happen, if not rare
                     text = await r.text()
-                    await utils.msg_to_owner(
-                        self.bot,
+                    logging.getLogger(
+                        "realms_bot"
+                    ).info(  # this is more common than you would expect
                         f"Failed to get gamertag of user `{xuid}`.\nResponse code:"
                         f" {r.status}\nText: {text}",
                     )

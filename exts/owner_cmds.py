@@ -18,8 +18,8 @@ from naff.ext.debug_extension.utils import get_cache_state
 
 import common.utils as utils
 from common.clubs_playerlist import fill_in_data_from_clubs
+from common.microsoft_core import MicrosoftAPIException
 from common.models import GuildConfig
-from common.realms_api import RealmsAPIException
 
 DEV_GUILD_ID = int(os.environ["DEV_GUILD_ID"])
 
@@ -318,7 +318,7 @@ class OwnerCMDs(utils.Extension):
         try:
             realm = await ctx.bot.realms.join_realm_from_code(realm_code)
             await ctx.send(f"Realm ID: {realm.id}\nClub ID: {realm.club_id}")
-        except RealmsAPIException as e:
+        except MicrosoftAPIException as e:
             if isinstance(e.error, aiohttp.ClientResponseError):
                 await utils.msg_to_owner(
                     ctx.bot,

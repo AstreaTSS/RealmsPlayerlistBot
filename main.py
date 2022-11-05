@@ -15,18 +15,14 @@ import tomli
 from naff.ext.sentry import HookedTask
 from naff.models.naff.tasks.task import Task
 from tortoise import Tortoise
-from xbox.webapi.api.client import XboxLiveClient
-from xbox.webapi.authentication.manager import AuthenticationManager
-from xbox.webapi.authentication.models import OAuth2TokenResponse
 
 import common.help_tools as help_tools
 import common.models as models
 import common.utils as utils
 from common.classes import SemaphoreRedis
 from common.classes import TimedDict
-from common.custom_providers import ClubProvider
-from common.custom_providers import ProfileProvider
 from common.realms_api import RealmsAPI
+from common.xbox_api import XboxAPI
 
 # load the config file into environment variables
 # this allows an easy way to access these variables from any file
@@ -100,27 +96,10 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
             os.environ["REDIS_URL"], decode_responses=True, semaphore_value=15
         )
 
+        self.xbox = XboxAPI()
+        self.realms = RealmsAPI()
+
         self.session = aiohttp.ClientSession()
-        auth_mgr = AuthenticationManager(
-            self.session,
-            os.environ["XBOX_CLIENT_ID"],
-            os.environ["XBOX_CLIENT_SECRET"],
-            "",
-        )
-        auth_mgr.oauth = OAuth2TokenResponse.parse_file(
-            os.environ["XAPI_TOKENS_LOCATION"]
-        )
-        await auth_mgr.refresh_tokens()
-        xbl_client = XboxLiveClient(auth_mgr)
-        self.profile = ProfileProvider(xbl_client)
-        self.club = ClubProvider(xbl_client)
-
-        profile = await xbl_client.profile.get_profile_by_xuid(str(xbl_client.xuid))
-        user = profile.profile_users[0]
-        self.own_gamertag = next(s.value for s in user.settings if s.id == "Gamertag")
-
-        self.realms = RealmsAPI(aiohttp.ClientSession())
-
         headers = {
             "X-Authorization": os.environ["OPENXBL_KEY"],
             "Accept": "application/json",
@@ -261,7 +240,7 @@ async def start():
         except naff.errors.ExtensionLoadException:
             raise
 
-    await bot.astart(os.environ.get("MAIN_TOKEN"))
+    await bot.astart(os.environ["MAIN_TOKEN"])
 
 
 with contextlib.suppress(ImportError):

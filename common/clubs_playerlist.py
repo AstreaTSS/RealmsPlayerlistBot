@@ -9,6 +9,7 @@ import orjson
 import common.models as models
 import common.playerlist_utils as pl_utils
 import common.utils as utils
+from common.microsoft_core import MicrosoftAPIException
 
 
 def _camel_to_const_snake(s):
@@ -42,10 +43,9 @@ class ClubOnCooldown(Exception):
 
 async def _realm_club_json(
     bot: utils.RealmBotBase, club_id
-) -> typing.Tuple[typing.Optional[dict], aiohttp.ClientResponse]:
+) -> typing.Tuple[typing.Optional[dict], typing.Optional[aiohttp.ClientResponse]]:
     try:
-        r = await bot.club.get_club_user_presences(club_id)
-        resp_json = await r.json(loads=orjson.loads)
+        resp_json = await bot.xbox.fetch_club_presences(club_id)
 
         if resp_json.get("limitType"):
             # ratelimit, not much we can do here
@@ -55,8 +55,8 @@ async def _realm_club_json(
                 await asyncio.sleep(15)
             raise ClubOnCooldown()
 
-        return resp_json, r
-    except (aiohttp.ContentTypeError, ClubOnCooldown):
+        return resp_json, None
+    except (MicrosoftAPIException, ClubOnCooldown):
         async with bot.openxbl_session.get(
             f"https://xbl.io/api/v2/clubs/{club_id}"
         ) as r:
@@ -81,6 +81,9 @@ async def realm_club_get(bot: utils.RealmBotBase, club_id):
     resp_json, resp = await _realm_club_json(bot, club_id)
 
     if not resp_json:
+        if typing.TYPE_CHECKING:
+            assert resp != None
+
         resp_text = await resp.text()
         await utils.msg_to_owner(bot, resp_text)
         await utils.msg_to_owner(bot, resp.headers)
@@ -100,8 +103,9 @@ async def realm_club_get(bot: utils.RealmBotBase, club_id):
             return "Unauthorized"
 
         await utils.msg_to_owner(bot, resp_json)
-        await utils.msg_to_owner(bot, resp.headers)
-        await utils.msg_to_owner(bot, resp.status)
+        if resp:
+            await utils.msg_to_owner(bot, resp.headers)
+            await utils.msg_to_owner(bot, resp.status)
         return None
 
 

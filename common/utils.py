@@ -17,6 +17,7 @@ from .models import GuildConfig
 
 
 DEV_GUILD_ID = int(os.environ.get("DEV_GUILD_ID", "0"))
+XBOX_API_RELYING_PARTY = "http://xboxlive.com"
 REALMS_API_URL = "https://pocket.realms.minecraft.net/"
 MC_VERSION = "1.19.0"  # this can be a few versions behind
 
@@ -325,7 +326,7 @@ class RealmAutocompleteContext(naff.AutocompleteContext):
 
 
 if typing.TYPE_CHECKING:
-    from .custom_providers import ProfileProvider, ClubProvider
+    from .xbox_api import XboxAPI
     from .realms_api import RealmsAPI
     from .classes import TimedDict
     from .help_tools import PermissionsResolver, MiniCommand
@@ -335,9 +336,8 @@ if typing.TYPE_CHECKING:
         color: naff.Color
         session: aiohttp.ClientSession
         openxbl_session: aiohttp.ClientSession
+        xbox: XboxAPI
         realms: RealmsAPI
-        profile: ProfileProvider
-        club: ClubProvider
         owner: naff.User
         redis: aioredis.Redis
         fully_ready: asyncio.Event

@@ -8,10 +8,12 @@ import typing
 
 import aiohttp
 import naff
-import pydantic
-from xbox.webapi.api.provider.profile.models import ProfileResponse
+import orjson
+from apischema import ValidationError
 
 import common.utils as utils
+import common.xbox_api as xbox_api
+from common.microsoft_core import MicrosoftAPIException
 
 
 class GeneralCMDS(utils.Extension):
@@ -164,7 +166,7 @@ class GeneralCMDS(utils.Extension):
             raise naff.errors.BadArgument(f'"{xuid}" is not a valid XUID.')
 
         maybe_gamertag: typing.Union[
-            str, ProfileResponse, None
+            str, xbox_api.ProfileResponse, None
         ] = await self.bot.redis.get(str(valid_xuid))
 
         if not maybe_gamertag:
@@ -175,8 +177,12 @@ class GeneralCMDS(utils.Extension):
                     async with session.get(
                         f"https://xbl-api.prouser123.me/profile/xuid/{valid_xuid}"
                     ) as r:
-                        with contextlib.suppress(pydantic.ValidationError):
-                            maybe_gamertag = ProfileResponse.parse_raw(await r.read())
+                        with contextlib.suppress(
+                            ValidationError, aiohttp.ContentTypeError
+                        ):
+                            maybe_gamertag = xbox_api.parse_profile_response(
+                                await r.json(loads=orjson.loads)
+                            )
 
                 if not maybe_gamertag:
                     headers = {
@@ -189,29 +195,29 @@ class GeneralCMDS(utils.Extension):
                             f"https://xbl.io/api/v2/account/{valid_xuid}",
                             headers=headers,
                         ) as r:
-                            with contextlib.suppress(pydantic.ValidationError):
-                                maybe_gamertag = ProfileResponse.parse_raw(
-                                    await r.read()
+                            with contextlib.suppress(
+                                ValidationError, aiohttp.ContentTypeError
+                            ):
+                                maybe_gamertag = xbox_api.parse_profile_response(
+                                    await r.json(loads=orjson.loads)
                                 )
 
                 if not maybe_gamertag:
                     with contextlib.suppress(
                         aiohttp.ClientResponseError,
                         asyncio.TimeoutError,
-                        pydantic.ValidationError,
+                        ValidationError,
+                        MicrosoftAPIException,
                     ):
-                        maybe_gamertag = (
-                            await self.bot.profile.client.profile.get_profile_by_xuid(
-                                str(valid_xuid)
-                            )
-                        )
+                        resp = await self.bot.xbox.fetch_profile_by_xuid(valid_xuid)
+                        maybe_gamertag = xbox_api.parse_profile_response(resp)
 
         if not maybe_gamertag:
             raise naff.errors.BadArgument(
                 f"Could not find gamertag of XUID `{valid_xuid}`!"
             )
 
-        if isinstance(maybe_gamertag, ProfileResponse):
+        if isinstance(maybe_gamertag, xbox_api.ProfileResponse):
             maybe_gamertag = next(
                 s.value
                 for s in maybe_gamertag.profile_users[0].settings
@@ -229,4 +235,5 @@ class GeneralCMDS(utils.Extension):
 
 def setup(bot):
     importlib.reload(utils)
+    importlib.reload(xbox_api)
     GeneralCMDS(bot)

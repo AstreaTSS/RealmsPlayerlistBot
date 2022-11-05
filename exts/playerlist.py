@@ -14,7 +14,7 @@ from tortoise.expressions import Q
 import common.models as models
 import common.playerlist_utils as pl_utils
 import common.utils as utils
-from common.realms_api import RealmsAPIException
+from common.microsoft_core import MicrosoftAPIException
 
 
 hours_ago_choices = [
@@ -98,7 +98,7 @@ class Playerlist(utils.Extension):
         try:
             realms = await self.bot.realms.fetch_activities()
         except Exception as e:
-            if isinstance(e, RealmsAPIException) and e.resp.status == 502:
+            if isinstance(e, MicrosoftAPIException) and e.resp.status == 502:
                 # bad gateway, can't do much about it
                 return
             await utils.error_handle(self.bot, e)
@@ -330,7 +330,7 @@ class Playerlist(utils.Extension):
                 # like to know what happens with invalid stuff
                 try:
                     await self.bot.realms.leave_realm(key)
-                except RealmsAPIException as e:
+                except MicrosoftAPIException as e:
                     # might be an invalid id somehow? who knows
                     if e.resp.status == 404:
                         logging.getLogger("realms_bot").warning(
@@ -369,7 +369,6 @@ class Playerlist(utils.Extension):
                 self.bot,
                 self.sem,
                 tuple(unresolved_dict.keys()),
-                self.bot.profile,
                 self.bot.openxbl_session,
             )
             gamertag_dict = await gamertag_handler.run()
