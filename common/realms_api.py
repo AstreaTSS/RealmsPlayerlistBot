@@ -90,7 +90,7 @@ class RealmsAPI(BaseMicrosoftAPI):
             "Client-Version": utils.MC_VERSION,
             "User-Agent": "MCPE/UWP",
         }
-        ignore_this = kwargs.pop("headers")
+        ignore_this = kwargs.pop("headers", None)
         return await super().request(*args, **kwargs, headers=HEADERS)
 
     async def join_realm_from_code(self, code: str):
