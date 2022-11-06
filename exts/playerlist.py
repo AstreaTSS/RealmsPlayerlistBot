@@ -239,7 +239,7 @@ class Playerlist(utils.Extension):
                     value="\n".join(gamertag_mapping[p] for p in left),
                 )
 
-            for guild_id in self.bot.live_playerlist_store[realm_id]:
+            for guild_id in self.bot.live_playerlist_store[realm_id].copy():
                 config = await models.GuildConfig.get(
                     guild_id=guild_id
                 ).prefetch_related("premium_code")
