@@ -234,45 +234,6 @@ class GuildConfig(utils.Extension):
         await ctx.send("Unset the playerlist channel.")
 
     @config.subcommand(
-        sub_cmd_name="live-playerlist",
-        sub_cmd_description=(
-            "Sets or unsets the live playerlist. Can only be run for servers with"
-            " premium activated."
-        ),
-    )
-    @naff.slash_option(
-        "toggle",
-        "Should it be on (true) or off (false)?",
-        naff.OptionTypes.BOOLEAN,
-        required=True,
-    )
-    async def toggle_live_playerlist(self, ctx: utils.RealmContext, toggle: bool):
-        config = await ctx.fetch_config()
-
-        if not config.premium_code:
-            raise utils.CustomCheckFailure(
-                "This server does not have premium activated! Check out `/premium info`"
-                " for more information about it."
-            )
-
-        if not (config.realm_id and config.playerlist_chan and config.club_id):
-            raise utils.CustomCheckFailure(
-                "You need to link your Realm and set a playerlist channel before"
-                " running this."
-            )
-
-        if toggle:
-            self.bot.live_playerlist_store[config.realm_id].add(config.guild_id)
-        else:
-            self.bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
-
-        config.live_playerlist = toggle
-        await config.save()
-        await ctx.send(
-            f"Turned {utils.toggle_friendly_str(toggle)} the live playerlist!"
-        )
-
-    @config.subcommand(
         sub_cmd_name="help",
         sub_cmd_description="Tells you how to set up this bot.",
     )
