@@ -421,9 +421,19 @@ class Playerlist(utils.Extension):
             else:
                 return
 
+        # this may seem a bit weird to you... but let's say it's 8:00:03, and we want to
+        # go one hour back
+        # a naive implementation would just subtract one hour from the time, getting 7:00:03,
+        # but there may be entries that were stored from 7:00:01 because of how the data collector
+        # runs
+        # instead, we set the seconds to 30 (8:00:30), then subtract the hours and one minute,
+        # which results in 6:59:30 - effectively, we're getting times from 7:00:00 onwards,
+        # as the data collector thing will not take a whole 30 seconds to process things
+        # this is very useful for the autorunners, which always have a chance of taking a bit
+        # long due to random chance
         actual_hours_ago: int = int(hours_ago)
-        now = naff.Timestamp.utcnow()
-        time_delta = datetime.timedelta(hours=actual_hours_ago)
+        now = naff.Timestamp.utcnow().replace(second=30)
+        time_delta = datetime.timedelta(hours=actual_hours_ago, minutes=1)
         time_ago = now - time_delta
 
         realmplayers = await models.RealmPlayer.filter(
