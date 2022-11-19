@@ -435,26 +435,13 @@ class Playerlist(utils.Extension):
             if not init_mes:
                 return
 
-            if not self.bot.realm_name_cache.filled:
-                raise utils.CustomCheckFailure(
-                    "No one seems to have been on the Realm for the last "
-                    + f"{actual_hours_ago} hour(s). Make sure you haven't changed"
-                    " Realms or kicked the bot's account,"
-                    f" `{self.bot.own_gamertag}` - try relinking the Realm via"
-                    " `/config link-realm` if that happens."
-                )
-
-            if not self.bot.realm_name_cache.get(guild_config.realm_id):
-                raise utils.CustomCheckFailure(
-                    "I can't seem to read this Realm's players! Make sure you"
-                    " haven't changed Realms or kicked the bot's account,"
-                    f" `{self.bot.own_gamertag}` - try relinking the Realm via"
-                    " `/config link-realm` if that happens."
-                )
-            else:
-                raise utils.CustomCheckFailure(
-                    f"No one was on the Realm for the last {actual_hours_ago} hour(s)."
-                )
+            raise utils.CustomCheckFailure(
+                "No one seems to have been on the Realm for the last "
+                + f"{actual_hours_ago} hour(s). Make sure you haven't changed"
+                " Realms or kicked the bot's account,"
+                f" `{self.bot.own_gamertag}` - try relinking the Realm via"
+                " `/config link-realm` if that happens."
+            )
 
         player_list = await self.get_players_from_realmplayers(
             guild_config.realm_id, realmplayers  # type: ignore
