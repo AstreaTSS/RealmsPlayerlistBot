@@ -214,10 +214,10 @@ async def start():
     )
 
     # mark players as offline if they were online more than 5 minutes ago
-    # five_minutes_ago = naff.Timestamp.utcnow() - datetime.timedelta(minutes=5)
-    # await models.RealmPlayer.filter(online=True, last_seen__lt=five_minutes_ago).update(
-    #     online=False
-    # )
+    five_minutes_ago = naff.Timestamp.utcnow() - datetime.timedelta(minutes=5)
+    await models.RealmPlayer.filter(online=True, last_seen__lt=five_minutes_ago).update(
+        online=False
+    )
 
     # add all online players to the online cache
     async for player in models.RealmPlayer.filter(online=True):
