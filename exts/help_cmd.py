@@ -111,7 +111,7 @@ class HelpCMD(utils.Extension):
 
             embed.title = f"{name} - Page {index + 1}" if multiple_embeds else name
             for cmd in chunk:
-                signature = f"{cmd.resolved_name} {cmd.signature}"
+                signature = f"{cmd.resolved_name} {cmd.signature}".strip()
                 embed.add_field(
                     name=signature,
                     value=cmd.brief_description,

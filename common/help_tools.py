@@ -413,6 +413,8 @@ class MiniCommand:
         self,
         cmd: "MiniCommand",
     ):
+        if self.signature:  # make sure base commands have no signature
+            self.signature = ""
         self.subcommands.add(cmd)
 
 
