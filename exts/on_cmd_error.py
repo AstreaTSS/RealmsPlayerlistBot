@@ -29,7 +29,7 @@ class OnCMDError(naff.Extension):
             delta_wait = datetime.timedelta(
                 seconds=event.error.cooldown.get_cooldown_time()
             )
-            await ctx.send(
+            await event.ctx.send(
                 embeds=self.error_embed_generate(
                     "You're doing that command too fast! "
                     + "Try again in"
