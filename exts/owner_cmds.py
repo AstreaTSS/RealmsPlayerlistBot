@@ -29,7 +29,7 @@ class OwnerCMDs(utils.Extension):
         self.bot: utils.RealmBotBase = bot
         self.name = "Owner"
 
-        # self.set_extension_error(self.ext_error)
+        self.set_extension_error(self.ext_error)
         self.add_ext_check(naff.checks.is_owner())
 
     def _ascii_name(self, name):

@@ -36,7 +36,7 @@ class GeneralCMDS(utils.Extension):
         start_time = time.perf_counter()
         ping_discord = round((self.bot.latency * 1000), 2)
 
-        _ = await ctx.send(
+        mes = await ctx.send(
             f"Pong!\n`{ping_discord}` ms from Discord.\nCalculating personal ping..."
         )
 
@@ -44,10 +44,11 @@ class GeneralCMDS(utils.Extension):
         ping_personal = round(((end_time - start_time) * 1000), 2)
 
         await ctx.edit(
+            message=mes,
             content=(
                 f"Pong!\n`{ping_discord}` ms from Discord.\n`{ping_personal}` ms"
                 " personally."
-            )
+            ),
         )
 
     @naff.slash_command(

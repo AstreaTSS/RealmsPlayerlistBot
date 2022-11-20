@@ -68,7 +68,7 @@ def default_sentry_filter(
 ) -> typing.Optional[dict[str, typing.Any]]:
     if "log_record" in hint:
         record: logging.LogRecord = hint["log_record"]
-        if "naff" in record.name:
+        if "naff" in record.name or "realms_bot" in record.name:
             #  There are some logging messages that are not worth sending to sentry.
             if ": 403" in record.message:
                 return None
@@ -139,21 +139,26 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
         await self.change_presence(activity=activity)
 
-    @naff.listen("disconnect")
-    async def on_disconnect(self):
+    @naff.listen("disconnect", is_default_listener=True)
+    async def _disconnect(self):
         # basically, this needs to be done as otherwise, when the bot reconnects,
         # redis may complain that a connection was closed by a peer
         # this isnt a great solution, but it should work
         with contextlib.suppress(Exception):
             await self.redis.connection_pool.disconnect(inuse_connections=True)
 
-    @naff.listen("resume")
-    async def on_resumed(self):
+        self._ready.clear()
+
+    @naff.listen("resume", is_default_listener=True)
+    async def on_resume(self):
         activity = naff.Activity.create(
             name="over some Realms", type=naff.ActivityType.WATCHING
         )
         await self.change_presence(activity=activity)
 
+        self._ready.set()
+
+    # technically, this is in naff itself now, but its easier for my purposes to do this
     @naff.listen("raw_application_command_permissions_update")
     async def i_like_my_events_very_raw(self, event: naff.events.RawGatewayEvent):
         data: discord_typings.GuildApplicationCommandPermissionData = event.data  # type: ignore
@@ -172,8 +177,9 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
                 cmd.default_member_permissions, guild_id, data["permissions"]  # type: ignore
             )
 
-    async def on_error(self, source: str, error: Exception, *args, **kwargs) -> None:
-        await utils.error_handle(self, error)
+    @naff.listen(is_default_listener=True)
+    async def on_error(self, event: naff.events.Error) -> None:
+        await utils.error_handle(self, event.error)
 
     async def stop(self) -> None:
         await bot.session.close()
@@ -182,7 +188,6 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
 
 intents = naff.Intents.new(
-    default=False,
     guilds=True,
     messages=True,
 )
@@ -214,10 +219,10 @@ async def start():
     )
 
     # mark players as offline if they were online more than 5 minutes ago
-    five_minutes_ago = naff.Timestamp.utcnow() - datetime.timedelta(minutes=5)
-    await models.RealmPlayer.filter(online=True, last_seen__lt=five_minutes_ago).update(
-        online=False
-    )
+    # five_minutes_ago = naff.Timestamp.utcnow() - datetime.timedelta(minutes=5)
+    # await models.RealmPlayer.filter(online=True, last_seen__lt=five_minutes_ago).update(
+    #     online=False
+    # )
 
     # add all online players to the online cache
     async for player in models.RealmPlayer.filter(online=True):

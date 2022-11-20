@@ -84,7 +84,7 @@ class HelpPaginator(paginators.Paginator):
 
         if self.show_select_menu:
             current = self.pages[self.page_index]
-            rows[0].components[0] = naff.Select(
+            rows[0].components[0] = naff.StringSelectMenu(
                 [
                     naff.SelectOption(
                         f"{i+1}:"

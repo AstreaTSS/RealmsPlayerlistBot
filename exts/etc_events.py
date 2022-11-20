@@ -26,7 +26,7 @@ class OnCMDError(naff.Extension):
         if not self.bot.is_ready:
             return
 
-        await GuildConfig.filter(guild_id=int(event.guild_id)).delete()
+        await GuildConfig.filter(guild_id=event.guild.id).delete()
 
 
 def setup(bot):

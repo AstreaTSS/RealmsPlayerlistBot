@@ -65,7 +65,7 @@ class AutoRunPlayerlist(utils.Extension):
         """
 
         list_cmd = next(
-            c for c in self.bot.application_commands if c.name.default == "playerlist"
+            c for c in self.bot.application_commands if str(c.name) == "playerlist"
         )
         to_run = []
 
