@@ -15,10 +15,10 @@ class OnCMDError(naff.Extension):
         if not self.bot.is_ready:
             return
 
-        exists = await GuildConfig.exists(guild_id=event.guild.id)
+        exists = await GuildConfig.exists(guild_id=int(event.guild_id))
         if not exists:
             await GuildConfig.create(
-                guild_id=event.guild.id,
+                guild_id=int(event.guild_id),
             )
 
     @naff.listen("guild_left")
