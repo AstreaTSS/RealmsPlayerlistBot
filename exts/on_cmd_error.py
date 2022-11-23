@@ -19,9 +19,6 @@ class OnCMDError(naff.Extension):
         self,
         event: naff.events.CommandError,
     ):
-        if not event.ctx.bot.is_ready:
-            return
-
         if not isinstance(event.ctx, (naff.PrefixedContext, naff.InteractionContext)):
             return await utils.error_handle(self.bot, event.error)
 
