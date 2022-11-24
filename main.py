@@ -139,24 +139,20 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
         await self.change_presence(activity=activity)
 
-    @naff.listen("disconnect", is_default_listener=True)
-    async def _disconnect(self):
+    @naff.listen("disconnect")
+    async def on_disconnect(self):
         # basically, this needs to be done as otherwise, when the bot reconnects,
         # redis may complain that a connection was closed by a peer
         # this isnt a great solution, but it should work
         with contextlib.suppress(Exception):
             await self.redis.connection_pool.disconnect(inuse_connections=True)
 
-        self._ready.clear()
-
-    @naff.listen("resume", is_default_listener=True)
-    async def on_resume(self):
+    @naff.listen("resume")
+    async def on_resume_func(self):
         activity = naff.Activity.create(
             name="over some Realms", type=naff.ActivityType.WATCHING
         )
         await self.change_presence(activity=activity)
-
-        self._ready.set()
 
     # technically, this is in naff itself now, but its easier for my purposes to do this
     @naff.listen("raw_application_command_permissions_update")

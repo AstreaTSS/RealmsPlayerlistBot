@@ -299,9 +299,6 @@ else:
 
 
 async def _global_checks(ctx: naff.Context):
-    if not ctx.bot.is_ready:
-        return False
-
     if not ctx.bot.fully_ready.is_set():  # type: ignore
         return False
 
