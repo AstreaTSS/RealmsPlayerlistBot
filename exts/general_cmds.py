@@ -148,6 +148,7 @@ class GeneralCMDS(utils.Extension):
             value="\n".join(links),
             inline=True,
         )
+        about_embed.timestamp = naff.Timestamp.utcnow()
 
         await ctx.send(embed=about_embed)
 
