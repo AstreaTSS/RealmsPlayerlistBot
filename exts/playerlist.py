@@ -387,7 +387,7 @@ class Playerlist(utils.Extension):
         dm_permission=False,
     )  # type: ignore
     @naff.check(pl_utils.can_run_playerlist)  # type: ignore
-    @naff.cooldown(naff.Buckets.GUILD, 1, 240)  # type: ignore
+    @naff.cooldown(naff.Buckets.GUILD, 1, 60)  # type: ignore
     @naff.slash_option("hours_ago", "How far back the playerlist should go.", naff.OptionTypes.STRING, choices=hours_ago_choices)  # type: ignore
     async def playerlist(
         self,
@@ -400,9 +400,9 @@ class Playerlist(utils.Extension):
         By default, the command version goes back 12 hours.
         If you wish for it to go back more, simply do `/playerlist hours_ago: <# hours ago>`.
         The number provided should be in between 1-24 hours.
-        The autorun version only goes back 2 hours.
+        The autorun version only goes back an hour.
 
-        Has a cooldown of 4 minutes due to how intensive this command can be.
+        Has a cooldown of 60 seconds due to how intensive this command can be.
         May take a while to run at first.
         """
 
