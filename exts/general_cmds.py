@@ -3,6 +3,7 @@ import contextlib
 import datetime
 import importlib
 import os
+import subprocess
 import time
 import typing
 
@@ -20,6 +21,16 @@ class GeneralCMDS(utils.Extension):
     def __init__(self, bot):
         self.name = "General"
         self.bot: utils.RealmBotBase = bot
+
+    def _get_commit_hash(self):
+        return (
+            subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+            .decode("ascii")
+            .strip()
+        )
+
+    async def get_commit_hash(self):
+        return await asyncio.to_thread(self._get_commit_hash)
 
     @naff.slash_command(
         "ping",
@@ -67,19 +78,11 @@ class GeneralCMDS(utils.Extension):
     @naff.slash_command("about", description="Gives information about the bot.")
     async def about(self, ctx: naff.InteractionContext):
         msg_list = [
-            "Hi! I'm the Realms Playerlist Bot, a bot that helps out owners of"
+            "Hi! I'm the **Realms Playerlist Bot**, a bot that helps out owners of"
             " Minecraft: Bedrock Edition Realms by showing a log of players who have"
             " joined and left.",
-            "I was originally created as a port of another bot that was made for a"
-            " singular Realm, but since then I've grown into what you see today.\n",
-            "My usages are largely statistical and informative, as I can be used to"
-            " narrow down timeframes or just for tracking activity.\n",
             "If you want to use me, go ahead and invite me to your server and take a"
-            " look at `/config help`!\n",
-            "There is also Realms Playerlist Premium, a way of adding extra features to"
-            " your server that otherwise would not be possible. Take a look at"
-            " `/premium info` for more information.\n",
-            "Bot made by Astrea49.",
+            " look at `/config help`!",
         ]
 
         about_embed = naff.Embed(
@@ -87,11 +90,33 @@ class GeneralCMDS(utils.Extension):
             color=self.bot.color,
             description="\n".join(msg_list),
         )
-        about_embed.set_author(
-            name=f"{self.bot.user.username}",
-            icon_url=(
-                f"{ctx.guild.me.display_avatar.url if ctx.guild else self.bot.user.display_avatar.url}"
+        about_embed.set_thumbnail(
+            ctx.guild.me.display_avatar.url
+            if ctx.guild
+            else self.bot.user.display_avatar.url
+        )
+
+        commit_hash = await self.get_commit_hash()
+        command_num = len(self.bot.application_commands) + len(
+            self.bot.prefixed_commands
+        )
+
+        about_embed.add_field(
+            name="Stats",
+            value="\n".join(
+                (
+                    f"Servers: {len(self.bot.guilds)}",
+                    f"Commands: {command_num} ",
+                    "Startup Time:"
+                    f" {naff.Timestamp.fromdatetime(self.bot.start_time).format(naff.TimestampStyles.RelativeTime)}",
+                    "Commit Hash:"
+                    f" [`{commit_hash}`](https://github.com/Astrea49/RealmsPlayerlistBot/commit/{commit_hash})",
+                    "NAFF Version:"
+                    f" [`{naff.const.__version__}`](https://github.com/NAFTeam/NAFF/tree/NAFF-{naff.const.__version__})",
+                    "Made By: [Astrea49](https://github.com/Astrea49)",
+                )
             ),
+            inline=False,
         )
 
         about_embed.add_field(
