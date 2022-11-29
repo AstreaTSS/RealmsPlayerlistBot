@@ -12,6 +12,7 @@ import naff
 import orjson
 from apischema import ValidationError
 
+import common.models as models
 import common.utils as utils
 import common.xbox_api as xbox_api
 from common.microsoft_core import MicrosoftAPIException
@@ -100,19 +101,23 @@ class GeneralCMDS(utils.Extension):
         command_num = len(self.bot.application_commands) + len(
             self.bot.prefixed_commands
         )
+        premium_count = await models.GuildConfig.filter(
+            premium_code__id__not_isnull=True
+        ).count()
 
         about_embed.add_field(
             name="Stats",
             value="\n".join(
                 (
                     f"Servers: {len(self.bot.guilds)}",
+                    f"Premium Servers: {premium_count}",
                     f"Commands: {command_num} ",
                     "Startup Time:"
                     f" {naff.Timestamp.fromdatetime(self.bot.start_time).format(naff.TimestampStyles.RelativeTime)}",
                     "Commit Hash:"
-                    f" [`{commit_hash}`](https://github.com/Astrea49/RealmsPlayerlistBot/commit/{commit_hash})",
+                    f" [{commit_hash}](https://github.com/Astrea49/RealmsPlayerlistBot/commit/{commit_hash})",
                     "NAFF Version:"
-                    f" [`{naff.const.__version__}`](https://github.com/NAFTeam/NAFF/tree/NAFF-{naff.const.__version__})",
+                    f" [{naff.const.__version__}](https://github.com/NAFTeam/NAFF/tree/NAFF-{naff.const.__version__})",
                     "Made By: [Astrea49](https://github.com/Astrea49)",
                 )
             ),
