@@ -116,46 +116,31 @@ class GeneralCMDS(utils.Extension):
                     "Made By: [Astrea49](https://github.com/Astrea49)",
                 )
             ),
-            inline=False,
+            inline=True,
         )
 
-        about_embed.add_field(
-            name="Support Server",
-            value="[Link](https://discord.gg/NSdetwGjpK)",
-            inline=True,
-        )
-        about_embed.add_field(
-            name="Source Code",
-            value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot)",
-            inline=True,
-        )
+        links = [
+            "Support Server: [Link](https://discord.gg/NSdetwGjpK)",
+            "Source Code: [Link](https://github.com/Astrea49/RealmsPlayerlistBot)",
+        ]
 
         if os.environ.get("TOP_GG_TOKEN"):
-            about_embed.add_field(
-                name="Top.gg Page",
-                value=f"[Link](https://top.gg/bot/{self.bot.user.id})",
-                inline=True,
+            links.append(f"Top.gg Page: [Link](https://top.gg/bot/{self.bot.user.id})")
+
+        links.extend(
+            (
+                f"Premium Information: [Link]({os.environ['PREMIUM_INFO_LINK']})",
+                "FAQ: [Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/FAQ)",
+                "Privacy Policy:"
+                " [Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Privacy-Policy)",
+                "Terms of Service:"
+                " [Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Terms-of-Service)",
             )
-        else:
-            about_embed.add_field(
-                name="Premium Information",
-                value=f"[Link]({os.environ['PREMIUM_INFO_LINK']})",
-                inline=True,
-            )
+        )
 
         about_embed.add_field(
-            name="FAQ",
-            value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/FAQ)",
-            inline=True,
-        )
-        about_embed.add_field(
-            name="Privacy Policy",
-            value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Privacy-Policy)",
-            inline=True,
-        )
-        about_embed.add_field(
-            name="ToS",
-            value="[Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Terms-of-Service)",
+            name="Links:",
+            value="\n".join(links),
             inline=True,
         )
 
