@@ -44,9 +44,11 @@ async def callback(ctx: naff.ComponentContext):
         ("<argument>", "This means the argument is __**required**__."),
         (
             "[argument]",
-            "This means the argument is __**optional**__.\n\nNow that you know the"
-            " basics, it should be noted that...\n__**You do not type in the"
-            " brackets!**__",
+            (
+                "This means the argument is __**optional**__.\n\nNow that you know the"
+                " basics, it should be noted that...\n__**You do not type in the"
+                " brackets!**__"
+            ),
         ),
     )
 
@@ -87,8 +89,10 @@ class HelpPaginator(paginators.Paginator):
             rows[0].components[0] = naff.StringSelectMenu(
                 [
                     naff.SelectOption(
-                        f"{i+1}:"
-                        f" {p.get_summary if isinstance(p, paginators.Page) else p.title}",
+                        (
+                            f"{i+1}:"
+                            f" {p.get_summary if isinstance(p, paginators.Page) else p.title}"
+                        ),
                         str(i),
                     )
                     for i, p in enumerate(self.pages)

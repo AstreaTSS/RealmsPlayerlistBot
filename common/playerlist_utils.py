@@ -141,8 +141,10 @@ class GamertagHandler:
                     logging.getLogger(
                         "realms_bot"
                     ).info(  # this is more common than you would expect
-                        f"Failed to get gamertag of user `{xuid}`.\nResponse code:"
-                        f" {r.status}\nText: {text}",
+                        (
+                            f"Failed to get gamertag of user `{xuid}`.\nResponse code:"
+                            f" {r.status}\nText: {text}"
+                        ),
                     )
 
             self.index += 1
