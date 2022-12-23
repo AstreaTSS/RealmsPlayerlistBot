@@ -322,8 +322,10 @@ class OwnerCMDs(utils.Extension):
             if isinstance(e.error, aiohttp.ClientResponseError):
                 await utils.msg_to_owner(
                     ctx.bot,
-                    f"Status code: {e.resp.status}\nHeaders: {e.error.headers}\nText:"
-                    f" {await e.resp.text()}",
+                    (
+                        f"Status code: {e.resp.status}\nHeaders:"
+                        f" {e.error.headers}\nText: {await e.resp.text()}"
+                    ),
                 )
             else:
                 await utils.error_handle(self.bot, e.error, ctx)
