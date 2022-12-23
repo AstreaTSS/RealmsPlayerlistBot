@@ -15,5 +15,5 @@ repos:
     - id: trailing-whitespace
 ci:
   autofix_commit_msg: 'ci: auto fixes from pre-commit.com hooks'
-  autoupdate_branch: 'master'
+  autoupdate_branch: 'main'
   autoupdate_commit_msg: 'ci: pre-commit autoupdate'
