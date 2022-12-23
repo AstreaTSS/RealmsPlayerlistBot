@@ -197,9 +197,9 @@ class BaseMicrosoftAPI:
                 if raise_status:
                     resp.raise_for_status()
 
-                if resp.status == 204:  # no content
-                    return None
-                return await resp.json(loads=orjson.loads)
+                return (
+                    None if resp.status == 204 else await resp.json(loads=orjson.loads)
+                )
             except Exception as e:
                 raise MicrosoftAPIException(resp, e) from e
 

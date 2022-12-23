@@ -11,7 +11,7 @@ import aiohttp
 import discord_typings
 import naff
 import sentry_sdk
-import tomli
+import tomllib
 from naff.ext.sentry import HookedTask
 from naff.models.naff.tasks.task import Task
 from tortoise import Tortoise
@@ -32,21 +32,19 @@ from common.xbox_api import XboxAPI
 # directory
 CONFIG_LOCATION = os.environ.get("CONFIG_LOCATION", "config.toml")
 with open(CONFIG_LOCATION, "rb") as f:
-    toml_dict = tomli.load(f)
+    toml_dict = tomllib.load(f)
     for key, value in toml_dict.items():
         os.environ[key] = str(value)
 
 importlib.reload(utils)  # refresh the dev guild id
 
-try:
+with contextlib.suppress(ImportError):
     import rook
 
     if os.environ.get("ROOK_TOKEN"):
         rook.start(
             token=os.environ["ROOK_TOKEN"], labels={"env": os.environ["ROOK_ENV"]}
         )
-except ImportError:
-    pass
 
 logger = logging.getLogger("realms_bot")
 logger.setLevel(logging.INFO)
@@ -253,9 +251,12 @@ async def start():
     await bot.astart(os.environ["MAIN_TOKEN"])
 
 
+loop_factory = None
+
 with contextlib.suppress(ImportError):
     import uvloop  # type: ignore
 
-    uvloop.install()
+    loop_factory = uvloop.new_event_loop
 
-asyncio.run(start())
+with asyncio.Runner(loop_factory=loop_factory) as runner:
+    asyncio.run(start())

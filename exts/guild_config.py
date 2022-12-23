@@ -185,7 +185,7 @@ class GuildConfig(utils.Extension):
                 raise naff.errors.BadArgument(
                     "Invalid Realm code. Please make sure the Realm code is spelled"
                     " correctly, and that the code is valid."
-                )
+                ) from None
             else:
                 raise
 

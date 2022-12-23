@@ -2,6 +2,7 @@ import asyncio
 import importlib
 import os
 import secrets
+import typing
 
 import naff
 from Crypto.Cipher import AES
@@ -50,7 +51,10 @@ class PremiumHandling(naff.Extension):
         required=False,
     )
     async def generate_code(
-        self, ctx: naff.InteractionContext, max_uses: int = 3, user_id: str = None
+        self,
+        ctx: naff.InteractionContext,
+        max_uses: int = 3,
+        user_id: typing.Optional[str] = None,
     ):
         # mind you, it isn't TOO important that this is secure - really, i just want
         # to make sure your average tech person couldn't brute force a code

@@ -79,11 +79,15 @@ class GeneralCMDS(utils.Extension):
     @naff.slash_command("about", description="Gives information about the bot.")
     async def about(self, ctx: naff.InteractionContext):
         msg_list = [
-            "Hi! I'm the **Realms Playerlist Bot**, a bot that helps out owners of"
-            " Minecraft: Bedrock Edition Realms by showing a log of players who have"
-            " joined and left.",
-            "If you want to use me, go ahead and invite me to your server and take a"
-            " look at `/config help`!",
+            (
+                "Hi! I'm the **Realms Playerlist Bot**, a bot that helps out owners of"
+                " Minecraft: Bedrock Edition Realms by showing a log of players who"
+                " have joined and left."
+            ),
+            (
+                "If you want to use me, go ahead and invite me to your server and take"
+                " a look at `/config help`!"
+            ),
         ]
 
         about_embed = naff.Embed(
@@ -112,12 +116,18 @@ class GeneralCMDS(utils.Extension):
                     f"Servers: {len(self.bot.guilds)}",
                     f"Premium Servers: {premium_count}",
                     f"Commands: {command_num} ",
-                    "Startup Time:"
-                    f" {naff.Timestamp.fromdatetime(self.bot.start_time).format(naff.TimestampStyles.RelativeTime)}",
-                    "Commit Hash:"
-                    f" [{commit_hash}](https://github.com/Astrea49/RealmsPlayerlistBot/commit/{commit_hash})",
-                    "NAFF Version:"
-                    f" [{naff.const.__version__}](https://github.com/NAFTeam/NAFF/tree/NAFF-{naff.const.__version__})",
+                    (
+                        "Startup Time:"
+                        f" {naff.Timestamp.fromdatetime(self.bot.start_time).format(naff.TimestampStyles.RelativeTime)}"
+                    ),
+                    (
+                        "Commit Hash:"
+                        f" [{commit_hash}](https://github.com/Astrea49/RealmsPlayerlistBot/commit/{commit_hash})"
+                    ),
+                    (
+                        "NAFF Version:"
+                        f" [{naff.const.__version__}](https://github.com/NAFTeam/NAFF/tree/NAFF-{naff.const.__version__})"
+                    ),
                     "Made By: [Astrea49](https://github.com/Astrea49)",
                 )
             ),
@@ -136,10 +146,14 @@ class GeneralCMDS(utils.Extension):
             (
                 f"Premium Information: [Link]({os.environ['PREMIUM_INFO_LINK']})",
                 "FAQ: [Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/FAQ)",
-                "Privacy Policy:"
-                " [Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Privacy-Policy)",
-                "Terms of Service:"
-                " [Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Terms-of-Service)",
+                (
+                    "Privacy Policy:"
+                    " [Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Privacy-Policy)"
+                ),
+                (
+                    "Terms of Service:"
+                    " [Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Terms-of-Service)"
+                ),
             )
         )
 
@@ -180,7 +194,7 @@ class GeneralCMDS(utils.Extension):
                 raise ValueError()
             valid_xuid = int(xuid)
         except ValueError:
-            raise naff.errors.BadArgument(f'"{xuid}" is not a valid XUID.')
+            raise naff.errors.BadArgument(f'"{xuid}" is not a valid XUID.') from None
 
         maybe_gamertag: typing.Union[
             str, xbox_api.ProfileResponse, None
