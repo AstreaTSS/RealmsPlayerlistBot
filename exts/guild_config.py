@@ -79,7 +79,7 @@ class GuildConfig(utils.Extension):
             realm_name = "Not Found"
 
         autorunner = utils.toggle_friendly_str(
-            bool(config.club_id and config.realm_id and config.playerlist_chan)
+            bool(config.realm_id and config.playerlist_chan)
         )
 
         embed.description = (

@@ -227,7 +227,6 @@ async def start():
     # pure memory for the playerlist getting code
     async for config in models.GuildConfig.filter(
         premium_code__id__not_isnull=True,
-        club_id__not_isnull=True,
         realm_id__not_isnull=True,
         playerlist_chan__not_isnull=True,
         live_playerlist=True,

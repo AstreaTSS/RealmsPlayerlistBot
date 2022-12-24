@@ -201,7 +201,7 @@ async def can_run_playerlist(ctx: utils.RealmContext) -> bool:
         guild_config = await ctx.fetch_config()
     except DoesNotExist:
         return False
-    return bool(guild_config.club_id and guild_config.realm_id)
+    return bool(guild_config.realm_id)
 
 
 async def eventually_invalidate(

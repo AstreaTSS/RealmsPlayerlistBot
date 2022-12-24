@@ -71,7 +71,6 @@ class AutoRunPlayerlist(utils.Extension):
 
         async for guild_config in models.GuildConfig.filter(
             guild_id__in=list(self.bot.user._guild_ids),
-            club_id__not_isnull=True,
             realm_id__not_isnull=True,
             playerlist_chan__not_isnull=True,
             live_playerlist=False,

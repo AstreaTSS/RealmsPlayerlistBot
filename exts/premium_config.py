@@ -133,7 +133,7 @@ class PremiumHandling(naff.Extension):
                 " for more information about it."
             )
 
-        if not (config.realm_id and config.playerlist_chan and config.club_id):
+        if not (config.realm_id and config.playerlist_chan):
             raise utils.CustomCheckFailure(
                 "You need to link your Realm and set a playerlist channel before"
                 " running this."
