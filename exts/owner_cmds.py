@@ -10,7 +10,6 @@ import traceback
 import typing
 import unicodedata
 
-import aiohttp
 import naff
 import tansy
 from naff.ext import paginators
@@ -19,7 +18,6 @@ from naff.ext.debug_extension.utils import get_cache_state
 
 import common.utils as utils
 from common.clubs_playerlist import fill_in_data_from_clubs
-from common.microsoft_core import MicrosoftAPIException
 from common.models import GuildConfig
 
 DEV_GUILD_ID = int(os.environ["DEV_GUILD_ID"])
