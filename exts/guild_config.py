@@ -81,10 +81,14 @@ class GuildConfig(utils.Extension):
         autorunner = utils.toggle_friendly_str(
             bool(config.realm_id and config.playerlist_chan)
         )
+        offline_realm_ping = (
+            f"<@&{config.realm_offline_role}>" if config.realm_offline_role else "N/A"
+        )
 
         embed.description = (
-            f"Autorun Playerlist Channel: {playerlist_channel}\nRealm Name:"
-            f" {realm_name}\nAutorunner: {autorunner}\n\nPremium Activated:"
+            f"Realm Name: {realm_name}\nAutorunner: {autorunner}\nAutorun Playerlist"
+            f" Channel: {playerlist_channel}\nOffline Realm Ping Role:"
+            f" {offline_realm_ping}\n\nPremium Activated:"
             f" {utils.yesno_friendly_str(bool(config.premium_code))}\nLive Playerlist:"
             f" {utils.toggle_friendly_str(config.live_playerlist)}"
         )
