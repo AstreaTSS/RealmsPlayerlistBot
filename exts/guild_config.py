@@ -98,7 +98,7 @@ class GuildConfig(utils.Extension):
                     " find the Realm itself. This may just be a problem that resolves"
                     " itself, but check that you haven't switched Realms or"
                     f" kicked the account `{self.bot.own_gamertag}`. If you did, try"
-                    " relinking the Realm via `/config link-realm`.\nFor more"
+                    f" relinking the Realm via {self.link_realm.mention()}.\nFor more"
                     " information, please check"
                     " https://github.com/Astrea49/RealmsPlayerlistBot/wiki/FAQ#help-"
                     "the-playerlistonline-comamnd-isnt-working."
@@ -218,6 +218,12 @@ class GuildConfig(utils.Extension):
         ctx: utils.RealmContext,
     ):
         config = await ctx.fetch_config()
+
+        if not config.playerlist_chan:
+            raise utils.CustomCheckFailure(
+                "There was no channel set in the first place."
+            )
+
         config.playerlist_chan = None
         await config.save()
         await self.bot.redis.delete(f"invalid-playerlist-{config.guild_id}")
@@ -226,6 +232,75 @@ class GuildConfig(utils.Extension):
             self.bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
 
         await ctx.send("Unset the playerlist channel.")
+
+    @config.subcommand(
+        sub_cmd_name="set-realm-offline-ping",
+        sub_cmd_description=(
+            "Sets the role that should be pinged in the autorunner channel if the Realm"
+            " goes offline."
+        ),
+    )
+    async def set_realm_offline_ping(
+        self,
+        ctx: utils.RealmContext,
+        role: naff.Role = tansy.Option("The role to use for the ping."),
+    ):
+        """
+        Sets the role that should be pinged in the autorunner channel if the Realm goes offline.
+        This may be unreliable due to how it's made - it works best in large Realms that \
+        rarely have 0 players, and may trigger too often otherwise.
+
+        The bot must be linked to a Realm and the autorunner channel must be set fpr this to work.
+        The bot also must be able to ping the role.
+        """
+        if (
+            not role.mentionable
+            and naff.Permissions.MENTION_EVERYONE
+            not in ctx.channel.permissions_for(ctx.guild.me)
+        ):
+            raise utils.CustomCheckFailure(
+                "I cannot ping this role. Make sure the role is either mentionable or"
+                " the bot can mention all roles."
+            )
+
+        config = await ctx.fetch_config()
+
+        if not config.realm_id or not config.club_id:
+            raise utils.CustomCheckFailure(
+                "Please link your Realm with this server with"
+                f" {self.link_realm.mention()} first."
+            )
+
+        if not config.playerlist_chan:
+            raise utils.CustomCheckFailure(
+                "Please set up the autorunner with"
+                f" {self.set_playerlist_channel.mention()} first."
+            )
+
+        config.realm_offline_role = role.id
+        await config.save()
+
+        await ctx.send(
+            f"Set the Realm offline ping to {role.mention}.",
+            allowed_mentions=naff.AllowedMentions.none(),
+        )
+
+    @config.subcommand(
+        sub_cmd_name="unset-realm-offline-ping",
+        sub_cmd_description=(
+            "Unsets the role that is pinged in the autorunner channel if the Realm"
+            " goes offline."
+        ),
+    )
+    async def unset_realm_offline_ping(self, ctx: utils.RealmContext):
+        config = await ctx.fetch_config()
+
+        if not config.realm_offline_role:
+            raise utils.CustomCheckFailure("There was no role set in the first place.")
+
+        config.realm_offline_role = None
+        await config.save()
+        await ctx.send("Unset the Realm offline ping role.")
 
     @config.subcommand(
         sub_cmd_name="help",

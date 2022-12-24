@@ -85,12 +85,70 @@ class PlayerlistEventHandling(naff.Extension):
 
     @naff.listen("realm_down", is_default_listener=True)
     async def realm_down(self, event: pl_events.RealmDown):
+        # live playerlists are time sensitive, get them out first
         if self.bot.live_playerlist_store[event.realm_id]:
             self.bot.dispatch(
                 pl_events.LivePlayerlistSend(
                     event.realm_id, set(), event.disconnected, event.last_seen
                 )
             )
+
+        # these, meanwhile, aren't
+        async for config in event.configs:
+            if not config.playerlist_chan or not config.realm_offline_role:
+                continue
+
+            guild = self.bot.get_guild(config.guild_id)
+            if not guild:
+                continue
+
+            role_mention = f"<@&{config.realm_offline_role}>"
+            role = guild.get_role(config.realm_offline_role)
+            if role:
+                role_mention = role.mention
+
+            embed = naff.Embed(
+                title="Realm Offline",
+                description=(
+                    "The bot has detected that the Realm is offline (or possibly that"
+                    " it has no users)."
+                ),
+                color=naff.RoleColors.YELLOW,
+            )
+
+            try:
+                chan = await pl_utils.fetch_playerlist_channel(self.bot, guild, config)
+
+                if not role or (
+                    not role.mentionable
+                    and naff.Permissions.MENTION_EVERYONE
+                    not in chan.permissions_for(guild.me)
+                ):
+                    addition = (
+                        "\n\n**I also am unable to ping the role you set.** Make sure"
+                        " the role still exists, and that it's either mentionable or"
+                        " the bot can ping all roles.\n*After a while, the bot will"
+                        " stop sending offline notices if it keeps being unable to ping"
+                        " the role.*"
+                    )
+
+                    # make typehinting be quiet
+                    if embed.description is None:
+                        embed.description = ""
+                    embed.description += addition
+
+                    await pl_utils.eventually_invalidate_realm_offline(self.bot, config)
+
+                await chan.send(
+                    role_mention,
+                    embeds=embed,
+                    allowed_mentions=naff.AllowedMentions.all(),
+                )
+            except ValueError:
+                continue
+            except naff.errors.HTTPException:
+                await pl_utils.eventually_invalidate(self.bot, config)
+                continue
 
     @naff.listen("warn_missing_playerlist", is_default_listener=True)
     async def warning_missing_playerlist(self, event: pl_events.WarnMissingPlayerlist):

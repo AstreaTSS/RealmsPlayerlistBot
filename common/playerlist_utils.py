@@ -195,7 +195,7 @@ class GamertagHandler:
         return dict_gamertags
 
 
-async def can_run_playerlist(ctx: utils.RealmContext) -> typing.Any:
+async def can_run_playerlist(ctx: utils.RealmContext) -> bool:
     # simple check to see if a person can run the playerlist command
     try:
         guild_config = await ctx.fetch_config()
@@ -223,6 +223,19 @@ async def eventually_invalidate(
             bot.live_playerlist_store[guild_config.realm_id].discard(
                 guild_config.guild_id
             )
+
+
+async def eventually_invalidate_realm_offline(
+    bot: utils.RealmBotBase,
+    guild_config: models.GuildConfig,
+    limit=3,
+):
+    num_times = await bot.redis.incr(f"invalid-realmoffline-{guild_config.guild_id}")
+
+    if num_times > limit:
+        guild_config.realm_offline_role = None
+        await guild_config.save()
+        await bot.redis.delete(f"invalid-playerlist-{guild_config.guild_id}")
 
 
 async def fetch_playerlist_channel(
