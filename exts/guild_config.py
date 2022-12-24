@@ -1,3 +1,4 @@
+import asyncio
 import collections
 import importlib
 import os
@@ -233,6 +234,13 @@ class GuildConfig(utils.Extension):
 
         await ctx.send("Unset the playerlist channel.")
 
+    @staticmethod
+    def button_check(author_id: int):
+        def _check(event: naff.events.Component):
+            return event.ctx.author.id == author_id
+
+        return _check
+
     @config.subcommand(
         sub_cmd_name="set-realm-offline-ping",
         sub_cmd_description=(
@@ -250,7 +258,7 @@ class GuildConfig(utils.Extension):
         This may be unreliable due to how it's made - it works best in large Realms that \
         rarely have 0 players, and may trigger too often otherwise.
 
-        The bot must be linked to a Realm and the autorunner channel must be set fpr this to work.
+        The bot must be linked to a Realm and the autorunner channel must be set for this to work.
         The bot also must be able to ping the role.
         """
         if (
@@ -277,13 +285,50 @@ class GuildConfig(utils.Extension):
                 f" {self.set_playerlist_channel.mention()} first."
             )
 
-        config.realm_offline_role = role.id
-        await config.save()
-
-        await ctx.send(
-            f"Set the Realm offline ping to {role.mention}.",
-            allowed_mentions=naff.AllowedMentions.none(),
+        embed = naff.Embed(
+            title="Warning",
+            description=(
+                "This ping won't be 100% accurate. The ping hooks onto an event where"
+                ' the Realm "disappears" from the bot\'s perspective, which happens'
+                " for a variety of reasons, like crashing... or sometimes, when no one"
+                " is on the server. Because of this, *it is recommended that this is"
+                " only enabled for large Realms.*\n\n**If you wish to continue with"
+                " adding the role, press the accept button.** You have 30 seconds to"
+                " do so."
+            ),
+            timestamp=naff.Timestamp.utcnow(),
+            color=naff.RoleColors.YELLOW,
         )
+
+        result = ""
+        event = None
+
+        components = [
+            naff.Button(naff.ButtonStyles.GREEN, "Accept", "✅"),
+            naff.Button(naff.ButtonStyles.RED, "Decline", "✖️"),
+        ]
+        msg = await ctx.send(embed=embed, components=components)
+
+        try:
+            event = await self.bot.wait_for_component(
+                msg, components, self.button_check(ctx.author.id), timeout=30
+            )
+
+            if event.ctx.custom_id == components[1].custom_id:
+                result = "Declined setting the Realm offline ping."
+            else:
+                config.realm_offline_role = role.id
+                await config.save()
+
+                result = f"Set the Realm offline ping to {role.mention}."
+        except asyncio.TimeoutError:
+            result = "Timed out."
+        finally:
+            if event:
+                await event.ctx.send(
+                    result, ephemeral=True, allowed_mentions=naff.AllowedMentions.none()
+                )
+            await ctx.edit(msg, content=result, embeds=[], components=[])
 
     @config.subcommand(
         sub_cmd_name="unset-realm-offline-ping",

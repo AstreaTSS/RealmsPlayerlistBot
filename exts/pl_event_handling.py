@@ -113,6 +113,7 @@ class PlayerlistEventHandling(naff.Extension):
                     "The bot has detected that the Realm is offline (or possibly that"
                     " it has no users)."
                 ),
+                timestamp=naff.Timestamp.fromdatetime(event.last_seen),
                 color=naff.RoleColors.YELLOW,
             )
 
