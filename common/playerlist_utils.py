@@ -16,6 +16,16 @@ import common.utils as utils
 import common.xbox_api as xbox_api
 
 
+def _convert_fields(value: tuple[str, ...]) -> tuple[str, ...]:
+    return ("online", "last_seen") + value if value else ("online", "last_seen")
+
+
+@attrs.define(kw_only=True)
+class RealmPlayersContainer:
+    realmplayers: list[models.RealmPlayer] = attrs.field()
+    fields: tuple[str, ...] = attrs.field(default=None, converter=_convert_fields)
+
+
 @attrs.define(eq=False)
 class Player:
     """A simple class to represent a player on a Realm."""
@@ -141,8 +151,10 @@ class GamertagHandler:
                     logging.getLogger(
                         "realms_bot"
                     ).info(  # this is more common than you would expect
-                        f"Failed to get gamertag of user `{xuid}`.\nResponse code:"
-                        f" {r.status}\nText: {text}",
+                        (
+                            f"Failed to get gamertag of user `{xuid}`.\nResponse code:"
+                            f" {r.status}\nText: {text}"
+                        ),
                     )
 
             self.index += 1
@@ -228,3 +240,43 @@ async def fetch_playerlist_channel(
             raise ValueError()
 
     return chan
+
+
+async def get_players_from_realmplayers(
+    bot: utils.RealmBotBase,
+    realm_id: str,
+    realmplayers: list[models.RealmPlayer],
+):
+    player_list: typing.List[Player] = []
+    unresolved_dict: typing.Dict[str, Player] = {}
+
+    for member in realmplayers:
+        xuid = member.realm_xuid_id.removeprefix(f"{realm_id}-")
+
+        player = Player(
+            xuid,
+            member.last_seen,
+            member.online,
+            await bot.redis.get(xuid),
+            member.last_joined,
+        )
+        if player.resolved:
+            player_list.append(player)
+        else:
+            unresolved_dict[xuid] = player
+
+    if unresolved_dict:
+        gamertag_handler = GamertagHandler(
+            bot,
+            bot.pl_sem,
+            tuple(unresolved_dict.keys()),
+            bot.openxbl_session,
+        )
+        gamertag_dict = await gamertag_handler.run()
+
+        for xuid, gamertag in gamertag_dict.items():
+            unresolved_dict[xuid].gamertag = gamertag
+
+        player_list.extend(unresolved_dict.values())
+
+    return player_list

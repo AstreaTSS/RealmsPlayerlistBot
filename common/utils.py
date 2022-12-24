@@ -30,7 +30,9 @@ async def sleep_until(dt: datetime.datetime):
     await asyncio.sleep(time_to_sleep)
 
 
-async def error_handle(bot: "RealmBotBase", error: Exception, ctx: naff.Context = None):
+async def error_handle(
+    bot: "RealmBotBase", error: Exception, ctx: typing.Optional[naff.Context] = None
+):
     if not isinstance(error, aiohttp.ServerDisconnectedError):
         with sentry_sdk.configure_scope() as scope:
             if ctx:
@@ -291,6 +293,7 @@ if typing.TYPE_CHECKING:
         mini_commands_per_scope: dict[int, dict[str, MiniCommand]]
         live_playerlist_store: defaultdict[str, set[int]]
         offline_realm_time: dict[int, int]
+        pl_sem: asyncio.Semaphore
 
 else:
 

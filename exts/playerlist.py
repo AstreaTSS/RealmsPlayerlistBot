@@ -1,108 +1,72 @@
 import asyncio
-import contextlib
 import datetime
 import importlib
-import logging
 import math
-import os
-import typing
 
-import attrs
 import naff
 from tortoise.expressions import Q
 
 import common.models as models
+import common.playerlist_events as pl_events
 import common.playerlist_utils as pl_utils
 import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
 
+HOURS_AGO_CHOICES = [naff.SlashCommandChoice(str(n), str(n)) for n in range(1, 25)]
 
-hours_ago_choices = [
-    naff.SlashCommandChoice("1", "1"),  # type: ignore
-    naff.SlashCommandChoice("2", "2"),  # type: ignore
-    naff.SlashCommandChoice("3", "3"),  # type: ignore
-    naff.SlashCommandChoice("4", "4"),  # type: ignore
-    naff.SlashCommandChoice("5", "5"),  # type: ignore
-    naff.SlashCommandChoice("6", "6"),  # type: ignore
-    naff.SlashCommandChoice("7", "7"),  # type: ignore
-    naff.SlashCommandChoice("8", "8"),  # type: ignore
-    naff.SlashCommandChoice("9", "9"),  # type: ignore
-    naff.SlashCommandChoice("10", "10"),  # type: ignore
-    naff.SlashCommandChoice("11", "11"),  # type: ignore
-    naff.SlashCommandChoice("12", "12"),  # type: ignore
-    naff.SlashCommandChoice("13", "13"),  # type: ignore
-    naff.SlashCommandChoice("14", "14"),  # type: ignore
-    naff.SlashCommandChoice("15", "15"),  # type: ignore
-    naff.SlashCommandChoice("16", "16"),  # type: ignore
-    naff.SlashCommandChoice("17", "17"),  # type: ignore
-    naff.SlashCommandChoice("18", "18"),  # type: ignore
-    naff.SlashCommandChoice("19", "19"),  # type: ignore
-    naff.SlashCommandChoice("20", "20"),  # type: ignore
-    naff.SlashCommandChoice("21", "21"),  # type: ignore
-    naff.SlashCommandChoice("22", "22"),  # type: ignore
-    naff.SlashCommandChoice("23", "23"),  # type: ignore
-    naff.SlashCommandChoice("24", "24"),  # type: ignore
-]
-
-
-def _convert_fields(value: tuple[str, ...]) -> tuple[str, ...]:
-    return ("online", "last_seen") + value if value else ("online", "last_seen")
-
-
-@attrs.define(kw_only=True)
-class RealmPlayersContainer:
-    realmplayers: list[models.RealmPlayer] = attrs.field()
-    fields: tuple[str, ...] = attrs.field(default=None, converter=_convert_fields)
+UPSELLS = {
+    1: (
+        "Want minute-to-minute updates on your Realm? Check out Live Playerlist on"
+        " Playerlist Premium: /premium info"
+    ),
+    2: "If you like the bot, you can vote for it via /vote!",
+}
 
 
 class Playerlist(utils.Extension):
     def __init__(self, bot):
         self.bot: utils.RealmBotBase = bot
         self.name = "Playerlist Related"
-        self.sem = asyncio.Semaphore(
-            3
-        )  # prevents bot from overloading xbox api, hopefully
 
-        self._previous_now = datetime.datetime.now(tz=datetime.timezone.utc)
-        self._realmplayer_queue: asyncio.Queue[RealmPlayersContainer] = asyncio.Queue()
+        self.previous_now = datetime.datetime.now(tz=datetime.timezone.utc)
 
-        self.get_people_task = asyncio.create_task(self._start_get_people())
-        self.upload_players_task = asyncio.create_task(self._upload_players())
+        self.get_people_task = asyncio.create_task(self.get_people_runner())
 
     def drop(self):
         self.get_people_task.cancel()
-        self.upload_players_task.cancel()
         super().drop()
 
-    def _next_time(self):
+    def next_time(self):
         now = naff.Timestamp.utcnow()
         # margin of error
         multiplicity = math.ceil((now.timestamp() + 0.1) / 60)
         next_time = multiplicity * 60
         return naff.Timestamp.utcfromtimestamp(next_time)
 
-    async def _start_get_people(self):
+    async def get_people_runner(self):
         await self.bot.fully_ready.wait()
-        await utils.sleep_until(self._next_time())
+        await utils.sleep_until(self.next_time())
 
-        try:
-            while True:
-                next_time = self._next_time()
-                await self._get_people_from_realms()
+        while True:
+            try:
+                next_time = self.next_time()
+                await self.parse_realms()
+                await self.handle_missing_warning()
                 await utils.sleep_until(next_time)
-        except Exception as e:
-            if not isinstance(e, asyncio.CancelledError):
-                await utils.error_handle(self.bot, e)
+            except Exception as e:
+                if not isinstance(e, asyncio.CancelledError):
+                    await utils.error_handle(self.bot, e)
+                else:
+                    break
 
-    async def _get_people_from_realms(self):
+    async def parse_realms(self):
         try:
             realms = await self.bot.realms.fetch_activities()
         except Exception as e:
             if isinstance(e, MicrosoftAPIException) and e.resp.status == 502:
                 # bad gateway, can't do much about it
                 return
-            await utils.error_handle(self.bot, e)
-            return
+            raise
 
         player_objs: list[models.RealmPlayer] = []
         joined_player_objs: list[models.RealmPlayer] = []
@@ -138,14 +102,16 @@ class Playerlist(utils.Extension):
                 models.RealmPlayer(
                     realm_xuid_id=f"{realm.id}-{player}",
                     online=False,
-                    last_seen=self._previous_now,
+                    last_seen=self.previous_now,
                 )
                 for player in left
             )
 
             if self.bot.live_playerlist_store[str(realm.id)] and (joined or left):
-                asyncio.create_task(
-                    self._send_live_playerlist(str(realm.id), joined, left)
+                self.bot.dispatch(
+                    pl_events.LivePlayerlistSend(
+                        str(realm.id), joined, left, self.previous_now
+                    )
                 )
 
         online_cache_ids = set(self.bot.online_cache.keys())
@@ -155,7 +121,7 @@ class Playerlist(utils.Extension):
             if self.bot.offline_realm_time.get(missed_realm_id, -1) == -1:
                 self.bot.offline_realm_time[missed_realm_id] = 0
 
-            now_invalid = self.bot.online_cache[missed_realm_id]
+            now_invalid = self.bot.online_cache.pop(missed_realm_id, None)
             if not now_invalid:
                 continue
 
@@ -163,113 +129,31 @@ class Playerlist(utils.Extension):
                 models.RealmPlayer(
                     realm_xuid_id=f"{missed_realm_id}-{player}",
                     online=False,
-                    last_seen=self._previous_now,
+                    last_seen=self.previous_now,
                 )
                 for player in now_invalid
             )
 
-            self.bot.online_cache.pop(missed_realm_id, None)
-            asyncio.create_task(
-                self._send_live_playerlist(str(missed_realm_id), set(), now_invalid)
+            self.bot.dispatch(
+                pl_events.RealmDown(
+                    str(missed_realm_id), now_invalid, self.previous_now
+                )
             )
 
-        self._previous_now = now
+        self.previous_now = now
 
-        # handle these in the "background" so we don't have to worry about these
-        # taking too long
-        asyncio.create_task(self._handle_missing_warning())
-        await self._realmplayer_queue.put(
-            RealmPlayersContainer(realmplayers=player_objs)
+        self.bot.dispatch(
+            pl_events.PlayerlistParseFinish(
+                (
+                    pl_utils.RealmPlayersContainer(realmplayers=player_objs),
+                    pl_utils.RealmPlayersContainer(
+                        realmplayers=joined_player_objs, fields=("last_joined",)
+                    ),
+                )
+            )
         )
-        await self._realmplayer_queue.put(
-            RealmPlayersContainer(
-                realmplayers=joined_player_objs, fields=("last_joined",)
-            )
-        )
 
-    async def _upload_players(self):
-        while True:
-            try:
-                container = await self._realmplayer_queue.get()
-
-                await models.RealmPlayer.bulk_create(
-                    container.realmplayers,
-                    on_conflict=("realm_xuid_id",),
-                    update_fields=container.fields,
-                )
-            except Exception as e:
-                if isinstance(e, asyncio.CancelledError):
-                    return
-                await utils.error_handle(self.bot, e)
-            finally:
-                if not self._realmplayer_queue.empty():
-                    self._realmplayer_queue.task_done()
-
-    async def _send_live_playerlist(
-        self, realm_id: str, joined: set[str], left: set[str]
-    ):
-        try:
-            realmplayers = [
-                models.RealmPlayer(
-                    realm_xuid_id=f"{realm_id}-{p}",
-                    online=True,
-                    last_seen=self._previous_now,
-                )
-                for p in joined.union(left)
-            ]
-            players = await self.get_players_from_realmplayers(realm_id, realmplayers)
-            gamertag_mapping = {p.xuid: p.base_display for p in players}
-
-            embed = naff.Embed(
-                color=self.bot.color,
-                timestamp=naff.Timestamp.fromdatetime(self._previous_now),
-            )
-            embed.set_footer(
-                f"{len(self.bot.online_cache[int(realm_id)])} players online as of"
-            )
-
-            if joined:
-                embed.add_field(
-                    name=f"{os.environ['GREEN_CIRCLE_EMOJI']} Joined",
-                    value="\n".join(gamertag_mapping[p] for p in joined),
-                )
-            if left:
-                embed.add_field(
-                    name=f"{os.environ['GRAY_CIRCLE_EMOJI']} Left",
-                    value="\n".join(gamertag_mapping[p] for p in left),
-                )
-
-            for guild_id in self.bot.live_playerlist_store[realm_id].copy():
-                config = await models.GuildConfig.get(
-                    guild_id=guild_id
-                ).prefetch_related("premium_code")
-
-                if not config.premium_code or not config.playerlist_chan:
-                    self.bot.live_playerlist_store[realm_id].discard(guild_id)
-                    continue
-
-                guild = self.bot.get_guild(guild_id)
-                if not guild:
-                    # could just be it's offline or something
-                    continue
-
-                try:
-                    chan = await pl_utils.fetch_playerlist_channel(
-                        self.bot, guild, config
-                    )
-                    await chan.send(embeds=embed)
-                except ValueError:
-                    continue
-                except naff.errors.HTTPException:
-                    await pl_utils.eventually_invalidate(self.bot, config)
-                    continue
-
-        except Exception as e:
-            if isinstance(e, asyncio.CancelledError):
-                return
-            await utils.error_handle(self.bot, e)
-
-    async def _handle_missing_warning(self):
+    async def handle_missing_warning(self):
         # basically, for every realm that has been determined to be offline/missing -
         # increase its value by one. if it increases more than a set value,
         # try to warn the user about the realm not being there
@@ -278,107 +162,8 @@ class Playerlist(utils.Extension):
         for key, value in self.bot.offline_realm_time.copy().items():
             if value < 1439:  # around 24 hours
                 self.bot.offline_realm_time[key] += 1
-                continue
-
-            no_playerlist_chan: list[bool] = []
-
-            async for config in models.GuildConfig.filter(realm_id=str(key)):
-                if not config.playerlist_chan:
-                    config.realm_id = None
-                    config.club_id = None
-                    await config.save()
-
-                    no_playerlist_chan.append(True)
-                    continue
-
-                no_playerlist_chan.append(False)
-
-                guild = self.bot.get_guild(config.guild_id)
-                if not guild:
-                    # could just be it's offline or something
-                    continue
-
-                try:
-                    chan = await pl_utils.fetch_playerlist_channel(
-                        self.bot, guild, config
-                    )
-                except ValueError:
-                    continue
-
-                with contextlib.suppress(naff.errors.HTTPException):
-                    embed = naff.Embed(
-                        title="Warning",
-                        description=(
-                            "I have been unable to get any information about your"
-                            " Realm for the last 24 hours. This could be because the"
-                            " Realm has been turned off or because it's inactive, but"
-                            " if it hasn't, make sure you haven't banned or kick"
-                            f" `{self.bot.own_gamertag}`. If you have, please unban the"
-                            " account if needed and run `/config link-realm` again to"
-                            " fix it.\n\nAlternatively, if you want to disable the"
-                            " autorunner entirely, you can use `/config"
-                            " unset-playerlist-channel` to do so."
-                        ),
-                        color=naff.RoleColors.YELLOW,
-                    )
-                    await chan.send(embeds=embed)
-
-                await pl_utils.eventually_invalidate(self.bot, config, limit=7)
-
-            if all(no_playerlist_chan) or not no_playerlist_chan:
-                # we don't want to stop the whole thing, but as of right now i would
-                # like to know what happens with invalid stuff
-                try:
-                    await self.bot.realms.leave_realm(key)
-                except MicrosoftAPIException as e:
-                    # might be an invalid id somehow? who knows
-                    if e.resp.status == 404:
-                        logging.getLogger("realms_bot").warning(
-                            f"Could not leave Realm with ID {key}."
-                        )
-                        continue
-                    raise
-
-            self.bot.offline_realm_time.pop(key, None)
-
-    async def get_players_from_realmplayers(
-        self,
-        realm_id: str,
-        realmplayers: list[models.RealmPlayer],
-    ):
-        player_list: typing.List[pl_utils.Player] = []
-        unresolved_dict: typing.Dict[str, pl_utils.Player] = {}
-
-        for member in realmplayers:
-            xuid = member.realm_xuid_id.removeprefix(f"{realm_id}-")
-
-            player = pl_utils.Player(
-                xuid,
-                member.last_seen,
-                member.online,
-                await self.bot.redis.get(xuid),
-                member.last_joined,
-            )
-            if player.resolved:
-                player_list.append(player)
             else:
-                unresolved_dict[xuid] = player
-
-        if unresolved_dict:
-            gamertag_handler = pl_utils.GamertagHandler(
-                self.bot,
-                self.sem,
-                tuple(unresolved_dict.keys()),
-                self.bot.openxbl_session,
-            )
-            gamertag_dict = await gamertag_handler.run()
-
-            for xuid, gamertag in gamertag_dict.items():
-                unresolved_dict[xuid].gamertag = gamertag
-
-            player_list.extend(unresolved_dict.values())
-
-        return player_list
+                self.bot.dispatch(pl_events.WarnMissingPlayerlist(str(key)))
 
     @naff.slash_command(
         name="playerlist",
@@ -388,7 +173,7 @@ class Playerlist(utils.Extension):
     )  # type: ignore
     @naff.check(pl_utils.can_run_playerlist)  # type: ignore
     @naff.cooldown(naff.Buckets.GUILD, 1, 60)  # type: ignore
-    @naff.slash_option("hours_ago", "How far back the playerlist should go.", naff.OptionTypes.STRING, choices=hours_ago_choices)  # type: ignore
+    @naff.slash_option("hours_ago", "How far back the playerlist should go.", naff.OptionTypes.STRING, choices=HOURS_AGO_CHOICES)  # type: ignore
     async def playerlist(
         self,
         ctx: utils.RealmContext | utils.RealmPrefixedContext,
@@ -412,15 +197,6 @@ class Playerlist(utils.Extension):
 
         guild_config = await ctx.fetch_config()
 
-        if not bool(guild_config.club_id and guild_config.realm_id):
-            if init_mes:
-                raise utils.CustomCheckFailure(
-                    "This bot isn't fully configured! Take a look at `/config help` for"
-                    " how to configure the bot."
-                )
-            else:
-                return
-
         # this may seem a bit weird to you... but let's say it's 8:00:03, and we want to
         # go one hour back
         # a naive implementation would just subtract one hour from the time, getting 7:00:03,
@@ -431,8 +207,8 @@ class Playerlist(utils.Extension):
         # as the data collector thing will not take a whole 30 seconds to process things
         # this is very useful for the autorunners, which always have a chance of taking a bit
         # long due to random chance
-        actual_hours_ago: int = int(hours_ago)
         now = naff.Timestamp.utcnow().replace(second=30)
+        actual_hours_ago: int = int(hours_ago)
         time_delta = datetime.timedelta(hours=actual_hours_ago, minutes=1)
         time_ago = now - time_delta
 
@@ -446,15 +222,14 @@ class Playerlist(utils.Extension):
                 return
 
             raise utils.CustomCheckFailure(
-                "No one seems to have been on the Realm for the last "
-                + f"{actual_hours_ago} hour(s). Make sure you haven't changed"
-                " Realms or kicked the bot's account,"
-                f" `{self.bot.own_gamertag}` - try relinking the Realm via"
-                " `/config link-realm` if that happens."
+                "No one seems to have been on the Realm for the last"
+                f" {actual_hours_ago} hour(s). Make sure you haven't changed Realms or"
+                f" kicked the bot's account, `{self.bot.own_gamertag}` - try relinking"
+                " the Realm via `/config link-realm` if that happens."
             )
 
-        player_list = await self.get_players_from_realmplayers(
-            guild_config.realm_id, realmplayers  # type: ignore
+        player_list = await pl_utils.get_players_from_realmplayers(
+            self.bot, guild_config.realm_id, realmplayers  # type: ignore
         )
 
         online_list = sorted(
@@ -468,96 +243,56 @@ class Playerlist(utils.Extension):
             if not p.in_game
         ]
 
-        timestamp = naff.Timestamp.fromdatetime(self._previous_now)
-
-        if online_list:
-            embed = naff.Embed(
-                color=self.bot.color,
-                title="People online right now",
-                description="\n".join(online_list),
-                timestamp=timestamp,
+        if init_mes and not online_list and not offline_list:
+            raise utils.CustomCheckFailure(
+                f"No one has been on the Realm for the last {actual_hours_ago} hour(s)."
             )
 
-            if not offline_list and upsell and not guild_config.premium_code:
-                if upsell_type == 1:
-                    embed.set_footer(
-                        text=(
-                            "Want minute-to-minute updates on your Realm? Check out"
-                            " Live Playerlist on Playerlist Premium: /premium info"
-                        )
-                    )
-                elif upsell_type == 2:
-                    embed.set_footer(
-                        "If you like the bot, you can vote for it via /vote!"
-                    )
-            else:
-                embed.set_footer(text="As of")
-            await ctx.send(embed=embed)
+        embeds: list[naff.Embed] = []
+        timestamp = naff.Timestamp.fromdatetime(self.previous_now)
+
+        if online_list:
+            embeds.append(
+                naff.Embed(
+                    color=self.bot.color,
+                    title="People online right now",
+                    description="\n".join(online_list),
+                    footer=naff.EmbedFooter(text="As of"),
+                    timestamp=timestamp,
+                )
+            )
 
         if offline_list:
             # gets the offline list in lines of 25
             # basically, it's like
             # [ [list of 25 strings] [list of 25 strings] etc.]
             chunks = [offline_list[x : x + 25] for x in range(0, len(offline_list), 25)]
-            last_chunk_index = len(chunks) - 1
 
-            first_embed = naff.Embed(
-                color=naff.Color.from_hex("95a5a6"),
-                description="\n".join(chunks[0]),
-                title=f"People on in the last {actual_hours_ago} hour(s)",
-                timestamp=timestamp,
-            )
-
-            if last_chunk_index == 0 and upsell and not guild_config.premium_code:
-                if upsell_type == 1:
-                    first_embed.set_footer(
-                        text=(
-                            "Want minute-to-minute updates on your Realm? Check out"
-                            " Live Playerlist on Playerlist Premium: /premium info"
-                        )
-                    )
-                elif upsell_type == 2:
-                    first_embed.set_footer(
-                        "If you like the bot, you can vote for it via /vote!"
-                    )
-            else:
-                first_embed.set_footer(text="As of")
-            await ctx.send(embed=first_embed)
-
-            for index, chunk in enumerate(chunks[1:]):
-                embed = naff.Embed(
+            offline_embeds: list[naff.Embed] = [
+                naff.Embed(
                     color=naff.Color.from_hex("95a5a6"),
-                    description="\n".join(chunk),
+                    description="\n".join(c),
+                    footer=naff.EmbedFooter(text="As of"),
                     timestamp=timestamp,
                 )
+                for c in chunks
+            ]
 
-                if (
-                    last_chunk_index == (index + 1)
-                    and upsell
-                    and not guild_config.premium_code
-                ):
-                    if upsell_type == 1:
-                        embed.set_footer(
-                            text=(
-                                "Want minute-to-minute updates on your Realm? Check out"
-                                " Live Playerlist on Playerlist Premium: /premium info"
-                            )
-                        )
-                    elif upsell_type == 2:
-                        embed.set_footer(
-                            "If you like the bot, you can vote for it via /vote!"
-                        )
-                else:
-                    embed.set_footer(text="As of")
+            offline_embeds[
+                0
+            ].title = f"People on in the last {actual_hours_ago} hour(s)"
+            embeds.extend(offline_embeds)
 
-                await ctx.send(embed=embed)
-                await asyncio.sleep(0.2)
+        if upsell and not guild_config.premium_code:
+            # add upsell message to last embed
+            embeds[-1].set_footer(UPSELLS[upsell_type])
 
-        if init_mes and not online_list and not offline_list:
-            raise utils.CustomCheckFailure(
-                "No one has been on the Realm for the last "
-                + f"{actual_hours_ago} hour(s)."
-            )
+        for embed in embeds:
+            # each embed can border very close to the max character in a message limit,
+            # so we have to send each one individually
+            # we also make sure we don't get ratelimited hard
+            await ctx.send(embeds=embed)
+            await asyncio.sleep(0.2)
 
     @naff.slash_command("online", description="Allows you to see if anyone is online on the Realm right now.", dm_permission=False)  # type: ignore
     @naff.cooldown(naff.Buckets.GUILD, 1, 10)
@@ -567,27 +302,25 @@ class Playerlist(utils.Extension):
         Allows you to see if anyone is online on the Realm right now.
         Has a cooldown of 10 seconds.
         """
-        # uses much of the same code as playerlist
-
         guild_config = await ctx.fetch_config()
 
         realmplayers = await models.RealmPlayer.filter(
             realm_xuid_id__startswith=f"{guild_config.realm_id}-", online=True
         )
-        player_list = await self.get_players_from_realmplayers(
-            guild_config.realm_id, realmplayers  # type: ignore
+        playerlist = await pl_utils.get_players_from_realmplayers(
+            self.bot, guild_config.realm_id, realmplayers  # type: ignore
         )
 
         if online_list := sorted(
-            (p.display for p in player_list if p.in_game), key=lambda g: g.lower()
+            (p.display for p in playerlist if p.in_game), key=lambda g: g.lower()
         ):
             embed = naff.Embed(
                 color=self.bot.color,
                 title=f"{len(online_list)}/10 people online",
                 description="\n".join(online_list),
-                timestamp=naff.Timestamp.fromdatetime(self._previous_now),
+                footer=naff.EmbedFooter(text="As of"),
+                timestamp=naff.Timestamp.fromdatetime(self.previous_now),
             )
-            embed.set_footer(text="As of")
             await ctx.send(embed=embed)
         else:
             raise utils.CustomCheckFailure("No one is on the Realm right now.")
@@ -595,5 +328,6 @@ class Playerlist(utils.Extension):
 
 def setup(bot):
     importlib.reload(utils)
+    importlib.reload(pl_events)
     importlib.reload(pl_utils)
     Playerlist(bot)

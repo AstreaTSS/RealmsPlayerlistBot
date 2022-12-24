@@ -236,6 +236,7 @@ async def start():
 
     bot.realm_name_cache = TimedDict(expires=300)
     bot.fully_ready = asyncio.Event()
+    bot.pl_sem = asyncio.Semaphore(3)
 
     ext_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_BOT"))
     for ext in ext_list:
