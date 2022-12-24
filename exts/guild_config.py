@@ -332,7 +332,7 @@ class GuildConfig(utils.Extension):
                 await event.ctx.send(
                     result, ephemeral=True, allowed_mentions=naff.AllowedMentions.none()
                 )
-            await ctx.edit(msg, content=result, embeds=[], components=[])
+            await ctx.edit(msg, content=result, embeds=[], embed=[], components=[])  # type: ignore
 
     @config.subcommand(
         sub_cmd_name="unset-realm-offline-ping",
