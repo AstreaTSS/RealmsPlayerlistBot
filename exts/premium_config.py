@@ -5,6 +5,7 @@ import secrets
 import typing
 
 import naff
+import tansy
 from Crypto.Cipher import AES
 
 import common.models as models
@@ -32,29 +33,19 @@ class PremiumHandling(naff.Extension):
         # just because this is a technically complex function by design - aes isn't cheap
         return await asyncio.to_thread(self._encrypt_input, code)
 
-    @naff.slash_command(
+    @tansy.slash_command(
         name="generate-code",
         description="Generates a premium code. Can only be used by the bot's owner.",
         scopes=[utils.DEV_GUILD_ID],
         default_member_permissions=naff.Permissions.ADMINISTRATOR,
     )
-    @naff.slash_option(
-        "max_uses",
-        "How many uses the code has.",
-        naff.OptionTypes.INTEGER,
-        required=False,
-    )
-    @naff.slash_option(
-        "user_id",
-        "The user ID this is tied to if needed.",
-        naff.OptionTypes.STRING,
-        required=False,
-    )
     async def generate_code(
         self,
         ctx: naff.InteractionContext,
-        max_uses: int = 3,
-        user_id: typing.Optional[str] = None,
+        max_uses: int = tansy.Option("How many uses the code has.", default=3),
+        user_id: typing.Optional[str] = tansy.Option(
+            "The user ID this is tied to if needed.", default=None
+        ),
     ):
         # mind you, it isn't TOO important that this is secure - really, i just want
         # to make sure your average tech person couldn't brute force a code
@@ -70,7 +61,7 @@ class PremiumHandling(naff.Extension):
         )
         await ctx.send(f"Code created!\nCode: `{code}`")
 
-    premium = naff.SlashCommand(
+    premium = tansy.TansySlashCommand(
         name="premium",  # type: ignore
         description="Handles the configuration for Realms Playerlist Premium.",  # type: ignore
         default_member_permissions=naff.Permissions.MANAGE_GUILD,
@@ -83,13 +74,9 @@ class PremiumHandling(naff.Extension):
             "Redeems the premium code for the server this command is run in."
         ),
     )
-    @naff.slash_option(
-        "code",
-        "The code for premium.",
-        naff.OptionTypes.STRING,
-        required=True,
-    )
-    async def redeem_premium(self, ctx: utils.RealmContext, code: str):
+    async def redeem_premium(
+        self, ctx: utils.RealmContext, code: str = tansy.Option("The code for premium.")
+    ):
         encrypted_code = await self.encrypt_input(code)
         code_obj = await models.PremiumCode.get_or_none(code=encrypted_code)
 
@@ -133,13 +120,11 @@ class PremiumHandling(naff.Extension):
             " premium activated."
         ),
     )
-    @naff.slash_option(
-        "toggle",
-        "Should it be on (true) or off (false)?",
-        naff.OptionTypes.BOOLEAN,
-        required=True,
-    )
-    async def toggle_live_playerlist(self, ctx: utils.RealmContext, toggle: bool):
+    async def toggle_live_playerlist(
+        self,
+        ctx: utils.RealmContext,
+        toggle: bool = tansy.Option("Should it be on (true) or off (false)?"),
+    ):
         config = await ctx.fetch_config()
 
         if not config.premium_code:

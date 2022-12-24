@@ -165,6 +165,7 @@ class Playerlist(utils.Extension):
             else:
                 self.bot.dispatch(pl_events.WarnMissingPlayerlist(str(key)))
 
+    # can't be a tansy command due to the weird stuff we do with kwargs
     @naff.slash_command(
         name="playerlist",
         description="Sends a playerlist, a log of players who have joined and left.",

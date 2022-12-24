@@ -6,6 +6,7 @@ import typing
 
 import aiohttp
 import naff
+import tansy
 
 import common.classes as cclasses
 import common.clubs_playerlist as clubs_playerlist
@@ -40,8 +41,8 @@ class GuildConfig(utils.Extension):
         name_dict = {str(realm.id): realm.name for realm in response.servers}
         self.bot.realm_name_cache.insert(name_dict)  # type: ignore
 
-    config = naff.SlashCommand(
-        name="config",  # type: ignore
+    config = tansy.TansySlashCommand(
+        name="config",
         description="Handles configuration of the bot.",  # type: ignore
         default_member_permissions=naff.Permissions.MANAGE_GUILD,
         dm_permission=False,
@@ -115,15 +116,12 @@ class GuildConfig(utils.Extension):
             " Realm stored."
         ),
     )
-    @naff.slash_option(
-        "realm_code",
-        "The Realm code or link.",
-        naff.OptionTypes.STRING,
-        required=True,
-    )
-    async def link_realm(self, ctx: utils.RealmContext, **kwargs):
+    async def link_realm(
+        self,
+        ctx: utils.RealmContext,
+        _realm_code: str = tansy.Option("The Realm code or link.", name="realm_code"),
+    ):
         config = await ctx.fetch_config()
-        _realm_code: str = kwargs["realm_code"]
 
         realm_code_matches = REALMS_LINK_REGEX.match(_realm_code)
 
@@ -193,17 +191,13 @@ class GuildConfig(utils.Extension):
         sub_cmd_name="set-playerlist-channel",
         sub_cmd_description="Sets where the autorun playerlist is sent to.",
     )
-    @naff.slash_option(
-        "channel",
-        "The channel to set the playerlist to.",
-        naff.OptionTypes.CHANNEL,
-        required=True,
-        channel_types=[naff.ChannelTypes.GUILD_TEXT],
-    )
     async def set_playerlist_channel(
         self,
         ctx: utils.RealmContext,
-        channel: cclasses.ValidChannelConverter,
+        channel: naff.GuildText = tansy.Option(
+            "The channel to set the playerlist to.",
+            converter=cclasses.ValidChannelConverter,
+        ),
     ):
         if typing.TYPE_CHECKING:
             assert isinstance(channel, naff.GuildText)

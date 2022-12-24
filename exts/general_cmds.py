@@ -10,6 +10,7 @@ import typing
 import aiohttp
 import naff
 import orjson
+import tansy
 from apischema import ValidationError
 
 import common.models as models
@@ -166,14 +167,15 @@ class GeneralCMDS(utils.Extension):
 
         await ctx.send(embed=about_embed)
 
-    @naff.slash_command(
+    @tansy.slash_command(
         "gamertag-from-xuid",
         description="Gets the gamertag for a specified XUID.",
     )
-    @naff.slash_option(
-        "xuid", "The XUID of the player to get.", naff.OptionTypes.STRING, required=True
-    )
-    async def gamertag_from_xuid(self, ctx: utils.RealmContext, xuid: str):
+    async def gamertag_from_xuid(
+        self,
+        ctx: utils.RealmContext,
+        xuid: str = tansy.Option("The XUID of the player to get."),
+    ):
         """
         Gets the gamertag for a specified XUID.
 

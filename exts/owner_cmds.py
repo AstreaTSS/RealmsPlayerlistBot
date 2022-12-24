@@ -12,6 +12,7 @@ import unicodedata
 
 import aiohttp
 import naff
+import tansy
 from naff.ext import paginators
 from naff.ext.debug_extension.utils import debug_embed
 from naff.ext.debug_extension.utils import get_cache_state
@@ -59,23 +60,16 @@ class OwnerCMDs(utils.Extension):
         ]
         await ctx.send(self._limit_to_25(near_guilds))
 
-    @naff.slash_command(
+    @tansy.slash_command(
         name="view-guild",
         description="Displays a guild's config. Can only be used by the bot's owner.",
         scopes=[DEV_GUILD_ID],
         default_member_permissions=naff.Permissions.ADMINISTRATOR,
     )
-    @naff.slash_option(
-        "guild",
-        "The guild to view.",
-        naff.OptionTypes.STRING,
-        required=True,
-        autocomplete=True,
-    )
     async def view_guild(
         self,
         ctx: utils.RealmContext,
-        guild_id: str,
+        guild_id: str = tansy.Option("The guild to view.", autocomplete=True),
     ):
         config = await GuildConfig.get(guild_id=int(guild_id)).prefetch_related(
             "premium_code"
@@ -117,7 +111,7 @@ class OwnerCMDs(utils.Extension):
     async def view_get_guild(self, ctx, guild, **kwargs):
         await self._autocomplete_guilds(ctx, guild)
 
-    @naff.slash_command(
+    @tansy.slash_command(
         name="add-guild",
         description=(
             "Adds a guild to the bot's configs. Can only be used by the bot's owner."
@@ -125,34 +119,19 @@ class OwnerCMDs(utils.Extension):
         scopes=[DEV_GUILD_ID],
         default_member_permissions=naff.Permissions.ADMINISTRATOR,
     )
-    @naff.slash_option(
-        "guild_id",
-        "The guild ID for the guild to add.",
-        naff.OptionTypes.STRING,
-        required=True,
-    )
-    @naff.slash_option(
-        "club_id", "The club ID for the Realm.", naff.OptionTypes.STRING, required=False
-    )
-    @naff.slash_option(
-        "realm_id",
-        "The Realm ID for the Realm.",
-        naff.OptionTypes.STRING,
-        required=False,
-    )
-    @naff.slash_option(
-        "playerlist_chan",
-        "The playerlist channel ID for this guild.",
-        naff.OptionTypes.STRING,
-        required=False,
-    )
     async def add_guild(
         self,
         ctx: utils.RealmContext,
-        guild_id: str,
-        club_id: str = None,
-        realm_id: str = None,
-        playerlist_chan: str = None,
+        guild_id: str = tansy.Option("The guild ID for the guild to add."),
+        club_id: typing.Optional[str] = tansy.Option(
+            "The club ID for the Realm.", default=None
+        ),
+        realm_id: typing.Optional[str] = tansy.Option(
+            "The Realm ID for the Realm.", default=None
+        ),
+        playerlist_chan: typing.Optional[str] = tansy.Option(
+            "The playerlist channel ID for this guild.", default=None
+        ),
     ):
         kwargs: dict[str, int | str] = {"guild_id": int(guild_id)}
 
@@ -168,7 +147,7 @@ class OwnerCMDs(utils.Extension):
         await GuildConfig.create(**kwargs)
         await ctx.send("Done!")
 
-    @naff.slash_command(
+    @tansy.slash_command(
         name="edit-guild",
         description=(
             "Edits a guild in the bot's configs. Can only be used by the bot's owner."
@@ -176,35 +155,19 @@ class OwnerCMDs(utils.Extension):
         scopes=[DEV_GUILD_ID],
         default_member_permissions=naff.Permissions.ADMINISTRATOR,
     )
-    @naff.slash_option(
-        "guild",
-        "The guild to edit.",
-        naff.OptionTypes.STRING,
-        required=True,
-        autocomplete=True,
-    )
-    @naff.slash_option(
-        "club_id", "The club ID for the Realm.", naff.OptionTypes.STRING, required=False
-    )
-    @naff.slash_option(
-        "realm_id",
-        "The Realm ID for the Realm.",
-        naff.OptionTypes.STRING,
-        required=False,
-    )
-    @naff.slash_option(
-        "playerlist_chan",
-        "The playerlist channel ID for this guild.",
-        naff.OptionTypes.STRING,
-        required=False,
-    )
     async def edit_guild(
         self,
         ctx: utils.RealmContext,
-        guild: str,
-        club_id: str = None,
-        realm_id: str = None,
-        playerlist_chan: str = None,
+        guild: str = tansy.Option("The guild to edit.", autocomplete=True),
+        club_id: typing.Optional[str] = tansy.Option(
+            "The club ID for the Realm.", default=None
+        ),
+        realm_id: typing.Optional[str] = tansy.Option(
+            "The Realm ID for the Realm.", default=None
+        ),
+        playerlist_chan: typing.Optional[str] = tansy.Option(
+            "The playerlist channel ID for this guild.", default=None
+        ),
     ):
         guild_config = await GuildConfig.get(guild_id=int(guild))
 
@@ -226,7 +189,7 @@ class OwnerCMDs(utils.Extension):
     async def edit_get_guild(self, ctx, guild, **kwargs):
         await self._autocomplete_guilds(ctx, guild)
 
-    @naff.slash_command(
+    @tansy.slash_command(
         name="edit-guild-via-id",
         description=(
             "Edits a guild in the bot's configs. Can only be used by the bot's owner."
@@ -234,34 +197,19 @@ class OwnerCMDs(utils.Extension):
         scopes=[DEV_GUILD_ID],
         default_member_permissions=naff.Permissions.ADMINISTRATOR,
     )
-    @naff.slash_option(
-        "guild_id",
-        "The guild ID for the guild to edit.",
-        naff.OptionTypes.STRING,
-        required=True,
-    )
-    @naff.slash_option(
-        "club_id", "The club ID for the Realm.", naff.OptionTypes.STRING, required=False
-    )
-    @naff.slash_option(
-        "realm_id",
-        "The Realm ID for the Realm.",
-        naff.OptionTypes.STRING,
-        required=False,
-    )
-    @naff.slash_option(
-        "playerlist_chan",
-        "The playerlist channel ID for this guild.",
-        naff.OptionTypes.STRING,
-        required=False,
-    )
     async def edit_guild_via_id(
         self,
         ctx: utils.RealmContext,
-        guild_id: str,
-        club_id: str = None,
-        realm_id: str = None,
-        playerlist_chan: str = None,
+        guild_id: str = tansy.Option("The guild ID for the guild to edit."),
+        club_id: typing.Optional[str] = tansy.Option(
+            "The club ID for the Realm.", default=None
+        ),
+        realm_id: typing.Optional[str] = tansy.Option(
+            "The Realm ID for the Realm.", default=None
+        ),
+        playerlist_chan: typing.Optional[str] = tansy.Option(
+            "The playerlist channel ID for this guild.", default=None
+        ),
     ):
         guild_config = await GuildConfig.get(guild_id=int(guild_id))
 
@@ -279,7 +227,7 @@ class OwnerCMDs(utils.Extension):
         await guild_config.save()
         await ctx.send("Done!")
 
-    @naff.slash_command(
+    @tansy.slash_command(
         name="remove-guild",
         description=(
             "Removes a guild from the bot's configs. Can only be used by the bot's"
@@ -288,47 +236,13 @@ class OwnerCMDs(utils.Extension):
         scopes=[DEV_GUILD_ID],
         default_member_permissions=naff.Permissions.ADMINISTRATOR,
     )
-    @naff.slash_option(
-        "guild_id",
-        "The guild ID for the guild to remove.",
-        naff.OptionTypes.STRING,
-        required=True,
-    )
     async def remove_guild(
         self,
         ctx: utils.RealmContext,
-        guild_id: str,
+        guild_id: str = tansy.Option("The guild ID for the guild to remove."),
     ):
         await GuildConfig.filter(guild_id=int(guild_id)).delete()
         await ctx.send("Deleted!")
-
-    @naff.slash_command(
-        name="join-realm",
-        description="Joins a realm. Can only be used by the bot's owner.",
-        scopes=[DEV_GUILD_ID],
-        default_member_permissions=naff.Permissions.ADMINISTRATOR,
-    )
-    @naff.slash_option(
-        "realm_code",
-        "The Realm code",
-        naff.OptionTypes.STRING,
-        required=True,
-    )
-    async def join_realm(self, ctx: utils.RealmContext, realm_code: str):
-        try:
-            realm = await ctx.bot.realms.join_realm_from_code(realm_code)
-            await ctx.send(f"Realm ID: {realm.id}\nClub ID: {realm.club_id}")
-        except MicrosoftAPIException as e:
-            if isinstance(e.error, aiohttp.ClientResponseError):
-                await utils.msg_to_owner(
-                    ctx.bot,
-                    (
-                        f"Status code: {e.resp.status}\nHeaders:"
-                        f" {e.error.headers}\nText: {await e.resp.text()}"
-                    ),
-                )
-            else:
-                await utils.error_handle(self.bot, e.error, ctx)
 
     @naff.prefixed_command(aliases=["jsk"])
     async def debug(self, ctx: naff.PrefixedContext):

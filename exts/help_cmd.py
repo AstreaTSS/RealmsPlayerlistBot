@@ -2,6 +2,7 @@ import importlib
 import typing
 
 import naff
+import tansy
 
 import common.fuzzy as fuzzy
 import common.help_tools as help_tools
@@ -175,20 +176,19 @@ class HelpCMD(utils.Extension):
             )
         ]
 
-    @naff.slash_command(
+    @tansy.slash_command(
         name="help",
         description="Shows help about the bot, a command, or a category.",
         dm_permission=False,
     )
-    @naff.slash_option(
-        name="query",
-        description="The query to search for. Can be a command or a category.",
-        opt_type=naff.OptionTypes.STRING,
-        required=False,
-        autocomplete=True,  # TODO
-    )
     async def help_cmd(
-        self, ctx: utils.RealmContext, query: typing.Optional[str] = None
+        self,
+        ctx: utils.RealmContext,
+        query: typing.Optional[str] = tansy.Option(
+            "The query to search for. Can be a command or a category.",
+            autocomplete=True,
+            default=None,
+        ),
     ):
         """Shows help about the bot, a command, or a category."""
         embeds: list[naff.Embed] = []
