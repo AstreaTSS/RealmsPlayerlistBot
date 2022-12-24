@@ -12,7 +12,7 @@ import common.playerlist_utils as pl_utils
 import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
 
-HOURS_AGO_CHOICES = [naff.SlashCommandChoice(str(n), str(n)) for n in range(1, 25)]
+HOURS_AGO_CHOICES = [naff.SlashCommandChoice(str(n), n) for n in range(1, 25)]
 
 UPSELLS = {
     1: (
@@ -173,11 +173,11 @@ class Playerlist(utils.Extension):
     )  # type: ignore
     @naff.check(pl_utils.can_run_playerlist)  # type: ignore
     @naff.cooldown(naff.Buckets.GUILD, 1, 60)  # type: ignore
-    @naff.slash_option("hours_ago", "How far back the playerlist should go.", naff.OptionTypes.STRING, choices=HOURS_AGO_CHOICES)  # type: ignore
+    @naff.slash_option("hours_ago", "How far back the playerlist should go.", naff.OptionTypes.INTEGER, choices=HOURS_AGO_CHOICES)  # type: ignore
     async def playerlist(
         self,
         ctx: utils.RealmContext | utils.RealmPrefixedContext,
-        hours_ago: str = "12",
+        hours_ago: int = 12,
         **kwargs,
     ):
         """
@@ -208,8 +208,7 @@ class Playerlist(utils.Extension):
         # this is very useful for the autorunners, which always have a chance of taking a bit
         # long due to random chance
         now = naff.Timestamp.utcnow().replace(second=30)
-        actual_hours_ago: int = int(hours_ago)
-        time_delta = datetime.timedelta(hours=actual_hours_ago, minutes=1)
+        time_delta = datetime.timedelta(hours=hours_ago, minutes=1)
         time_ago = now - time_delta
 
         realmplayers = await models.RealmPlayer.filter(
@@ -223,7 +222,7 @@ class Playerlist(utils.Extension):
 
             raise utils.CustomCheckFailure(
                 "No one seems to have been on the Realm for the last"
-                f" {actual_hours_ago} hour(s). Make sure you haven't changed Realms or"
+                f" {hours_ago} hour(s). Make sure you haven't changed Realms or"
                 f" kicked the bot's account, `{self.bot.own_gamertag}` - try relinking"
                 " the Realm via `/config link-realm` if that happens."
             )
@@ -245,7 +244,7 @@ class Playerlist(utils.Extension):
 
         if init_mes and not online_list and not offline_list:
             raise utils.CustomCheckFailure(
-                f"No one has been on the Realm for the last {actual_hours_ago} hour(s)."
+                f"No one has been on the Realm for the last {hours_ago} hour(s)."
             )
 
         embeds: list[naff.Embed] = []
@@ -278,9 +277,7 @@ class Playerlist(utils.Extension):
                 for c in chunks
             ]
 
-            offline_embeds[
-                0
-            ].title = f"People on in the last {actual_hours_ago} hour(s)"
+            offline_embeds[0].title = f"People on in the last {hours_ago} hour(s)"
             embeds.extend(offline_embeds)
 
         if upsell and not guild_config.premium_code:

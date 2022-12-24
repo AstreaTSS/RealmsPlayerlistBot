@@ -136,7 +136,7 @@ class AutoRunPlayerlist(utils.Extension):
         # the two listed here silence the 'this may take a long time' message
         # and also make it so it doesnt go back 12 hours, instead only going one
         await list_cmd.callback(
-            a_ctx, "1", no_init_mes=True, upsell=upsell, upsell_type=upsell_type
+            a_ctx, 1, no_init_mes=True, upsell=upsell, upsell_type=upsell_type
         )
 
 
