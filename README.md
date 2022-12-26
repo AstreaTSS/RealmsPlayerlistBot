@@ -35,11 +35,11 @@ It looks something like this (minus the obvious censoring):
 
 This has a variety of uses, from statistical to moderation - it's really up to you what you do with this information. I know of one Realm owner who uses it both to narrow down subjects to a precise degree while also tracking active Realm times. Using Discord's search functionality (heavily suggest looking into that if you haven't use it, by the way), the possibilities are near endless.
 
-Take a closer look at Premium [here.](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Playerlist-Premium-and-How-to-Get-It)
+Take a closer look at Premium [here.](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/Playerlist-Premium-and-How-to-Get-It)
 
 ## Adding The Bot
 
-If you wish to add this bot, just [use this guide on how to do so!](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Server-Setup)
+If you wish to add this bot, just [use this guide on how to do so!](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/Server-Setup)
 
 ## Self-hosting Information
 
@@ -49,10 +49,10 @@ But if you're willing to try... well, I won't leave a detailed guide here - just
 
 ## FAQ
 
-There's a whole section in the wiki about this! Check it out [here](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/FAQ).
+There's a whole section in the wiki about this! Check it out [here](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/FAQ).
 
 ## Links:
 
-* [Bot Setup Guide](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Server-Setup)
+* [Bot Setup Guide](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/Server-Setup)
 * [Join Support Server](https://discord.gg/NSdetwGjpK)
-* [Support me on Ko-fi](https://ko-fi.com/astrea49)
+* [Support me on Ko-fi](https://ko-fi.com/astreatss)

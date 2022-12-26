@@ -105,7 +105,7 @@ class GuildConfig(utils.Extension):
                     f" kicked the account `{self.bot.own_gamertag}`. If you did, try"
                     f" relinking the Realm via {self.link_realm.mention()}.\nFor more"
                     " information, please check"
-                    " https://github.com/Astrea49/RealmsPlayerlistBot/wiki/FAQ#help-"
+                    " https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/FAQ#help-"
                     "the-playerlistonline-comamnd-isnt-working."
                 ),
             )
