@@ -72,14 +72,13 @@ class OwnerCMDs(utils.Extension):
         config = await GuildConfig.get(guild_id=int(guild)).prefetch_related(
             "premium_code"
         )
+        actual_guild: naff.Guild = ctx.bot.get_guild(int(guild))
 
         embed = naff.Embed(
-            color=self.bot.color, title=f"Server Config for {ctx.guild.name}:"
+            color=self.bot.color, title=f"Server Config for {actual_guild.name}:"
         )
         playerlist_channel = (
-            f"<#{config.playerlist_chan}> (ID: {config.playerlist_chan})"
-            if config.playerlist_chan
-            else "N/A"
+            str(config.playerlist_chan) if config.playerlist_chan else "N/A"
         )
 
         realm_name = utils.na_friendly_str(
@@ -94,12 +93,12 @@ class OwnerCMDs(utils.Extension):
             bool(config.realm_id and config.playerlist_chan)
         )
         offline_realm_ping = (
-            f"<@&{config.realm_offline_role}>" if config.realm_offline_role else "N/A"
+            str(config.realm_offline_role) if config.realm_offline_role else "N/A"
         )
 
         embed.description = (
-            f"Autorun Playerlist Channel: {playerlist_channel}\nRealm Name:"
-            f" {realm_name}\nAutorunner: {autorunner}\nOffline Realm Ping Role:"
+            f"Autorun Playerlist Channel ID: {playerlist_channel}\nRealm Name:"
+            f" {realm_name}\nAutorunner: {autorunner}\nOffline Realm Ping Role ID:"
             f" {offline_realm_ping}\n\nPremium Activated:"
             f" {utils.yesno_friendly_str(bool(config.premium_code))}\nLive Playerlist:"
             f" {utils.toggle_friendly_str(config.live_playerlist)}\n\nExtra"
