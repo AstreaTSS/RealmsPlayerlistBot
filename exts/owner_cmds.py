@@ -67,9 +67,9 @@ class OwnerCMDs(utils.Extension):
     async def view_guild(
         self,
         ctx: utils.RealmContext,
-        guild_id: str = tansy.Option("The guild to view.", autocomplete=True),
+        guild: str = tansy.Option("The guild to view.", autocomplete=True),
     ):
-        config = await GuildConfig.get(guild_id=int(guild_id)).prefetch_related(
+        config = await GuildConfig.get(guild_id=int(guild)).prefetch_related(
             "premium_code"
         )
 
