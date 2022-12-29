@@ -77,9 +77,7 @@ class OwnerCMDs(utils.Extension):
         embed = naff.Embed(
             color=self.bot.color, title=f"Server Config for {actual_guild.name}:"
         )
-        playerlist_channel = (
-            str(config.playerlist_chan) if config.playerlist_chan else "N/A"
-        )
+        playerlist_channel = utils.na_friendly_str(config.playerlist_chan)
 
         realm_name = utils.na_friendly_str(
             self.bot.realm_name_cache.get(config.realm_id)
@@ -92,9 +90,7 @@ class OwnerCMDs(utils.Extension):
         autorunner = utils.toggle_friendly_str(
             bool(config.realm_id and config.playerlist_chan)
         )
-        offline_realm_ping = (
-            str(config.realm_offline_role) if config.realm_offline_role else "N/A"
-        )
+        offline_realm_ping = utils.na_friendly_str(config.realm_offline_role)
 
         embed.description = (
             f"Autorun Playerlist Channel ID: {playerlist_channel}\nRealm Name:"
