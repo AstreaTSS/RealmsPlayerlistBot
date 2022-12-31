@@ -32,7 +32,7 @@ class PlayerlistEventHandling(naff.Extension):
             models.RealmPlayer(
                 realm_xuid_id=f"{event.realm_id}-{p}",
                 online=True,
-                last_seen=event.last_seen,
+                last_seen=event.timestamp,
             )
             for p in event.joined.union(event.left)
         ]
@@ -43,7 +43,7 @@ class PlayerlistEventHandling(naff.Extension):
 
         embed = naff.Embed(
             color=self.bot.color,
-            timestamp=naff.Timestamp.fromdatetime(event.last_seen),
+            timestamp=naff.Timestamp.fromdatetime(event.timestamp),
         )
         embed.set_footer(
             f"{len(self.bot.online_cache[int(event.realm_id)])} players online as of"
@@ -89,7 +89,7 @@ class PlayerlistEventHandling(naff.Extension):
         if self.bot.live_playerlist_store[event.realm_id]:
             self.bot.dispatch(
                 pl_events.LivePlayerlistSend(
-                    event.realm_id, set(), event.disconnected, event.last_seen
+                    event.realm_id, set(), event.disconnected, event.timestamp
                 )
             )
 
@@ -113,7 +113,7 @@ class PlayerlistEventHandling(naff.Extension):
                     "The bot has detected that the Realm is offline (or possibly that"
                     " it has no users)."
                 ),
-                timestamp=naff.Timestamp.fromdatetime(event.last_seen),
+                timestamp=naff.Timestamp.fromdatetime(event.timestamp),
                 color=naff.RoleColors.YELLOW,
             )
 

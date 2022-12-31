@@ -110,7 +110,10 @@ class Playerlist(utils.Extension):
             if self.bot.live_playerlist_store[str(realm.id)] and (joined or left):
                 self.bot.dispatch(
                     pl_events.LivePlayerlistSend(
-                        str(realm.id), joined, left, self.previous_now
+                        str(realm.id),
+                        joined,
+                        left,
+                        now,
                     )
                 )
 
@@ -136,7 +139,9 @@ class Playerlist(utils.Extension):
 
             self.bot.dispatch(
                 pl_events.RealmDown(
-                    str(missed_realm_id), now_invalid, self.previous_now
+                    str(missed_realm_id),
+                    now_invalid,
+                    now,
                 )
             )
 

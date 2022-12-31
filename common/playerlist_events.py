@@ -35,14 +35,14 @@ class PlayerlistEvent(naff.events.BaseEvent):
 @define()
 class RealmDown(PlayerlistEvent):
     disconnected: set[str] = attrs.field(repr=False)
-    last_seen: datetime = attrs.field(repr=False)
+    timestamp: datetime = attrs.field(repr=False)
 
 
 @define()
 class LivePlayerlistSend(PlayerlistEvent):
     joined: set[str] = attrs.field(repr=False)
     left: set[str] = attrs.field(repr=False)
-    last_seen: datetime = attrs.field(repr=False)
+    timestamp: datetime = attrs.field(repr=False)
 
 
 @define()
