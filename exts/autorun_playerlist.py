@@ -1,5 +1,4 @@
 import asyncio
-import collections
 import contextlib
 import datetime
 import importlib
