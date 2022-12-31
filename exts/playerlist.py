@@ -192,7 +192,7 @@ class Playerlist(utils.Extension):
         May take a while to run at first.
         """
 
-        init_mes = not kwargs.get("no_init_mes", False)
+        autorunner = kwargs.get("autorunner", False)
         upsell = kwargs.get("upsell", False)
         upsell_type: int = kwargs.get("upsell_type", -1)
 
@@ -218,7 +218,7 @@ class Playerlist(utils.Extension):
         )
 
         if not realmplayers:
-            if not init_mes:
+            if autorunner:
                 return
 
             raise utils.CustomCheckFailure(
@@ -243,10 +243,13 @@ class Playerlist(utils.Extension):
             if not p.in_game
         ]
 
-        if init_mes and not online_list and not offline_list:
-            raise utils.CustomCheckFailure(
-                f"No one has been on the Realm for the last {hours_ago} hour(s)."
-            )
+        if not online_list and not offline_list:
+            if not autorunner:
+                raise utils.CustomCheckFailure(
+                    f"No one has been on the Realm for the last {hours_ago} hour(s)."
+                )
+            else:
+                return
 
         embeds: list[naff.Embed] = []
         timestamp = naff.Timestamp.fromdatetime(self.previous_now)
@@ -285,11 +288,24 @@ class Playerlist(utils.Extension):
             # add upsell message to last embed
             embeds[-1].set_footer(UPSELLS[upsell_type])
 
+        first_embed = True
+
         for embed in embeds:
             # each embed can border very close to the max character in a message limit,
             # so we have to send each one individually
+
+            if autorunner and first_embed:
+                # if we're using the autorunner, add a little message to note that
+                # this is a log
+                await ctx.send(
+                    content=f"Autorunner log for {timestamp.format('f')}:",
+                    embed=embed,
+                )
+                first_embed = False
+            else:
+                await ctx.send(embeds=embed)
+
             # we also make sure we don't get ratelimited hard
-            await ctx.send(embeds=embed)
             await asyncio.sleep(0.2)
 
     @naff.slash_command("online", description="Allows you to see if anyone is online on the Realm right now.", dm_permission=False)  # type: ignore
