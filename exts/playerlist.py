@@ -4,6 +4,7 @@ import importlib
 import math
 
 import naff
+import tansy
 from tortoise.expressions import Q
 
 import common.models as models
@@ -171,7 +172,7 @@ class Playerlist(utils.Extension):
                 self.bot.dispatch(pl_events.WarnMissingPlayerlist(str(key)))
 
     # can't be a tansy command due to the weird stuff we do with kwargs
-    @naff.slash_command(
+    @tansy.slash_command(
         name="playerlist",
         description="Sends a playerlist, a log of players who have joined and left.",
         default_member_permissions=naff.Permissions.MANAGE_GUILD,
@@ -179,11 +180,10 @@ class Playerlist(utils.Extension):
     )  # type: ignore
     @naff.check(pl_utils.can_run_playerlist)  # type: ignore
     @naff.cooldown(naff.Buckets.GUILD, 1, 60)  # type: ignore
-    @naff.slash_option("hours_ago", "How far back the playerlist should go.", naff.OptionTypes.INTEGER, choices=HOURS_AGO_CHOICES)  # type: ignore
     async def playerlist(
         self,
         ctx: utils.RealmContext | utils.RealmPrefixedContext,
-        hours_ago: int = 12,
+        hours_ago: int = tansy.Option("How far back the playerlist should go.", choices=HOURS_AGO_CHOICES),  # type: ignore
         **kwargs,
     ):
         """
