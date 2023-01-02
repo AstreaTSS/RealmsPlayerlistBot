@@ -214,7 +214,7 @@ async def eventually_invalidate(
     # before actually doing it
     num_times = await bot.redis.incr(f"invalid-playerlist-{guild_config.guild_id}")
 
-    if num_times > limit:
+    if num_times >= limit:
         guild_config.playerlist_chan = None
         await guild_config.save()
         await bot.redis.delete(f"invalid-playerlist-{guild_config.guild_id}")
@@ -232,7 +232,7 @@ async def eventually_invalidate_realm_offline(
 ):
     num_times = await bot.redis.incr(f"invalid-realmoffline-{guild_config.guild_id}")
 
-    if num_times > limit:
+    if num_times >= limit:
         guild_config.realm_offline_role = None
         await guild_config.save()
         await bot.redis.delete(f"invalid-playerlist-{guild_config.guild_id}")
