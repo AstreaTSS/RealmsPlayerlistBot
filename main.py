@@ -4,7 +4,6 @@ import datetime
 import importlib
 import logging
 import os
-import tomllib
 import typing
 from collections import defaultdict
 
@@ -12,9 +11,15 @@ import aiohttp
 import discord_typings
 import naff
 import sentry_sdk
+import tansy
+import tomllib
 from naff.ext.sentry import HookedTask
 from naff.models.naff.tasks.task import Task
 from tortoise import Tortoise
+
+# install speedups before importing common stuff,
+# since that uses naff
+tansy.install_naff_speedups()
 
 import common.help_tools as help_tools
 import common.models as models
