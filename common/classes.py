@@ -65,6 +65,9 @@ class TimedDict(typing.Generic[KT, VT]):
 
 
 def valid_channel_check(channel: naff.GuildChannel):
+    if not isinstance(channel, naff.MessageableMixin):
+        raise naff.errors.BadArgument(f"Cannot send messages in {channel.name}.")
+
     perms = channel.permissions_for(channel.guild.me)
 
     if (
