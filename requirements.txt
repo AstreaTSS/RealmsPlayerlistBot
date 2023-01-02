@@ -1,5 +1,5 @@
 naff==2.0.0
-tansy==0.5.0
+tansy==0.5.1
 humanize==4.4.0
 websockets==10.4
 xbox-webapi==2.0.11
