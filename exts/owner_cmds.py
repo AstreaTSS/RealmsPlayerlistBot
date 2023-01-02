@@ -307,7 +307,7 @@ class OwnerCMDs(utils.Extension):
 
     @naff.prefixed_command(aliases=["reloadallextensions"])
     async def reload_all_extensions(self, ctx: naff.PrefixedContext):
-        for ext in (e.extension_name for e in self.bot.ext.values()):
+        for ext in (e.extension_name for e in self.bot.ext.copy().values()):
             self.bot.reload_extension(ext)
         await ctx.reply("All extensions reloaded!")
 
