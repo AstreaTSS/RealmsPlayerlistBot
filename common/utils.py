@@ -11,9 +11,8 @@ import aiohttp
 import naff
 import redis.asyncio as aioredis
 import sentry_sdk
-from naff.models.discord.message import process_message_payload
 
-from .models import GuildConfig
+from common.models import GuildConfig
 
 
 DEV_GUILD_ID = int(os.environ.get("DEV_GUILD_ID", "0"))
