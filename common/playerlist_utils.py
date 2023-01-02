@@ -247,7 +247,7 @@ async def fetch_playerlist_channel(
         await eventually_invalidate(bot, config)
         raise ValueError() from e
     else:
-        if not chan or not isinstance(chan, naff.GuildText):
+        if not chan or not isinstance(chan, naff.MessageableMixin):
             # invalid channel
             await eventually_invalidate(bot, config)
             raise ValueError()

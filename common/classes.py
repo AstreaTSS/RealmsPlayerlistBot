@@ -64,7 +64,7 @@ class TimedDict(typing.Generic[KT, VT]):
             self._timer.cancel()
 
 
-def valid_channel_check(channel: naff.GuildText):
+def valid_channel_check(channel: naff.GuildChannel):
     perms = channel.permissions_for(channel.guild.me)
 
     if (
