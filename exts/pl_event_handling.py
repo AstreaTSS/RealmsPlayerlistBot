@@ -171,6 +171,8 @@ class PlayerlistEventHandling(naff.Extension):
                 # could just be it's offline or something
                 continue
 
+            await pl_utils.eventually_invalidate(self.bot, config, limit=7)
+
             try:
                 chan = await pl_utils.fetch_playerlist_channel(self.bot, guild, config)
             except ValueError:
@@ -194,8 +196,6 @@ class PlayerlistEventHandling(naff.Extension):
                 )
                 await chan.send(embeds=embed)
 
-            await pl_utils.eventually_invalidate(self.bot, config, limit=7)
-
         if all(no_playerlist_chan) or not no_playerlist_chan:
             # we don't want to stop the whole thing, but as of right now i would
             # like to know what happens with invalid stuff
@@ -207,8 +207,8 @@ class PlayerlistEventHandling(naff.Extension):
                     logging.getLogger("realms_bot").warning(
                         f"Could not leave Realm with ID {event.realm_id}."
                     )
-                    return
-                raise
+                else:
+                    raise
 
         self.bot.offline_realm_time.pop(int(event.realm_id), None)
 

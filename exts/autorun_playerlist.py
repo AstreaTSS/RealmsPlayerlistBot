@@ -107,20 +107,6 @@ class AutoRunPlayerlist(utils.Extension):
         except ValueError:
             return
 
-        try:
-            chan = cclasses.valid_channel_check(chan)
-        except naff.errors.BadArgument:
-            with contextlib.suppress(naff.errors.HTTPException):
-                await chan.send(
-                    "I could not view message history for this channel when"
-                    " automatically running the playerlist. This is needed in order to"
-                    " run it automatically. Please make sure the bot has the ability to"
-                    " read message history for this channel."
-                )
-
-            await pl_utils.eventually_invalidate(self.bot, guild_config)
-            return
-
         # make a fake context to make things easier
         a_ctx: utils.RealmPrefixedContext = utils.RealmPrefixedContext(
             client=self.bot,  # type: ignore

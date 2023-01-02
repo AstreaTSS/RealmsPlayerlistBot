@@ -11,6 +11,7 @@ import orjson
 from apischema import ValidationError
 from tortoise.exceptions import DoesNotExist
 
+import common.classes as cclasses
 import common.models as models
 import common.utils as utils
 import common.xbox_api as xbox_api
@@ -243,14 +244,20 @@ async def fetch_playerlist_channel(
 ):
     try:
         chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
-    except naff.errors.HTTPException as e:
+    except naff.errors.HTTPException:
         await eventually_invalidate(bot, config)
-        raise ValueError() from e
+        raise ValueError() from None
     else:
-        if not chan or not isinstance(chan, naff.MessageableMixin):
+        if not chan:
             # invalid channel
             await eventually_invalidate(bot, config)
             raise ValueError()
+
+        try:
+            chan = cclasses.valid_channel_check(chan)
+        except naff.errors.BadArgument:
+            await eventually_invalidate(bot, config)
+            raise ValueError() from None
 
     return chan
 
