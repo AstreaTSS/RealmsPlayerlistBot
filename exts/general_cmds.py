@@ -123,13 +123,13 @@ class GeneralCMDS(utils.Extension):
                     ),
                     (
                         "Commit Hash:"
-                        f" [{commit_hash}](https://github.com/Astrea49/RealmsPlayerlistBot/commit/{commit_hash})"
+                        f" [{commit_hash}](https://github.com/AstreaTSS/RealmsPlayerlistBot/commit/{commit_hash})"
                     ),
                     (
                         "NAFF Version:"
                         f" [{naff.const.__version__}](https://github.com/NAFTeam/NAFF/tree/NAFF-{naff.const.__version__})"
                     ),
-                    "Made By: [Astrea49](https://github.com/Astrea49)",
+                    "Made By: [AstreaTSS](https://github.com/AstreaTSS)",
                 )
             ),
             inline=True,
@@ -137,7 +137,7 @@ class GeneralCMDS(utils.Extension):
 
         links = [
             "Support Server: [Link](https://discord.gg/NSdetwGjpK)",
-            "Source Code: [Link](https://github.com/Astrea49/RealmsPlayerlistBot)",
+            "Source Code: [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot)",
         ]
 
         if os.environ.get("TOP_GG_TOKEN"):
@@ -146,14 +146,14 @@ class GeneralCMDS(utils.Extension):
         links.extend(
             (
                 f"Premium Information: [Link]({os.environ['PREMIUM_INFO_LINK']})",
-                "FAQ: [Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/FAQ)",
+                "FAQ: [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/FAQ)",
                 (
                     "Privacy Policy:"
-                    " [Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Privacy-Policy)"
+                    " [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/Privacy-Policy)"
                 ),
                 (
                     "Terms of Service:"
-                    " [Link](https://github.com/Astrea49/RealmsPlayerlistBot/wiki/Terms-of-Service)"
+                    " [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/Terms-of-Service)"
                 ),
             )
         )
