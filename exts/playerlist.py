@@ -183,7 +183,7 @@ class Playerlist(utils.Extension):
     async def playerlist(
         self,
         ctx: utils.RealmContext | utils.RealmPrefixedContext,
-        hours_ago: int = tansy.Option("How far back the playerlist should go.", choices=HOURS_AGO_CHOICES),  # type: ignore
+        hours_ago: int = tansy.Option("How far back the playerlist should go.", choices=HOURS_AGO_CHOICES, default=12),  # type: ignore
         **kwargs,
     ):
         """
