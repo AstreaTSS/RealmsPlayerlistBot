@@ -247,6 +247,8 @@ async def fetch_playerlist_channel(
     except naff.errors.HTTPException:
         await eventually_invalidate(bot, config)
         raise ValueError() from None
+    except TypeError:  # playerlist chan is none, do nothing
+        raise ValueError() from None
     else:
         if not chan:
             # invalid channel
