@@ -38,7 +38,10 @@ async def init() -> None:
 
 
 async def migrate_realmplayer() -> None:
-    await init()
+    await Tortoise.init(
+        db_url=os.environ["DB_URL"], modules={"models": ["common.models", "__main__"]}
+    )
+    await Tortoise.generate_schemas()
 
     player_sessions: list[models.PlayerSession] = []
 
