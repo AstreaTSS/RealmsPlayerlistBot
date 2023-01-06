@@ -2,10 +2,11 @@ import asyncio
 import datetime
 import importlib
 import math
+import typing
 
 import naff
 import tansy
-from tortoise.expressions import Q
+from tortoise.connection import connections
 
 import common.models as models
 import common.playerlist_events as pl_events
@@ -25,26 +26,26 @@ UPSELLS = {
 
 
 class Playerlist(utils.Extension):
-    def __init__(self, bot):
+    def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.name = "Playerlist Related"
 
-        self.previous_now = datetime.datetime.now(tz=datetime.timezone.utc)
+        self.previous_now = datetime.datetime.now(tz=datetime.UTC)
 
         self.get_people_task = asyncio.create_task(self.get_people_runner())
 
-    def drop(self):
+    def drop(self) -> None:
         self.get_people_task.cancel()
         super().drop()
 
-    def next_time(self):
+    def next_time(self) -> naff.Timestamp:
         now = naff.Timestamp.utcnow()
         # margin of error
         multiplicity = math.ceil((now.timestamp() + 0.1) / 60)
         next_time = multiplicity * 60
         return naff.Timestamp.utcfromtimestamp(next_time)
 
-    async def get_people_runner(self):
+    async def get_people_runner(self) -> None:
         await self.bot.fully_ready.wait()
         await utils.sleep_until(self.next_time())
 
@@ -60,7 +61,7 @@ class Playerlist(utils.Extension):
                 else:
                     break
 
-    async def parse_realms(self):
+    async def parse_realms(self) -> None:
         try:
             realms = await self.bot.realms.fetch_activities()
         except Exception as e:
@@ -69,10 +70,10 @@ class Playerlist(utils.Extension):
                 return
             raise
 
-        player_objs: list[models.RealmPlayer] = []
-        joined_player_objs: list[models.RealmPlayer] = []
+        player_objs: list[models.PlayerSession] = []
+        joined_player_objs: list[models.PlayerSession] = []
         gotten_realm_ids: set[int] = set()
-        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        now = datetime.datetime.now(tz=datetime.UTC)
 
         for realm in realms.servers:
             gotten_realm_ids.add(realm.id)
@@ -83,6 +84,7 @@ class Playerlist(utils.Extension):
                 player_set.add(player.uuid)
 
                 kwargs = {
+                    "custom_id": self.bot.uuid_cache[f"{realm.id}-{player.uuid}"],
                     "realm_xuid_id": f"{realm.id}-{player.uuid}",
                     "online": True,
                     "last_seen": now,
@@ -91,24 +93,43 @@ class Playerlist(utils.Extension):
                 if player.uuid not in self.bot.online_cache[realm.id]:
                     joined.add(player.uuid)
                     kwargs["last_joined"] = now
-                    joined_player_objs.append(models.RealmPlayer(**kwargs))
+                    joined_player_objs.append(models.PlayerSession(**kwargs))
                 else:
-                    player_objs.append(models.RealmPlayer(**kwargs))
+                    player_objs.append(models.PlayerSession(**kwargs))
 
             left = self.bot.online_cache[realm.id].difference(player_set)
+
+            # if all of the players left, there MAY be a crash, but it's hard
+            # to tell since they could have all just left during that minute
+            # 4 seems like a reasonable threshold to guess for this
+            already_sent_realm_down = False
+            if not player_set and len(left) > 4:
+                self.bot.dispatch(
+                    pl_events.RealmDown(
+                        str(realm.id),
+                        left,
+                        now,
+                    )
+                )
+                already_sent_realm_down = True
+
             self.bot.online_cache[realm.id] = player_set
             self.bot.offline_realm_time.pop(realm.id, None)
 
             player_objs.extend(
-                models.RealmPlayer(
+                models.PlayerSession(
+                    custom_id=self.bot.uuid_cache.pop(f"{realm.id}-{player}"),
                     realm_xuid_id=f"{realm.id}-{player}",
                     online=False,
                     last_seen=self.previous_now,
                 )
                 for player in left
             )
-
-            if self.bot.live_playerlist_store[str(realm.id)] and (joined or left):
+            if (
+                not already_sent_realm_down
+                and self.bot.live_playerlist_store[str(realm.id)]
+                and (joined or left)
+            ):
                 self.bot.dispatch(
                     pl_events.LivePlayerlistSend(
                         str(realm.id),
@@ -130,14 +151,14 @@ class Playerlist(utils.Extension):
                 continue
 
             player_objs.extend(
-                models.RealmPlayer(
+                models.PlayerSession(
+                    custom_id=self.bot.uuid_cache.pop(f"{missed_realm_id}-{player}"),
                     realm_xuid_id=f"{missed_realm_id}-{player}",
                     online=False,
                     last_seen=self.previous_now,
                 )
                 for player in now_invalid
             )
-
             self.bot.dispatch(
                 pl_events.RealmDown(
                     str(missed_realm_id),
@@ -151,15 +172,15 @@ class Playerlist(utils.Extension):
         self.bot.dispatch(
             pl_events.PlayerlistParseFinish(
                 (
-                    pl_utils.RealmPlayersContainer(realmplayers=player_objs),
+                    pl_utils.RealmPlayersContainer(player_sessions=player_objs),
                     pl_utils.RealmPlayersContainer(
-                        realmplayers=joined_player_objs, fields=("last_joined",)
+                        player_sessions=joined_player_objs, fields=("last_joined",)
                     ),
                 )
             )
         )
 
-    async def handle_missing_warning(self):
+    async def handle_missing_warning(self) -> None:
         # basically, for every realm that has been determined to be offline/missing -
         # increase its value by one. if it increases more than a set value,
         # try to warn the user about the realm not being there
@@ -184,8 +205,8 @@ class Playerlist(utils.Extension):
         self,
         ctx: utils.RealmContext | utils.RealmPrefixedContext,
         hours_ago: int = tansy.Option("How far back the playerlist should go.", choices=HOURS_AGO_CHOICES, default=12),  # type: ignore
-        **kwargs,
-    ):
+        **kwargs: typing.Any,
+    ) -> None:
         """
         Checks and makes a playerlist, a log of players who have joined and left.
         By default, the command version goes back 12 hours.
@@ -217,12 +238,24 @@ class Playerlist(utils.Extension):
         time_delta = datetime.timedelta(hours=hours_ago, minutes=1)
         time_ago = now - time_delta
 
-        realmplayers = await models.RealmPlayer.filter(
-            Q(realm_xuid_id__startswith=f"{guild_config.realm_id}-"),
-            Q(Q(online=True), Q(last_seen__gte=time_ago), join_type="OR"),
+        # select all values from the player session table where the realm_xuid_id
+        # starts with the realm id in the guild config, and (online is true or
+        # the last seen date for the entry is greater than or equal to how
+        # far back we want to go). order it by the realm_xuid_id first (we'll
+        # get to distinct, but it won't work if it isn't like this), then by the last
+        # seen date from newest to older, and finally only return 1 distinct entry
+        # (the first entry in the sort, which is the latest last seen date)
+        # per realm_xuid_id value
+        raw_players = await connections.get("default").execute_query_dict(
+            "SELECT DISTINCT ON (realm_xuid_id) * FROM"
+            f" {models.PlayerSession.Meta.table} WHERE starts_with(realm_xuid_id,"
+            f" '{guild_config.realm_id}-') AND (online=true OR"
+            f" last_seen>='{time_ago.isoformat()}') ORDER BY realm_xuid_id, last_seen"
+            " DESC"
         )
+        player_sessions = tuple(models.PlayerSession(**d) for d in raw_players)
 
-        if not realmplayers:
+        if not player_sessions:
             if autorunner:
                 return
 
@@ -233,8 +266,8 @@ class Playerlist(utils.Extension):
                 " the Realm via `/config link-realm` if that happens."
             )
 
-        player_list = await pl_utils.get_players_from_realmplayers(
-            self.bot, guild_config.realm_id, realmplayers  # type: ignore
+        player_list = await pl_utils.get_players_from_player_activity(
+            self.bot, guild_config.realm_id, player_sessions  # type: ignore
         )
 
         online_list = sorted(
@@ -316,18 +349,18 @@ class Playerlist(utils.Extension):
     @naff.slash_command("online", description="Allows you to see if anyone is online on the Realm right now.", dm_permission=False)  # type: ignore
     @naff.cooldown(naff.Buckets.GUILD, 1, 10)
     @naff.check(pl_utils.can_run_playerlist)  # type: ignore
-    async def online(self, ctx: utils.RealmContext):
+    async def online(self, ctx: utils.RealmContext) -> None:
         """
         Allows you to see if anyone is online on the Realm right now.
         Has a cooldown of 10 seconds.
         """
         guild_config = await ctx.fetch_config()
 
-        realmplayers = await models.RealmPlayer.filter(
+        player_sessions = await models.PlayerSession.filter(
             realm_xuid_id__startswith=f"{guild_config.realm_id}-", online=True
         )
-        playerlist = await pl_utils.get_players_from_realmplayers(
-            self.bot, guild_config.realm_id, realmplayers  # type: ignore
+        playerlist = await pl_utils.get_players_from_player_activity(
+            self.bot, guild_config.realm_id, player_sessions  # type: ignore
         )
 
         if online_list := sorted(
@@ -345,7 +378,7 @@ class Playerlist(utils.Extension):
             raise utils.CustomCheckFailure("No one is on the Realm right now.")
 
 
-def setup(bot):
+def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
     importlib.reload(pl_events)
     importlib.reload(pl_utils)

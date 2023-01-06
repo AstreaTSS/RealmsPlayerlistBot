@@ -1,5 +1,6 @@
 import typing
 from datetime import datetime
+from uuid import UUID
 
 from tortoise import fields
 from tortoise.models import Model
@@ -25,11 +26,13 @@ class GuildConfig(Model):
     )  # type: ignore
 
 
-class RealmPlayer(Model):
+class PlayerSession(Model):
     class Meta:
-        table = "realmplayer"
+        table = "realmplayersession"
+        indexes = ("realm_xuid_id",)
 
-    realm_xuid_id: str = fields.CharField(max_length=100, pk=True)
+    custom_id: UUID = fields.UUIDField(pk=True)
+    realm_xuid_id: str = fields.CharField(max_length=100)
     online: bool = fields.BooleanField(default=False)  # type: ignore
     last_seen: datetime = fields.DatetimeField()
     last_joined: typing.Optional[datetime] = fields.DatetimeField(null=True)

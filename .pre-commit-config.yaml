@@ -1,9 +1,4 @@
 repos:
-- repo: https://github.com/asottile/reorder_python_imports
-  rev: v3.9.0
-  hooks:
-    - id: reorder-python-imports
-      language_version: python3.11
 - repo: https://github.com/psf/black
   rev: 22.12.0
   hooks:
@@ -14,6 +9,13 @@ repos:
   rev: v4.4.0
   hooks:
     - id: trailing-whitespace
+- repo: https://github.com/charliermarsh/ruff-pre-commit
+  # Ruff version.
+  rev: 'v0.0.212'
+  hooks:
+    - id: ruff
+      language_version: python3.11
+
 ci:
   autofix_commit_msg: 'ci: auto fixes from pre-commit.com hooks'
   autoupdate_branch: 'main'

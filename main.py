@@ -6,6 +6,7 @@ import logging
 import os
 import tomllib
 import typing
+import uuid
 from collections import defaultdict
 
 import aiohttp
@@ -24,11 +25,9 @@ tansy.install_naff_speedups()
 import common.help_tools as help_tools
 import common.models as models
 import common.utils as utils
-from common.classes import SemaphoreRedis
-from common.classes import TimedDict
+from common.classes import SemaphoreRedis, TimedDict
 from common.realms_api import RealmsAPI
-from common.xbox_api import parse_profile_response
-from common.xbox_api import XboxAPI
+from common.xbox_api import XboxAPI, parse_profile_response
 
 # load the config file into environment variables
 # this allows an easy way to access these variables from any file
@@ -95,7 +94,7 @@ sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], before_send=default_sentry_filter)
 
 class RealmsPlayerlistBot(utils.RealmBotBase):
     @naff.listen("startup")
-    async def on_startup(self):
+    async def on_startup(self) -> None:
         self.redis = SemaphoreRedis.from_url(
             os.environ["REDIS_URL"], decode_responses=True, semaphore_value=15
         )
@@ -122,13 +121,13 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         self.fully_ready.set()
 
     @naff.listen("ready")
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         utcnow = naff.Timestamp.utcnow()
         time_format = f"<t:{int(utcnow.timestamp())}:f>"
 
         connect_msg = (
             f"Logged in at {time_format}!"
-            if self.init_load == True
+            if self.init_load is True
             else f"Reconnected at {time_format}!"
         )
 
@@ -143,7 +142,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         await self.change_presence(activity=activity)
 
     @naff.listen("disconnect")
-    async def on_disconnect(self):
+    async def on_disconnect(self) -> None:
         # basically, this needs to be done as otherwise, when the bot reconnects,
         # redis may complain that a connection was closed by a peer
         # this isnt a great solution, but it should work
@@ -151,7 +150,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
             await self.redis.connection_pool.disconnect(inuse_connections=True)
 
     @naff.listen("resume")
-    async def on_resume_func(self):
+    async def on_resume_func(self) -> None:
         activity = naff.Activity.create(
             name="over some Realms", type=naff.ActivityType.WATCHING
         )
@@ -159,7 +158,9 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
     # technically, this is in naff itself now, but its easier for my purposes to do this
     @naff.listen("raw_application_command_permissions_update")
-    async def i_like_my_events_very_raw(self, event: naff.events.RawGatewayEvent):
+    async def i_like_my_events_very_raw(
+        self, event: naff.events.RawGatewayEvent
+    ) -> None:
         data: discord_typings.GuildApplicationCommandPermissionData = event.data  # type: ignore
 
         guild_id = int(data["guild_id"])
@@ -183,6 +184,8 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     async def stop(self) -> None:
         await bot.session.close()
         await bot.realms.close()
+        await Tortoise.close_connections()
+        await bot.redis.close(close_connection_pool=True)
         return await super().stop()
 
 
@@ -208,23 +211,25 @@ bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
 bot.online_cache = defaultdict(set)
 bot.slash_perms_cache = defaultdict(dict)
 bot.live_playerlist_store = defaultdict(set)
+bot.uuid_cache = defaultdict(uuid.uuid4)
 bot.mini_commands_per_scope = {}
 bot.offline_realm_time = {}
 
 
-async def start():
+async def start() -> None:
     await Tortoise.init(
         db_url=os.environ.get("DB_URL"), modules={"models": ["common.models"]}
     )
 
     # mark players as offline if they were online more than 5 minutes ago
     five_minutes_ago = naff.Timestamp.utcnow() - datetime.timedelta(minutes=5)
-    await models.RealmPlayer.filter(online=True, last_seen__lt=five_minutes_ago).update(
-        online=False
-    )
+    await models.PlayerSession.filter(
+        online=True, last_seen__lt=five_minutes_ago
+    ).update(online=False)
 
     # add all online players to the online cache
-    async for player in models.RealmPlayer.filter(online=True):
+    async for player in models.PlayerSession.filter(online=True):
+        bot.uuid_cache[player.realm_xuid_id] = player.custom_id
         realm_id, xuid = player.realm_xuid_id.split("-")
         bot.online_cache[int(realm_id)].add(xuid)
 
@@ -256,12 +261,13 @@ async def start():
     await bot.astart(os.environ["MAIN_TOKEN"])
 
 
-loop_factory = None
+if __name__ == "__main__":
+    loop_factory = None
 
-with contextlib.suppress(ImportError):
-    import uvloop  # type: ignore
+    with contextlib.suppress(ImportError):
+        import uvloop  # type: ignore
 
-    loop_factory = uvloop.new_event_loop
+        loop_factory = uvloop.new_event_loop
 
-with asyncio.Runner(loop_factory=loop_factory) as runner:
-    asyncio.run(start())
+    with asyncio.Runner(loop_factory=loop_factory) as runner:
+        asyncio.run(start())

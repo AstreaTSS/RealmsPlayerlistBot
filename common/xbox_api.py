@@ -1,3 +1,4 @@
+import typing
 from dataclasses import dataclass
 
 import apischema
@@ -26,7 +27,7 @@ class ProfileResponse:
     profile_users: list[ProfileUser]
 
 
-def parse_profile_response(resp: dict):
+def parse_profile_response(resp: dict) -> ProfileResponse:
     return apischema.deserialize(ProfileResponse, resp)
 
 
@@ -35,7 +36,7 @@ def parse_profile_response(resp: dict):
 class XboxAPI(BaseMicrosoftAPI):
     relying_party: str = attrs.field(default=utils.XBOX_API_RELYING_PARTY)
 
-    async def request(self, *args, **kwargs):
+    async def request(self, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
         return await super().request(*args, **kwargs, raise_status=False)
 
     async def fetch_profiles(self, xuid_list: list[str] | list[int]) -> dict:
@@ -52,6 +53,13 @@ class XboxAPI(BaseMicrosoftAPI):
         HEADERS = {"x-xbl-contract-version": "3"}
         PARAMS = {"settings": "Gamertag"}
         url = f"https://profile.xboxlive.com/users/xuid({target_xuid})/profile/settings"
+        return await self.get(url, params=PARAMS, headers=HEADERS)  # type: ignore
+
+    async def fetch_profile_by_gamertag(self, gamertag: str) -> dict:
+        url = f"https://profile.xboxlive.com/users/gt({gamertag})/profile/settings"
+        HEADERS = {"x-xbl-contract-version": "3"}
+        PARAMS = {"settings": "Gamertag"}
+
         return await self.get(url, params=PARAMS, headers=HEADERS)  # type: ignore
 
     async def fetch_club_presences(self, club_id: int | str) -> dict:

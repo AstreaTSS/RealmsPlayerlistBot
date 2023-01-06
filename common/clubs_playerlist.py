@@ -12,7 +12,7 @@ import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
 
 
-def _camel_to_const_snake(s):
+def _camel_to_const_snake(s: str) -> str:
     return "".join([f"_{c}" if c.isupper() else c.upper() for c in s]).lstrip("_")
 
 
@@ -27,7 +27,7 @@ class ClubUserPresence(IntEnum):
     IN_GAME = 6
 
     @classmethod
-    def from_xbox_api(cls, value: str):
+    def from_xbox_api(cls, value: str) -> typing.Self:
         try:
             return cls[_camel_to_const_snake(value)]
         except KeyError:
@@ -42,8 +42,8 @@ class ClubOnCooldown(Exception):
 
 
 async def _realm_club_json(
-    bot: utils.RealmBotBase, club_id
-) -> typing.Tuple[typing.Optional[dict], typing.Optional[aiohttp.ClientResponse]]:
+    bot: utils.RealmBotBase, club_id: str
+) -> tuple[typing.Optional[dict], typing.Optional[aiohttp.ClientResponse]]:
     try:
         resp_json = await bot.xbox.fetch_club_presences(club_id)
 
@@ -77,12 +77,12 @@ async def _realm_club_json(
                 return None, r
 
 
-async def realm_club_get(bot: utils.RealmBotBase, club_id):
+async def realm_club_get(bot: utils.RealmBotBase, club_id: str) -> typing.Any:
     resp_json, resp = await _realm_club_json(bot, club_id)
 
     if not resp_json:
         if typing.TYPE_CHECKING:
-            assert resp != None
+            assert resp is not None  # noqa: S101
 
         resp_text = await resp.text()
         await utils.msg_to_owner(bot, resp_text)
@@ -113,12 +113,12 @@ async def get_players_from_club_data(
     bot: utils.RealmBotBase,
     club_id: str,
     time_ago: datetime.datetime,
-):
+) -> list[pl_utils.Player] | None:
     club_presence = await realm_club_get(bot, club_id)
     if not club_presence or club_presence == "Unauthorized":
-        return
+        return None
 
-    player_list: typing.List[pl_utils.Player] = []
+    player_list: list[pl_utils.Player] = []
 
     for member in club_presence:
         last_seen_state = ClubUserPresence.from_xbox_api(member["lastSeenState"])
@@ -136,7 +136,7 @@ async def get_players_from_club_data(
         # so we cut out that precision
         last_seen = datetime.datetime.strptime(
             member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f"
-        ).replace(tzinfo=datetime.timezone.utc)
+        ).replace(tzinfo=datetime.UTC)
 
         # if this person was on the realm longer than the time period specified
         # we can stop this for loop
@@ -160,25 +160,26 @@ async def fill_in_data_from_clubs(
     bot: utils.RealmBotBase,
     realm_id: str,
     club_id: str,
-):
-    t = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(hours=24)
+) -> None:
+    t = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(hours=24)
     player_list = await get_players_from_club_data(bot, club_id, t)
 
     if not player_list:
         return
 
-    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    now = datetime.datetime.now(tz=datetime.UTC)
 
     realmplayers = [
-        models.RealmPlayer(
+        models.PlayerSession(
+            custom_id=bot.uuid_cache[f"{realm_id}-{p.xuid}"],
             realm_xuid_id=f"{realm_id}-{p.xuid}",
             online=p.in_game,
             last_seen=now if p.in_game else p.last_seen,
         )
         for p in player_list
     ]
-    await models.RealmPlayer.bulk_create(
+    await models.PlayerSession.bulk_create(
         realmplayers,
-        on_conflict=("realm_xuid_id",),
+        on_conflict=("custom_id",),
         update_fields=("online", "last_seen"),
     )
