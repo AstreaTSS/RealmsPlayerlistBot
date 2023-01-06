@@ -1,4 +1,4 @@
-naff==2.0.0
+naff==2.1.0
 tansy==0.5.2
 humanize==4.4.0
 websockets==10.4
