@@ -26,9 +26,9 @@ from common.microsoft_core import MicrosoftAPIException
 # - numbers
 # - underscores and dashes
 REALMS_LINK_REGEX = re.compile(
-    r"(?:(?:http(?:s)?:\/\/)?(?:www\.)?realms\.gg\/|(?:http(?:s)?:\/\/)?open\."
-    r"minecraft\.net\/pocket\/realms\/invite\/|(?:minecraft:\/\/)?acceptRealmInvite"
-    r"\?inviteID=|)([\w-]{7,16})"
+    r"(?:(?:https?://)?(?:www\.)?realms\.gg/|(?:https?://)?open\.minecraft"
+    r"\.net/pocket/realms/invite/|(?:minecraft://)?acceptRealmInvite\?inviteID="
+    r")([\w-]{7,16})"
 )
 
 
