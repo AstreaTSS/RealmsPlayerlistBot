@@ -146,7 +146,9 @@ class GeneralCMDS(utils.Extension):
         links.extend(
             (
                 f"Premium Information: [Link]({os.environ['PREMIUM_INFO_LINK']})",
-                "FAQ: [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/FAQ)",
+                (
+                    "FAQ: [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/FAQ)"
+                ),
                 (
                     "Privacy Policy:"
                     " [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/Privacy-Policy)"
