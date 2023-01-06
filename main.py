@@ -4,6 +4,7 @@ import datetime
 import importlib
 import logging
 import os
+import tomllib
 import typing
 import uuid
 from collections import defaultdict
@@ -13,7 +14,6 @@ import discord_typings
 import naff
 import sentry_sdk
 import tansy
-import tomllib
 from naff.ext.sentry import HookedTask
 from naff.models.naff.tasks.task import Task
 from tortoise import Tortoise

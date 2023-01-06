@@ -1,7 +1,7 @@
 # use this to generate db if you need to
 import os
-
 import tomllib
+
 from tortoise import Tortoise, run_async
 from tortoise.connection import connections
 from tortoise.utils import get_schema_sql
