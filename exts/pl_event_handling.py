@@ -20,24 +20,25 @@ class PlayerlistEventHandling(naff.Extension):
     @naff.listen("playerlist_parse_finish", is_default_listener=True)
     async def on_playerlist_finish(self, event: pl_events.PlayerlistParseFinish):
         for container in event.containers:
-            await models.RealmPlayer.bulk_create(
-                container.realmplayers,
-                on_conflict=("realm_xuid_id",),
+            await models.PlayerSession.bulk_create(
+                container.player_sessions,
+                on_conflict=("custom_id",),
                 update_fields=container.fields,
             )
 
     @naff.listen("live_playerlist_send", is_default_listener=True)
     async def on_live_playerlist_send(self, event: pl_events.LivePlayerlistSend):
-        realmplayers = [
-            models.RealmPlayer(
+        player_sessions = [
+            models.PlayerSession(
+                custom_id=self.bot.uuid_cache[f"{event.realm_id}-{p}"],
                 realm_xuid_id=f"{event.realm_id}-{p}",
                 online=True,
                 last_seen=event.timestamp,
             )
             for p in event.joined.union(event.left)
         ]
-        players = await pl_utils.get_players_from_realmplayers(
-            self.bot, event.realm_id, realmplayers
+        players = await pl_utils.get_players_from_player_activity(
+            self.bot, event.realm_id, player_sessions
         )
         gamertag_mapping = {p.xuid: p.base_display for p in players}
 

@@ -5,7 +5,7 @@ import math
 
 import naff
 import tansy
-from tortoise.expressions import Q
+from tortoise.connection import connections
 
 import common.models as models
 import common.playerlist_events as pl_events
@@ -69,8 +69,8 @@ class Playerlist(utils.Extension):
                 return
             raise
 
-        player_objs: list[models.RealmPlayer] = []
-        joined_player_objs: list[models.RealmPlayer] = []
+        player_objs: list[models.PlayerSession] = []
+        joined_player_objs: list[models.PlayerSession] = []
         gotten_realm_ids: set[int] = set()
         now = datetime.datetime.now(tz=datetime.timezone.utc)
 
@@ -83,6 +83,7 @@ class Playerlist(utils.Extension):
                 player_set.add(player.uuid)
 
                 kwargs = {
+                    "custom_id": self.bot.uuid_cache[f"{realm.id}-{player.uuid}"],
                     "realm_xuid_id": f"{realm.id}-{player.uuid}",
                     "online": True,
                     "last_seen": now,
@@ -91,23 +92,23 @@ class Playerlist(utils.Extension):
                 if player.uuid not in self.bot.online_cache[realm.id]:
                     joined.add(player.uuid)
                     kwargs["last_joined"] = now
-                    joined_player_objs.append(models.RealmPlayer(**kwargs))
+                    joined_player_objs.append(models.PlayerSession(**kwargs))
                 else:
-                    player_objs.append(models.RealmPlayer(**kwargs))
+                    player_objs.append(models.PlayerSession(**kwargs))
 
             left = self.bot.online_cache[realm.id].difference(player_set)
             self.bot.online_cache[realm.id] = player_set
             self.bot.offline_realm_time.pop(realm.id, None)
 
             player_objs.extend(
-                models.RealmPlayer(
+                models.PlayerSession(
+                    custom_id=self.bot.uuid_cache.pop(f"{realm.id}-{player}"),
                     realm_xuid_id=f"{realm.id}-{player}",
                     online=False,
                     last_seen=self.previous_now,
                 )
                 for player in left
             )
-
             if self.bot.live_playerlist_store[str(realm.id)] and (joined or left):
                 self.bot.dispatch(
                     pl_events.LivePlayerlistSend(
@@ -130,14 +131,14 @@ class Playerlist(utils.Extension):
                 continue
 
             player_objs.extend(
-                models.RealmPlayer(
+                models.PlayerSession(
+                    custom_id=self.bot.uuid_cache.pop(f"{missed_realm_id}-{player}"),
                     realm_xuid_id=f"{missed_realm_id}-{player}",
                     online=False,
                     last_seen=self.previous_now,
                 )
                 for player in now_invalid
             )
-
             self.bot.dispatch(
                 pl_events.RealmDown(
                     str(missed_realm_id),
@@ -151,9 +152,9 @@ class Playerlist(utils.Extension):
         self.bot.dispatch(
             pl_events.PlayerlistParseFinish(
                 (
-                    pl_utils.RealmPlayersContainer(realmplayers=player_objs),
+                    pl_utils.RealmPlayersContainer(player_sessions=player_objs),
                     pl_utils.RealmPlayersContainer(
-                        realmplayers=joined_player_objs, fields=("last_joined",)
+                        player_sessions=joined_player_objs, fields=("last_joined",)
                     ),
                 )
             )
@@ -217,12 +218,24 @@ class Playerlist(utils.Extension):
         time_delta = datetime.timedelta(hours=hours_ago, minutes=1)
         time_ago = now - time_delta
 
-        realmplayers = await models.RealmPlayer.filter(
-            Q(realm_xuid_id__startswith=f"{guild_config.realm_id}-"),
-            Q(Q(online=True), Q(last_seen__gte=time_ago), join_type="OR"),
+        # select all values from the player session table where the realm_xuid_id
+        # starts with the realm id in the guild config, and (online is true or
+        # the last seen date for the entry is greater than or equal to how
+        # far back we want to go). order it by the realm_xuid_id first (we'll
+        # get to distinct, but it won't work if it isn't like this), then by the last
+        # seen date from newest to older, and finally only return 1 distinct entry
+        # (the first entry in the sort, which is the latest last seen date)
+        # per realm_xuid_id value
+        raw_players = await connections.get("default").execute_query_dict(
+            "SELECT DISTINCT ON (realm_xuid_id) * FROM"
+            f" {models.PlayerSession.Meta.table} WHERE starts_with(realm_xuid_id,"
+            f" '{guild_config.realm_id}-') AND (online=true OR"
+            f" last_seen>='{time_ago.isoformat()}') ORDER BY realm_xuid_id, last_seen"
+            " DESC"
         )
+        player_sessions = tuple(models.PlayerSession(**d) for d in raw_players)
 
-        if not realmplayers:
+        if not player_sessions:
             if autorunner:
                 return
 
@@ -233,8 +246,8 @@ class Playerlist(utils.Extension):
                 " the Realm via `/config link-realm` if that happens."
             )
 
-        player_list = await pl_utils.get_players_from_realmplayers(
-            self.bot, guild_config.realm_id, realmplayers  # type: ignore
+        player_list = await pl_utils.get_players_from_player_activity(
+            self.bot, guild_config.realm_id, player_sessions  # type: ignore
         )
 
         online_list = sorted(
@@ -323,11 +336,11 @@ class Playerlist(utils.Extension):
         """
         guild_config = await ctx.fetch_config()
 
-        realmplayers = await models.RealmPlayer.filter(
+        player_sessions = await models.PlayerSession.filter(
             realm_xuid_id__startswith=f"{guild_config.realm_id}-", online=True
         )
-        playerlist = await pl_utils.get_players_from_realmplayers(
-            self.bot, guild_config.realm_id, realmplayers  # type: ignore
+        playerlist = await pl_utils.get_players_from_player_activity(
+            self.bot, guild_config.realm_id, player_sessions  # type: ignore
         )
 
         if online_list := sorted(

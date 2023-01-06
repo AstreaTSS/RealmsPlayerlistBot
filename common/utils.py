@@ -4,6 +4,7 @@ import datetime
 import os
 import traceback
 import typing
+import uuid
 from collections import defaultdict
 from pathlib import Path
 
@@ -291,6 +292,7 @@ if typing.TYPE_CHECKING:
         slash_perms_cache: defaultdict[int, dict[int, PermissionsResolver]]
         mini_commands_per_scope: dict[int, dict[str, MiniCommand]]
         live_playerlist_store: defaultdict[str, set[int]]
+        uuid_cache: defaultdict[str, uuid.UUID]
         offline_realm_time: dict[int, int]
         pl_sem: asyncio.Semaphore
 

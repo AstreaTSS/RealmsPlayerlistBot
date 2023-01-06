@@ -6,6 +6,7 @@ import logging
 import os
 import tomllib
 import typing
+import uuid
 from collections import defaultdict
 
 import aiohttp
@@ -183,6 +184,8 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     async def stop(self) -> None:
         await bot.session.close()
         await bot.realms.close()
+        await Tortoise.close_connections()
+        await bot.redis.close(close_connection_pool=True)
         return await super().stop()
 
 
@@ -208,6 +211,7 @@ bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
 bot.online_cache = defaultdict(set)
 bot.slash_perms_cache = defaultdict(dict)
 bot.live_playerlist_store = defaultdict(set)
+bot.uuid_cache = defaultdict(uuid.uuid4)
 bot.mini_commands_per_scope = {}
 bot.offline_realm_time = {}
 
@@ -219,12 +223,13 @@ async def start():
 
     # mark players as offline if they were online more than 5 minutes ago
     five_minutes_ago = naff.Timestamp.utcnow() - datetime.timedelta(minutes=5)
-    await models.RealmPlayer.filter(online=True, last_seen__lt=five_minutes_ago).update(
-        online=False
-    )
+    await models.PlayerSession.filter(
+        online=True, last_seen__lt=five_minutes_ago
+    ).update(online=False)
 
     # add all online players to the online cache
-    async for player in models.RealmPlayer.filter(online=True):
+    async for player in models.PlayerSession.filter(online=True):
+        bot.uuid_cache[player.realm_xuid_id] = player.custom_id
         realm_id, xuid = player.realm_xuid_id.split("-")
         bot.online_cache[int(realm_id)].add(xuid)
 

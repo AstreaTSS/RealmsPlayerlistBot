@@ -23,7 +23,7 @@ def _convert_fields(value: tuple[str, ...]) -> tuple[str, ...]:
 
 @attrs.define(kw_only=True)
 class RealmPlayersContainer:
-    realmplayers: list[models.RealmPlayer] = attrs.field()
+    player_sessions: list[models.PlayerSession] = attrs.field()
     fields: tuple[str, ...] = attrs.field(default=None, converter=_convert_fields)
 
 
@@ -264,15 +264,15 @@ async def fetch_playerlist_channel(
     return chan
 
 
-async def get_players_from_realmplayers(
+async def get_players_from_player_activity(
     bot: utils.RealmBotBase,
     realm_id: str,
-    realmplayers: list[models.RealmPlayer],
+    player_sessions: typing.Iterable[models.PlayerSession],
 ):
     player_list: typing.List[Player] = []
     unresolved_dict: typing.Dict[str, Player] = {}
 
-    for member in realmplayers:
+    for member in player_sessions:
         xuid = member.realm_xuid_id.removeprefix(f"{realm_id}-")
 
         player = Player(
