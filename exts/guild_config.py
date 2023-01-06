@@ -15,7 +15,6 @@ import common.models as models
 import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
 
-
 # regex that takes in:
 # - https://realms.gg/XXXXXXX
 # - https://open.minecraft.net/pocket/realms/invite/XXXXXXX
@@ -34,11 +33,11 @@ REALMS_LINK_REGEX = re.compile(
 
 
 class GuildConfig(utils.Extension):
-    def __init__(self, bot):
+    def __init__(self, bot: utils.RealmBotBase) -> None:
         self.name = "Server Config"
         self.bot: utils.RealmBotBase = bot
 
-    async def _gather_realm_names(self):
+    async def _gather_realm_names(self) -> None:
         response = await self.bot.realms.fetch_realms()
         name_dict = {str(realm.id): realm.name for realm in response.servers}
         self.bot.realm_name_cache.insert(name_dict)  # type: ignore
@@ -54,7 +53,7 @@ class GuildConfig(utils.Extension):
         sub_cmd_name="info",
         sub_cmd_description="Lists out the configuration settings for this server.",
     )
-    async def info(self, ctx: utils.RealmContext):
+    async def info(self, ctx: utils.RealmContext) -> None:
         config = await ctx.fetch_config()
 
         embed = naff.Embed(
@@ -126,7 +125,7 @@ class GuildConfig(utils.Extension):
         self,
         ctx: utils.RealmContext,
         _realm_code: str = tansy.Option("The Realm code or link.", name="realm_code"),
-    ):
+    ) -> None:
         config = await ctx.fetch_config()
 
         realm_code_matches = REALMS_LINK_REGEX.fullmatch(_realm_code)
@@ -209,9 +208,9 @@ class GuildConfig(utils.Extension):
             "The channel to set the playerlist to.",
             converter=cclasses.ValidChannelConverter,
         ),
-    ):
+    ) -> None:
         if typing.TYPE_CHECKING:
-            assert isinstance(channel, naff.GuildText)
+            assert isinstance(channel, naff.GuildText)  # noqa: S101
 
         config = await ctx.fetch_config()
         config.playerlist_chan = channel.id
@@ -227,7 +226,7 @@ class GuildConfig(utils.Extension):
     async def unset_playerlist_channel(
         self,
         ctx: utils.RealmContext,
-    ):
+    ) -> None:
         config = await ctx.fetch_config()
 
         if not config.playerlist_chan:
@@ -245,8 +244,8 @@ class GuildConfig(utils.Extension):
         await ctx.send("Unset the playerlist channel.")
 
     @staticmethod
-    def button_check(author_id: int):
-        def _check(event: naff.events.Component):
+    def button_check(author_id: int) -> typing.Callable[..., bool]:
+        def _check(event: naff.events.Component) -> bool:
             return event.ctx.author.id == author_id
 
         return _check
@@ -262,7 +261,7 @@ class GuildConfig(utils.Extension):
         self,
         ctx: utils.RealmContext,
         role: naff.Role = tansy.Option("The role to use for the ping."),
-    ):
+    ) -> None:
         """
         Sets the role that should be pinged in the autorunner channel if the Realm goes offline.
         This may be unreliable due to how it's made - it works best in large Realms that \
@@ -347,7 +346,7 @@ class GuildConfig(utils.Extension):
             " goes offline."
         ),
     )
-    async def unset_realm_offline_ping(self, ctx: utils.RealmContext):
+    async def unset_realm_offline_ping(self, ctx: utils.RealmContext) -> None:
         config = await ctx.fetch_config()
 
         if not config.realm_offline_role:
@@ -364,11 +363,11 @@ class GuildConfig(utils.Extension):
     async def setup_help(
         self,
         ctx: utils.RealmContext,
-    ):
+    ) -> None:
         await ctx.send(os.environ["SETUP_LINK"])
 
 
-def setup(bot):
+def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
     importlib.reload(clubs_playerlist)
     importlib.reload(cclasses)

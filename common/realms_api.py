@@ -85,7 +85,7 @@ class RealmsAPI(BaseMicrosoftAPI):
     relying_party: str = attrs.field(default=utils.REALMS_API_URL)
     base_url: str = attrs.field(default=utils.REALMS_API_URL)
 
-    async def request(self, *args, **kwargs):
+    async def request(self, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
         HEADERS = {
             "Client-Version": utils.MC_VERSION,
             "User-Agent": "MCPE/UWP",
@@ -93,19 +93,18 @@ class RealmsAPI(BaseMicrosoftAPI):
         kwargs.pop("headers", None)
         return await super().request(*args, **kwargs, headers=HEADERS)
 
-    async def join_realm_from_code(self, code: str):
+    async def join_realm_from_code(self, code: str) -> FullRealm:
         return apischema.deserialize(
             FullRealm, await self.post(f"invites/v1/link/accept/{code}")
         )
 
-    async def fetch_realms(self):
+    async def fetch_realms(self) -> FullWorlds:
         return apischema.deserialize(FullWorlds, await self.get("worlds"))
 
-    async def fetch_activities(self):
+    async def fetch_activities(self) -> ActivityList:
         return apischema.deserialize(
             ActivityList, await self.get("activities/live/players")
         )
 
-    async def leave_realm(self, realm_id: int | str):
+    async def leave_realm(self, realm_id: int | str) -> None:
         await self.delete(f"invites/{realm_id}")
-        return None

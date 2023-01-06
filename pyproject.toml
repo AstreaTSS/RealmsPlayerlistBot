@@ -1,0 +1,41 @@
+[tool.ruff]
+line-length = 88
+
+select = ["E", "F", "UP", "N", "YTT", "ANN", "S", "B", "A", "C4", "T20", "RET", "SIM", "I001"]
+ignore = ["E501", "E402", "B003", "ANN101", "ANN102", "RET506", "ANN401", "B008", "N806", "A003", "N818", "UP007", "SIM118", "RET502", "RET503"]
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+per-file-ignores = {}
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# Assume Python 3.10.
+target-version = "py311"
+
+fix = true
+
+[tool.ruff.mccabe]
+# Unlike Flake8, default to a complexity level of 10.
+max-complexity = 10

@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import importlib
 import math
+import typing
 
 import naff
 import tansy
@@ -25,26 +26,26 @@ UPSELLS = {
 
 
 class Playerlist(utils.Extension):
-    def __init__(self, bot):
+    def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.name = "Playerlist Related"
 
-        self.previous_now = datetime.datetime.now(tz=datetime.timezone.utc)
+        self.previous_now = datetime.datetime.now(tz=datetime.UTC)
 
         self.get_people_task = asyncio.create_task(self.get_people_runner())
 
-    def drop(self):
+    def drop(self) -> None:
         self.get_people_task.cancel()
         super().drop()
 
-    def next_time(self):
+    def next_time(self) -> naff.Timestamp:
         now = naff.Timestamp.utcnow()
         # margin of error
         multiplicity = math.ceil((now.timestamp() + 0.1) / 60)
         next_time = multiplicity * 60
         return naff.Timestamp.utcfromtimestamp(next_time)
 
-    async def get_people_runner(self):
+    async def get_people_runner(self) -> None:
         await self.bot.fully_ready.wait()
         await utils.sleep_until(self.next_time())
 
@@ -60,7 +61,7 @@ class Playerlist(utils.Extension):
                 else:
                     break
 
-    async def parse_realms(self):
+    async def parse_realms(self) -> None:
         try:
             realms = await self.bot.realms.fetch_activities()
         except Exception as e:
@@ -72,7 +73,7 @@ class Playerlist(utils.Extension):
         player_objs: list[models.PlayerSession] = []
         joined_player_objs: list[models.PlayerSession] = []
         gotten_realm_ids: set[int] = set()
-        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        now = datetime.datetime.now(tz=datetime.UTC)
 
         for realm in realms.servers:
             gotten_realm_ids.add(realm.id)
@@ -179,7 +180,7 @@ class Playerlist(utils.Extension):
             )
         )
 
-    async def handle_missing_warning(self):
+    async def handle_missing_warning(self) -> None:
         # basically, for every realm that has been determined to be offline/missing -
         # increase its value by one. if it increases more than a set value,
         # try to warn the user about the realm not being there
@@ -204,8 +205,8 @@ class Playerlist(utils.Extension):
         self,
         ctx: utils.RealmContext | utils.RealmPrefixedContext,
         hours_ago: int = tansy.Option("How far back the playerlist should go.", choices=HOURS_AGO_CHOICES, default=12),  # type: ignore
-        **kwargs,
-    ):
+        **kwargs: typing.Any,
+    ) -> None:
         """
         Checks and makes a playerlist, a log of players who have joined and left.
         By default, the command version goes back 12 hours.
@@ -348,7 +349,7 @@ class Playerlist(utils.Extension):
     @naff.slash_command("online", description="Allows you to see if anyone is online on the Realm right now.", dm_permission=False)  # type: ignore
     @naff.cooldown(naff.Buckets.GUILD, 1, 10)
     @naff.check(pl_utils.can_run_playerlist)  # type: ignore
-    async def online(self, ctx: utils.RealmContext):
+    async def online(self, ctx: utils.RealmContext) -> None:
         """
         Allows you to see if anyone is online on the Realm right now.
         Has a cooldown of 10 seconds.
@@ -377,7 +378,7 @@ class Playerlist(utils.Extension):
             raise utils.CustomCheckFailure("No one is on the Realm right now.")
 
 
-def setup(bot):
+def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
     importlib.reload(pl_events)
     importlib.reload(pl_utils)

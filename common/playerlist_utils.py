@@ -41,15 +41,15 @@ class Player:
         return o.xuid == self.xuid if isinstance(o, self.__class__) else False
 
     @property
-    def resolved(self):
+    def resolved(self) -> bool:
         return bool(self.gamertag)
 
     @property
-    def base_display(self):
+    def base_display(self) -> str:
         return f"`{self.gamertag}`" if self.gamertag else f"User with XUID {self.xuid}"
 
     @property
-    def display(self):  # sourcery skip: remove-unnecessary-else
+    def display(self) -> str:  # sourcery skip: remove-unnecessary-else
         notes = []
         if self.last_joined:
             notes.append(
@@ -88,18 +88,18 @@ class GamertagHandler:
 
     bot: utils.RealmBotBase = attrs.field()
     sem: asyncio.Semaphore = attrs.field()
-    xuids_to_get: typing.Tuple[str, ...] = attrs.field()
+    xuids_to_get: tuple[str, ...] = attrs.field()
     openxbl_session: aiohttp.ClientSession = attrs.field()
 
     index: int = attrs.field(init=False, default=0)
     responses: list[xbox_api.ProfileResponse] = attrs.field(init=False, factory=list)
     AMOUNT_TO_GET: int = attrs.field(init=False, default=30)
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         # filter out empty strings, because that's possible somehow?
         self.xuids_to_get = tuple(x for x in self.xuids_to_get if x)
 
-    async def get_gamertags(self, xuid_list: typing.List[str]) -> None:
+    async def get_gamertags(self, xuid_list: list[str]) -> None:
         # honestly, i forget what this output can look like by now -
         # but if i remember, it's kinda weird
         profile_json = await self.bot.xbox.fetch_profiles(xuid_list)
@@ -124,7 +124,7 @@ class GamertagHandler:
         self.responses.append(xbox_api.parse_profile_response(profile_json))
         self.index += self.AMOUNT_TO_GET
 
-    async def backup_get_gamertags(self):
+    async def backup_get_gamertags(self) -> None:
         # openxbl is used throughout this, and its basically a way of navigating
         # the xbox live api in a more sane way than its actually laid out
         # while xbox-webapi-python can also do this without using a 3rd party service,
@@ -160,7 +160,7 @@ class GamertagHandler:
 
             self.index += 1
 
-    async def run(self):
+    async def run(self) -> dict[str, str]:
         while self.index < len(self.xuids_to_get):
             current_xuid_list = list(self.xuids_to_get[self.index : self.index + 30])
 
@@ -174,7 +174,7 @@ class GamertagHandler:
                 # run for 15 seconds or until completetion, whatever comes first
                 with contextlib.suppress(asyncio.TimeoutError):
                     await asyncio.wait_for(self.backup_get_gamertags(), timeout=15)
-        dict_gamertags: typing.Dict[str, str] = {}
+        dict_gamertags: dict[str, str] = {}
 
         for profiles in self.responses:
             for user in profiles.profile_users:
@@ -208,8 +208,8 @@ async def can_run_playerlist(ctx: utils.RealmContext) -> bool:
 async def eventually_invalidate(
     bot: utils.RealmBotBase,
     guild_config: models.GuildConfig,
-    limit=3,
-):
+    limit: int = 3,
+) -> None:
     # the idea here is to invalidate autorunners that simply can't be run
     # there's a bit of generousity here, as the code gives a total of 3 tries
     # before actually doing it
@@ -229,8 +229,8 @@ async def eventually_invalidate(
 async def eventually_invalidate_realm_offline(
     bot: utils.RealmBotBase,
     guild_config: models.GuildConfig,
-    limit=3,
-):
+    limit: int = 3,
+) -> None:
     num_times = await bot.redis.incr(f"invalid-realmoffline-{guild_config.guild_id}")
 
     if num_times >= limit:
@@ -241,7 +241,7 @@ async def eventually_invalidate_realm_offline(
 
 async def fetch_playerlist_channel(
     bot: utils.RealmBotBase, guild: naff.Guild, config: models.GuildConfig
-):
+) -> utils.GuildMessageableMixin:
     try:
         chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
     except naff.errors.HTTPException:
@@ -268,9 +268,9 @@ async def get_players_from_player_activity(
     bot: utils.RealmBotBase,
     realm_id: str,
     player_sessions: typing.Iterable[models.PlayerSession],
-):
-    player_list: typing.List[Player] = []
-    unresolved_dict: typing.Dict[str, Player] = {}
+) -> list[Player]:
+    player_list: list[Player] = []
+    unresolved_dict: dict[str, Player] = {}
 
     for member in player_sessions:
         xuid = member.realm_xuid_id.removeprefix(f"{realm_id}-")

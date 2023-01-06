@@ -1,15 +1,18 @@
+import typing
+
 import rapidfuzz
-from rapidfuzz import fuzz
 from rapidfuzz import process
+
+T = typing.TypeVar("T")
 
 
 def extract_from_list(
-    argument,
-    list_of_items,
-    processors,
-    score_cutoff=0.8,
-    scorers=None,
-):
+    argument: str,
+    list_of_items: typing.Collection[T],
+    processors: typing.Iterable[typing.Callable],
+    score_cutoff: float = 0.8,
+    scorers: typing.Iterable[typing.Callable] | None = None,
+) -> list[list[T]]:
     """Uses multiple scorers and processors for a good mix of accuracy and fuzzy-ness"""
     if scorers is None:
         scorers = [rapidfuzz.distance.JaroWinkler.similarity]

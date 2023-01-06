@@ -13,8 +13,7 @@ import unicodedata
 import naff
 import tansy
 from naff.ext import paginators
-from naff.ext.debug_extension.utils import debug_embed
-from naff.ext.debug_extension.utils import get_cache_state
+from naff.ext.debug_extension.utils import debug_embed, get_cache_state
 
 import common.utils as utils
 from common.clubs_playerlist import fill_in_data_from_clubs
@@ -24,14 +23,14 @@ DEV_GUILD_ID = int(os.environ["DEV_GUILD_ID"])
 
 
 class OwnerCMDs(utils.Extension):
-    def __init__(self, bot):
+    def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.name = "Owner"
 
         self.set_extension_error(self.ext_error)
         self.add_ext_check(naff.checks.is_owner())
 
-    def _ascii_name(self, name):
+    def _ascii_name(self, name: str) -> str:
         # source - https://github.com/daveoncode/python-string-utils/blob/78929d/string_utils/manipulation.py#L433
         return (
             unicodedata.normalize("NFKD", name.lower())
@@ -39,10 +38,12 @@ class OwnerCMDs(utils.Extension):
             .decode("utf-8")
         )
 
-    def _limit_to_25(self, mapping: list[dict[str, str]]):
+    def _limit_to_25(self, mapping: list[dict[str, str]]) -> list[dict[str, str]]:
         return mapping[:25]
 
-    async def _autocomplete_guilds(self, ctx: naff.AutocompleteContext, argument: str):
+    async def _autocomplete_guilds(
+        self, ctx: naff.AutocompleteContext, argument: str
+    ) -> None:
         guild_mapping = [
             {"name": guild.name, "value": str(guild.id)} for guild in ctx.bot.guilds
         ]
@@ -68,7 +69,7 @@ class OwnerCMDs(utils.Extension):
         self,
         ctx: utils.RealmContext,
         guild: str = tansy.Option("The guild to view.", autocomplete=True),
-    ):
+    ) -> None:
         config = await GuildConfig.get(guild_id=int(guild)).prefetch_related(
             "premium_code"
         )
@@ -105,7 +106,9 @@ class OwnerCMDs(utils.Extension):
         await ctx.send(embeds=[embed])
 
     @view_guild.autocomplete("guild")
-    async def view_get_guild(self, ctx, guild, **kwargs):
+    async def view_get_guild(
+        self, ctx: naff.AutocompleteContext, guild: str, **kwargs: typing.Any
+    ) -> None:
         await self._autocomplete_guilds(ctx, guild)
 
     @tansy.slash_command(
@@ -129,7 +132,7 @@ class OwnerCMDs(utils.Extension):
         playerlist_chan: typing.Optional[str] = tansy.Option(
             "The playerlist channel ID for this guild.", default=None
         ),
-    ):
+    ) -> None:
         kwargs: dict[str, int | str] = {"guild_id": int(guild_id)}
 
         if club_id:
@@ -165,7 +168,7 @@ class OwnerCMDs(utils.Extension):
         playerlist_chan: typing.Optional[str] = tansy.Option(
             "The playerlist channel ID for this guild.", default=None
         ),
-    ):
+    ) -> None:
         guild_config = await GuildConfig.get(guild_id=int(guild))
 
         if realm_id:
@@ -183,7 +186,9 @@ class OwnerCMDs(utils.Extension):
         await ctx.send("Done!")
 
     @edit_guild.autocomplete("guild")
-    async def edit_get_guild(self, ctx, guild, **kwargs):
+    async def edit_get_guild(
+        self, ctx: naff.AutocompleteContext, guild: str, **kwargs: typing.Any
+    ) -> None:
         await self._autocomplete_guilds(ctx, guild)
 
     @tansy.slash_command(
@@ -207,7 +212,7 @@ class OwnerCMDs(utils.Extension):
         playerlist_chan: typing.Optional[str] = tansy.Option(
             "The playerlist channel ID for this guild.", default=None
         ),
-    ):
+    ) -> None:
         guild_config = await GuildConfig.get(guild_id=int(guild_id))
 
         if realm_id:
@@ -237,12 +242,12 @@ class OwnerCMDs(utils.Extension):
         self,
         ctx: utils.RealmContext,
         guild_id: str = tansy.Option("The guild ID for the guild to remove."),
-    ):
+    ) -> None:
         await GuildConfig.filter(guild_id=int(guild_id)).delete()
         await ctx.send("Deleted!")
 
     @naff.prefixed_command(aliases=["jsk"])
-    async def debug(self, ctx: naff.PrefixedContext):
+    async def debug(self, ctx: naff.PrefixedContext) -> None:
         """Get basic information about the bot."""
         uptime = naff.Timestamp.fromdatetime(self.bot.start_time)
         e = debug_embed("General")
@@ -268,7 +273,7 @@ class OwnerCMDs(utils.Extension):
         await ctx.reply(embeds=[e])
 
     @debug.subcommand(aliases=["cache"])
-    async def cache_info(self, ctx: naff.PrefixedContext):
+    async def cache_info(self, ctx: naff.PrefixedContext) -> None:
         """Get information about the current cache state."""
         e = debug_embed("Cache")
 
@@ -282,7 +287,7 @@ class OwnerCMDs(utils.Extension):
         await self.bot.stop()
 
     @debug.subcommand()
-    async def reload(self, ctx: naff.PrefixedContext, *, module: str):
+    async def reload(self, ctx: naff.PrefixedContext, *, module: str) -> None:
         """Regrows an extension."""
         self.bot.reload_extension(module)
         self.bot.slash_perms_cache = collections.defaultdict(dict)
@@ -290,7 +295,7 @@ class OwnerCMDs(utils.Extension):
         await ctx.reply(f"Reloaded `{module}`.")
 
     @debug.subcommand()
-    async def load(self, ctx: naff.PrefixedContext, *, module: str):
+    async def load(self, ctx: naff.PrefixedContext, *, module: str) -> None:
         """Grows a scale."""
         self.bot.load_extension(module)
         self.bot.slash_perms_cache = collections.defaultdict(dict)
@@ -306,7 +311,7 @@ class OwnerCMDs(utils.Extension):
         await ctx.reply(f"Unloaded `{module}`.")
 
     @naff.prefixed_command(aliases=["reloadallextensions"])
-    async def reload_all_extensions(self, ctx: naff.PrefixedContext):
+    async def reload_all_extensions(self, ctx: naff.PrefixedContext) -> None:
         for ext in (e.extension_name for e in self.bot.ext.copy().values()):
             self.bot.reload_extension(ext)
         await ctx.reply("All extensions reloaded!")
@@ -314,15 +319,18 @@ class OwnerCMDs(utils.Extension):
     @reload.error
     @load.error
     @unload.error
-    async def extension_error(self, error: Exception, ctx: naff.PrefixedContext, *args):
+    async def extension_error(
+        self, error: Exception, ctx: naff.PrefixedContext, *args: typing.Any
+    ) -> naff.Message | None:
         if isinstance(error, naff.errors.CommandCheckFailure):
             return await ctx.reply(
                 "You do not have permission to execute this command."
             )
         await utils.error_handle(self.bot, error, ctx)
+        return None
 
     @debug.subcommand(aliases=["python", "exc"])
-    async def exec(self, ctx: naff.PrefixedContext, *, body: str):
+    async def exec(self, ctx: naff.PrefixedContext, *, body: str) -> naff.Message:
         """Direct evaluation of Python code."""
         await ctx.channel.trigger_typing()
         env = {
@@ -352,7 +360,7 @@ class OwnerCMDs(utils.Extension):
         try:
             with contextlib.redirect_stdout(stdout):
                 ret = await func()  # noqa
-        except Exception as e:
+        except Exception:
             await ctx.message.add_reaction("❌")
             raise
         else:
@@ -360,7 +368,7 @@ class OwnerCMDs(utils.Extension):
 
     async def handle_exec_result(
         self, ctx: naff.PrefixedContext, result: typing.Any, value: typing.Any
-    ):
+    ) -> naff.Message:
         if not result:
             result = value or "No Output!"
 
@@ -414,7 +422,7 @@ class OwnerCMDs(utils.Extension):
         return await paginator.reply(ctx)
 
     @debug.subcommand()
-    async def shell(self, ctx: naff.PrefixedContext, *, cmd: str):
+    async def shell(self, ctx: naff.PrefixedContext, *, cmd: str) -> naff.Message:
         """Executes statements in the system shell."""
         async with ctx.channel.typing:
             process = await asyncio.create_subprocess_shell(
@@ -434,17 +442,23 @@ class OwnerCMDs(utils.Extension):
         return await paginator.reply(ctx)
 
     @debug.subcommand()
-    async def git(self, ctx: naff.PrefixedContext, *, cmd: typing.Optional[str] = None):
+    async def git(
+        self, ctx: naff.PrefixedContext, *, cmd: typing.Optional[str] = None
+    ) -> None:
         """Shortcut for 'debug shell git'. Invokes the system shell."""
         await self.shell.callback(ctx, cmd=f"git {cmd}" if cmd else "git")
 
     @debug.subcommand()
-    async def pip(self, ctx: naff.PrefixedContext, *, cmd: typing.Optional[str] = None):
+    async def pip(
+        self, ctx: naff.PrefixedContext, *, cmd: typing.Optional[str] = None
+    ) -> None:
         """Shortcut for 'debug shell pip'. Invokes the system shell."""
         await self.shell.callback(ctx, cmd=f"pip {cmd}" if cmd else "pip")
 
     @debug.subcommand(aliases=["sync-interactions", "sync-cmds", "sync_cmds", "sync"])
-    async def sync_interactions(self, ctx: naff.PrefixedContext, scope: int = 0):
+    async def sync_interactions(
+        self, ctx: naff.PrefixedContext, scope: int = 0
+    ) -> None:
         """
         Synchronizes all interaction commands with Discord.
 
@@ -466,7 +480,7 @@ class OwnerCMDs(utils.Extension):
 
         await ctx.reply("Done!")
 
-    async def ext_error(self, error: Exception, ctx: naff.Context):
+    async def ext_error(self, error: Exception, ctx: naff.Context) -> None:
         error_str = utils.error_format(error)
         chunks = utils.line_split(error_str)
 
@@ -489,6 +503,6 @@ class OwnerCMDs(utils.Extension):
             await ctx.send("An error occured. Please check your DMs.")
 
 
-def setup(bot):
+def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
     OwnerCMDs(bot)

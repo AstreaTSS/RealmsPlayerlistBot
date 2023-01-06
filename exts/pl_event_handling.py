@@ -13,12 +13,14 @@ from common.microsoft_core import MicrosoftAPIException
 
 
 class PlayerlistEventHandling(naff.Extension):
-    def __init__(self, bot):
+    def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.name = "Playerlist Event Handling"
 
     @naff.listen("playerlist_parse_finish", is_default_listener=True)
-    async def on_playerlist_finish(self, event: pl_events.PlayerlistParseFinish):
+    async def on_playerlist_finish(
+        self, event: pl_events.PlayerlistParseFinish
+    ) -> None:
         for container in event.containers:
             await models.PlayerSession.bulk_create(
                 container.player_sessions,
@@ -27,7 +29,9 @@ class PlayerlistEventHandling(naff.Extension):
             )
 
     @naff.listen("live_playerlist_send", is_default_listener=True)
-    async def on_live_playerlist_send(self, event: pl_events.LivePlayerlistSend):
+    async def on_live_playerlist_send(
+        self, event: pl_events.LivePlayerlistSend
+    ) -> None:
         player_sessions = [
             models.PlayerSession(
                 custom_id=self.bot.uuid_cache[f"{event.realm_id}-{p}"],
@@ -85,7 +89,7 @@ class PlayerlistEventHandling(naff.Extension):
                 continue
 
     @naff.listen("realm_down", is_default_listener=True)
-    async def realm_down(self, event: pl_events.RealmDown):
+    async def realm_down(self, event: pl_events.RealmDown) -> None:
         # live playerlists are time sensitive, get them out first
         if self.bot.live_playerlist_store[event.realm_id]:
             self.bot.dispatch(
@@ -153,7 +157,9 @@ class PlayerlistEventHandling(naff.Extension):
                 continue
 
     @naff.listen("warn_missing_playerlist", is_default_listener=True)
-    async def warning_missing_playerlist(self, event: pl_events.WarnMissingPlayerlist):
+    async def warning_missing_playerlist(
+        self, event: pl_events.WarnMissingPlayerlist
+    ) -> None:
         no_playerlist_chan: list[bool] = []
 
         async for config in event.configs:
@@ -214,7 +220,7 @@ class PlayerlistEventHandling(naff.Extension):
         self.bot.offline_realm_time.pop(int(event.realm_id), None)
 
 
-def setup(bot):
+def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
     importlib.reload(pl_events)
     importlib.reload(pl_utils)

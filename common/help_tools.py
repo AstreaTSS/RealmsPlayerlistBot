@@ -32,7 +32,7 @@ class CustomTimeout(paginators.Timeout):
                 self.ping.clear()
 
 
-async def callback(ctx: naff.ComponentContext):
+async def callback(ctx: naff.ComponentContext) -> None:
     """Shows how to use the bot"""
 
     embed = naff.Embed(color=ctx.bot.color)
@@ -81,7 +81,7 @@ class HelpPaginator(paginators.Paginator):
     show_select_menu: bool = attrs.field(default=True)
     """Should a select menu be shown for navigation"""
 
-    def create_components(self, disable=False):
+    def create_components(self, disable=False) -> list[naff.ActionRow]:
         rows = super().create_components()
 
         if self.show_select_menu:
@@ -187,7 +187,7 @@ class PermissionsResolver:
         default_member_permissions: typing.Optional[naff.Permissions],
         guild_id: int,
         permissions_data: list[discord_typings.ApplicationCommandPermissionsData],
-    ):
+    ) -> None:
         # set all of the defaults
         self.__attrs_init__(default_member_permissions=default_member_permissions)  # type: ignore
         self.update(guild_id, permissions_data)
@@ -196,7 +196,7 @@ class PermissionsResolver:
         self,
         guild_id: int,
         permissions_data: list[discord_typings.ApplicationCommandPermissionsData],
-    ):
+    ) -> None:
         all_channels = guild_id - 1  # const set by discord
 
         for permission in permissions_data:
@@ -209,7 +209,7 @@ class PermissionsResolver:
                 self.disabled_for_all_channels = permission["permission"]
                 continue
 
-            match permission["type"]:
+            match permission["type"]:  # noqa: E999
                 case 1:  # role
                     self.allowed_roles.add(object_id) if permission[
                         "permission"
@@ -285,7 +285,7 @@ class GuildApplicationCommandPermissionData(typing.TypedDict):
     permissions: list[discord_typings.ApplicationCommandPermissionsData]
 
 
-async def process_bulk_slash_perms(bot: utils.RealmBotBase, guild_id: int):
+async def process_bulk_slash_perms(bot: utils.RealmBotBase, guild_id: int) -> None:
     perms: list[
         GuildApplicationCommandPermissionData
     ] = await bot.http.batch_get_application_command_permissions(  # type: ignore
@@ -313,7 +313,7 @@ async def process_bulk_slash_perms(bot: utils.RealmBotBase, guild_id: int):
     bot.slash_perms_cache[guild_id] = guild_perms
 
 
-def _generate_signature(cmd: naff.SlashCommand):
+def _generate_signature(cmd: naff.SlashCommand) -> str:
     if not cmd.options:
         return ""
 
@@ -328,7 +328,7 @@ def _generate_signature(cmd: naff.SlashCommand):
     return " ".join(signatures)
 
 
-def _generate_bottom_text(cmd: naff.SlashCommand):
+def _generate_bottom_text(cmd: naff.SlashCommand) -> str:
     if not cmd.options:
         return ""
 
@@ -360,7 +360,7 @@ class MiniCommand:
     )
     subcommands: set["MiniCommand"] = attrs.field(factory=set)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return id(self)
 
     @classmethod
@@ -370,7 +370,7 @@ class MiniCommand:
         type_: typing.Literal["base", "group", "sub"],
         *,
         use_docstring: bool = False,
-    ):
+    ) -> typing.Self:
         desc = ""
 
         if use_docstring:
@@ -416,13 +416,13 @@ class MiniCommand:
     def add_subcommand(
         self,
         cmd: "MiniCommand",
-    ):
+    ) -> None:
         if self.signature:  # make sure base commands have no signature
             self.signature = ""
         self.subcommands.add(cmd)
 
 
-def get_commands_for_scope_by_ids(bot: utils.RealmBotBase, guild_id: int):
+def get_commands_for_scope_by_ids(bot: utils.RealmBotBase, guild_id: int) -> dict:
     scope_cmds = bot.interactions.get(
         naff.const.GLOBAL_SCOPE, {}
     ) | bot.interactions.get(guild_id, {})

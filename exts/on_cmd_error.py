@@ -8,17 +8,17 @@ import common.utils as utils
 
 
 class OnCMDError(naff.Extension):
-    def __init__(self, bot):
+    def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
 
-    def error_embed_generate(self, error_msg):
+    def error_embed_generate(self, error_msg: str) -> naff.Embed:
         return naff.Embed(color=naff.MaterialColors.RED, description=error_msg)
 
     @naff.listen(disable_default_listeners=True)
     async def on_command_error(
         self,
         event: naff.events.CommandError,
-    ):
+    ) -> None:
         if not isinstance(event.ctx, (naff.PrefixedContext, naff.InteractionContext)):
             return await utils.error_handle(self.bot, event.error)
 
@@ -51,6 +51,6 @@ class OnCMDError(naff.Extension):
             await utils.error_handle(self.bot, event.error, event.ctx)
 
 
-def setup(bot):
+def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
     OnCMDError(bot)
