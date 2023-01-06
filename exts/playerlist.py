@@ -97,6 +97,21 @@ class Playerlist(utils.Extension):
                     player_objs.append(models.PlayerSession(**kwargs))
 
             left = self.bot.online_cache[realm.id].difference(player_set)
+
+            # if all of the players left, there MAY be a crash, but it's hard
+            # to tell since they could have all just left during that minute
+            # 4 seems like a reasonable threshold to guess for this
+            already_sent_realm_down = False
+            if not player_set and len(left) > 4:
+                self.bot.dispatch(
+                    pl_events.RealmDown(
+                        str(realm.id),
+                        left,
+                        now,
+                    )
+                )
+                already_sent_realm_down = True
+
             self.bot.online_cache[realm.id] = player_set
             self.bot.offline_realm_time.pop(realm.id, None)
 
@@ -109,7 +124,11 @@ class Playerlist(utils.Extension):
                 )
                 for player in left
             )
-            if self.bot.live_playerlist_store[str(realm.id)] and (joined or left):
+            if (
+                not already_sent_realm_down
+                and self.bot.live_playerlist_store[str(realm.id)]
+                and (joined or left)
+            ):
                 self.bot.dispatch(
                     pl_events.LivePlayerlistSend(
                         str(realm.id),
