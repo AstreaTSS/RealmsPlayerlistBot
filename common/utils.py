@@ -326,5 +326,5 @@ class Extension(naff.Extension):
         return new_cls
 
 
-class GuildMessageableMixin(naff.GuildChannel, naff.MessageableMixin):
+class GuildMessageable(naff.GuildChannel, naff.MessageableMixin):
     pass

@@ -241,7 +241,7 @@ async def eventually_invalidate_realm_offline(
 
 async def fetch_playerlist_channel(
     bot: utils.RealmBotBase, guild: naff.Guild, config: models.GuildConfig
-) -> utils.GuildMessageableMixin:
+) -> utils.GuildMessageable:
     try:
         chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
     except naff.errors.HTTPException:

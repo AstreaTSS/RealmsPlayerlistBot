@@ -66,7 +66,7 @@ class TimedDict(typing.Generic[KT, VT]):
             self._timer.cancel()
 
 
-def valid_channel_check(channel: naff.GuildChannel) -> utils.GuildMessageableMixin:
+def valid_channel_check(channel: naff.GuildChannel) -> utils.GuildMessageable:
     if not isinstance(channel, naff.MessageableMixin):
         raise naff.errors.BadArgument(f"Cannot send messages in {channel.name}.")
 
@@ -89,7 +89,7 @@ def valid_channel_check(channel: naff.GuildChannel) -> utils.GuildMessageableMix
 class ValidChannelConverter(naff.Converter):
     async def convert(
         self, ctx: naff.InteractionContext, argument: naff.GuildText
-    ) -> utils.GuildMessageableMixin:
+    ) -> utils.GuildMessageable:
         return valid_channel_check(argument)
 
 
