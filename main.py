@@ -247,7 +247,7 @@ async def start() -> None:
     bot.fully_ready = asyncio.Event()
     bot.pl_sem = asyncio.Semaphore(3)
 
-    ext_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_BOT"))
+    ext_list = utils.get_all_extensions(os.environ["DIRECTORY_OF_BOT"])
     for ext in ext_list:
         # skip loading voting ext if token doesn't exist
         if "voting" in ext and not os.environ.get("TOP_GG_TOKEN"):
