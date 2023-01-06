@@ -29,13 +29,18 @@ class GuildConfig(Model):
 class PlayerSession(Model):
     class Meta:
         table = "realmplayersession"
-        indexes = ("realm_xuid_id",)
+        indexes = ("realm_id", "xuid", "last_seen", "joined_at")
 
     custom_id: UUID = fields.UUIDField(pk=True)
-    realm_xuid_id: str = fields.CharField(max_length=100)
+    realm_id: str = fields.CharField(50)
+    xuid: str = fields.CharField(50)
     online: bool = fields.BooleanField(default=False)  # type: ignore
     last_seen: datetime = fields.DatetimeField()
-    last_joined: typing.Optional[datetime] = fields.DatetimeField(null=True)
+    joined_at: typing.Optional[datetime] = fields.DatetimeField(null=True)
+
+    @property
+    def realm_xuid_id(self) -> str:
+        return f"{self.realm_id}-{self.xuid}"
 
 
 class PremiumCode(Model):

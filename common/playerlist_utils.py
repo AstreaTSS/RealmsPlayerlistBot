@@ -35,7 +35,7 @@ class Player:
     last_seen: datetime.datetime = attrs.field()
     in_game: bool = attrs.field(default=False)
     gamertag: typing.Optional[str] = attrs.field(default=None)
-    last_joined: typing.Optional[datetime.datetime] = attrs.field(default=None)
+    joined_at: typing.Optional[datetime.datetime] = attrs.field(default=None)
 
     def __eq__(self, o: object) -> bool:
         return o.xuid == self.xuid if isinstance(o, self.__class__) else False
@@ -51,9 +51,9 @@ class Player:
     @property
     def display(self) -> str:  # sourcery skip: remove-unnecessary-else
         notes = []
-        if self.last_joined:
+        if self.joined_at:
             notes.append(
-                f"joined {naff.Timestamp.fromdatetime(self.last_joined).format('f')}"
+                f"joined {naff.Timestamp.fromdatetime(self.joined_at).format('f')}"
             )
 
         if not self.in_game:
@@ -273,19 +273,17 @@ async def get_players_from_player_activity(
     unresolved_dict: dict[str, Player] = {}
 
     for member in player_sessions:
-        xuid = member.realm_xuid_id.removeprefix(f"{realm_id}-")
-
         player = Player(
-            xuid,
+            member.xuid,
             member.last_seen,
             member.online,
-            await bot.redis.get(xuid),
-            member.last_joined,
+            await bot.redis.get(member.xuid),
+            member.joined_at,
         )
         if player.resolved:
             player_list.append(player)
         else:
-            unresolved_dict[xuid] = player
+            unresolved_dict[member.xuid] = player
 
     if unresolved_dict:
         gamertag_handler = GamertagHandler(

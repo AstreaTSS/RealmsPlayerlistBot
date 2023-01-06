@@ -230,8 +230,7 @@ async def start() -> None:
     # add all online players to the online cache
     async for player in models.PlayerSession.filter(online=True):
         bot.uuid_cache[player.realm_xuid_id] = player.custom_id
-        realm_id, xuid = player.realm_xuid_id.split("-")
-        bot.online_cache[int(realm_id)].add(xuid)
+        bot.online_cache[int(player.realm_id)].add(player.xuid)
 
     # add info for who has live playerlist on, as we can't rely on anything other than
     # pure memory for the playerlist getting code

@@ -35,7 +35,8 @@ class PlayerlistEventHandling(naff.Extension):
         player_sessions = [
             models.PlayerSession(
                 custom_id=self.bot.uuid_cache[f"{event.realm_id}-{p}"],
-                realm_xuid_id=f"{event.realm_id}-{p}",
+                realm_id=event.realm_id,
+                xuid=p,
                 online=True,
                 last_seen=event.timestamp,
             )

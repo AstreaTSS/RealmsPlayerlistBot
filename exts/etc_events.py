@@ -40,9 +40,7 @@ class OnCMDError(naff.Extension):
                 == 0
             ):
                 # don't want to keep around entries we no longer need, so delete them
-                await models.PlayerSession.filter(
-                    realm_xuid_id__startswith=f"{config.realm_id}-"
-                ).delete()
+                await models.PlayerSession.filter(realm_id=config.realm_id).delete()
                 # also attempt to leave the realm cus why not
                 with contextlib.suppress(MicrosoftAPIException):
                     await self.bot.realms.leave_realm(config.realm_id)

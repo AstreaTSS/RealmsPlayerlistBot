@@ -84,14 +84,15 @@ class Playerlist(utils.Extension):
 
                 kwargs = {
                     "custom_id": self.bot.uuid_cache[f"{realm.id}-{player.uuid}"],
-                    "realm_xuid_id": f"{realm.id}-{player.uuid}",
+                    "realm_id": str(realm.id),
+                    "xuid": str(player.uuid),
                     "online": True,
                     "last_seen": now,
                 }
 
                 if player.uuid not in self.bot.online_cache[realm.id]:
                     joined.add(player.uuid)
-                    kwargs["last_joined"] = now
+                    kwargs["joined_at"] = now
                     joined_player_objs.append(models.PlayerSession(**kwargs))
                 else:
                     player_objs.append(models.PlayerSession(**kwargs))
@@ -118,7 +119,8 @@ class Playerlist(utils.Extension):
             player_objs.extend(
                 models.PlayerSession(
                     custom_id=self.bot.uuid_cache.pop(f"{realm.id}-{player}"),
-                    realm_xuid_id=f"{realm.id}-{player}",
+                    realm_id=str(realm.id),
+                    xuid=player,
                     online=False,
                     last_seen=self.previous_now,
                 )
@@ -151,7 +153,8 @@ class Playerlist(utils.Extension):
             player_objs.extend(
                 models.PlayerSession(
                     custom_id=self.bot.uuid_cache.pop(f"{missed_realm_id}-{player}"),
-                    realm_xuid_id=f"{missed_realm_id}-{player}",
+                    realm_id=str(missed_realm_id),
+                    xuid=player,
                     online=False,
                     last_seen=self.previous_now,
                 )
@@ -236,19 +239,19 @@ class Playerlist(utils.Extension):
         time_delta = datetime.timedelta(hours=hours_ago, minutes=1)
         time_ago = now - time_delta
 
-        # select all values from the player session table where the realm_xuid_id
-        # starts with the realm id in the guild config, and (online is true or
+        # select all values from the player session table where realm id is
+        # the realm id in the guild config, and (online is true or
         # the last seen date for the entry is greater than or equal to how
-        # far back we want to go). order it by the realm_xuid_id first (we'll
+        # far back we want to go). order it by the xuid first (we'll
         # get to distinct, but it won't work if it isn't like this), then by the last
         # seen date from newest to older, and finally only return 1 distinct entry
         # (the first entry in the sort, which is the latest last seen date)
-        # per realm_xuid_id value
+        # per xuid value
         # fmt: off
         player_sessions: list[models.PlayerSession] = await models.PlayerSession.raw(
-            f"SELECT DISTINCT ON (realm_xuid_id) * FROM {models.PlayerSession.Meta.table} "
-            f"WHERE starts_with(realm_xuid_id, '{guild_config.realm_id}-') AND (online=true "
-            f"OR last_seen>='{time_ago.isoformat()}') ORDER BY realm_xuid_id, last_seen DESC"
+            f"SELECT DISTINCT ON (xuid) * FROM {models.PlayerSession.Meta.table} "
+            f"WHERE realm_id='{guild_config.realm_id}' AND (online=true "
+            f"OR last_seen>='{time_ago.isoformat()}') ORDER BY xuid, last_seen DESC"
         )  # type: ignore
         # fmt: on
 
@@ -354,7 +357,7 @@ class Playerlist(utils.Extension):
         guild_config = await ctx.fetch_config()
 
         player_sessions = await models.PlayerSession.filter(
-            realm_xuid_id__startswith=f"{guild_config.realm_id}-", online=True
+            realm_id=guild_config.realm_id, online=True
         )
         playerlist = await pl_utils.get_players_from_player_activity(
             self.bot, guild_config.realm_id, player_sessions  # type: ignore

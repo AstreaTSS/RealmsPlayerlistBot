@@ -169,17 +169,18 @@ async def fill_in_data_from_clubs(
 
     now = datetime.datetime.now(tz=datetime.UTC)
 
-    realmplayers = [
+    player_sessions = [
         models.PlayerSession(
             custom_id=bot.uuid_cache[f"{realm_id}-{p.xuid}"],
-            realm_xuid_id=f"{realm_id}-{p.xuid}",
+            realm_id=realm_id,
+            xuid=p.xuid,
             online=p.in_game,
             last_seen=now if p.in_game else p.last_seen,
         )
         for p in player_list
     ]
     await models.PlayerSession.bulk_create(
-        realmplayers,
+        player_sessions,
         on_conflict=("custom_id",),
         update_fields=("online", "last_seen"),
     )
