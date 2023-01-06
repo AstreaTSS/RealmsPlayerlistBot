@@ -151,8 +151,8 @@ class GuildConfig(utils.Extension):
 
             if (
                 realm.club_id
-                and not await models.GuildConfig.filter(
-                    realm_id=config.realm_id
+                and not await models.PlayerSession.filter(
+                    realm_xuid_id__startswith=f"{realm.id}-"
                 ).exists()
             ):
                 config.club_id = str(realm.club_id)
