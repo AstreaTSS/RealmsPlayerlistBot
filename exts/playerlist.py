@@ -175,7 +175,7 @@ class Playerlist(utils.Extension):
                 (
                     pl_utils.RealmPlayersContainer(player_sessions=player_objs),
                     pl_utils.RealmPlayersContainer(
-                        player_sessions=joined_player_objs, fields=("last_joined",)
+                        player_sessions=joined_player_objs, fields=("joined_at",)
                     ),
                 )
             )
