@@ -11,6 +11,7 @@ import tansy
 
 import common.classes as cclasses
 import common.clubs_playerlist as clubs_playerlist
+import common.models as models
 import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
 
@@ -148,7 +149,12 @@ class GuildConfig(utils.Extension):
 
             embeds: collections.deque[naff.Embed] = collections.deque()
 
-            if realm.club_id:
+            if (
+                realm.club_id
+                and not await models.GuildConfig.filter(
+                    realm_id=config.realm_id
+                ).exists()
+            ):
                 config.club_id = str(realm.club_id)
                 await clubs_playerlist.fill_in_data_from_clubs(
                     self.bot, config.realm_id, config.club_id
