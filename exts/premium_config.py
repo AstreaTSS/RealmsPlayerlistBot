@@ -13,11 +13,11 @@ import common.utils as utils
 
 
 class PremiumHandling(naff.Extension):
-    def __init__(self, bot):
+    def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.name = "Premium Handling"
 
-    def _encrypt_input(self, code: str):
+    def _encrypt_input(self, code: str) -> str:
         key = bytes(os.environ["PREMIUM_ENCRYPTION_KEY"], "utf-8")
         # siv is best when we don't want nonces
         # we can't exactly use anything as a nonce since we have no way of obtaining
@@ -29,7 +29,7 @@ class PremiumHandling(naff.Extension):
         # the tuple given is actually the key
         return str(aes.encrypt_and_digest(bytes(code, "utf-8"))[0])  # type: ignore
 
-    async def encrypt_input(self, code: str):
+    async def encrypt_input(self, code: str) -> str:
         # just because this is a technically complex function by design - aes isn't cheap
         return await asyncio.to_thread(self._encrypt_input, code)
 
@@ -46,7 +46,7 @@ class PremiumHandling(naff.Extension):
         user_id: typing.Optional[str] = tansy.Option(
             "The user ID this is tied to if needed.", default=None
         ),
-    ):
+    ) -> None:
         # mind you, it isn't TOO important that this is secure - really, i just want
         # to make sure your average tech person couldn't brute force a code
         # regardless, we do try to use aes here just in case
@@ -76,7 +76,7 @@ class PremiumHandling(naff.Extension):
     )
     async def redeem_premium(
         self, ctx: utils.RealmContext, code: str = tansy.Option("The code for premium.")
-    ):
+    ) -> None:
         encrypted_code = await self.encrypt_input(code)
         code_obj = await models.PremiumCode.get_or_none(code=encrypted_code)
 
@@ -124,7 +124,7 @@ class PremiumHandling(naff.Extension):
         self,
         ctx: utils.RealmContext,
         toggle: bool = tansy.Option("Should it be on (true) or off (false)?"),
-    ):
+    ) -> None:
         config = await ctx.fetch_config()
 
         if not config.premium_code:
@@ -156,10 +156,10 @@ class PremiumHandling(naff.Extension):
             "Gives you information about Realms Playerlist Premium and how to get it."
         ),
     )
-    async def premium_info(self, ctx: utils.RealmContext):
+    async def premium_info(self, ctx: utils.RealmContext) -> None:
         await ctx.send(os.environ["PREMIUM_INFO_LINK"])
 
 
-def setup(bot):
+def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
     PremiumHandling(bot)

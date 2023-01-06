@@ -5,6 +5,8 @@ import attrs
 import naff
 import redis.asyncio as aioredis
 
+import common.utils as utils
+
 KT = typing.TypeVar("KT")
 VT = typing.TypeVar("VT")
 D = typing.TypeVar("D")
@@ -20,13 +22,13 @@ class TimedDict(typing.Generic[KT, VT]):
     )
     _timer: typing.Optional[asyncio.TimerHandle] = attrs.field(default=None, init=False)
 
-    def __setitem__(self, key: KT, value: VT):
+    def __setitem__(self, key: KT, value: VT) -> None:
         self._dict[key] = value
 
     def __getitem__(self, key: KT) -> VT:
         return self._dict[key]
 
-    def __delitem__(self, key: KT):
+    def __delitem__(self, key: KT) -> None:
         del self._dict[key]
 
     @typing.overload
@@ -46,25 +48,25 @@ class TimedDict(typing.Generic[KT, VT]):
     def filled(self) -> bool:
         return bool(self._timer) and self._loop.time() <= self._timer.when()
 
-    def _clear(self):
+    def _clear(self) -> None:
         self._dict.clear()
         self._timer = None
 
-    def insert(self, dict: dict[KT, VT]):
-        self._dict.update(dict)
+    def insert(self, to_insert: dict[KT, VT]) -> None:
+        self._dict.update(to_insert)
 
         if not self.filled:
             self._timer = self._loop.call_later(self.expires, self._clear)
 
-    def add_one(self, key: KT, value: VT):
+    def add_one(self, key: KT, value: VT) -> None:
         self._dict[key] = value
 
-    def cancel_timer(self):
+    def cancel_timer(self) -> None:
         if self._timer:
             self._timer.cancel()
 
 
-def valid_channel_check(channel: naff.GuildChannel):
+def valid_channel_check(channel: naff.GuildChannel) -> utils.GuildMessageableMixin:
     if not isinstance(channel, naff.MessageableMixin):
         raise naff.errors.BadArgument(f"Cannot send messages in {channel.name}.")
 
@@ -81,21 +83,25 @@ def valid_channel_check(channel: naff.GuildChannel):
     elif naff.Permissions.EMBED_LINKS not in perms:
         raise naff.errors.BadArgument(f"Cannot send embeds in {channel.name}.")
 
-    return channel
+    return channel  # type: ignore
 
 
 class ValidChannelConverter(naff.Converter):
-    async def convert(self, ctx: naff.InteractionContext, argument: naff.GuildText):
+    async def convert(
+        self, ctx: naff.InteractionContext, argument: naff.GuildText
+    ) -> utils.GuildMessageableMixin:
         return valid_channel_check(argument)
 
 
 class SemaphoreRedis(aioredis.Redis):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: typing.Any) -> None:
         semaphore_value = kwargs.pop("semaphore_value", 1)
         super().__init__(**kwargs)
         self.connection_pool.connection_kwargs.pop("semaphore_value", None)
         self.semaphore = asyncio.BoundedSemaphore(semaphore_value)
 
-    async def execute_command(self, *args, **options):
+    async def execute_command(
+        self, *args: typing.Any, **options: typing.Any
+    ) -> typing.Any:
         async with self.semaphore:
             return await super().execute_command(*args, **options)

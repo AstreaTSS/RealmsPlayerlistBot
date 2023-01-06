@@ -3,9 +3,12 @@ from datetime import datetime
 
 import attrs
 import naff
+from tortoise.queryset import QuerySet
 
 import common.models as models
 import common.playerlist_utils as pl_utils
+
+_C = typing.TypeVar("_C")
 
 
 @typing.dataclass_transform(
@@ -14,8 +17,8 @@ import common.playerlist_utils as pl_utils
     kw_only_default=False,
     field_specifiers=(attrs.field,),
 )
-def define():
-    return attrs.define(eq=False, order=False, hash=False, kw_only=False)
+def define() -> typing.Callable[[_C], _C]:
+    return attrs.define(eq=False, order=False, hash=False, kw_only=False)  # type: ignore
 
 
 @define()
@@ -28,7 +31,7 @@ class PlayerlistEvent(naff.events.BaseEvent):
     realm_id: str = attrs.field(repr=False)
 
     @property
-    def configs(self):
+    def configs(self) -> QuerySet[models.GuildConfig]:
         return models.GuildConfig.filter(realm_id=self.realm_id)
 
 

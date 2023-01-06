@@ -7,9 +7,11 @@ import apischema
 import attrs
 import orjson
 from xbox.webapi.authentication.manager import AuthenticationManager
-from xbox.webapi.authentication.models import OAuth2TokenResponse
-from xbox.webapi.authentication.models import XAUResponse
-from xbox.webapi.authentication.models import XSTSResponse
+from xbox.webapi.authentication.models import (
+    OAuth2TokenResponse,
+    XAUResponse,
+    XSTSResponse,
+)
 
 apischema.settings.additional_properties = True
 apischema.settings.camel_case = True
@@ -89,7 +91,7 @@ async def request_xsts_token(
 
 
 class MicrosoftAPIException(Exception):
-    def __init__(self, resp: aiohttp.ClientResponse, error: Exception):
+    def __init__(self, resp: aiohttp.ClientResponse, error: Exception) -> None:
         self.resp = resp
         self.error = error
 
@@ -111,7 +113,7 @@ class BaseMicrosoftAPI:
     session: aiohttp.ClientSession = attrs.field(init=False)
     auth_mgr: AuthenticationManager = attrs.field(init=False)
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         self.session = aiohttp.ClientSession(json_serialize=_orjson_dumps_wrapper)
 
         self.auth_mgr = AuthenticationManager(
@@ -126,13 +128,13 @@ class BaseMicrosoftAPI:
         asyncio.create_task(self.refresh_tokens())
 
     @property
-    def BASE_HEADERS(self):
+    def BASE_HEADERS(self) -> dict[str, str]:  # noqa: N802
         return {"Authorization": self.auth_mgr.xsts_token.authorization_header_value}
 
-    async def close(self):
+    async def close(self) -> None:
         await self.session.close()
 
-    async def refresh_tokens(self, force_refresh: bool = False):
+    async def refresh_tokens(self, force_refresh: bool = False) -> None:
         """Refresh all tokens."""
         if force_refresh:
             self.auth_mgr.oauth = await refresh_oauth_token(self.auth_mgr)
@@ -166,7 +168,7 @@ class BaseMicrosoftAPI:
         raise_status: bool = True,
         force_refresh: bool = False,
         times: int = 1,
-    ):
+    ) -> typing.Any:
         if not headers:
             headers = {}
         if not params:
@@ -210,7 +212,7 @@ class BaseMicrosoftAPI:
         data: typing.Optional[dict] = None,
         params: typing.Optional[dict] = None,
         headers: typing.Optional[dict] = None,
-    ):
+    ) -> typing.Any:
         return await self.request(
             "GET", url, json=json, data=data, params=params, headers=headers
         )
@@ -222,7 +224,7 @@ class BaseMicrosoftAPI:
         data: typing.Optional[dict] = None,
         params: typing.Optional[dict] = None,
         headers: typing.Optional[dict] = None,
-    ):
+    ) -> typing.Any:
         return await self.request(
             "POST", url, json=json, data=data, params=params, headers=headers
         )
@@ -234,7 +236,7 @@ class BaseMicrosoftAPI:
         data: typing.Optional[dict] = None,
         params: typing.Optional[dict] = None,
         headers: typing.Optional[dict] = None,
-    ):
+    ) -> typing.Any:
         return await self.request(
             "DELETE", url, json=json, data=data, params=params, headers=headers
         )

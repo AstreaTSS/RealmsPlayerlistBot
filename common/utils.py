@@ -4,6 +4,7 @@ import datetime
 import os
 import traceback
 import typing
+import uuid
 from collections import defaultdict
 from pathlib import Path
 
@@ -14,24 +15,23 @@ import sentry_sdk
 
 from common.models import GuildConfig
 
-
 DEV_GUILD_ID = int(os.environ.get("DEV_GUILD_ID", "0"))
 XBOX_API_RELYING_PARTY = "http://xboxlive.com"
 REALMS_API_URL = "https://pocket.realms.minecraft.net/"
 MC_VERSION = "1.19.0"  # this can be a few versions behind
 
 
-async def sleep_until(dt: datetime.datetime):
+async def sleep_until(dt: datetime.datetime) -> None:
     if dt.tzinfo is None:
         dt = dt.astimezone()
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     time_to_sleep = max((dt - now).total_seconds(), 0)
     await asyncio.sleep(time_to_sleep)
 
 
 async def error_handle(
     bot: "RealmBotBase", error: Exception, ctx: typing.Optional[naff.Context] = None
-):
+) -> None:
     if not isinstance(error, aiohttp.ServerDisconnectedError):
         with sentry_sdk.configure_scope() as scope:
             if ctx:
@@ -58,7 +58,9 @@ async def error_handle(
             )
 
 
-async def msg_to_owner(bot: "RealmBotBase", content, split=True):
+async def msg_to_owner(
+    bot: "RealmBotBase", content: typing.Any, split: bool = True
+) -> None:
     # sends a message to the owner
     string = str(content) if split else content
 
@@ -67,7 +69,7 @@ async def msg_to_owner(bot: "RealmBotBase", content, split=True):
         await bot.owner.send(f"{chunk}")
 
 
-def line_split(content: str, split_by=20):
+def line_split(content: str, split_by: int = 20) -> list[list[str]]:
     content_split = content.splitlines()
     return [
         content_split[x : x + split_by] for x in range(0, len(content_split), split_by)
@@ -102,12 +104,12 @@ def embed_check(embed: naff.Embed) -> bool:
     return True
 
 
-def deny_mentions(user):
+def deny_mentions(user: naff.BaseUser) -> naff.AllowedMentions:
     # generates an AllowedMentions object that only pings the user specified
     return naff.AllowedMentions(users=[user])
 
 
-def error_format(error: Exception):
+def error_format(error: Exception) -> str:
     # simple function that formats an exception
     return "".join(
         traceback.format_exception(  # type: ignore
@@ -116,21 +118,21 @@ def error_format(error: Exception):
     )
 
 
-def string_split(string):
+def string_split(string: str) -> list[str]:
     # simple function that splits a string into 1950-character parts
     return [string[i : i + 1950] for i in range(0, len(string), 1950)]
 
 
-def file_to_ext(str_path, base_path):
+def file_to_ext(str_path: str, base_path: str) -> str:
     # changes a file to an import-like string
     str_path = str_path.replace(base_path, "")
     str_path = str_path.replace("/", ".")
     return str_path.replace(".py", "")
 
 
-def get_all_extensions(str_path, folder="exts"):
+def get_all_extensions(str_path: str, folder: str = "exts") -> collections.deque[str]:
     # gets all extensions in a folder
-    ext_files = collections.deque()
+    ext_files: collections.deque[str] = collections.deque()
     loc_split = str_path.split(folder)
     base_path = loc_split[0]
 
@@ -152,19 +154,19 @@ def get_all_extensions(str_path, folder="exts"):
     return ext_files
 
 
-def toggle_friendly_str(bool_to_convert):
-    return "on" if bool_to_convert == True else "off"
+def toggle_friendly_str(bool_to_convert: bool) -> typing.Literal["on", "off"]:
+    return "on" if bool_to_convert else "off"
 
 
-def yesno_friendly_str(bool_to_convert):
-    return "yes" if bool_to_convert == True else "no"
+def yesno_friendly_str(bool_to_convert: bool) -> typing.Literal["yes", "no"]:
+    return "yes" if bool_to_convert else "no"
 
 
-def na_friendly_str(obj: typing.Any):
+def na_friendly_str(obj: typing.Any) -> str:
     return str(obj) if obj else "N/A"
 
 
-def error_embed_generate(error_msg):
+def error_embed_generate(error_msg: str) -> naff.Embed:
     return naff.Embed(color=naff.MaterialColors.RED, description=error_msg)
 
 
@@ -270,10 +272,10 @@ class RealmAutocompleteContext(naff.AutocompleteContext):
 
 
 if typing.TYPE_CHECKING:
-    from .xbox_api import XboxAPI
-    from .realms_api import RealmsAPI
     from .classes import TimedDict
-    from .help_tools import PermissionsResolver, MiniCommand
+    from .help_tools import MiniCommand, PermissionsResolver
+    from .realms_api import RealmsAPI
+    from .xbox_api import XboxAPI
 
     class RealmBotBase(naff.Client):
         init_load: bool
@@ -291,6 +293,7 @@ if typing.TYPE_CHECKING:
         slash_perms_cache: defaultdict[int, dict[int, PermissionsResolver]]
         mini_commands_per_scope: dict[int, dict[str, MiniCommand]]
         live_playerlist_store: defaultdict[str, set[int]]
+        uuid_cache: defaultdict[str, uuid.UUID]
         offline_realm_time: dict[int, int]
         pl_sem: asyncio.Semaphore
 
@@ -300,7 +303,8 @@ else:
         pass
 
 
-async def _global_checks(ctx: naff.Context):
+async def _global_checks(ctx: naff.Context) -> bool:
+    # sourcery skip: assign-if-exp, boolean-if-exp-identity, hoist-statement-from-if, reintroduce-else, swap-if-expression
     if not ctx.bot.fully_ready.is_set():  # type: ignore
         return False
 
@@ -314,7 +318,13 @@ async def _global_checks(ctx: naff.Context):
 
 
 class Extension(naff.Extension):
-    def __new__(cls, bot: naff.Client, *args, **kwargs):
+    def __new__(
+        cls, bot: naff.Client, *args: typing.Any, **kwargs: typing.Any
+    ) -> naff.Extension:
         new_cls = super().__new__(cls, bot, *args, **kwargs)
         new_cls.add_ext_check(_global_checks)  # type: ignore
         return new_cls
+
+
+class GuildMessageableMixin(naff.GuildChannel, naff.MessageableMixin):
+    pass

@@ -12,7 +12,7 @@ import common.utils as utils
 class HelpCMD(utils.Extension):
     """The cog that handles the help command."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: utils.RealmBotBase) -> None:
         self.name = "Help Category"
         self.bot: utils.RealmBotBase = bot
 
@@ -23,7 +23,9 @@ class HelpCMD(utils.Extension):
         except Exception:
             return False
 
-    async def _custom_can_run(self, ctx: naff.Context, cmd: help_tools.MiniCommand):
+    async def _custom_can_run(
+        self, ctx: naff.Context, cmd: help_tools.MiniCommand
+    ) -> bool:
         """
         Determines if this command can be run, but ignores cooldowns and concurrency.
         """
@@ -87,7 +89,7 @@ class HelpCMD(utils.Extension):
         commands: list[help_tools.MiniCommand],
         name: str,
         description: typing.Optional[str],
-    ):
+    ) -> list[naff.Embed]:
         embeds: list[naff.Embed] = []
 
         commands = [c for c in commands if await self._custom_can_run(ctx, c)]
@@ -128,7 +130,7 @@ class HelpCMD(utils.Extension):
         ctx: utils.RealmContext,
         cmds: dict[str, help_tools.MiniCommand],
         ext: naff.Extension,
-    ):
+    ) -> list[naff.Embed]:
         slash_cmds = [
             c
             for c in cmds.values()
@@ -149,7 +151,7 @@ class HelpCMD(utils.Extension):
         ctx: utils.RealmContext,
         cmds: dict[str, help_tools.MiniCommand],
         bot: utils.RealmBotBase,
-    ):
+    ) -> list[naff.Embed]:
         embeds: list[naff.Embed] = []
 
         for ext in bot.ext.values():
@@ -161,7 +163,7 @@ class HelpCMD(utils.Extension):
 
     async def get_command_embeds(
         self, ctx: utils.RealmContext, command: help_tools.MiniCommand
-    ):
+    ) -> list[naff.Embed]:
         if command.subcommands:
             return await self.get_multi_command_embeds(
                 ctx, command.view_subcommands, command.name, command.description
@@ -189,7 +191,7 @@ class HelpCMD(utils.Extension):
             autocomplete=True,
             default=None,
         ),
-    ):
+    ) -> None:
         """Shows help about the bot, a command, or a category."""
         embeds: list[naff.Embed] = []
 
@@ -236,8 +238,8 @@ class HelpCMD(utils.Extension):
         self,
         ctx: utils.RealmAutocompleteContext,
         query: typing.Optional[str] = None,
-        **kwargs,
-    ):
+        **kwargs: typing.Any,
+    ) -> None:
         if not self.bot.slash_perms_cache[int(ctx.guild_id)]:
             await help_tools.process_bulk_slash_perms(self.bot, int(ctx.guild_id))
 
@@ -245,7 +247,7 @@ class HelpCMD(utils.Extension):
         await ctx.send([{"name": c, "value": c} for c in commands])
 
 
-def setup(bot):
+def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
     importlib.reload(help_tools)
     HelpCMD(bot)

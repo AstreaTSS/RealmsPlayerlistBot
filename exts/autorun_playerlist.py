@@ -1,5 +1,4 @@
 import asyncio
-import contextlib
 import datetime
 import importlib
 
@@ -17,17 +16,17 @@ class AutoRunPlayerlist(utils.Extension):
     # this way, we can fix the main playerlist command itself without
     # resetting the autorun cycle
 
-    def __init__(self, bot):
+    def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.playerlist_task = asyncio.create_task(self._start_playerlist())
-        self.playerlist_realms_delete.start()
+        self.player_session_delete.start()
 
-    def drop(self):
+    def drop(self) -> None:
         self.playerlist_task.cancel()
-        self.playerlist_realms_delete.stop()
+        self.player_session_delete.stop()
         super().drop()
 
-    async def _start_playerlist(self):
+    async def _start_playerlist(self) -> None:
         await self.bot.fully_ready.wait()
 
         try:
@@ -49,16 +48,18 @@ class AutoRunPlayerlist(utils.Extension):
             if not isinstance(e, asyncio.CancelledError):
                 await utils.error_handle(self.bot, e)
 
-    @naff.Task.create(naff.IntervalTrigger(hours=6))
-    async def playerlist_realms_delete(self):
-        now = datetime.datetime.now(tz=datetime.timezone.utc)
-        time_back = now - datetime.timedelta(hours=25)
-        await models.RealmPlayer.filter(
+    @naff.Task.create(naff.TimeTrigger())
+    async def player_session_delete(self) -> None:
+        now = datetime.datetime.now(tz=datetime.UTC)
+        time_back = now - datetime.timedelta(days=31)
+        await models.PlayerSession.filter(
             online=False,
             last_seen__lt=time_back,
         ).delete()
 
-    async def playerlist_loop(self, upsell: bool = False, upsell_type: int = -1):
+    async def playerlist_loop(
+        self, upsell: bool = False, upsell_type: int = -1
+    ) -> None:
         """
         A simple way of running the playerlist command every hour in every server the bot is in.
         """
@@ -94,7 +95,7 @@ class AutoRunPlayerlist(utils.Extension):
         guild_config: models.GuildConfig,
         upsell: bool = False,
         upsell_type: int = -1,
-    ):
+    ) -> None:
         guild = self.bot.get_guild(guild_config.guild_id)
         if not guild:
             # could just be it's offline or something
@@ -125,7 +126,7 @@ class AutoRunPlayerlist(utils.Extension):
         )
 
 
-def setup(bot):
+def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
     importlib.reload(pl_utils)
     importlib.reload(cclasses)

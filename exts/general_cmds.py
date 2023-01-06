@@ -20,18 +20,18 @@ from common.microsoft_core import MicrosoftAPIException
 
 
 class GeneralCMDS(utils.Extension):
-    def __init__(self, bot):
+    def __init__(self, bot: utils.RealmBotBase) -> None:
         self.name = "General"
         self.bot: utils.RealmBotBase = bot
 
-    def _get_commit_hash(self):
+    def _get_commit_hash(self) -> str:
         return (
             subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
             .decode("ascii")
             .strip()
         )
 
-    async def get_commit_hash(self):
+    async def get_commit_hash(self) -> str:
         return await asyncio.to_thread(self._get_commit_hash)
 
     @naff.slash_command(
@@ -41,7 +41,7 @@ class GeneralCMDS(utils.Extension):
             " but has no real use."
         ),
     )
-    async def ping(self, ctx: utils.RealmContext):
+    async def ping(self, ctx: utils.RealmContext) -> None:
         """
         Pings the bot. Great way of finding out if the bot’s working correctly, but has no real use.
         """
@@ -68,17 +68,17 @@ class GeneralCMDS(utils.Extension):
         name="invite",
         description="Sends instructions on how to invite the bot.",
     )
-    async def invite(self, ctx: utils.RealmContext):
+    async def invite(self, ctx: utils.RealmContext) -> None:
         await ctx.send(os.environ["SETUP_LINK"])
 
     @naff.slash_command(
         "support", description="Gives an invite link to the support server."
     )
-    async def support(self, ctx: naff.InteractionContext):
+    async def support(self, ctx: naff.InteractionContext) -> None:
         await ctx.send("Support server:\nhttps://discord.gg/NSdetwGjpK")
 
     @naff.slash_command("about", description="Gives information about the bot.")
-    async def about(self, ctx: naff.InteractionContext):
+    async def about(self, ctx: naff.InteractionContext) -> None:
         msg_list = [
             (
                 "Hi! I'm the **Realms Playerlist Bot**, a bot that helps out owners of"
@@ -177,7 +177,7 @@ class GeneralCMDS(utils.Extension):
         self,
         ctx: utils.RealmContext,
         xuid: str = tansy.Option("The XUID of the player to get."),
-    ):
+    ) -> None:
         """
         Gets the gamertag for a specified XUID.
 
@@ -208,9 +208,15 @@ class GeneralCMDS(utils.Extension):
             async with aiohttp.ClientSession(
                 timeout=aiohttp.ClientTimeout(total=2.5)
             ) as session:
+                headers = {
+                    "X-Authorization": os.environ["OPENXBL_KEY"],
+                    "Accept": "application/json",
+                    "Accept-Language": "en-US",
+                }
                 with contextlib.suppress(asyncio.TimeoutError):
                     async with session.get(
-                        f"https://xbl-api.prouser123.me/profile/xuid/{valid_xuid}"
+                        f"https://xbl.io/api/v2/account/{valid_xuid}",
+                        headers=headers,
                     ) as r:
                         with contextlib.suppress(
                             ValidationError, aiohttp.ContentTypeError
@@ -218,24 +224,6 @@ class GeneralCMDS(utils.Extension):
                             maybe_gamertag = xbox_api.parse_profile_response(
                                 await r.json(loads=orjson.loads)
                             )
-
-                if not maybe_gamertag:
-                    headers = {
-                        "X-Authorization": os.environ["OPENXBL_KEY"],
-                        "Accept": "application/json",
-                        "Accept-Language": "en-US",
-                    }
-                    with contextlib.suppress(asyncio.TimeoutError):
-                        async with session.get(
-                            f"https://xbl.io/api/v2/account/{valid_xuid}",
-                            headers=headers,
-                        ) as r:
-                            with contextlib.suppress(
-                                ValidationError, aiohttp.ContentTypeError
-                            ):
-                                maybe_gamertag = xbox_api.parse_profile_response(
-                                    await r.json(loads=orjson.loads)
-                                )
 
                 if not maybe_gamertag:
                     with contextlib.suppress(
@@ -246,6 +234,18 @@ class GeneralCMDS(utils.Extension):
                     ):
                         resp = await self.bot.xbox.fetch_profile_by_xuid(valid_xuid)
                         maybe_gamertag = xbox_api.parse_profile_response(resp)
+
+                if not maybe_gamertag:
+                    with contextlib.suppress(asyncio.TimeoutError):
+                        async with session.get(
+                            f"https://xbl-api.prouser123.me/profile/xuid/{valid_xuid}"
+                        ) as r:
+                            with contextlib.suppress(
+                                ValidationError, aiohttp.ContentTypeError
+                            ):
+                                maybe_gamertag = xbox_api.parse_profile_response(
+                                    await r.json(loads=orjson.loads)
+                                )
 
         if not maybe_gamertag:
             raise naff.errors.BadArgument(
@@ -268,7 +268,7 @@ class GeneralCMDS(utils.Extension):
         await ctx.send(f"`{valid_xuid}`'s gamertag: `{maybe_gamertag}`.")
 
 
-def setup(bot):
+def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
     importlib.reload(xbox_api)
     GeneralCMDS(bot)
