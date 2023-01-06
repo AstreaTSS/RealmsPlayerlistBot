@@ -26,9 +26,9 @@ from common.microsoft_core import MicrosoftAPIException
 # - numbers
 # - underscores and dashes
 REALMS_LINK_REGEX = re.compile(
-    r"(?:http(?:s)?:\/\/)?(?:www\.)?realms\.gg\/([a-zA-Z0-9_-]{7,16})|(?:http(?:s)?:\/\/)"
-    r"?open\.minecraft\.net\/pocket\/realms\/invite\/([a-zA-Z0-9_-]{7,16})|(?:minecraft:\/\/)"
-    r"?acceptRealmInvite\?inviteID=([a-zA-Z0-9_-]{7,16})|([a-zA-Z0-9_-]{7,16})"
+    r"(?:(?:http(?:s)?:\/\/)?(?:www\.)?realms\.gg\/|(?:http(?:s)?:\/\/)?open\."
+    r"minecraft\.net\/pocket\/realms\/invite\/|(?:minecraft:\/\/)?acceptRealmInvite"
+    r"\?inviteID=|)([\w-]{7,16})"
 )
 
 
@@ -133,12 +133,7 @@ class GuildConfig(utils.Extension):
         if not realm_code_matches:
             raise naff.errors.BadArgument("Invalid Realm code!")
 
-        realm_code = next(
-            (g for g in realm_code_matches.groups() if g is not None), None
-        )
-
-        if not realm_code:
-            raise naff.errors.BadArgument("Invalid Realm code!")
+        realm_code = realm_code_matches[1]
 
         try:
             realm = await ctx.bot.realms.join_realm_from_code(realm_code)

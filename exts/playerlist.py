@@ -6,7 +6,6 @@ import typing
 
 import naff
 import tansy
-from tortoise.connection import connections
 
 import common.models as models
 import common.playerlist_events as pl_events
@@ -143,8 +142,7 @@ class Playerlist(utils.Extension):
         for missed_realm_id in online_cache_ids.difference(gotten_realm_ids):
             # adds the missing realm id to the countdown timer dict
 
-            if self.bot.offline_realm_time.get(missed_realm_id, -1) == -1:
-                self.bot.offline_realm_time[missed_realm_id] = 0
+            self.bot.offline_realm_time.setdefault(missed_realm_id, 0)
 
             now_invalid = self.bot.online_cache.pop(missed_realm_id, None)
             if not now_invalid:
@@ -246,14 +244,13 @@ class Playerlist(utils.Extension):
         # seen date from newest to older, and finally only return 1 distinct entry
         # (the first entry in the sort, which is the latest last seen date)
         # per realm_xuid_id value
-        raw_players = await connections.get("default").execute_query_dict(
-            "SELECT DISTINCT ON (realm_xuid_id) * FROM"
-            f" {models.PlayerSession.Meta.table} WHERE starts_with(realm_xuid_id,"
-            f" '{guild_config.realm_id}-') AND (online=true OR"
-            f" last_seen>='{time_ago.isoformat()}') ORDER BY realm_xuid_id, last_seen"
-            " DESC"
-        )
-        player_sessions = tuple(models.PlayerSession(**d) for d in raw_players)
+        # fmt: off
+        player_sessions: list[models.PlayerSession] = await models.PlayerSession.raw(
+            f"SELECT DISTINCT ON (realm_xuid_id) * FROM {models.PlayerSession.Meta.table} "
+            f"WHERE starts_with(realm_xuid_id, '{guild_config.realm_id}-') AND (online=true "
+            f"OR last_seen>='{time_ago.isoformat()}') ORDER BY realm_xuid_id, last_seen DESC"
+        )  # type: ignore
+        # fmt: on
 
         if not player_sessions:
             if autorunner:
