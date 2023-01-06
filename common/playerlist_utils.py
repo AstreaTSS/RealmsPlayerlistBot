@@ -189,6 +189,11 @@ class GamertagHandler:
                         time=datetime.timedelta(days=14),
                         value=gamertag,
                     )
+                    await self.bot.redis.setex(
+                        name=f"rpl-{gamertag}",
+                        time=datetime.timedelta(days=14),
+                        value=str(user.id),
+                    )
                     dict_gamertags[user.id] = gamertag
                 except (KeyError, StopIteration):
                     continue

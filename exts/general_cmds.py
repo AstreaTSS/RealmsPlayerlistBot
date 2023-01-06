@@ -264,6 +264,11 @@ class GeneralCMDS(utils.Extension):
                 time=datetime.timedelta(days=14),
                 value=maybe_gamertag,
             )
+            await self.bot.redis.setex(
+                name=f"rpl-{maybe_gamertag}",
+                time=datetime.timedelta(days=14),
+                value=str(valid_xuid),
+            )
 
         await ctx.send(f"`{valid_xuid}`'s gamertag: `{maybe_gamertag}`.")
 
