@@ -180,6 +180,6 @@ async def fill_in_data_from_clubs(
     ]
     await models.PlayerSession.bulk_create(
         realmplayers,
-        on_conflict=("realm_xuid_id",),
+        on_conflict=("custom_id",),
         update_fields=("online", "last_seen"),
     )
