@@ -1,11 +1,13 @@
 import asyncio
+import contextlib
 import importlib
 import os
 
 import naff
 
+import common.models as models
 import common.utils as utils
-from common.models import GuildConfig
+from common.microsoft_core import MicrosoftAPIException
 
 
 class OnCMDError(naff.Extension):
@@ -22,14 +24,29 @@ class OnCMDError(naff.Extension):
         if not self.bot.is_ready:
             return
 
-        await GuildConfig.get_or_create(guild_id=int(event.guild_id))
+        await models.GuildConfig.get_or_create(guild_id=int(event.guild_id))
 
     @naff.listen("guild_left")
     async def on_guild_left(self, event: naff.events.GuildLeft):
         if not self.bot.is_ready:
             return
 
-        await GuildConfig.filter(guild_id=event.guild.id).delete()
+        if config := await models.GuildConfig.get_or_none(guild_id=int(event.guild.id)):
+            if (
+                config.realm_id
+                and await models.GuildConfig.filter(
+                    guild_id__not=int(event.guild.id)
+                ).count()
+                == 0
+            ):
+                # don't want to keep around entries we no longer need, so delete them
+                await models.PlayerSession.filter(
+                    realm_xuid_id__startswith=f"{config.realm_id}-"
+                ).delete()
+                # also attempt to leave the realm cus why not
+                with contextlib.suppress(MicrosoftAPIException):
+                    await self.bot.realms.leave_realm(config.realm_id)
+            await config.delete()
 
     def _update_tokens(self):
         with open(os.environ["XAPI_TOKENS_LOCATION"], mode="w") as f:
