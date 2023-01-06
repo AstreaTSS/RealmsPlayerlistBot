@@ -146,7 +146,9 @@ class GeneralCMDS(utils.Extension):
         links.extend(
             (
                 f"Premium Information: [Link]({os.environ['PREMIUM_INFO_LINK']})",
-                "FAQ: [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/FAQ)",
+                (
+                    "FAQ: [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/FAQ)"
+                ),
                 (
                     "Privacy Policy:"
                     " [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/Privacy-Policy)"
@@ -206,9 +208,15 @@ class GeneralCMDS(utils.Extension):
             async with aiohttp.ClientSession(
                 timeout=aiohttp.ClientTimeout(total=2.5)
             ) as session:
+                headers = {
+                    "X-Authorization": os.environ["OPENXBL_KEY"],
+                    "Accept": "application/json",
+                    "Accept-Language": "en-US",
+                }
                 with contextlib.suppress(asyncio.TimeoutError):
                     async with session.get(
-                        f"https://xbl-api.prouser123.me/profile/xuid/{valid_xuid}"
+                        f"https://xbl.io/api/v2/account/{valid_xuid}",
+                        headers=headers,
                     ) as r:
                         with contextlib.suppress(
                             ValidationError, aiohttp.ContentTypeError
@@ -216,24 +224,6 @@ class GeneralCMDS(utils.Extension):
                             maybe_gamertag = xbox_api.parse_profile_response(
                                 await r.json(loads=orjson.loads)
                             )
-
-                if not maybe_gamertag:
-                    headers = {
-                        "X-Authorization": os.environ["OPENXBL_KEY"],
-                        "Accept": "application/json",
-                        "Accept-Language": "en-US",
-                    }
-                    with contextlib.suppress(asyncio.TimeoutError):
-                        async with session.get(
-                            f"https://xbl.io/api/v2/account/{valid_xuid}",
-                            headers=headers,
-                        ) as r:
-                            with contextlib.suppress(
-                                ValidationError, aiohttp.ContentTypeError
-                            ):
-                                maybe_gamertag = xbox_api.parse_profile_response(
-                                    await r.json(loads=orjson.loads)
-                                )
 
                 if not maybe_gamertag:
                     with contextlib.suppress(
@@ -244,6 +234,18 @@ class GeneralCMDS(utils.Extension):
                     ):
                         resp = await self.bot.xbox.fetch_profile_by_xuid(valid_xuid)
                         maybe_gamertag = xbox_api.parse_profile_response(resp)
+
+                if not maybe_gamertag:
+                    with contextlib.suppress(asyncio.TimeoutError):
+                        async with session.get(
+                            f"https://xbl-api.prouser123.me/profile/xuid/{valid_xuid}"
+                        ) as r:
+                            with contextlib.suppress(
+                                ValidationError, aiohttp.ContentTypeError
+                            ):
+                                maybe_gamertag = xbox_api.parse_profile_response(
+                                    await r.json(loads=orjson.loads)
+                                )
 
         if not maybe_gamertag:
             raise naff.errors.BadArgument(
