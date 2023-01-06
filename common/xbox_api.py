@@ -54,6 +54,13 @@ class XboxAPI(BaseMicrosoftAPI):
         url = f"https://profile.xboxlive.com/users/xuid({target_xuid})/profile/settings"
         return await self.get(url, params=PARAMS, headers=HEADERS)  # type: ignore
 
+    async def fetch_profile_by_gamertag(self, gamertag: str) -> dict:
+        url = f"https://profile.xboxlive.com/users/gt({gamertag})/profile/settings"
+        HEADERS = {"x-xbl-contract-version": "3"}
+        PARAMS = {"settings": "Gamertag"}
+
+        return await self.get(url, params=PARAMS, headers=HEADERS)  # type: ignore
+
     async def fetch_club_presences(self, club_id: int | str) -> dict:
         HEADERS = {"x-xbl-contract-version": "4", "Accept-Language": "en-US"}
         url = (
