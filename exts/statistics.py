@@ -33,7 +33,7 @@ async def stats_check(ctx: utils.RealmContext) -> bool:
         guild_config = await ctx.fetch_config()
     except DoesNotExist:
         return False
-    return not (guild_config.premium_code and guild_config.realm_id)
+    return guild_config.premium_code and guild_config.realm_id
 
 
 class Statistics(utils.Extension):
