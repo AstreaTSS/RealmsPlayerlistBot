@@ -61,7 +61,7 @@ def get_minutes_per_hour(
 
     return {
         datetime.datetime.utcfromtimestamp(k): minutes_per_hour[k]
-        for k in range(min_timestamp, max_timestamp, InSeconds.HOUR)
+        for k in range(min_timestamp, max_timestamp + 1, InSeconds.HOUR)
     }
 
 
