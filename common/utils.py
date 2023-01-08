@@ -20,6 +20,8 @@ XBOX_API_RELYING_PARTY = "http://xboxlive.com"
 REALMS_API_URL = "https://pocket.realms.minecraft.net/"
 MC_VERSION = "1.19.0"  # this can be a few versions behind
 
+EXPIRE_GAMERTAGS_AT = int(datetime.timedelta(days=14).total_seconds())
+
 
 async def sleep_until(dt: datetime.datetime) -> None:
     if dt.tzinfo is None:

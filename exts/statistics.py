@@ -84,12 +84,12 @@ class Statistics(utils.Extension):
 
         await self.bot.redis.setex(
             name=str(xuid),
-            time=datetime.timedelta(days=14),
+            time=utils.EXPIRE_GAMERTAGS_AT,
             value=gamertag,
         )
         await self.bot.redis.setex(
             name=f"rpl-{gamertag}",
-            time=datetime.timedelta(days=14),
+            time=utils.EXPIRE_GAMERTAGS_AT,
             value=str(xuid),
         )
 

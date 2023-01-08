@@ -170,10 +170,10 @@ class GamertagHandler:
             return
 
         await self.bot.redis.setex(
-            name=xuid, time=datetime.timedelta(days=14), value=gamertag
+            name=xuid, time=utils.EXPIRE_GAMERTAGS_AT, value=gamertag
         )
         await self.bot.redis.setex(
-            name=f"rpl-{gamertag}", time=datetime.timedelta(days=14), value=xuid
+            name=f"rpl-{gamertag}", time=utils.EXPIRE_GAMERTAGS_AT, value=xuid
         )
         dict_gamertags[xuid] = gamertag
 

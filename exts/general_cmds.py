@@ -1,6 +1,5 @@
 import asyncio
 import contextlib
-import datetime
 import importlib
 import os
 import subprocess
@@ -261,12 +260,12 @@ class GeneralCMDS(utils.Extension):
 
             await self.bot.redis.setex(
                 name=str(valid_xuid),
-                time=datetime.timedelta(days=14),
+                time=utils.EXPIRE_GAMERTAGS_AT,
                 value=maybe_gamertag,
             )
             await self.bot.redis.setex(
                 name=f"rpl-{maybe_gamertag}",
-                time=datetime.timedelta(days=14),
+                time=utils.EXPIRE_GAMERTAGS_AT,
                 value=str(valid_xuid),
             )
 
