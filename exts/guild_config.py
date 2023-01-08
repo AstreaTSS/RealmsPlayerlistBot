@@ -28,7 +28,7 @@ from common.microsoft_core import MicrosoftAPIException
 REALMS_LINK_REGEX = re.compile(
     r"(?:(?:https?://)?(?:www\.)?realms\.gg/|(?:https?://)?open\.minecraft"
     r"\.net/pocket/realms/invite/|(?:minecraft://)?acceptRealmInvite\?inviteID="
-    r")([\w-]{7,16})"
+    r")?([\w-]{7,16})"
 )
 
 
