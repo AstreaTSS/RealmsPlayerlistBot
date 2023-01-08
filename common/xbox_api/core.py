@@ -1,34 +1,11 @@
 import typing
-from dataclasses import dataclass
 
-import apischema
 import attrs
 
 import common.utils as utils
 from common.microsoft_core import BaseMicrosoftAPI
 
-
-@dataclass
-class Setting:
-    id: str
-    value: str
-
-
-@dataclass
-class ProfileUser:
-    id: str
-    host_id: str
-    settings: list[Setting]
-    is_sponsored_user: bool
-
-
-@dataclass
-class ProfileResponse:
-    profile_users: list[ProfileUser]
-
-
-def parse_profile_response(resp: dict) -> ProfileResponse:
-    return apischema.deserialize(ProfileResponse, resp)
+__all__ = ("XboxAPI",)
 
 
 # more of a mini-api, but still
@@ -52,8 +29,8 @@ class XboxAPI(BaseMicrosoftAPI):
     async def fetch_profile_by_xuid(self, target_xuid: str | int) -> dict:
         HEADERS = {"x-xbl-contract-version": "3"}
         PARAMS = {"settings": "Gamertag"}
-        url = f"https://profile.xboxlive.com/users/xuid({target_xuid})/profile/settings"
-        return await self.get(url, params=PARAMS, headers=HEADERS)  # type: ignore
+        URL = f"https://profile.xboxlive.com/users/xuid({target_xuid})/profile/settings"
+        return await self.get(URL, params=PARAMS, headers=HEADERS)  # type: ignore
 
     async def fetch_profile_by_gamertag(self, gamertag: str) -> dict:
         url = f"https://profile.xboxlive.com/users/gt({gamertag})/profile/settings"
@@ -69,3 +46,10 @@ class XboxAPI(BaseMicrosoftAPI):
         )
 
         return await self.get(url, headers=HEADERS)  # type: ignore
+
+    async def fetch_people_batch(
+        self, xuid_list: list[str] | list[int], *, decoration: str = "presencedetail"
+    ) -> dict:
+        HEADERS = {"x-xbl-contract-version": "3", "Accept-Language": "en-US"}
+        URL = f"https://peoplehub.xboxlive.com/users/me/people/batch/decoration/{decoration}"
+        return await self.post(URL, headers=HEADERS, json={"xuids": xuid_list})

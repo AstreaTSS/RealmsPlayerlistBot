@@ -92,20 +92,23 @@ class GamertagHandler:
     openxbl_session: aiohttp.ClientSession = attrs.field()
 
     index: int = attrs.field(init=False, default=0)
-    responses: list[xbox_api.ProfileResponse] = attrs.field(init=False, factory=list)
-    AMOUNT_TO_GET: int = attrs.field(init=False, default=30)
+    responses: list[
+        xbox_api.ProfileResponse | xbox_api.PeopleHubResponse
+    ] = attrs.field(init=False, factory=list)
+    AMOUNT_TO_GET: int = attrs.field(init=False, default=300)
 
     def __attrs_post_init__(self) -> None:
         # filter out empty strings, because that's possible somehow?
         self.xuids_to_get = tuple(x for x in self.xuids_to_get if x)
 
     async def get_gamertags(self, xuid_list: list[str]) -> None:
-        # honestly, i forget what this output can look like by now -
-        # but if i remember, it's kinda weird
-        profile_json = await self.bot.xbox.fetch_profiles(xuid_list)
+        # this endpoint is absolutely op and should rarely fail
+        # franky, we usually don't need the backup thing, but you can't go wrong
+        # having it
+        people_json = await self.bot.xbox.fetch_people_batch(xuid_list)
 
-        if profile_json.get("code"):  # usually means ratelimited or invalid xuid
-            description: str = profile_json["description"]
+        if people_json.get("code"):  # usually means ratelimited or invalid xuid
+            description: str = people_json["description"]
 
             if description.startswith("Throttled"):  # ratelimited
                 raise GamertagOnCooldown()
@@ -118,10 +121,10 @@ class GamertagHandler:
                 xuid_list
             )  # after removing, try getting data again
 
-        elif profile_json.get("limitType"):  # ratelimit
+        elif people_json.get("limitType"):  # ratelimit
             raise GamertagOnCooldown()
 
-        self.responses.append(xbox_api.parse_profile_response(profile_json))
+        self.responses.append(xbox_api.parse_peoplehub_reponse(people_json))
         self.index += self.AMOUNT_TO_GET
 
     async def backup_get_gamertags(self) -> None:
@@ -160,43 +163,60 @@ class GamertagHandler:
 
             self.index += 1
 
+    async def _handle_new_gamertag(
+        self, xuid: str, gamertag: str, dict_gamertags: dict[str, str]
+    ) -> None:
+        if not xuid or not gamertag:
+            return
+
+        await self.bot.redis.setex(
+            name=xuid, time=datetime.timedelta(days=14), value=gamertag
+        )
+        await self.bot.redis.setex(
+            name=f"rpl-{gamertag}", time=datetime.timedelta(days=14), value=xuid
+        )
+        dict_gamertags[xuid] = gamertag
+
     async def run(self) -> dict[str, str]:
         while self.index < len(self.xuids_to_get):
-            current_xuid_list = list(self.xuids_to_get[self.index : self.index + 30])
+            current_xuid_list = list(
+                self.xuids_to_get[self.index : self.index + self.AMOUNT_TO_GET]
+            )
 
             async with self.sem:
                 with contextlib.suppress(GamertagOnCooldown):
                     await self.get_gamertags(current_xuid_list)
-                # alright, so we either got 30 gamertags or are ratelimited
+
+                # alright, so we either got AMOUNT_TO_GET gamertags or are ratelimited
                 # so now we switch to the backup getter so that we don't have
                 # to wait on the ratelimit to request for more gamertags
                 # this wait_for basically a little 'exploit` to only make the backup
                 # run for 15 seconds or until completetion, whatever comes first
+
                 with contextlib.suppress(asyncio.TimeoutError):
                     await asyncio.wait_for(self.backup_get_gamertags(), timeout=15)
+
         dict_gamertags: dict[str, str] = {}
 
-        for profiles in self.responses:
-            for user in profiles.profile_users:
-                try:
-                    # really funny but efficient way of getting gamertag
-                    # from this data
-                    gamertag = next(
-                        s.value for s in user.settings if s.id == "Gamertag"
+        for response in self.responses:
+            if isinstance(response, xbox_api.PeopleHubResponse):
+                for user in response.people:
+                    await self._handle_new_gamertag(
+                        user.xuid, user.gamertag, dict_gamertags
                     )
-                    await self.bot.redis.setex(
-                        name=str(user.id),
-                        time=datetime.timedelta(days=14),
-                        value=gamertag,
-                    )
-                    await self.bot.redis.setex(
-                        name=f"rpl-{gamertag}",
-                        time=datetime.timedelta(days=14),
-                        value=str(user.id),
-                    )
-                    dict_gamertags[user.id] = gamertag
-                except (KeyError, StopIteration):
-                    continue
+            elif isinstance(response, xbox_api.ProfileResponse):
+                for user in response.profile_users:
+                    xuid = user.id
+                    try:
+                        # really funny but efficient way of getting gamertag
+                        # from this data
+                        gamertag = next(
+                            s.value for s in user.settings if s.id == "Gamertag"
+                        )
+                    except (KeyError, StopIteration):
+                        continue
+
+                    await self._handle_new_gamertag(xuid, gamertag, dict_gamertags)
 
         return dict_gamertags
 
