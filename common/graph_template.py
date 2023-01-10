@@ -1,4 +1,3 @@
-import base64
 import functools
 import typing
 from urllib.parse import urlencode
@@ -74,11 +73,10 @@ def graph_template(
         config["options"]["scales"]["yAxes"][0]["ticks"].pop("max", None)
 
     payload = {
-        "encoding": "base64",
         "bkg": "white",
         "w": width,
         "h": height,
-        "chart": base64.urlsafe_b64encode(orjson.dumps(config)),
+        "chart": orjson.dumps(config),
     }
 
     return f"https://quickchart.io/chart?{urlencode(payload)}"
