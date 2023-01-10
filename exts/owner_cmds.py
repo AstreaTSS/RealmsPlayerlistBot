@@ -343,7 +343,11 @@ class OwnerCMDs(utils.Extension):
             "message": ctx.message,
         } | globals()
 
-        body = "\n".join(body.split("\n")[1:-1]) if body.startswith("```") and body.endswith("```") else body.strip("` \n")
+        body = (
+            "\n".join(body.split("\n")[1:-1])
+            if body.startswith("```") and body.endswith("```")
+            else body.strip("` \n")
+        )
 
         stdout = io.StringIO()
 
