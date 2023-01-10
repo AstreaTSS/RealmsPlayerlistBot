@@ -86,7 +86,7 @@ class GeneralCMDS(utils.Extension):
             ),
             (
                 "If you want to use me, go ahead and invite me to your server and take"
-                " a look at `/config help`!"
+                f" a look at {self.bot.mention_cmd('config help')}!"
             ),
         ]
 

@@ -181,6 +181,9 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     async def on_error(self, event: naff.events.Error) -> None:
         await utils.error_handle(self, event.error)
 
+    def mention_cmd(self, name: str, scope: int = 0) -> str:
+        return self.interactions[scope][name].mention(scope)
+
     async def stop(self) -> None:
         await bot.session.close()
         await bot.realms.close()

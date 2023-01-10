@@ -299,6 +299,9 @@ if typing.TYPE_CHECKING:
         offline_realm_time: dict[int, int]
         pl_sem: asyncio.Semaphore
 
+        def mention_cmd(self, name: str, scope: int = 0) -> str:
+            ...
+
 else:
 
     class RealmBotBase(naff.Client):

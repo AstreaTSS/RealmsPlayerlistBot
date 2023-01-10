@@ -156,8 +156,9 @@ class GuildConfig(utils.Extension):
                     title="Warning",
                     description=(
                         "I was unable to backfill player data for this Realm. If you"
-                        " use `/playerlist`, it may show imcomplete player data."
-                        " This should resolve itself in about 24 hours."
+                        f" use {self.bot.mention_cmd('playerlist')}, it may show"
+                        " imcomplete player data. This should resolve itself in about"
+                        " 24 hours."
                     ),
                     color=naff.RoleColors.YELLOW,
                 )

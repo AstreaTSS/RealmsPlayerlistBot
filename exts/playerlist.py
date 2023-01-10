@@ -261,9 +261,10 @@ class Playerlist(utils.Extension):
 
             raise utils.CustomCheckFailure(
                 "No one seems to have been on the Realm for the last"
-                f" {hours_ago} hour(s). Make sure you haven't changed Realms or"
-                f" kicked the bot's account, `{self.bot.own_gamertag}` - try relinking"
-                " the Realm via `/config link-realm` if that happens."
+                f" {hours_ago} hour(s). Make sure you haven't changed Realms or kicked"
+                f" the bot's account, `{self.bot.own_gamertag}` - try relinking the"
+                f" Realm via {self.bot.mention_cmd('config link-realm')} if that"
+                " happens."
             )
 
         player_list = await pl_utils.get_players_from_player_activity(

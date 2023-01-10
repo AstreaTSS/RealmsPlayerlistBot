@@ -129,8 +129,8 @@ class PremiumHandling(naff.Extension):
 
         if not config.premium_code:
             raise utils.CustomCheckFailure(
-                "This server does not have premium activated! Check out `/premium info`"
-                " for more information about it."
+                "This server does not have premium activated! Check out"
+                f" {self.premium_info.mention()} for more information about it."
             )
 
         if not (config.realm_id and config.playerlist_chan):

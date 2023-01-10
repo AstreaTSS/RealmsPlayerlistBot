@@ -190,15 +190,17 @@ class PlayerlistEventHandling(naff.Extension):
                 embed = naff.Embed(
                     title="Warning",
                     description=(
-                        "I have been unable to get any information about your"
-                        " Realm for the last 24 hours. This could be because the"
-                        " Realm has been turned off or because it's inactive, but"
-                        " if it hasn't, make sure you haven't banned or kick"
+                        "I have been unable to get any information about your Realm"
+                        " for the last 24 hours. This could be because the Realm has"
+                        " been turned off or because it's inactive, but if it hasn't,"
+                        " make sure you haven't banned or kick"
                         f" `{self.bot.own_gamertag}`. If you have, please unban the"
-                        " account if needed and run `/config link-realm` again to"
+                        " account if needed and run"
+                        f" {self.bot.mention_cmd('config link-realm')} again to"
                         " fix it.\n\nAlternatively, if you want to disable the"
-                        " autorunner entirely, you can use `/config"
-                        " unset-playerlist-channel` to do so."
+                        " autorunner entirely, you can use"
+                        f" {self.bot.mention_cmd('config unset-playerlist-channel')} to"
+                        " do so."
                     ),
                     color=naff.RoleColors.YELLOW,
                 )
