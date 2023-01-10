@@ -9,8 +9,8 @@ import orjson
 def graph_template(
     title: str,
     date_format: str,
-    labels: tuple[str],
-    data: tuple[int],
+    labels: tuple[str, ...],
+    data: tuple[int, ...],
     *,
     width: int = 700,
     height: int = 400,
