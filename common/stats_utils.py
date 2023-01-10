@@ -38,10 +38,7 @@ def get_minutes_per_hour(
 
         while current_hour < end_time:
             # calculate the number of minutes in the current hour
-            if current_hour + InSeconds.HOUR <= end_time:
-                minutes_in_hour = 60
-            else:
-                minutes_in_hour = (end_time - current_hour) // 60
+            minutes_in_hour = 60 if current_hour + InSeconds.HOUR <= end_time else (end_time - current_hour) // 60
 
             minutes_per_hour[
                 current_hour // InSeconds.HOUR * InSeconds.HOUR
@@ -77,10 +74,7 @@ def timespan_minutes_per_hour(
 
         while current_hour < end_time:
             # calculate the number of minutes in the current hour
-            if current_hour + InSeconds.HOUR <= end_time:
-                minutes_in_hour = 60
-            else:
-                minutes_in_hour = (end_time - current_hour) // 60
+            minutes_in_hour = 60 if current_hour + InSeconds.HOUR <= end_time else (end_time - current_hour) // 60
 
             minutes_per_hour[
                 current_hour % InSeconds.DAY // InSeconds.HOUR
