@@ -33,7 +33,7 @@ async def stats_check(ctx: utils.RealmContext) -> bool:
         guild_config = await ctx.fetch_config()
     except DoesNotExist:
         return False
-    return guild_config.premium_code and guild_config.realm_id
+    return bool(guild_config.premium_code and guild_config.realm_id)
 
 
 class Statistics(utils.Extension):
@@ -95,7 +95,7 @@ class Statistics(utils.Extension):
 
         return xuid
 
-    async def process_data(
+    async def process_data_for_graph(
         self,
         ctx: utils.RealmContext,
         config: models.GuildConfig,
@@ -191,7 +191,7 @@ class Statistics(utils.Extension):
         now = datetime.datetime.now(datetime.UTC)
         one_day_ago = now - datetime.timedelta(days=1) + datetime.timedelta(minutes=1)
 
-        await self.process_data(
+        await self.process_data_for_graph(
             ctx,
             config,
             now,
@@ -230,7 +230,7 @@ class Statistics(utils.Extension):
         now = datetime.datetime.now(datetime.UTC)
         one_day_ago = now - datetime.timedelta(days=1) + datetime.timedelta(minutes=1)
 
-        await self.process_data(
+        await self.process_data_for_graph(
             ctx,
             config,
             now,
