@@ -200,6 +200,7 @@ mentions = naff.AllowedMentions.all()
 
 bot = RealmsPlayerlistBot(
     sync_interactions=False,  # big bots really shouldn't have this on
+    sync_ext=False,
     allowed_mentions=mentions,
     intents=intents,
     interaction_context=utils.RealmContext,
