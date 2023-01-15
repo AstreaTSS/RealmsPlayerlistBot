@@ -15,6 +15,9 @@ import common.utils as utils
 
 @naff.utils.define(kw_only=False)
 class CustomTimeout(paginators.Timeout):
+    if typing.TYPE_CHECKING:
+        paginator: "HelpPaginator"
+
     async def __call__(self) -> None:
         while self.run:
             try:
@@ -25,7 +28,8 @@ class CustomTimeout(paginators.Timeout):
                 if self.paginator.message:
                     with contextlib.suppress(naff.errors.HTTPException):
                         await self.paginator.message.edit(
-                            components=self.paginator.create_components(True)
+                            components=[],
+                            context=self.paginator.context,
                         )
                 return
             else:
@@ -81,6 +85,10 @@ class HelpPaginator(paginators.Paginator):
     show_select_menu: bool = attrs.field(default=True)
     """Should a select menu be shown for navigation"""
 
+    context: naff.InteractionContext | None = attrs.field(
+        default=None, init=False, repr=False
+    )
+
     def create_components(self, disable=False) -> list[naff.ActionRow]:
         rows = super().create_components()
 
@@ -126,7 +134,7 @@ class HelpPaginator(paginators.Paginator):
             "components": [c.to_dict() for c in self.create_components()],
         }
 
-    async def send(self, ctx: naff.Context) -> naff.Message:
+    async def send(self, ctx: naff.SendableContext) -> naff.Message:
         """
         Send this paginator.
 
@@ -137,6 +145,10 @@ class HelpPaginator(paginators.Paginator):
             The resulting message
 
         """
+
+        if isinstance(ctx, naff.InteractionContext):
+            self.context = ctx
+
         self._message = await ctx.send(**self.to_dict())
         self._author_id = ctx.author.id
 
