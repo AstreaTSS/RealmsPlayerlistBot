@@ -1,6 +1,6 @@
 import asyncio
 import contextlib
-import functools
+import re
 import inspect
 import typing
 
@@ -11,6 +11,9 @@ from naff.ext import paginators
 from naff.models.discord.emoji import process_emoji
 
 import common.utils as utils
+
+# i use spaces, so...
+DOUBLE_TAB = re.compile(r" {8}")
 
 
 @naff.utils.define(kw_only=False)
@@ -390,6 +393,8 @@ class MiniCommand:
             desc = inspect.getdoc(callback)
             if isinstance(desc, bytes):
                 desc = desc.decode("utf-8")
+            if desc:
+                desc = DOUBLE_TAB.sub("", desc)
 
         prefix = ""
         if type_ == "group":

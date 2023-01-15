@@ -175,12 +175,12 @@ class Statistics(utils.Extension):
         """
         Produces a graph of one player's playtime over the past day as a graph. Beta, requires premium.
 
-        This command takes the total playtime of the player on the Realm over the past 24 hours,
+        This command takes the total playtime of the player on the Realm over the past 24 hours, \
         and graphs the player per hour.
         For example, if the player played for 20 minutes during the 5th hour, that will be graphed.
 
-        This can be used to observe general activity trends for a player, although it currently does not
-        aggregate the results - it only reads the last 24 hours, so if something unusual happened
+        This can be used to observe general activity trends for a player, although it currently does not \
+        aggregate the results - it only reads the last 24 hours, so if something unusual happened \
         that day, it may produce a graph that does not line up with general activity.
 
         Has a cooldown of 5 seconds per server due to the calculations it makes.
@@ -215,13 +215,13 @@ class Statistics(utils.Extension):
         """
         Produces a graph of the Realm's playtime over the past day as a graph. Beta, requires premium.
 
-        This command takes the total playtime of every player on the Realm over the past 24 hours,
+        This command takes the total playtime of every player on the Realm over the past 24 hours, \
         and graphs the player per hour.
-        To clarify: if two players were on the Realm for 10 minutes, they would have a combined total
+        To clarify: if two players were on the Realm for 10 minutes, they would have a combined total \
         of 20 minutes of playtime.
 
-        This can be used to observe general activity trends, although it currently does not
-        aggregate the results - it only reads the last 24 hours, so if something unusual happened
+        This can be used to observe general activity trends, although it currently does not \
+        aggregate the results - it only reads the last 24 hours, so if something unusual happened \
         that day, it may produce a graph that does not line up with general activity.
 
         Has a cooldown of 5 seconds per server due to the calculations it makes.
@@ -264,10 +264,10 @@ class Statistics(utils.Extension):
         """
         Gets a log of a specific player - every time they joined and left.
 
-        Basically, the bot gathers up every time the player joined and left the Realm during
+        Basically, the bot gathers up every time the player joined and left the Realm during \
         the timespan you specify and displays that to you.
-        This information will only be gotten if the bot has been linked to the Realm for X
-        amount of days - otherwise, the best it is getting is partial data, likely to be
+        This information will only be gotten if the bot has been linked to the Realm for X \
+        amount of days - otherwise, the best it is getting is partial data, likely to be \
         limited and slightly inaccurate.
 
         Has a cooldown of 5 seconds.
