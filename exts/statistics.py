@@ -286,7 +286,7 @@ class Statistics(utils.Extension):
             Q(xuid=xuid)
             & Q(realm_id=config.realm_id)
             & Q(Q(online=True) | Q(last_seen__gte=time_ago))
-        ):
+        ).order_by("-last_seen"):
             session_str: list[str] = []
 
             if session.joined_at:
