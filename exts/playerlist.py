@@ -13,8 +13,6 @@ import common.playerlist_utils as pl_utils
 import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
 
-HOURS_AGO_CHOICES = [naff.SlashCommandChoice(str(n), n) for n in range(1, 25)]
-
 UPSELLS = {
     1: (
         "Want minute-to-minute updates on your Realm? Check out Live Playerlist on"
@@ -205,14 +203,19 @@ class Playerlist(utils.Extension):
     async def playerlist(
         self,
         ctx: utils.RealmContext | utils.RealmPrefixedContext,
-        hours_ago: int = tansy.Option("How far back the playerlist should go.", choices=HOURS_AGO_CHOICES, default=12),  # type: ignore
+        hours_ago: int = tansy.Option(
+            (
+                "How far back the playerlist should go (in hours). Defaults to 12"
+                " hours. Max of 24 hours."
+            ),
+            min_value=1,
+            max_value=24,
+            default=12,
+        ),
         **kwargs: typing.Any,
     ) -> None:
         """
         Checks and makes a playerlist, a log of players who have joined and left.
-        By default, the command version goes back 12 hours.
-        If you wish for it to go back more, simply do `/playerlist hours_ago: <# hours ago>`.
-        The number provided should be in between 1-24 hours.
         The autorun version only goes back an hour.
 
         Has a cooldown of 60 seconds due to how intensive this command can be.
