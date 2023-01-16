@@ -8,7 +8,8 @@ import orjson
 @functools.lru_cache(maxsize=128)
 def graph_template(
     title: str,
-    date_format: str,
+    scale_label: str,
+    bottom_label: str,
     labels: tuple[str, ...],
     data: tuple[int, ...],
     *,
@@ -47,7 +48,7 @@ def graph_template(
                         "distribution": "linear",
                         "scaleLabel": {
                             "display": True,
-                            "labelString": f"Date and Hour (UTC) in {date_format}",
+                            "labelString": bottom_label,
                         },
                     }
                 ],
@@ -61,7 +62,7 @@ def graph_template(
                         },
                         "scaleLabel": {
                             "display": True,
-                            "labelString": "Minutes Played",
+                            "labelString": scale_label,
                         },
                     }
                 ],

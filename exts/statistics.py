@@ -21,12 +21,47 @@ import common.utils as utils
 import common.xbox_api as xbox_api
 from common.microsoft_core import MicrosoftAPIException
 
-US_FORMAT = "%m/%d/%y %l %p"
-INTERNATIONAL_FORMAT = "%d/%m/%y %k:%M"
+VALID_TIME_DICTS = typing.Union[
+    dict[datetime.datetime, int], dict[datetime.date, int], dict[datetime.time, int]
+]
 
-showable_format = {
+US_FORMAT_TIME = "%l %p"
+US_FORMAT_DATE = "%m/%d/%y"
+US_FORMAT = f"{US_FORMAT_DATE} {US_FORMAT_TIME}"
+INTERNATIONAL_FORMAT_TIME = "%k:%M"
+INTERNATIONAL_FORMAT_DATE = "%d/%m/%y"
+INTERNATIONAL_FORMAT = f"{INTERNATIONAL_FORMAT_DATE} {INTERNATIONAL_FORMAT_TIME}"
+
+SHOWABLE_FORMAT = {
+    US_FORMAT_TIME: "HH AM/PM",
+    US_FORMAT_DATE: "MM/DD/YY",
     US_FORMAT: "MM/DD/YY HH AM/PM",
+    INTERNATIONAL_FORMAT_TIME: "HH:MM",
+    INTERNATIONAL_FORMAT_DATE: "DD/MM/YY",
     INTERNATIONAL_FORMAT: "DD/MM/YY HH:MM",
+}
+
+PERIOD_TO_GRAPH = [
+    naff.SlashCommandChoice("One day, per hour", "1pH"),
+    naff.SlashCommandChoice("1 week, per day", "7pD"),
+    # naff.SlashCommandChoice("2 weeks, per day", "14pD"),
+    # naff.SlashCommandChoice("30 days, per day", "30pD"),
+    # naff.SlashCommandChoice("30 days, per week", "30pW"),
+]
+
+SUMMARIZE_BY = [
+    naff.SlashCommandChoice("1 week, by hour", "7bH"),
+    # naff.SlashCommandChoice("2 weeks, by hour", "14bH"),
+    # naff.SlashCommandChoice("30 days, by hour", "30bH"),
+    # naff.SlashCommandChoice("2 weeks, by day of the week", "14bD"),
+    # naff.SlashCommandChoice("30 days, by day of the week", "30bD"),
+]
+
+DAY_HUMANIZED = {
+    1: "24 hours",
+    7: "1 week",
+    14: "2 weeks",
+    30: "30 days",
 }
 
 
@@ -97,21 +132,12 @@ class Statistics(utils.Extension):
 
         return xuid
 
-    async def process_data_for_graph(
+    async def gather_datetimes(
         self,
-        ctx: utils.RealmContext,
         config: models.GuildConfig,
-        now: datetime.datetime,
         min_datetime: datetime.datetime,
-        title: str,
-        filter_kwargs: dict[str, typing.Any] | None = None,
-        template_kwargs: dict[str, typing.Any] | None = None,
-    ) -> None:
-        if filter_kwargs is None:
-            filter_kwargs = {}
-        if template_kwargs is None:
-            template_kwargs = {}
-
+        **filter_kwargs: typing.Any,
+    ) -> list[tuple[datetime.datetime, datetime.datetime]]:
         datetimes_to_use: list[tuple[datetime.datetime, datetime.datetime]] = []
 
         async for entry in models.PlayerSession.filter(
@@ -124,20 +150,28 @@ class Statistics(utils.Extension):
                 "There's no data on this user on the linked Realm for this timespan."
             )
 
-        minutes_per_hour = stats_utils.get_minutes_per_hour(
-            datetimes_to_use,
-            min_datetime=min_datetime,
-            max_datetime=now,
-        )
+        return datetimes_to_use
 
+    async def localize_and_send_graph(
+        self,
+        ctx: utils.RealmContext,
+        raw_data: VALID_TIME_DICTS,
+        title: str,
+        scale_label: str,
+        bottom_label: str,
+        localizations: tuple[str, str],
+        now: datetime.datetime,
+        **template_kwargs: typing.Any,
+    ) -> None:
         locale = ctx.locale or ctx.guild_locale or "en_GB"
         # im aware theres countries that do yy/mm/dd - i'll add them in soon
-        locale_to_use = US_FORMAT if locale == "en-US" else INTERNATIONAL_FORMAT
+        locale_to_use = localizations[0] if locale == "en-US" else localizations[1]
 
-        localized = {k.strftime(locale_to_use): v for k, v in minutes_per_hour.items()}
+        localized = {k.strftime(locale_to_use): v for k, v in raw_data.items()}
         url = graph_template.graph_template(
             title,
-            showable_format[locale_to_use],
+            scale_label,
+            bottom_label.format(localized_format=SHOWABLE_FORMAT[locale_to_use]),
             tuple(localized.keys()),
             tuple(localized.values()),
             **template_kwargs,
@@ -151,6 +185,137 @@ class Statistics(utils.Extension):
 
         await ctx.send(embeds=embed)
 
+    async def process_graph(
+        self,
+        ctx: utils.RealmContext,
+        *,
+        config: models.GuildConfig,
+        func_to_use: typing.Callable[..., VALID_TIME_DICTS],
+        now: datetime.datetime,
+        min_datetime: datetime.datetime,
+        title: str,
+        bottom_label: str,
+        localizations: tuple[str, str],
+        filter_kwargs: dict[str, typing.Any] | None = None,
+        template_kwargs: dict[str, typing.Any] | None = None,
+    ) -> None:
+        if filter_kwargs is None:
+            filter_kwargs = {}
+        if template_kwargs is None:
+            template_kwargs = {}
+
+        datetimes_to_use = await self.gather_datetimes(
+            config, min_datetime, **filter_kwargs
+        )
+
+        minutes_per_period = func_to_use(
+            datetimes_to_use,
+            min_datetime=min_datetime,
+            max_datetime=now,
+        )
+
+        await self.localize_and_send_graph(
+            ctx,
+            minutes_per_period,
+            title,
+            "Total Minutes Played",
+            bottom_label,
+            localizations,
+            now,
+            **template_kwargs,
+        )
+
+    async def process_unsummary(
+        self,
+        ctx: utils.RealmContext,
+        period: str,
+        title: str,
+        *,
+        indivdual: bool = False,
+        filter_kwargs: typing.Optional[dict[str, typing.Any]] = None,
+    ) -> None:
+        config = await ctx.fetch_config()
+
+        template_kwargs = {"max_value": None}
+
+        period_split = period.split("p")
+        if len(period_split) != 2:
+            raise naff.errors.BadArgument("Invalid period given.")
+
+        try:
+            num_days = int(period_split[0])
+        except ValueError:
+            raise naff.errors.BadArgument("Invalid period given.") from None
+
+        actual_period = period_split[1]
+
+        now = datetime.datetime.now(datetime.UTC)
+        num_days_ago = (
+            now - datetime.timedelta(days=num_days) + datetime.timedelta(minutes=1)
+        )
+
+        if actual_period == "H":
+            func_to_use = stats_utils.get_minutes_per_hour
+            bottom_label = "Date and Hour (UTC) in {localized_format}"
+            localizations = (US_FORMAT, INTERNATIONAL_FORMAT)
+
+            if indivdual:
+                template_kwargs = {"max_value": 60}
+        else:
+            func_to_use = stats_utils.get_minutes_per_day
+            bottom_label = "Date (UTC) in {localized_format}"
+            localizations = (US_FORMAT_DATE, INTERNATIONAL_FORMAT_DATE)
+
+        await self.process_graph(
+            ctx,
+            config=config,
+            func_to_use=func_to_use,
+            now=now,
+            min_datetime=num_days_ago,
+            title=title.format(days_humanized=DAY_HUMANIZED[num_days]),
+            bottom_label=bottom_label,
+            localizations=localizations,
+            filter_kwargs=filter_kwargs,
+            template_kwargs=template_kwargs,
+        )
+
+    async def process_summary(
+        self,
+        ctx: utils.RealmContext,
+        summarize_by: str,
+        title: str,
+        *,
+        filter_kwargs: typing.Optional[dict[str, typing.Any]] = None,
+    ) -> None:
+        config = await ctx.fetch_config()
+
+        summary_split = summarize_by.split("b")
+        if len(summary_split) != 2:
+            raise naff.errors.BadArgument("Invalid summary given.")
+
+        try:
+            num_days = int(summary_split[0])
+        except ValueError:
+            raise naff.errors.BadArgument("Invalid summary given.") from None
+
+        now = datetime.datetime.now(datetime.UTC)
+        num_days_ago = (
+            now - datetime.timedelta(days=num_days) + datetime.timedelta(minutes=1)
+        )
+
+        await self.process_graph(
+            ctx,
+            config=config,
+            func_to_use=stats_utils.timespan_minutes_per_hour,
+            now=now,
+            min_datetime=num_days_ago,
+            title=title.format(days_humanized=DAY_HUMANIZED[num_days]),
+            bottom_label="Hour (UTC) in {localized_format}",
+            localizations=(US_FORMAT_TIME, INTERNATIONAL_FORMAT_TIME),
+            filter_kwargs=filter_kwargs,
+            template_kwargs={"max_value": None},
+        )
+
     premium = tansy.SlashCommand(
         name="premium",  # type: ignore
         description="Handles the configuration for Realms Playerlist Premium.",  # type: ignore
@@ -159,86 +324,89 @@ class Statistics(utils.Extension):
     )
 
     @premium.subcommand(
-        sub_cmd_name="graph-individual-day",
+        sub_cmd_name="graph-realm",
         sub_cmd_description=(
-            "Produces a graph of one player's playtime over one day as a graph. Beta,"
-            " requires premium."
+            "Produces a graph of the Realm's playtime over a specifed period as a"
+            " graph. Beta, requires premium."
         ),
-    )  # type: ignore
+    )
     @naff.cooldown(naff.Buckets.GUILD, 1, 5)  # type: ignore
     @naff.check(stats_check)  # type: ignore
-    async def graph_individual_day(
+    async def graph_realm(
         self,
         ctx: utils.RealmContext,
-        gamertag: str = tansy.Option("The gamertag of the user to graph."),
+        period: str = tansy.Option("The period to graph by.", choices=PERIOD_TO_GRAPH),  # type: ignore
     ) -> None:
-        """
-        Produces a graph of one player's playtime over the past day as a graph. Beta, requires premium.
-
-        This command takes the total playtime of the player on the Realm over the past 24 hours, \
-        and graphs the player per hour.
-        For example, if the player played for 20 minutes during the 5th hour, that will be graphed.
-
-        This can be used to observe general activity trends for a player, although it currently does not \
-        aggregate the results - it only reads the last 24 hours, so if something unusual happened \
-        that day, it may produce a graph that does not line up with general activity.
-
-        Has a cooldown of 5 seconds per server due to the calculations it makes.
-        Only available to Premium members for now - this command is a WIP, and may change in the future.
-        """
-        config = await ctx.fetch_config()
-
-        xuid = await self.xuid_from_gamertag(gamertag)
-
-        now = datetime.datetime.now(datetime.UTC)
-        one_day_ago = now - datetime.timedelta(days=1) + datetime.timedelta(minutes=1)
-
-        await self.process_data_for_graph(
-            ctx,
-            config,
-            now,
-            one_day_ago,
-            f"Playtime of {gamertag} over the last 24 hours",
-            filter_kwargs={"xuid": xuid},
+        await self.process_unsummary(
+            ctx, period, "Playtime on the Realm over the last {days_humanized}"
         )
 
     @premium.subcommand(
-        sub_cmd_name="graph-realm-day",
+        sub_cmd_name="graph-realm-summary",
         sub_cmd_description=(
-            "Produces a graph of the Realm's playtime over the past day as a graph."
+            "Summarizes the Realm over a specified period, by a specified interval."
             " Beta, requires premium."
         ),
     )
     @naff.cooldown(naff.Buckets.GUILD, 1, 5)  # type: ignore
     @naff.check(stats_check)  # type: ignore
-    async def graph_realm_day(self, ctx: utils.RealmContext) -> None:
-        """
-        Produces a graph of the Realm's playtime over the past day as a graph. Beta, requires premium.
-
-        This command takes the total playtime of every player on the Realm over the past 24 hours, \
-        and graphs the player per hour.
-        To clarify: if two players were on the Realm for 10 minutes, they would have a combined total \
-        of 20 minutes of playtime.
-
-        This can be used to observe general activity trends, although it currently does not \
-        aggregate the results - it only reads the last 24 hours, so if something unusual happened \
-        that day, it may produce a graph that does not line up with general activity.
-
-        Has a cooldown of 5 seconds per server due to the calculations it makes.
-        Only available to Premium members for now - this command is a WIP, and may change in the future.
-        """
-        config = await ctx.fetch_config()
-
-        now = datetime.datetime.now(datetime.UTC)
-        one_day_ago = now - datetime.timedelta(days=1) + datetime.timedelta(minutes=1)
-
-        await self.process_data_for_graph(
+    async def graph_realm_summary(
+        self,
+        ctx: utils.RealmContext,
+        summarize_by: str = tansy.Option("What to summarize by.", choices=SUMMARIZE_BY),  # type: ignore
+    ) -> None:
+        await self.process_summary(
             ctx,
-            config,
-            now,
-            one_day_ago,
-            "Playtime on the Realm over the last 24 hours",
-            template_kwargs={"max_value": None},
+            summarize_by,
+            "Summary of playtime on the Realm over the past {days_humanized} by hour",
+        )
+
+    @premium.subcommand(
+        sub_cmd_name="graph-individual",
+        sub_cmd_description=(
+            "Produces a graph of a player's playtime over a specifed period as a"
+            " graph. Beta, requires premium."
+        ),
+    )
+    @naff.cooldown(naff.Buckets.GUILD, 1, 5)  # type: ignore
+    @naff.check(stats_check)  # type: ignore
+    async def graph_individual(
+        self,
+        ctx: utils.RealmContext,
+        gamertag: str = tansy.Option("The gamertag of the user to graph."),
+        period: str = tansy.Option("The period to graph by.", choices=PERIOD_TO_GRAPH),  # type: ignore
+    ) -> None:
+        xuid = await self.xuid_from_gamertag(gamertag)
+        await self.process_unsummary(
+            ctx,
+            period,
+            f"Playtime of {gamertag} over the last " + "{days_humanized}",
+            indivdual=True,
+            filter_kwargs={"xuid": xuid},
+        )
+
+    @premium.subcommand(
+        sub_cmd_name="graph-individual-summary",
+        sub_cmd_description=(
+            "Summarizes a player over a specified period, by a specified interval."
+            " Beta, requires premium."
+        ),
+    )
+    @naff.cooldown(naff.Buckets.GUILD, 1, 5)  # type: ignore
+    @naff.check(stats_check)  # type: ignore
+    async def graph_individual_summary(
+        self,
+        ctx: utils.RealmContext,
+        gamertag: str = tansy.Option("The gamertag of the user to graph."),
+        summarize_by: str = tansy.Option("What to summarize by.", choices=SUMMARIZE_BY),  # type: ignore
+    ) -> None:
+        xuid = await self.xuid_from_gamertag(gamertag)
+        await self.process_summary(
+            ctx,
+            summarize_by,
+            f"Summary of playtime by {gamertag} over the past "
+            + "{days_humanized} by hour",
+            filter_kwargs={"xuid": xuid},
         )
 
     @tansy.slash_command(
