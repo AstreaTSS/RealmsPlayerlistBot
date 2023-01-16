@@ -243,9 +243,7 @@ class Statistics(utils.Extension):
 
     @tansy.slash_command(
         name="get-player-log",
-        description=(
-            "Gets a log of a specific player - every time they joined and left."
-        ),
+        description="Gets a log of every time a specific player joined and left.",
         default_member_permissions=naff.Permissions.MANAGE_GUILD,
         dm_permission=False,
     )  # type: ignore
@@ -262,7 +260,7 @@ class Statistics(utils.Extension):
         ),
     ) -> None:
         """
-        Gets a log of a specific player - every time they joined and left.
+        Gets a log of every time a specific player joined and left.
 
         Basically, the bot gathers up every time the player joined and left the Realm during \
         the timespan you specify and displays that to you.
