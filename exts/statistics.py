@@ -333,6 +333,8 @@ class Statistics(utils.Extension):
                     for session_index, session in enumerate(chunk)
                 ],
                 color=ctx.bot.color,
+                footer=naff.EmbedFooter("As of"),
+                timestamp=now,
             )
             for chunk_index, chunk in enumerate(chunks)
         ]
