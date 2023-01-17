@@ -316,7 +316,7 @@ class Playerlist(utils.Extension):
 
             for entry in offline_list:
                 current_length += len(entry)
-                if current_length > 4000:
+                if current_length > 3900:
                     offline_embeds.append(
                         naff.Embed(
                             color=naff.Color.from_hex("95a5a6"),

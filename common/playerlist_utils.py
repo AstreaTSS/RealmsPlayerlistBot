@@ -1,13 +1,13 @@
 import asyncio
 import contextlib
 import logging
-import typing
 
 import aiohttp
 import attrs
 import naff
 import orjson
 from apischema import ValidationError
+from redis.exceptions import ConnectionError
 from tortoise.exceptions import DoesNotExist
 
 import common.classes as cclasses
@@ -65,7 +65,7 @@ class GamertagHandler:
     responses: list[
         xbox_api.ProfileResponse | xbox_api.PeopleHubResponse
     ] = attrs.field(init=False, factory=list)
-    AMOUNT_TO_GET: int = attrs.field(init=False, default=300)
+    AMOUNT_TO_GET: int = attrs.field(init=False, default=500)
 
     def __attrs_post_init__(self) -> None:
         # filter out empty strings, because that's possible somehow?
@@ -134,12 +134,13 @@ class GamertagHandler:
             self.index += 1
 
     async def _add_to_redis(self, xuid: str, gamertag: str) -> None:
-        await self.bot.redis.setex(
-            name=xuid, time=utils.EXPIRE_GAMERTAGS_AT, value=gamertag
-        )
-        await self.bot.redis.setex(
-            name=f"rpl-{gamertag}", time=utils.EXPIRE_GAMERTAGS_AT, value=xuid
-        )
+        with contextlib.suppress(ConnectionError):
+            await self.bot.redis.setex(
+                name=xuid, time=utils.EXPIRE_GAMERTAGS_AT, value=gamertag
+            )
+            await self.bot.redis.setex(
+                name=f"rpl-{gamertag}", time=utils.EXPIRE_GAMERTAGS_AT, value=xuid
+            )
 
     def _handle_new_gamertag(
         self, xuid: str, gamertag: str, dict_gamertags: dict[str, str]
@@ -258,13 +259,13 @@ async def fetch_playerlist_channel(
 
 async def fill_in_gamertags_for_sessions(
     bot: utils.RealmBotBase,
-    player_sessions: typing.Iterable[models.PlayerSession],
+    player_sessions: list[models.PlayerSession],
 ) -> list[models.PlayerSession]:
     player_list: list[models.PlayerSession] = []
     unresolved_dict: dict[str, models.PlayerSession] = {}
 
     for member in player_sessions:
-        member.gamertag = await bot.redis.get(member.xuid)
+        # member.gamertag = await bot.redis.get(member.xuid)
         if member.resolved:
             player_list.append(member)
         else:
