@@ -68,10 +68,9 @@ class PlayerSession(Model):
                 f"left {naff.Timestamp.fromdatetime(self.last_seen).format('f')}"
             )
 
-        if not notes:
-            notes.append("No information available")
-
-        return f"{self.base_display}: {', '.join(notes)}"
+        return (
+            f"{self.base_display}: {', '.join(notes)}" if notes else self.base_display
+        )
 
 
 class PremiumCode(Model):
