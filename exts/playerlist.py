@@ -222,8 +222,8 @@ class Playerlist(utils.Extension):
         May take a while to run at first.
         """
 
-        autorunner = kwargs.get("autorunner", False)
-        upsell = kwargs.get("upsell", False)
+        autorunner: bool = kwargs.get("autorunner", False)
+        upsell: bool = kwargs.get("upsell", False)
         upsell_type: int = kwargs.get("upsell_type", -1)
 
         guild_config = await ctx.fetch_config()
@@ -280,18 +280,19 @@ class Playerlist(utils.Extension):
         offline_list = [
             p.display
             for p in sorted(
-                player_list, key=lambda p: p.last_seen.timestamp(), reverse=True
+                (p for p in player_list if not p.in_game),
+                key=lambda p: p.last_seen.timestamp(),
+                reverse=True,
             )
-            if not p.in_game
         ]
 
-        if not online_list and not offline_list:
-            if not autorunner:
-                raise utils.CustomCheckFailure(
-                    f"No one has been on the Realm for the last {hours_ago} hour(s)."
-                )
-            else:
+        if not player_list:
+            if autorunner:
                 return
+
+            raise utils.CustomCheckFailure(
+                f"No one has been on the Realm for the last {hours_ago} hour(s)."
+            )
 
         embeds: list[naff.Embed] = []
         timestamp = naff.Timestamp.fromdatetime(self.previous_now)
