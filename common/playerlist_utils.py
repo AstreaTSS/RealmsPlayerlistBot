@@ -203,6 +203,9 @@ async def eventually_invalidate(
     guild_config: models.GuildConfig,
     limit: int = 3,
 ) -> None:
+    if utils.TEST_MODE:
+        return
+
     # the idea here is to invalidate autorunners that simply can't be run
     # there's a bit of generousity here, as the code gives a total of 3 tries
     # before actually doing it
@@ -224,6 +227,9 @@ async def eventually_invalidate_realm_offline(
     guild_config: models.GuildConfig,
     limit: int = 3,
 ) -> None:
+    if utils.TEST_MODE:
+        return
+
     num_times = await bot.redis.incr(f"invalid-realmoffline-{guild_config.guild_id}")
 
     if num_times >= limit:

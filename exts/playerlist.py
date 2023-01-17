@@ -29,10 +29,12 @@ class Playerlist(utils.Extension):
 
         self.previous_now = datetime.datetime.now(tz=datetime.UTC)
 
-        self.get_people_task = asyncio.create_task(self.get_people_runner())
+        if not utils.TEST_MODE:
+            self.get_people_task = asyncio.create_task(self.get_people_runner())
 
     def drop(self) -> None:
-        self.get_people_task.cancel()
+        if not utils.TEST_MODE:
+            self.get_people_task.cancel()
         super().drop()
 
     def next_time(self) -> naff.Timestamp:

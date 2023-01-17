@@ -265,6 +265,9 @@ async def start() -> None:
         if "voting" in ext and not os.environ.get("TOP_GG_TOKEN"):
             continue
 
+        if utils.TEST_MODE and ("autorun" in ext or "etc" in ext):
+            continue
+
         try:
             bot.load_extension(ext)
         except naff.errors.ExtensionLoadException:

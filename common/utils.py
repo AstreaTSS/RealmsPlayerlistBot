@@ -15,6 +15,8 @@ import sentry_sdk
 
 from common.models import GuildConfig
 
+TEST_MODE: bool = os.environ.get("TEST_MODE", False)  # type: ignore
+
 DEV_GUILD_ID = int(os.environ.get("DEV_GUILD_ID", "0"))
 XBOX_API_RELYING_PARTY = "http://xboxlive.com"
 REALMS_API_URL = "https://pocket.realms.minecraft.net/"
