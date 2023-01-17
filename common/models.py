@@ -2,7 +2,6 @@ import typing
 from datetime import datetime
 from uuid import UUID
 
-import naff
 from tortoise import fields
 from tortoise.models import Model
 
@@ -59,14 +58,10 @@ class PlayerSession(Model):
     def display(self) -> str:
         notes: list[str] = []
         if self.joined_at:
-            notes.append(
-                f"joined {naff.Timestamp.fromdatetime(self.joined_at).format('f')}"
-            )
+            notes.append(f"joined <t:{int(self.joined_at.timestamp())}:f>")
 
         if not self.online:
-            notes.append(
-                f"left {naff.Timestamp.fromdatetime(self.last_seen).format('f')}"
-            )
+            notes.append(f"left <t:{int(self.last_seen.timestamp())}:f>")
 
         return (
             f"{self.base_display}: {', '.join(notes)}" if notes else self.base_display

@@ -457,15 +457,13 @@ class Statistics(utils.Extension):
 
             if session.joined_at:
                 session_str.append(
-                    "**Joined:**"
-                    f" {naff.Timestamp.fromdatetime(session.joined_at).format('f')}"
+                    f"**Joined:** <t:{int(session.joined_at.timestamp())}:f>"
                 )
             if session.online:
                 session_str.append("**Currently Online**")
             elif session.last_seen:
                 session_str.append(
-                    "**Left:**"
-                    f" {naff.Timestamp.fromdatetime(session.last_seen).format('f')}"
+                    f"**Left:** <t:{int(session.last_seen.timestamp())}:f>"
                 )
 
             if not session_str:
