@@ -2,6 +2,7 @@ import typing
 from datetime import datetime
 from uuid import UUID
 
+import naff
 from tortoise import fields
 from tortoise.models import Model
 
@@ -38,9 +39,39 @@ class PlayerSession(Model):
     last_seen: datetime = fields.DatetimeField()
     joined_at: typing.Optional[datetime] = fields.DatetimeField(null=True)
 
+    gamertag: typing.Optional[str] = None
+
     @property
     def realm_xuid_id(self) -> str:
         return f"{self.realm_id}-{self.xuid}"
+
+    @property
+    def resolved(self) -> bool:
+        return bool(self.gamertag)
+
+    @property
+    def base_display(self) -> str:
+        return (
+            f"`{self.gamertag}`" if self.gamertag else f"User with XUID `{self.xuid}`"
+        )
+
+    @property
+    def display(self) -> str:
+        notes: list[str] = []
+        if self.joined_at:
+            notes.append(
+                f"joined {naff.Timestamp.fromdatetime(self.joined_at).format('f')}"
+            )
+
+        if not self.online:
+            notes.append(
+                f"left {naff.Timestamp.fromdatetime(self.last_seen).format('f')}"
+            )
+
+        if not notes:
+            notes.append("No information available")
+
+        return f"{self.base_display}: {', '.join(notes)}"
 
 
 class PremiumCode(Model):

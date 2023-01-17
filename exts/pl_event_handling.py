@@ -42,8 +42,8 @@ class PlayerlistEventHandling(naff.Extension):
             )
             for p in event.joined.union(event.left)
         ]
-        players = await pl_utils.get_players_from_player_activity(
-            self.bot, event.realm_id, player_sessions
+        players = await pl_utils.fill_in_gamertags_for_sessions(
+            self.bot, player_sessions
         )
         gamertag_mapping = {p.xuid: p.base_display for p in players}
 

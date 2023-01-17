@@ -1,6 +1,5 @@
 import asyncio
 import contextlib
-import datetime
 import logging
 import typing
 
@@ -25,45 +24,6 @@ def _convert_fields(value: tuple[str, ...]) -> tuple[str, ...]:
 class RealmPlayersContainer:
     player_sessions: list[models.PlayerSession] = attrs.field()
     fields: tuple[str, ...] = attrs.field(default=None, converter=_convert_fields)
-
-
-@attrs.define(eq=False)
-class Player:
-    """A simple class to represent a player on a Realm."""
-
-    xuid: str = attrs.field()
-    last_seen: datetime.datetime = attrs.field()
-    in_game: bool = attrs.field(default=False)
-    gamertag: typing.Optional[str] = attrs.field(default=None)
-    joined_at: typing.Optional[datetime.datetime] = attrs.field(default=None)
-
-    def __eq__(self, o: object) -> bool:
-        return o.xuid == self.xuid if isinstance(o, self.__class__) else False
-
-    @property
-    def resolved(self) -> bool:
-        return bool(self.gamertag)
-
-    @property
-    def base_display(self) -> str:
-        return f"`{self.gamertag}`" if self.gamertag else f"User with XUID {self.xuid}"
-
-    @property
-    def display(self) -> str:  # sourcery skip: remove-unnecessary-else
-        notes = []
-        if self.joined_at:
-            notes.append(
-                f"joined {naff.Timestamp.fromdatetime(self.joined_at).format('f')}"
-            )
-
-        if not self.in_game:
-            notes.append(
-                f"left {naff.Timestamp.fromdatetime(self.last_seen).format('f')}"
-            )
-
-        return (
-            f"{self.base_display}: {', '.join(notes)}" if notes else self.base_display
-        )
 
 
 class GamertagOnCooldown(Exception):
@@ -289,26 +249,19 @@ async def fetch_playerlist_channel(
     return chan
 
 
-async def get_players_from_player_activity(
+async def fill_in_gamertags_for_sessions(
     bot: utils.RealmBotBase,
-    realm_id: str,
     player_sessions: typing.Iterable[models.PlayerSession],
-) -> list[Player]:
-    player_list: list[Player] = []
-    unresolved_dict: dict[str, Player] = {}
+) -> list[models.PlayerSession]:
+    player_list: list[models.PlayerSession] = []
+    unresolved_dict: dict[str, models.PlayerSession] = {}
 
     for member in player_sessions:
-        player = Player(
-            member.xuid,
-            member.last_seen,
-            member.online,
-            await bot.redis.get(member.xuid),
-            member.joined_at,
-        )
-        if player.resolved:
-            player_list.append(player)
+        member.gamertag = await bot.redis.get(member.xuid)
+        if member.resolved:
+            player_list.append(member)
         else:
-            unresolved_dict[member.xuid] = player
+            unresolved_dict[member.xuid] = member
 
     if unresolved_dict:
         gamertag_handler = GamertagHandler(

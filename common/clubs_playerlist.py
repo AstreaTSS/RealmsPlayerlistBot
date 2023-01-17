@@ -7,7 +7,6 @@ import aiohttp
 import orjson
 
 import common.models as models
-import common.playerlist_utils as pl_utils
 import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
 
@@ -111,14 +110,16 @@ async def realm_club_get(bot: utils.RealmBotBase, club_id: str) -> typing.Any:
 
 async def get_players_from_club_data(
     bot: utils.RealmBotBase,
+    realm_id: str,
     club_id: str,
     time_ago: datetime.datetime,
-) -> list[pl_utils.Player] | None:
+) -> list[models.PlayerSession] | None:
     club_presence = await realm_club_get(bot, club_id)
     if not club_presence or club_presence == "Unauthorized":
         return None
 
-    player_list: list[pl_utils.Player] = []
+    now = datetime.datetime.now(tz=datetime.UTC)
+    player_list: list[models.PlayerSession] = []
 
     for member in club_presence:
         last_seen_state = ClubUserPresence.from_xbox_api(member["lastSeenState"])
@@ -145,13 +146,17 @@ async def get_players_from_club_data(
         if last_seen <= time_ago:
             break
 
-        player = pl_utils.Player(
-            member["xuid"],
-            last_seen,
-            last_seen_state == ClubUserPresence.IN_GAME,
-            None,  # we don't need to resolve their gametags for caching
+        online = last_seen_state == ClubUserPresence.IN_GAME
+        player_list.append(
+            models.PlayerSession(
+                custom_id=bot.uuid_cache[f"{realm_id}-{member['xuid']}"],
+                realm_id=realm_id,
+                xuid=member["xuid"],
+                online=online,
+                last_seen=now if online else last_seen,
+            )
         )
-        player_list.append(player)
+        bot.online_cache[int(realm_id)].add(member["xuid"])
 
     return player_list
 
@@ -161,26 +166,14 @@ async def fill_in_data_from_clubs(
     realm_id: str,
     club_id: str,
 ) -> None:
-    t = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(hours=24)
-    player_list = await get_players_from_club_data(bot, club_id, t)
+    time_ago = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(hours=24)
+    player_list = await get_players_from_club_data(bot, realm_id, club_id, time_ago)
 
     if not player_list:
         return
 
-    now = datetime.datetime.now(tz=datetime.UTC)
-
-    player_sessions = [
-        models.PlayerSession(
-            custom_id=bot.uuid_cache[f"{realm_id}-{p.xuid}"],
-            realm_id=realm_id,
-            xuid=p.xuid,
-            online=p.in_game,
-            last_seen=now if p.in_game else p.last_seen,
-        )
-        for p in player_list
-    ]
     await models.PlayerSession.bulk_create(
-        player_sessions,
+        player_list,
         on_conflict=("custom_id",),
         update_fields=("online", "last_seen"),
     )

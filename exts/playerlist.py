@@ -270,17 +270,17 @@ class Playerlist(utils.Extension):
                 " happens."
             )
 
-        player_list = await pl_utils.get_players_from_player_activity(
-            self.bot, guild_config.realm_id, player_sessions  # type: ignore
+        player_list = await pl_utils.fill_in_gamertags_for_sessions(
+            self.bot, player_sessions
         )
 
         online_list = sorted(
-            (p.display for p in player_list if p.in_game), key=lambda g: g.lower()
+            (p.display for p in player_list if p.online), key=lambda g: g.lower()
         )
         offline_list = [
             p.display
             for p in sorted(
-                (p for p in player_list if not p.in_game),
+                (p for p in player_list if not p.online),
                 key=lambda p: p.last_seen.timestamp(),
                 reverse=True,
             )
@@ -380,12 +380,12 @@ class Playerlist(utils.Extension):
         player_sessions = await models.PlayerSession.filter(
             realm_id=guild_config.realm_id, online=True
         )
-        playerlist = await pl_utils.get_players_from_player_activity(
-            self.bot, guild_config.realm_id, player_sessions  # type: ignore
+        playerlist = await pl_utils.fill_in_gamertags_for_sessions(
+            self.bot, player_sessions
         )
 
         if online_list := sorted(
-            (p.display for p in playerlist if p.in_game), key=lambda g: g.lower()
+            (p.display for p in playerlist if p.online), key=lambda g: g.lower()
         ):
             embed = naff.Embed(
                 color=self.bot.color,
