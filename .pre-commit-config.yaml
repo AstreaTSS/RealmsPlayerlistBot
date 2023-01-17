@@ -11,7 +11,7 @@ repos:
     - id: trailing-whitespace
 - repo: https://github.com/charliermarsh/ruff-pre-commit
   # Ruff version.
-  rev: 'v0.0.216'
+  rev: 'v0.0.223'
   hooks:
     - id: ruff
       language_version: python3.11
