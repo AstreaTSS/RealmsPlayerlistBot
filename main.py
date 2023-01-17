@@ -1,13 +1,23 @@
 import asyncio
 import contextlib
 import datetime
-import importlib
 import logging
 import os
 import tomllib
 import typing
 import uuid
 from collections import defaultdict
+
+# load the config file into environment variables
+# this allows an easy way to access these variables from any file
+# we allow the user to set a configuration location via an already-set
+# env var if they wish, but it'll default to config.toml in the running
+# directory
+CONFIG_LOCATION = os.environ.get("CONFIG_LOCATION", "config.toml")
+with open(CONFIG_LOCATION, "rb") as f:
+    toml_dict = tomllib.load(f)
+    for key, value in toml_dict.items():
+        os.environ[key] = str(value)
 
 import aiohttp
 import discord_typings
@@ -29,21 +39,8 @@ from common.classes import SemaphoreRedis, TimedDict
 from common.realms_api import RealmsAPI
 from common.xbox_api import XboxAPI, parse_profile_response
 
-# load the config file into environment variables
-# this allows an easy way to access these variables from any file
-# we allow the user to set a configuration location via an already-set
-# env var if they wish, but it'll default to config.toml in the running
-# directory
-CONFIG_LOCATION = os.environ.get("CONFIG_LOCATION", "config.toml")
-with open(CONFIG_LOCATION, "rb") as f:
-    toml_dict = tomllib.load(f)
-    for key, value in toml_dict.items():
-        os.environ[key] = str(value)
-
-importlib.reload(utils)  # refresh the dev guild id
-
 with contextlib.suppress(ImportError):
-    import rook
+    import rook  # type: ignore
 
     if os.environ.get("ROOK_TOKEN"):
         rook.start(
