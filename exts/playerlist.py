@@ -308,20 +308,36 @@ class Playerlist(utils.Extension):
             )
 
         if offline_list:
-            # gets the offline list in lines of 25
-            # basically, it's like
-            # [ [list of 25 strings] [list of 25 strings] etc.]
-            chunks = [offline_list[x : x + 25] for x in range(0, len(offline_list), 25)]
+            offline_embeds: list[naff.Embed] = []
 
-            offline_embeds: list[naff.Embed] = [
-                naff.Embed(
-                    color=naff.Color.from_hex("95a5a6"),
-                    description="\n".join(c),
-                    footer=naff.EmbedFooter(text="As of"),
-                    timestamp=timestamp,
+            current_entries: list[str] = []
+            current_length: int = 0
+
+            for entry in offline_list:
+                current_length += len(entry)
+                if current_length > 4000:
+                    offline_embeds.append(
+                        naff.Embed(
+                            color=naff.Color.from_hex("95a5a6"),
+                            description="\n".join(current_entries),
+                            footer=naff.EmbedFooter(text="As of"),
+                            timestamp=timestamp,
+                        )
+                    )
+                    current_entries = []
+                    current_length = 0
+
+                current_entries.append(entry)
+
+            if current_entries:
+                offline_embeds.append(
+                    naff.Embed(
+                        color=naff.Color.from_hex("95a5a6"),
+                        description="\n".join(current_entries),
+                        footer=naff.EmbedFooter(text="As of"),
+                        timestamp=timestamp,
+                    )
                 )
-                for c in chunks
-            ]
 
             offline_embeds[0].title = f"People on in the last {hours_ago} hour(s)"
             embeds.extend(offline_embeds)
