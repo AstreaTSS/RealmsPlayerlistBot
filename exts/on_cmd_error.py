@@ -20,7 +20,7 @@ class OnCMDError(naff.Extension):
         event: naff.events.CommandError,
     ) -> None:
         if not isinstance(event.ctx, (naff.PrefixedContext, naff.InteractionContext)):
-            return await utils.error_handle(self.bot, event.error)
+            return await utils.error_handle(event.error)
 
         if isinstance(event.error, naff.errors.CommandOnCooldown):
             delta_wait = datetime.timedelta(
@@ -48,7 +48,7 @@ class OnCMDError(naff.Extension):
                     )
                 )
         else:
-            await utils.error_handle(self.bot, event.error, event.ctx)
+            await utils.error_handle(event.error, ctx=event.ctx)
 
 
 def setup(bot: utils.RealmBotBase) -> None:

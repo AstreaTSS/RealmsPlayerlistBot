@@ -34,7 +34,7 @@ class Voting(naff.Extension):
             try:
                 r.raise_for_status()
             except aiohttp.ClientResponseError as e:
-                await utils.error_handle(self.bot, e)
+                await utils.error_handle(e)
 
     @naff.slash_command(
         name="vote",

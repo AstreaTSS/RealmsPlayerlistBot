@@ -34,21 +34,23 @@ async def sleep_until(dt: datetime.datetime) -> None:
 
 
 async def error_handle(
-    bot: "RealmBotBase", error: Exception, ctx: typing.Optional[naff.Context] = None
+    error: Exception, *, ctx: typing.Optional[naff.Context] = None
 ) -> None:
     if not isinstance(error, aiohttp.ServerDisconnectedError):
-        with sentry_sdk.configure_scope() as scope:
-            if ctx:
-                scope.set_context(
-                    type(ctx).__name__,
-                    {
-                        "args": ctx.args,
-                        "kwargs": ctx.kwargs,
-                        "message": ctx.message,
-                    },
-                )
-            sentry_sdk.capture_exception(error)
-
+        if TEST_MODE:
+            traceback.print_exception(error)
+        else:
+            with sentry_sdk.configure_scope() as scope:
+                if ctx:
+                    scope.set_context(
+                        type(ctx).__name__,
+                        {
+                            "args": ctx.args,
+                            "kwargs": ctx.kwargs,
+                            "message": ctx.message,
+                        },
+                    )
+                sentry_sdk.capture_exception(error)
     if ctx:
         if isinstance(ctx, naff.PrefixedContext):
             await ctx.reply(

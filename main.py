@@ -179,7 +179,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
     @naff.listen(is_default_listener=True)
     async def on_error(self, event: naff.events.Error) -> None:
-        await utils.error_handle(self, event.error)
+        await utils.error_handle(event.error)
 
     def mention_cmd(self, name: str, scope: int = 0) -> str:
         return self.interactions[scope][name].mention(scope)

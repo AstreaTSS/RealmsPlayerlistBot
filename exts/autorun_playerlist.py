@@ -46,7 +46,7 @@ class AutoRunPlayerlist(utils.Extension):
                 await self.playerlist_loop(upsell, upsell_type)
         except Exception as e:
             if not isinstance(e, asyncio.CancelledError):
-                await utils.error_handle(self.bot, e)
+                await utils.error_handle(e)
 
     @naff.Task.create(naff.TimeTrigger())
     async def player_session_delete(self) -> None:
@@ -87,7 +87,7 @@ class AutoRunPlayerlist(utils.Extension):
         # stopping this entirely
         for message in output:
             if isinstance(message, Exception):
-                await utils.error_handle(self.bot, message)
+                await utils.error_handle(message)
 
     async def auto_run_playerlist(
         self,

@@ -56,7 +56,7 @@ class Playerlist(utils.Extension):
                 await utils.sleep_until(next_time)
             except Exception as e:
                 if not isinstance(e, asyncio.CancelledError):
-                    await utils.error_handle(self.bot, e)
+                    await utils.error_handle(e)
                 else:
                     break
 
