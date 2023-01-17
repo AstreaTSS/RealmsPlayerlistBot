@@ -265,7 +265,7 @@ async def fill_in_gamertags_for_sessions(
     unresolved_dict: dict[str, models.PlayerSession] = {}
 
     for member in player_sessions:
-        # member.gamertag = await bot.redis.get(member.xuid)
+        member.gamertag = await bot.redis.get(member.xuid)
         if member.resolved:
             player_list.append(member)
         else:
