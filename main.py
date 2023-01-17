@@ -184,6 +184,15 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     def mention_cmd(self, name: str, scope: int = 0) -> str:
         return self.interactions[scope][name].mention(scope)
 
+    def load_extension(
+        self, name: str, package: str | None = None, **load_kwargs: typing.Any
+    ) -> None:
+        super().load_extension(name, package, **load_kwargs)
+
+        # naff forgets to do this lol
+        if not self.sync_ext and self._ready.is_set():
+            asyncio.create_task(self._cache_interactions(warn_missing=False))
+
     async def stop(self) -> None:
         await bot.session.close()
         await bot.realms.close()
