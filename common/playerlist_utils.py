@@ -16,14 +16,24 @@ import common.utils as utils
 import common.xbox_api as xbox_api
 
 
-def _convert_fields(value: tuple[str, ...]) -> tuple[str, ...]:
+def _convert_fields(value: tuple[str, ...] | None) -> tuple[str, ...]:
     return ("online", "last_seen") + value if value else ("online", "last_seen")
 
 
-@attrs.define(kw_only=True)
 class RealmPlayersContainer:
-    player_sessions: list[models.PlayerSession] = attrs.field()
-    fields: tuple[str, ...] = attrs.field(default=None, converter=_convert_fields)
+    __slots__ = ("player_sessions", "fields")
+
+    player_sessions: list[models.PlayerSession]
+    fields: tuple[str, ...]
+
+    def __init__(
+        self,
+        *,
+        player_sessions: list[models.PlayerSession],
+        fields: tuple[str, ...] | None = None,
+    ) -> None:
+        self.player_sessions = player_sessions
+        self.fields = _convert_fields(fields)
 
 
 class GamertagOnCooldown(Exception):
@@ -123,19 +133,24 @@ class GamertagHandler:
 
             self.index += 1
 
-    async def _handle_new_gamertag(
-        self, xuid: str, gamertag: str, dict_gamertags: dict[str, str]
-    ) -> None:
-        if not xuid or not gamertag:
-            return
-
+    async def _add_to_redis(self, xuid: str, gamertag: str) -> None:
         await self.bot.redis.setex(
             name=xuid, time=utils.EXPIRE_GAMERTAGS_AT, value=gamertag
         )
         await self.bot.redis.setex(
             name=f"rpl-{gamertag}", time=utils.EXPIRE_GAMERTAGS_AT, value=xuid
         )
+
+    def _handle_new_gamertag(
+        self, xuid: str, gamertag: str, dict_gamertags: dict[str, str]
+    ) -> None:
+        if not xuid or not gamertag:
+            return
+
         dict_gamertags[xuid] = gamertag
+
+        # redis can take a while, put it in the background
+        asyncio.create_task(self._add_to_redis(xuid, gamertag))
 
     async def run(self) -> dict[str, str]:
         while self.index < len(self.xuids_to_get):
@@ -144,16 +159,10 @@ class GamertagHandler:
             )
 
             async with self.sem:
-                with contextlib.suppress(GamertagOnCooldown):
+                try:
                     await self.get_gamertags(current_xuid_list)
-
-                # alright, so we either got AMOUNT_TO_GET gamertags or are ratelimited
-                # so now we switch to the backup getter so that we don't have
-                # to wait on the ratelimit to request for more gamertags
-                # this wait_for basically a little 'exploit` to only make the backup
-                # run for 15 seconds or until completetion, whatever comes first
-
-                with contextlib.suppress(asyncio.TimeoutError):
+                except GamertagOnCooldown:
+                    # hopefully fixes itself in 15 seconds
                     await asyncio.wait_for(self.backup_get_gamertags(), timeout=15)
 
         dict_gamertags: dict[str, str] = {}
@@ -161,9 +170,7 @@ class GamertagHandler:
         for response in self.responses:
             if isinstance(response, xbox_api.PeopleHubResponse):
                 for user in response.people:
-                    await self._handle_new_gamertag(
-                        user.xuid, user.gamertag, dict_gamertags
-                    )
+                    self._handle_new_gamertag(user.xuid, user.gamertag, dict_gamertags)
             elif isinstance(response, xbox_api.ProfileResponse):
                 for user in response.profile_users:
                     xuid = user.id
@@ -176,7 +183,7 @@ class GamertagHandler:
                     except (KeyError, StopIteration):
                         continue
 
-                    await self._handle_new_gamertag(xuid, gamertag, dict_gamertags)
+                    self._handle_new_gamertag(xuid, gamertag, dict_gamertags)
 
         return dict_gamertags
 
