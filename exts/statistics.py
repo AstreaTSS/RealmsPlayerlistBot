@@ -119,16 +119,18 @@ class Statistics(utils.Extension):
 
         xuid = maybe_xuid.profile_users[0].id
 
-        await self.bot.redis.setex(
-            name=str(xuid),
-            time=utils.EXPIRE_GAMERTAGS_AT,
-            value=gamertag,
-        )
-        await self.bot.redis.setex(
-            name=f"rpl-{gamertag}",
-            time=utils.EXPIRE_GAMERTAGS_AT,
-            value=str(xuid),
-        )
+        async with self.bot.redis.pipeline() as pipe:
+            pipe.setex(
+                name=str(xuid),
+                time=utils.EXPIRE_GAMERTAGS_AT,
+                value=gamertag,
+            )
+            pipe.setex(
+                name=f"rpl-{gamertag}",
+                time=utils.EXPIRE_GAMERTAGS_AT,
+                value=str(xuid),
+            )
+            await pipe.execute()
 
         return xuid
 

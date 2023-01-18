@@ -258,16 +258,18 @@ class GeneralCMDS(utils.Extension):
                 if s.id == "Gamertag"
             )
 
-            await self.bot.redis.setex(
-                name=str(valid_xuid),
-                time=utils.EXPIRE_GAMERTAGS_AT,
-                value=maybe_gamertag,
-            )
-            await self.bot.redis.setex(
-                name=f"rpl-{maybe_gamertag}",
-                time=utils.EXPIRE_GAMERTAGS_AT,
-                value=str(valid_xuid),
-            )
+            async with self.bot.redis.pipeline() as pipe:
+                pipe.setex(
+                    name=str(valid_xuid),
+                    time=utils.EXPIRE_GAMERTAGS_AT,
+                    value=maybe_gamertag,
+                )
+                pipe.setex(
+                    name=f"rpl-{maybe_gamertag}",
+                    time=utils.EXPIRE_GAMERTAGS_AT,
+                    value=str(valid_xuid),
+                )
+                await pipe.execute()
 
         await ctx.send(f"`{valid_xuid}`'s gamertag: `{maybe_gamertag}`.")
 

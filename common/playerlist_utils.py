@@ -7,7 +7,7 @@ import attrs
 import naff
 import orjson
 from apischema import ValidationError
-from redis.exceptions import ConnectionError
+from redis.asyncio.client import Pipeline
 from tortoise.exceptions import DoesNotExist
 
 import common.classes as cclasses
@@ -133,25 +133,22 @@ class GamertagHandler:
 
             self.index += 1
 
-    async def _add_to_redis(self, xuid: str, gamertag: str) -> None:
-        with contextlib.suppress(ConnectionError):
-            await self.bot.redis.setex(
-                name=xuid, time=utils.EXPIRE_GAMERTAGS_AT, value=gamertag
-            )
-            await self.bot.redis.setex(
-                name=f"rpl-{gamertag}", time=utils.EXPIRE_GAMERTAGS_AT, value=xuid
-            )
-
     def _handle_new_gamertag(
-        self, xuid: str, gamertag: str, dict_gamertags: dict[str, str]
+        self, pipe: Pipeline, xuid: str, gamertag: str, dict_gamertags: dict[str, str]
     ) -> None:
         if not xuid or not gamertag:
             return
 
         dict_gamertags[xuid] = gamertag
 
-        # redis can take a while, put it in the background
-        asyncio.create_task(self._add_to_redis(xuid, gamertag))
+        pipe.setex(name=xuid, time=utils.EXPIRE_GAMERTAGS_AT, value=gamertag)
+        pipe.setex(name=f"rpl-{gamertag}", time=utils.EXPIRE_GAMERTAGS_AT, value=xuid)
+
+    async def _execute_pipeline(self, pipe: Pipeline) -> None:
+        try:
+            await pipe.execute()
+        finally:
+            await pipe.reset()
 
     async def run(self) -> dict[str, str]:
         while self.index < len(self.xuids_to_get):
@@ -168,23 +165,34 @@ class GamertagHandler:
 
         dict_gamertags: dict[str, str] = {}
 
-        for response in self.responses:
-            if isinstance(response, xbox_api.PeopleHubResponse):
-                for user in response.people:
-                    self._handle_new_gamertag(user.xuid, user.gamertag, dict_gamertags)
-            elif isinstance(response, xbox_api.ProfileResponse):
-                for user in response.profile_users:
-                    xuid = user.id
-                    try:
-                        # really funny but efficient way of getting gamertag
-                        # from this data
-                        gamertag = next(
-                            s.value for s in user.settings if s.id == "Gamertag"
-                        )
-                    except (KeyError, StopIteration):
-                        continue
+        pipe = self.bot.redis.pipeline()
 
-                    self._handle_new_gamertag(xuid, gamertag, dict_gamertags)
+        try:
+            for response in self.responses:
+                if isinstance(response, xbox_api.PeopleHubResponse):
+                    for user in response.people:
+                        self._handle_new_gamertag(
+                            pipe, user.xuid, user.gamertag, dict_gamertags
+                        )
+                elif isinstance(response, xbox_api.ProfileResponse):
+                    for user in response.profile_users:
+                        xuid = user.id
+                        try:
+                            # really funny but efficient way of getting gamertag
+                            # from this data
+                            gamertag = next(
+                                s.value for s in user.settings if s.id == "Gamertag"
+                            )
+                        except (KeyError, StopIteration):
+                            continue
+
+                        self._handle_new_gamertag(pipe, xuid, gamertag, dict_gamertags)
+
+            # send data to pipeline in background
+            asyncio.create_task(self._execute_pipeline(pipe))
+        except:
+            await pipe.reset()
+            raise
 
         return dict_gamertags
 
@@ -267,28 +275,31 @@ async def fill_in_gamertags_for_sessions(
     bot: utils.RealmBotBase,
     player_sessions: list[models.PlayerSession],
 ) -> list[models.PlayerSession]:
-    player_list: list[models.PlayerSession] = []
-    unresolved_dict: dict[str, models.PlayerSession] = {}
+    session_dict = {session.xuid: session for session in player_sessions}
+    unresolved: list[str] = []
 
-    for member in player_sessions:
-        member.gamertag = await bot.redis.get(member.xuid)
-        if member.resolved:
-            player_list.append(member)
-        else:
-            unresolved_dict[member.xuid] = member
+    async with bot.redis.pipeline() as pipeline:
+        for session in player_sessions:
+            pipeline.get(session.xuid)
+        gamertag_list: list[str | None] = await pipeline.execute()
 
-    if unresolved_dict:
+    for index, xuid in enumerate(session_dict.keys()):
+        gamertag = gamertag_list[index]
+        session_dict[xuid].gamertag = gamertag_list[index]
+
+        if not gamertag:
+            unresolved.append(xuid)
+
+    if unresolved:
         gamertag_handler = GamertagHandler(
             bot,
             bot.pl_sem,
-            tuple(unresolved_dict.keys()),
+            tuple(unresolved),
             bot.openxbl_session,
         )
         gamertag_dict = await gamertag_handler.run()
 
         for xuid, gamertag in gamertag_dict.items():
-            unresolved_dict[xuid].gamertag = gamertag
+            session_dict[xuid].gamertag = gamertag
 
-        player_list.extend(unresolved_dict.values())
-
-    return player_list
+    return list(session_dict.values())
