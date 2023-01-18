@@ -285,7 +285,7 @@ async def fill_in_gamertags_for_sessions(
 
     for index, xuid in enumerate(session_dict.keys()):
         gamertag = gamertag_list[index]
-        session_dict[xuid].gamertag = gamertag_list[index]
+        session_dict[xuid].gamertag = gamertag
 
         if not gamertag:
             unresolved.append(xuid)
