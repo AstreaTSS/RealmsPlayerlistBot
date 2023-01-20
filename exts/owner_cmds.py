@@ -375,6 +375,9 @@ class OwnerCMDs(utils.Extension):
 
         await ctx.message.add_reaction("✅")
 
+        if isinstance(result, bool):
+            result = str(bool)
+
         if isinstance(result, naff.Message):
             try:
                 e = debug_embed(
