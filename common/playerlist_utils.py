@@ -221,10 +221,12 @@ async def eventually_invalidate(
 
     if num_times >= limit:
         guild_config.playerlist_chan = None
+        old_live_playerlist = guild_config.live_playerlist
+        guild_config.live_playerlist = False
         await guild_config.save()
         await bot.redis.delete(f"invalid-playerlist-{guild_config.guild_id}")
 
-        if guild_config.realm_id and guild_config.live_playerlist:
+        if guild_config.realm_id and old_live_playerlist:
             bot.live_playerlist_store[guild_config.realm_id].discard(
                 guild_config.guild_id
             )
@@ -243,7 +245,7 @@ async def eventually_invalidate_realm_offline(
     if num_times >= limit:
         guild_config.realm_offline_role = None
         await guild_config.save()
-        await bot.redis.delete(f"invalid-playerlist-{guild_config.guild_id}")
+        await bot.redis.delete(f"invalid-realmoffline-{guild_config.guild_id}")
 
 
 async def fetch_playerlist_channel(
