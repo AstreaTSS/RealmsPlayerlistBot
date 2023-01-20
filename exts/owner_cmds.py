@@ -370,13 +370,10 @@ class OwnerCMDs(utils.Extension):
     async def handle_exec_result(
         self, ctx: naff.PrefixedContext, result: typing.Any, value: typing.Any
     ) -> naff.Message:
-        if not result:
-            result = value if value is not None else "No Output!"
+        if result is None:
+            result = value or "No Output!"
 
         await ctx.message.add_reaction("✅")
-
-        if isinstance(result, bool):
-            result = str(bool)
 
         if isinstance(result, naff.Message):
             try:
