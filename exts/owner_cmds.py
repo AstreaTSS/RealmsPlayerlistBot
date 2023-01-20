@@ -482,6 +482,14 @@ class OwnerCMDs(utils.Extension):
         await ctx.reply("Done!")
 
     async def ext_error(self, error: Exception, ctx: naff.Context) -> None:
+        if isinstance(ctx, naff.PrefixedContext):
+            ctx.reply = ctx.send  # type: ignore
+
+        if isinstance(error, naff.errors.CommandCheckFailure):
+            if isinstance(ctx, naff.SendableContext):
+                await ctx.send("Nice try.")
+            return
+
         error_str = utils.error_format(error)
         chunks = utils.line_split(error_str)
 
@@ -498,9 +506,7 @@ class OwnerCMDs(utils.Extension):
 
         await utils.msg_to_owner(self.bot, to_send, split)
 
-        if isinstance(ctx, naff.PrefixedContext):
-            await ctx.reply("An error occured. Please check your DMs.")
-        elif hasattr(ctx, "send"):
+        if isinstance(ctx, naff.SendableContext):
             await ctx.send("An error occured. Please check your DMs.")
 
 
