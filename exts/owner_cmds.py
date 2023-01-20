@@ -371,7 +371,7 @@ class OwnerCMDs(utils.Extension):
         self, ctx: naff.PrefixedContext, result: typing.Any, value: typing.Any
     ) -> naff.Message:
         if not result:
-            result = value or "No Output!"
+            result = value if value is not None else "No Output!"
 
         await ctx.message.add_reaction("✅")
 
