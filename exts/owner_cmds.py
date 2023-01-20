@@ -483,7 +483,7 @@ class OwnerCMDs(utils.Extension):
 
     async def ext_error(self, error: Exception, ctx: naff.Context) -> None:
         if isinstance(ctx, naff.PrefixedContext):
-            ctx.reply = ctx.send  # type: ignore
+            ctx.send = ctx.reply
 
         if isinstance(error, naff.errors.CommandCheckFailure):
             if isinstance(ctx, naff.SendableContext):
