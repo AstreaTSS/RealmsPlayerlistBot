@@ -199,7 +199,7 @@ class PlayerlistEventHandling(naff.Extension):
                         f" {self.bot.mention_cmd('config link-realm')} again to"
                         " fix it.\n\nAlternatively, if you want to disable the"
                         " autorunner entirely, you can use"
-                        f" {self.bot.mention_cmd('config unset-playerlist-channel')} to"
+                        f" {self.bot.mention_cmd('config playerlist-channel')} to"
                         " do so."
                     ),
                     color=naff.RoleColors.YELLOW,

@@ -114,9 +114,9 @@ class PremiumHandling(naff.Extension):
         )
 
     @premium.subcommand(
-        sub_cmd_name="toggle-live-playerlist",
+        sub_cmd_name="live-playerlist",
         sub_cmd_description=(
-            "Toggles the live playerlist. Can only be run for servers with"
+            "Turns on or off the live playerlist. Can only be run for servers with"
             " premium activated."
         ),
     )

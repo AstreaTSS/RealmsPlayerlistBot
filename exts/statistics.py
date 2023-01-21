@@ -364,7 +364,7 @@ class Statistics(utils.Extension):
         )
 
     @premium.subcommand(
-        sub_cmd_name="graph-individual",
+        sub_cmd_name="graph-player",
         sub_cmd_description=(
             "Produces a graph of a player's playtime over a specifed period as a"
             " graph. Beta, requires premium."
@@ -372,7 +372,7 @@ class Statistics(utils.Extension):
     )
     @naff.cooldown(naff.Buckets.GUILD, 1, 5)  # type: ignore
     @naff.check(stats_check)  # type: ignore
-    async def graph_individual(
+    async def graph_player(
         self,
         ctx: utils.RealmContext,
         gamertag: str = tansy.Option("The gamertag of the user to graph."),
@@ -388,7 +388,7 @@ class Statistics(utils.Extension):
         )
 
     @premium.subcommand(
-        sub_cmd_name="graph-individual-summary",
+        sub_cmd_name="graph-player-summary",
         sub_cmd_description=(
             "Summarizes a player over a specified period, by a specified interval."
             " Beta, requires premium."
@@ -396,7 +396,7 @@ class Statistics(utils.Extension):
     )
     @naff.cooldown(naff.Buckets.GUILD, 1, 5)  # type: ignore
     @naff.check(stats_check)  # type: ignore
-    async def graph_individual_summary(
+    async def graph_player_summary(
         self,
         ctx: utils.RealmContext,
         gamertag: str = tansy.Option("The gamertag of the user to graph."),

@@ -192,50 +192,50 @@ class GuildConfig(utils.Extension):
                 raise
 
     @config.subcommand(
-        sub_cmd_name="set-playerlist-channel",
-        sub_cmd_description="Sets where the autorun playerlist is sent to.",
+        sub_cmd_name="playerlist-channel",
+        sub_cmd_description="Sets (or unsets) where the autorun playerlist is sent to.",
     )
     async def set_playerlist_channel(
         self,
         ctx: utils.RealmContext,
-        channel: naff.GuildText = tansy.Option(
+        channel: typing.Optional[naff.GuildText] = tansy.Option(
             "The channel to set the playerlist to.",
             converter=cclasses.ValidChannelConverter,
         ),
+        unset: bool = tansy.Option("Should the channel be unset?", default=False),
     ) -> None:
-        if typing.TYPE_CHECKING:
-            assert isinstance(channel, naff.GuildText)  # noqa: S101
-
-        config = await ctx.fetch_config()
-        config.playerlist_chan = channel.id
-        await config.save()
-        await self.bot.redis.delete(f"invalid-playerlist-{config.guild_id}")
-
-        await ctx.send(f"Set the playerlist channel to {channel.mention}.")
-
-    @config.subcommand(
-        sub_cmd_name="unset-playerlist-channel",
-        sub_cmd_description="Unsets the autorun playerlist channel.",
-    )
-    async def unset_playerlist_channel(
-        self,
-        ctx: utils.RealmContext,
-    ) -> None:
-        config = await ctx.fetch_config()
-
-        if not config.playerlist_chan:
-            raise utils.CustomCheckFailure(
-                "There was no channel set in the first place."
+        # xors, woo!
+        if not (unset ^ bool(channel)):
+            raise naff.errors.BadArgument(
+                "You must either set a channel or explictly unset the channel. One must"
+                " be given."
             )
 
-        config.playerlist_chan = None
-        await config.save()
-        await self.bot.redis.delete(f"invalid-playerlist-{config.guild_id}")
+        config = await ctx.fetch_config()
 
-        if config.realm_id:
-            self.bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
+        if channel:
+            if typing.TYPE_CHECKING:
+                assert isinstance(channel, naff.GuildText)  # noqa: S101
 
-        await ctx.send("Unset the playerlist channel.")
+            config.playerlist_chan = channel.id
+            await config.save()
+            await self.bot.redis.delete(f"invalid-playerlist-{config.guild_id}")
+
+            await ctx.send(f"Set the playerlist channel to {channel.mention}.")
+        else:
+            if not config.playerlist_chan:
+                raise utils.CustomCheckFailure(
+                    "There was no channel set in the first place."
+                )
+
+            config.playerlist_chan = None
+            await config.save()
+            await self.bot.redis.delete(f"invalid-playerlist-{config.guild_id}")
+
+            if config.realm_id:
+                self.bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
+
+            await ctx.send("Unset the playerlist channel.")
 
     @staticmethod
     def button_check(author_id: int) -> typing.Callable[..., bool]:
@@ -245,110 +245,117 @@ class GuildConfig(utils.Extension):
         return _check
 
     @config.subcommand(
-        sub_cmd_name="set-realm-offline-ping",
+        sub_cmd_name="realm-offline-role",
         sub_cmd_description=(
-            "Sets the role that should be pinged in the autorunner channel if the Realm"
-            " goes offline."
+            "Sets (or unsets) the role that should be pinged in the autorunner channel"
+            " if the Realm goes offline."
         ),
     )
-    async def set_realm_offline_ping(
+    async def set_realm_offline_role(
         self,
         ctx: utils.RealmContext,
-        role: naff.Role = tansy.Option("The role to use for the ping."),
+        role: typing.Optional[naff.Role] = tansy.Option(
+            "The role to use for the ping."
+        ),
+        unset: bool = tansy.Option("Should the role be unset?", default=False),
     ) -> None:
         """
-        Sets the role that should be pinged in the autorunner channel if the Realm goes offline.
+        Sets (or unsets) the role that should be pinged in the autorunner channel if the Realm goes offline.
         This may be unreliable due to how it's made - it works best in large Realms that \
         rarely have 0 players, and may trigger too often otherwise.
 
         The bot must be linked to a Realm and the autorunner channel must be set for this to work.
         The bot also must be able to ping the role.
+
+        You must either set a role or explictly unset the role. Only one of the two may (and must) be given.
         """
-        if (
-            not role.mentionable
-            and naff.Permissions.MENTION_EVERYONE
-            not in ctx.channel.permissions_for(ctx.guild.me)
-        ):
-            raise utils.CustomCheckFailure(
-                "I cannot ping this role. Make sure the role is either mentionable or"
-                " the bot can mention all roles."
+        # xors, woo!
+        if not (unset ^ bool(role)):
+            raise naff.errors.BadArgument(
+                "You must either set a role or explictly unset the role. One must be"
+                " given."
             )
 
         config = await ctx.fetch_config()
 
-        if not config.realm_id or not config.club_id:
-            raise utils.CustomCheckFailure(
-                "Please link your Realm with this server with"
-                f" {self.link_realm.mention()} first."
-            )
-
-        if not config.playerlist_chan:
-            raise utils.CustomCheckFailure(
-                "Please set up the autorunner with"
-                f" {self.set_playerlist_channel.mention()} first."
-            )
-
-        embed = naff.Embed(
-            title="Warning",
-            description=(
-                "This ping won't be 100% accurate. The ping hooks onto an event where"
-                ' the Realm "disappears" from the bot\'s perspective, which happens'
-                " for a variety of reasons, like crashing... or sometimes, when no one"
-                " is on the server. Because of this, *it is recommended that this is"
-                " only enabled for large Realms.*\n\n**If you wish to continue with"
-                " adding the role, press the accept button.** You have 30 seconds to"
-                " do so."
-            ),
-            timestamp=naff.Timestamp.utcnow(),
-            color=naff.RoleColors.YELLOW,
-        )
-
-        result = ""
-        event = None
-
-        components = [
-            naff.Button(naff.ButtonStyles.GREEN, "Accept", "✅"),
-            naff.Button(naff.ButtonStyles.RED, "Decline", "✖️"),
-        ]
-        msg = await ctx.send(embed=embed, components=components)
-
-        try:
-            event = await self.bot.wait_for_component(
-                msg, components, self.button_check(ctx.author.id), timeout=30
-            )
-
-            if event.ctx.custom_id == components[1].custom_id:
-                result = "Declined setting the Realm offline ping."
-            else:
-                config.realm_offline_role = role.id
-                await config.save()
-
-                result = f"Set the Realm offline ping to {role.mention}."
-        except asyncio.TimeoutError:
-            result = "Timed out."
-        finally:
-            if event:
-                await event.ctx.send(
-                    result, ephemeral=True, allowed_mentions=naff.AllowedMentions.none()
+        if role:
+            if (
+                not role.mentionable
+                and naff.Permissions.MENTION_EVERYONE
+                not in ctx.channel.permissions_for(ctx.guild.me)
+            ):
+                raise utils.CustomCheckFailure(
+                    "I cannot ping this role. Make sure the role is either mentionable"
+                    " or the bot can mention all roles."
                 )
-            await ctx.edit(msg, content=result, embeds=[], embed=[], components=[])  # type: ignore
 
-    @config.subcommand(
-        sub_cmd_name="unset-realm-offline-ping",
-        sub_cmd_description=(
-            "Unsets the role that is pinged in the autorunner channel if the Realm"
-            " goes offline."
-        ),
-    )
-    async def unset_realm_offline_ping(self, ctx: utils.RealmContext) -> None:
-        config = await ctx.fetch_config()
+            if not config.realm_id or not config.club_id:
+                raise utils.CustomCheckFailure(
+                    "Please link your Realm with this server with"
+                    f" {self.link_realm.mention()} first."
+                )
 
-        if not config.realm_offline_role:
-            raise utils.CustomCheckFailure("There was no role set in the first place.")
+            if not config.playerlist_chan:
+                raise utils.CustomCheckFailure(
+                    "Please set up the autorunner with"
+                    f" {self.set_playerlist_channel.mention()} first."
+                )
 
-        config.realm_offline_role = None
-        await config.save()
-        await ctx.send("Unset the Realm offline ping role.")
+            embed = naff.Embed(
+                title="Warning",
+                description=(
+                    "This ping won't be 100% accurate. The ping hooks onto an event"
+                    ' where the Realm "disappears" from the bot\'s perspective, which'
+                    " happens for a variety of reasons, like crashing... or sometimes,"
+                    " when no one is on the server. Because of this, *it is recommended"
+                    " that this is only enabled for large Realms.*\n\n**If you wish to"
+                    " continue with adding the role, press the accept button.** You"
+                    " have 30 seconds to do so."
+                ),
+                timestamp=naff.Timestamp.utcnow(),
+                color=naff.RoleColors.YELLOW,
+            )
+
+            result = ""
+            event = None
+
+            components = [
+                naff.Button(naff.ButtonStyles.GREEN, "Accept", "✅"),
+                naff.Button(naff.ButtonStyles.RED, "Decline", "✖️"),
+            ]
+            msg = await ctx.send(embed=embed, components=components)
+
+            try:
+                event = await self.bot.wait_for_component(
+                    msg, components, self.button_check(ctx.author.id), timeout=30
+                )
+
+                if event.ctx.custom_id == components[1].custom_id:
+                    result = "Declined setting the Realm offline ping."
+                else:
+                    config.realm_offline_role = role.id
+                    await config.save()
+
+                    result = f"Set the Realm offline ping to {role.mention}."
+            except asyncio.TimeoutError:
+                result = "Timed out."
+            finally:
+                if event:
+                    await event.ctx.send(
+                        result,
+                        ephemeral=True,
+                        allowed_mentions=naff.AllowedMentions.none(),
+                    )
+                await ctx.edit(msg, content=result, embeds=[], embed=[], components=[])  # type: ignore
+        else:
+            if not config.realm_offline_role:
+                raise utils.CustomCheckFailure(
+                    "There was no role set in the first place."
+                )
+
+            config.realm_offline_role = None
+            await config.save()
+            await ctx.send("Unset the Realm offline ping role.")
 
     @config.subcommand(
         sub_cmd_name="help",
