@@ -51,7 +51,9 @@ class PlayerSession(Model):
     @property
     def base_display(self) -> str:
         return (
-            f"`{self.gamertag}`" if self.gamertag else f"User with XUID `{self.xuid}`"
+            f"`{self.gamertag}`"
+            if self.gamertag
+            else f"User with XUID `{self.xuid or 'N/A'}`"
         )
 
     @property
