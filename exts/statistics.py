@@ -145,6 +145,9 @@ class Statistics(utils.Extension):
         async for entry in models.PlayerSession.filter(
             realm_id=config.realm_id, joined_at__gte=min_datetime, **filter_kwargs
         ):
+            if not entry.joined_at or not entry.last_seen:
+                continue
+
             datetimes_to_use.append((entry.joined_at, entry.last_seen))  # type: ignore
 
         if not datetimes_to_use:
@@ -360,7 +363,7 @@ class Statistics(utils.Extension):
         await self.process_summary(
             ctx,
             summarize_by,
-            "Summary of playtime on the Realm over the past {days_humanized} by hour",
+            "Playtime on the Realm over the past {days_humanized} by hour",
         )
 
     @premium.subcommand(
@@ -406,8 +409,7 @@ class Statistics(utils.Extension):
         await self.process_summary(
             ctx,
             summarize_by,
-            f"Summary of playtime by {gamertag} over the past "
-            + "{days_humanized} by hour",
+            f"Playtime of {gamertag} over the past " + "{days_humanized} by hour",
             filter_kwargs={"xuid": xuid},
         )
 
