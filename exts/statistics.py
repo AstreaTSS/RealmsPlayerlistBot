@@ -264,12 +264,18 @@ class Statistics(utils.Extension):
             bottom_label = "Date and Hour (UTC) in {localized_format}"
             localizations = (US_FORMAT, INTERNATIONAL_FORMAT)
 
+            num_days_ago = num_days_ago.replace(minute=0, second=0, microsecond=0)
+
             if indivdual:
                 template_kwargs = {"max_value": 60}
         else:
             func_to_use = stats_utils.get_minutes_per_day
             bottom_label = "Date (UTC) in {localized_format}"
             localizations = (US_FORMAT_DATE, INTERNATIONAL_FORMAT_DATE)
+
+            num_days_ago = num_days_ago.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
 
         await self.process_graph(
             ctx,
