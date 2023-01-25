@@ -50,17 +50,29 @@ def get_minutes_per_hour(
         current_hour = int(start.timestamp())
 
         while current_hour < end_time:
-            # calculate the number of minutes in the current hour
+            # comments arent repeated for every function, use this one as ref
+
+            # you may be asking "what is hour floored?"
+            # basically, it's the exact second the hour starts
+            # so, say, instead of being 1:32:21, it'll be 1:00:00
+            hour_floored = current_hour // InSeconds.HOUR * InSeconds.HOUR
+            next_hour = hour_floored + InSeconds.HOUR
+
+            # if the current hour + one hour is greater than the end time,
+            # calculate the seconds between the end time and the current hour
+            # else, calculate the seconds between the next hour and the current
+            # hour time
+            # note that we do not want to round current hour here or make assumptions
+            # that it is floored as if it is, say, 1:32, and our end time is 1:54, we
+            # want to make sure to calculate between 54 and 32, not 54 and 00
             minutes_in_hour = (
-                60
+                (next_hour - current_hour) // 60
                 if current_hour + InSeconds.HOUR <= end_time
                 else (end_time - current_hour) // 60
             )
 
-            minutes_per_hour[
-                current_hour // InSeconds.HOUR * InSeconds.HOUR
-            ] += minutes_in_hour
-            current_hour += InSeconds.HOUR
+            minutes_per_hour[hour_floored] += minutes_in_hour
+            current_hour = next_hour
 
     min_timestamp = (
         get_nearest_hour_timestamp(min_datetime)
@@ -92,17 +104,17 @@ def get_minutes_per_day(
         current_day = int(start.timestamp())
 
         while current_day < end_time:
-            # calculate the number of minutes in the current day
+            day_floored = current_day // InSeconds.DAY * InSeconds.DAY
+            next_day = day_floored + InSeconds.DAY
+
             minutes_in_day = (
-                1440
+                (next_day - current_day) // 60
                 if current_day + InSeconds.DAY <= end_time
                 else (end_time - current_day) // 60
             )
 
-            minutes_per_day[
-                current_day // InSeconds.DAY * InSeconds.DAY
-            ] += minutes_in_day
-            current_day += InSeconds.DAY
+            minutes_per_day[day_floored] += minutes_in_day
+            current_day = next_day
 
     min_timestamp = (
         get_nearest_day_timestamp(min_datetime)
@@ -133,16 +145,20 @@ def timespan_minutes_per_hour(
         current_hour = int(start.timestamp())
 
         while current_hour < end_time:
-            # calculate the number of minutes in the current hour
+            next_hour = (
+                current_hour % InSeconds.HOUR // InSeconds.HOUR
+            ) + InSeconds.HOUR
+
             minutes_in_hour = (
-                60
+                (next_hour - current_hour) // 60
                 if current_hour + InSeconds.HOUR <= end_time
                 else (end_time - current_hour) // 60
             )
 
+            # represents the hour of the day the time is in
             minutes_per_hour[
                 current_hour % InSeconds.DAY // InSeconds.HOUR
             ] += minutes_in_hour
-            current_hour += InSeconds.HOUR
+            current_hour = next_hour
 
     return {datetime.time(hour=k): v for k, v in minutes_per_hour.items()}
