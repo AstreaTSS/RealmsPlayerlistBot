@@ -146,7 +146,7 @@ def timespan_minutes_per_hour(
 
         while current_hour < end_time:
             next_hour = (
-                current_hour % InSeconds.HOUR // InSeconds.HOUR
+                current_hour // InSeconds.HOUR * InSeconds.HOUR
             ) + InSeconds.HOUR
 
             minutes_in_hour = (
