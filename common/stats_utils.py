@@ -162,3 +162,33 @@ def timespan_minutes_per_hour(
             current_hour = next_hour
 
     return {datetime.time(hour=k): v for k, v in minutes_per_hour.items()}
+
+
+def timespan_minutes_per_day_of_the_week(
+    ranges: typing.Iterable[tuple[datetime.datetime, datetime.datetime]],
+    **kwargs: typing.Any,
+) -> dict[datetime.date, int]:
+    minutes_per_day_of_the_week: dict[int, int] = {i: 0 for i in range(7)}
+
+    for start, end in ranges:
+        end_time = int(end.timestamp())
+        current_day = int(start.timestamp())
+
+        while current_day < end_time:
+            next_day = (current_day // InSeconds.DAY * InSeconds.DAY) + InSeconds.DAY
+            minutes_in_day = (
+                (next_day - current_day) // 60
+                if current_day + InSeconds.DAY <= end_time
+                else (end_time - current_day) // 60
+            )
+
+            # https://stackoverflow.com/questions/36389130/how-to-calculate-the-day-of-the-week-based-on-unix-time
+            minutes_per_day_of_the_week[
+                ((current_day // InSeconds.DAY) + 4) % 7
+            ] += minutes_in_day
+            current_day = next_day
+
+    return {
+        datetime.date(year=1970, month=1, day=(k - 3) + 7): v
+        for k, v in minutes_per_day_of_the_week.items()
+    }

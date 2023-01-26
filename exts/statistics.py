@@ -31,6 +31,7 @@ US_FORMAT = f"{US_FORMAT_DATE} {US_FORMAT_TIME}"
 INTERNATIONAL_FORMAT_TIME = "%k:%M"
 INTERNATIONAL_FORMAT_DATE = "%d/%m/%y"
 INTERNATIONAL_FORMAT = f"{INTERNATIONAL_FORMAT_DATE} {INTERNATIONAL_FORMAT_TIME}"
+DAY_OF_THE_WEEK = "%A"
 
 SHOWABLE_FORMAT = {
     US_FORMAT_TIME: "HH AM/PM",
@@ -39,21 +40,22 @@ SHOWABLE_FORMAT = {
     INTERNATIONAL_FORMAT_TIME: "HH:MM",
     INTERNATIONAL_FORMAT_DATE: "DD/MM/YY",
     INTERNATIONAL_FORMAT: "DD/MM/YY HH:MM",
+    DAY_OF_THE_WEEK: "",  # no localization needed, here just so things don't fail
 }
 
 PERIOD_TO_GRAPH = [
     naff.SlashCommandChoice("One day, per hour", "1pH"),
     naff.SlashCommandChoice("1 week, per day", "7pD"),
-    # naff.SlashCommandChoice("2 weeks, per day", "14pD"),
+    naff.SlashCommandChoice("2 weeks, per day", "14pD"),
     # naff.SlashCommandChoice("30 days, per day", "30pD"),
     # naff.SlashCommandChoice("30 days, per week", "30pW"),
 ]
 
 SUMMARIZE_BY = [
     naff.SlashCommandChoice("1 week, by hour", "7bH"),
-    # naff.SlashCommandChoice("2 weeks, by hour", "14bH"),
+    naff.SlashCommandChoice("2 weeks, by hour", "14bH"),
     # naff.SlashCommandChoice("30 days, by hour", "30bH"),
-    # naff.SlashCommandChoice("2 weeks, by day of the week", "14bD"),
+    naff.SlashCommandChoice("2 weeks, by day of the week", "14bD"),
     # naff.SlashCommandChoice("30 days, by day of the week", "30bD"),
 ]
 
@@ -70,7 +72,12 @@ async def stats_check(ctx: utils.RealmContext) -> bool:
         guild_config = await ctx.fetch_config()
     except DoesNotExist:
         return False
-    return bool(guild_config.premium_code and guild_config.realm_id)
+
+    return (
+        bool(guild_config.realm_id)
+        if utils.TEST_MODE
+        else bool(guild_config.premium_code and guild_config.realm_id)
+    )
 
 
 class Statistics(utils.Extension):
@@ -314,15 +321,31 @@ class Statistics(utils.Extension):
             now - datetime.timedelta(days=num_days) + datetime.timedelta(minutes=1)
         )
 
+        actual_summarize_by = summary_split[1]
+
+        if actual_summarize_by == "H":
+            func_to_use = stats_utils.timespan_minutes_per_hour
+            bottom_label = "Hour (UTC) in {localized_format}"
+            localizations = (US_FORMAT_TIME, INTERNATIONAL_FORMAT_TIME)
+            summarize_by_string = "hour"
+
+        else:
+            func_to_use = stats_utils.timespan_minutes_per_day_of_the_week
+            bottom_label = "Day of the week (UTC)"
+            localizations = (DAY_OF_THE_WEEK, DAY_OF_THE_WEEK)
+            summarize_by_string = "day of the week"
+
         await self.process_graph(
             ctx,
             config=config,
-            func_to_use=stats_utils.timespan_minutes_per_hour,
+            func_to_use=func_to_use,
             now=now,
             min_datetime=num_days_ago,
-            title=title.format(days_humanized=DAY_HUMANIZED[num_days]),
-            bottom_label="Hour (UTC) in {localized_format}",
-            localizations=(US_FORMAT_TIME, INTERNATIONAL_FORMAT_TIME),
+            title=title.format(
+                days_humanized=DAY_HUMANIZED[num_days], summarize_by=summarize_by_string
+            ),
+            bottom_label=bottom_label,
+            localizations=localizations,
             filter_kwargs=filter_kwargs,
             template_kwargs={"max_value": None},
         )
@@ -369,7 +392,7 @@ class Statistics(utils.Extension):
         await self.process_summary(
             ctx,
             summarize_by,
-            "Playtime on the Realm over the past {days_humanized} by hour",
+            "Playtime on the Realm over the past {days_humanized} by {summarize_by}",
         )
 
     @premium.subcommand(
