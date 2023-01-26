@@ -173,6 +173,7 @@ class Statistics(utils.Extension):
         bottom_label: str,
         localizations: tuple[str, str],
         now: datetime.datetime,
+        warn_about_earliest: bool = False,
         **template_kwargs: typing.Any,
     ) -> None:
         locale = ctx.locale or ctx.guild_locale or "en_GB"
@@ -189,13 +190,30 @@ class Statistics(utils.Extension):
             **template_kwargs,
         )
 
+        embeds: list[naff.Embed] = []
+
+        if warn_about_earliest:
+            embeds.append(
+                naff.Embed(
+                    title="Warning",
+                    description=(
+                        "The bot does not have enough data to properly graph data for"
+                        " the timestan you specified (most likely, you specified a"
+                        " timespan that goes further back than when you first set up"
+                        " the bot with your Realm). This data may be inaccurate."
+                    ),
+                    color=naff.RoleColors.YELLOW,
+                )
+            )
+
         embed = naff.Embed(
             color=self.bot.color,
             timestamp=now,  # type: ignore
         )
         embed.set_image(url)
+        embeds.append(embed)
 
-        await ctx.send(embeds=embed)
+        await ctx.send(embeds=embeds)
 
     async def process_graph(
         self,
@@ -220,6 +238,15 @@ class Statistics(utils.Extension):
             config, min_datetime, **filter_kwargs
         )
 
+        # if the minimum datetime plus one day that we passed is still before
+        # the earliest datetime we've gathered, that probably means the bot
+        # has only recently tracked a realm, and so we want to warn that
+        # the data might not be the best
+        earliest_datetime = min(d[0] for d in datetimes_to_use)
+        warn_about_earliest = (
+            min_datetime + datetime.timedelta(days=1) < earliest_datetime
+        )
+
         minutes_per_period = func_to_use(
             datetimes_to_use,
             min_datetime=min_datetime,
@@ -234,6 +261,7 @@ class Statistics(utils.Extension):
             bottom_label,
             localizations,
             now,
+            warn_about_earliest=warn_about_earliest,
             **template_kwargs,
         )
 
