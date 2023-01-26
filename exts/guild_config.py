@@ -1,6 +1,7 @@
 import asyncio
 import collections
 import importlib
+import logging
 import os
 import re
 import typing
@@ -117,79 +118,126 @@ class GuildConfig(utils.Extension):
     @config.subcommand(
         sub_cmd_name="link-realm",
         sub_cmd_description=(
-            "Links a realm to this server via a realm code. This overwrites the old"
-            " Realm stored."
+            "Links (or unlinks) a realm to this server via a realm code. This"
+            " overwrites the old Realm stored."
         ),
     )
     async def link_realm(
         self,
         ctx: utils.RealmContext,
-        _realm_code: str = tansy.Option("The Realm code or link.", name="realm_code"),
+        _realm_code: typing.Optional[str] = tansy.Option(
+            "The Realm code or link.", name="realm_code", default=None
+        ),
+        unlink: bool = tansy.Option(
+            (
+                "Should the Realm be unlinked from this server? Do not set this if you"
+                " are linking your Realm."
+            ),
+            default=False,
+        ),
     ) -> None:
+        if not (unlink ^ bool(_realm_code)):
+            raise naff.errors.BadArgument(
+                "You must either give a realm code/link or explictly unlink your Realm."
+                " One must be given."
+            )
+
         config = await ctx.fetch_config()
 
-        realm_code_matches = REALMS_LINK_REGEX.fullmatch(_realm_code)
+        if _realm_code:
+            realm_code_matches = REALMS_LINK_REGEX.fullmatch(_realm_code)
 
-        if not realm_code_matches:
-            raise naff.errors.BadArgument("Invalid Realm code!")
+            if not realm_code_matches:
+                raise naff.errors.BadArgument("Invalid Realm code!")
 
-        realm_code = realm_code_matches[1]
+            realm_code = realm_code_matches[1]
 
-        try:
-            realm = await ctx.bot.realms.join_realm_from_code(realm_code)
+            try:
+                realm = await ctx.bot.realms.join_realm_from_code(realm_code)
 
-            config.realm_id = str(realm.id)
-            self.bot.realm_name_cache.add_one(config.realm_id, realm.name)
+                config.realm_id = str(realm.id)
+                self.bot.realm_name_cache.add_one(config.realm_id, realm.name)
 
-            embeds: collections.deque[naff.Embed] = collections.deque()
+                embeds: collections.deque[naff.Embed] = collections.deque()
 
-            if (
-                realm.club_id
-                and not await models.PlayerSession.filter(realm_id=realm.id).exists()
-            ):
-                config.club_id = str(realm.club_id)
-                await clubs_playerlist.fill_in_data_from_clubs(
-                    self.bot, config.realm_id, config.club_id
-                )
-            else:
-                warning_embed = naff.Embed(
-                    title="Warning",
+                if (
+                    realm.club_id
+                    and not await models.PlayerSession.filter(
+                        realm_id=realm.id
+                    ).exists()
+                ):
+                    config.club_id = str(realm.club_id)
+                    await clubs_playerlist.fill_in_data_from_clubs(
+                        self.bot, config.realm_id, config.club_id
+                    )
+                else:
+                    warning_embed = naff.Embed(
+                        title="Warning",
+                        description=(
+                            "I was unable to backfill player data for this Realm. If"
+                            f" you use {self.bot.mention_cmd('playerlist')}, it may"
+                            " show imcomplete player data. This should resolve itself"
+                            " in about 24 hours."
+                        ),
+                        color=naff.RoleColors.YELLOW,
+                    )
+                    embeds.appendleft(warning_embed)
+
+                await config.save()
+
+                confirm_embed = naff.Embed(
+                    title="Linked!",
                     description=(
-                        "I was unable to backfill player data for this Realm. If you"
-                        f" use {self.bot.mention_cmd('playerlist')}, it may show"
-                        " imcomplete player data. This should resolve itself in about"
-                        " 24 hours."
+                        "Linked this server to the Realm:"
+                        f" `{realm.name}`\n\n**IMPORTANT NOTE:** There will now be an"
+                        f" account called `{self.bot.own_gamertag}` on your Realm's"
+                        " player roster (and even the playerlist). *Do not ban or kick"
+                        " them.* The bot will not work with your Realm if you do so."
                     ),
-                    color=naff.RoleColors.YELLOW,
+                    color=naff.RoleColors.GREEN,
                 )
-                embeds.appendleft(warning_embed)
+                embeds.appendleft(confirm_embed)
+                await ctx.send(embeds=list(embeds))
+            except MicrosoftAPIException as e:
+                if (
+                    isinstance(e.error, aiohttp.ClientResponseError)
+                    and e.resp.status == 403
+                ):
+                    raise naff.errors.BadArgument(
+                        "Invalid Realm code. Please make sure the Realm code is spelled"
+                        " correctly, and that the code is valid."
+                    ) from None
+                else:
+                    raise
+        else:
+            if not config.realm_id:
+                raise utils.CustomCheckFailure("There's no Realm to unlink!")
+
+            realm_id = config.realm_id
+
+            config.realm_id = None
+            config.club_id = None
+            config.playerlist_chan = None
+            config.realm_offline_role
+            config.live_playerlist = False
 
             await config.save()
 
-            confirm_embed = naff.Embed(
-                title="Linked!",
-                description=(
-                    f"Linked this server to the Realm: `{realm.name}`\n\n**IMPORTANT"
-                    " NOTE:** There will now be an account called"
-                    f" `{self.bot.own_gamertag}` on your Realm's player roster (and"
-                    " even the playerlist). *Do not ban or kick them.* The bot will"
-                    " not work with your Realm if you do so."
-                ),
-                color=naff.RoleColors.GREEN,
-            )
-            embeds.appendleft(confirm_embed)
-            await ctx.send(embeds=list(embeds))
-        except MicrosoftAPIException as e:
-            if (
-                isinstance(e.error, aiohttp.ClientResponseError)
-                and e.resp.status == 403
-            ):
-                raise naff.errors.BadArgument(
-                    "Invalid Realm code. Please make sure the Realm code is spelled"
-                    " correctly, and that the code is valid."
-                ) from None
-            else:
-                raise
+            await ctx.send("Unlinked Realm.")
+
+            if not await models.GuildConfig.filter(realm_id=realm_id).exists():
+                try:
+                    await self.bot.realms.leave_realm(realm_id)
+                except MicrosoftAPIException as e:
+                    # might be an invalid id somehow? who knows
+                    if e.resp.status == 404:
+                        logging.getLogger("realms_bot").warning(
+                            f"Could not leave Realm with ID {realm_id}."
+                        )
+                    else:
+                        raise
+
+                self.bot.offline_realm_time.pop(int(realm_id), None)
 
     @config.subcommand(
         sub_cmd_name="playerlist-channel",
