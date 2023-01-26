@@ -218,7 +218,7 @@ class GuildConfig(utils.Extension):
             config.realm_id = None
             config.club_id = None
             config.playerlist_chan = None
-            config.realm_offline_role
+            config.realm_offline_role = None
             config.live_playerlist = False
 
             await config.save()
