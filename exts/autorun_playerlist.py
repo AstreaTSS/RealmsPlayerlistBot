@@ -121,9 +121,14 @@ class AutoRunPlayerlist(utils.Extension):
         # the ones listed here silence the 'this may take a long time' message
         # and also make it so it doesnt go back 12 hours, instead only going one
         # and yes, add the upsell info
-        await list_cmd.callback(
-            a_ctx, 1, autorunner=True, upsell=upsell, upsell_type=upsell_type
-        )
+
+        try:
+            await list_cmd.callback(
+                a_ctx, 1, autorunner=True, upsell=upsell, upsell_type=upsell_type
+            )
+        except naff.errors.HTTPException:
+            # likely a can't send in channel, eventually invalidate and move on
+            await pl_utils.eventually_invalidate(self.bot, guild_config)
 
 
 def setup(bot: utils.RealmBotBase) -> None:
