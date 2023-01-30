@@ -6,6 +6,7 @@ import os
 import typing
 
 import aiohttp
+import humanize
 import naff
 import orjson
 import tansy
@@ -508,6 +509,7 @@ class Statistics(utils.Extension):
         time_ago = now - time_delta
 
         sessions_str: list[str] = []
+        total_playtime: float = 0.0
 
         async for session in models.PlayerSession.filter(
             Q(xuid=xuid)
@@ -530,6 +532,10 @@ class Statistics(utils.Extension):
             if not session_str:
                 continue
 
+            if session.joined_at:
+                last_seen = now if session.online else session.last_seen
+                total_playtime += last_seen.timestamp() - session.joined_at.timestamp()
+
             sessions_str.append("\n".join(session_str))
 
         if not sessions_str:
@@ -537,6 +543,8 @@ class Statistics(utils.Extension):
                 f"There is no data for `{gamertag}` for the last {days_ago} days on"
                 " this Realm."
             )
+
+        natural_playtime = humanize.naturaldelta(total_playtime)
 
         chunks = [sessions_str[x : x + 6] for x in range(0, len(sessions_str), 6)]
         # session number = (chunk index * 6) + (session-in-chunk index + 1) - () are added for clarity
@@ -548,7 +556,8 @@ class Statistics(utils.Extension):
         # don't index at 0
         embeds = [
             naff.Embed(
-                f"Log for {gamertag} for the past {days_ago} days(s)",
+                title=f"Log for {gamertag} for the past {days_ago} days(s)",
+                description=f"Total playtime over this period: {natural_playtime}",
                 fields=[
                     naff.EmbedField(
                         f"Session {(chunk_index * 6) + (session_index + 1)}:",
