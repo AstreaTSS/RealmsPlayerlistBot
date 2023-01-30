@@ -161,10 +161,10 @@ class GamertagHandler:
                     await self.get_gamertags(current_xuid_list)
                 except GamertagOnCooldown:
                     # hopefully fixes itself in 15 seconds
-                    await asyncio.wait_for(self.backup_get_gamertags(), timeout=15)
+                    with contextlib.suppress(asyncio.CancelledError):
+                        await asyncio.wait_for(self.backup_get_gamertags(), timeout=15)
 
         dict_gamertags: dict[str, str] = {}
-
         pipe = self.bot.redis.pipeline()
 
         try:
