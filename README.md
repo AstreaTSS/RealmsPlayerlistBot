@@ -61,7 +61,7 @@ By default, the command only goes back a day, but it can go till 7, as seen here
 Realms go down a lot if they're big, most likely because they can't handle the load. Sometimes, it can be useful to get pinged when that happens:
 
 <p align="center">
-  <img src="https://cdn.discordapp.com/attachments/775915758588657664/1070089064725893180/zlqU7X8.png" alt="Picture of how the crash notifications looks like."/>
+  <img src="https://cdn.discordapp.com/attachments/775915758588657664/1070089064725893180/zlqU7X8.png" alt="Picture of how the Realm down notifications looks like."/>
 </p>
 
 This simply hooks onto your autorunning playerlist. The Realm offline detection is mostly accurate - it may not work as well for smaller Realms, but for larger ones, it should work fine.
