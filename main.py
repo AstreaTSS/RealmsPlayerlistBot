@@ -93,8 +93,9 @@ def default_sentry_filter(
 
 
 # im so sorry
-Task.on_error_sentry_hook = HookedTask.on_error_sentry_hook
-sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], before_send=default_sentry_filter)
+if not utils.TEST_MODE:
+    Task.on_error_sentry_hook = HookedTask.on_error_sentry_hook
+    sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], before_send=default_sentry_filter)
 
 
 class RealmsPlayerlistBot(utils.RealmBotBase):
