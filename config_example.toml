@@ -1,6 +1,6 @@
 # when using the bot, make sure to rename this to just "config.toml"
 
-MAIN_TOKEN = "TOKEN"  # your discord bot token, of course!e
+MAIN_TOKEN = "TOKEN"  # your discord bot token, of course!
 
 DEV_GUILD_ID = 11111111111111111  # guild id that you own and that will not be used for a playerlist
 BOT_COLOR = 9093705  # a color to color some embeds and all - it's nice for branding.
