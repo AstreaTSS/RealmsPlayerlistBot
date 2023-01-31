@@ -7,6 +7,7 @@ import tomllib
 import typing
 import uuid
 from collections import defaultdict
+from pathlib import Path
 
 # load the config file into environment variables
 # this allows an easy way to access these variables from any file
@@ -18,6 +19,13 @@ with open(CONFIG_LOCATION, "rb") as f:
     toml_dict = tomllib.load(f)
     for key, value in toml_dict.items():
         os.environ[key] = str(value)
+
+
+file_location = Path(__file__).parent.absolute().as_posix()
+os.environ["DIRECTORY_OF_BOT"] = file_location
+os.environ["LOG_FILE_PATH"] = f"{file_location}/discord.log"
+os.environ["XAPI_TOKENS_LOCATION"] = f"{file_location}/tokens.json"
+
 
 import aiohttp
 import discord_typings
