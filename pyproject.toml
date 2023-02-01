@@ -42,3 +42,8 @@ max-complexity = 10
 
 [tool.ruff.isort]
 extra-standard-library = ["tomllib"]
+
+[tool.aerich]
+tortoise_orm = "db_settings.TORTOISE_ORM"
+location = "./migrations"
+src_folder = "./."

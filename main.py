@@ -3,23 +3,14 @@ import contextlib
 import datetime
 import logging
 import os
-import tomllib
 import typing
 import uuid
 from collections import defaultdict
 from pathlib import Path
 
-# load the config file into environment variables
-# this allows an easy way to access these variables from any file
-# we allow the user to set a configuration location via an already-set
-# env var if they wish, but it'll default to config.toml in the running
-# directory
-CONFIG_LOCATION = os.environ.get("CONFIG_LOCATION", "config.toml")
-with open(CONFIG_LOCATION, "rb") as f:
-    toml_dict = tomllib.load(f)
-    for key, value in toml_dict.items():
-        os.environ[key] = str(value)
+import rpl_config
 
+rpl_config.load()
 
 file_location = Path(__file__).parent.absolute().as_posix()
 os.environ["DIRECTORY_OF_BOT"] = file_location
@@ -43,6 +34,7 @@ tansy.install_naff_speedups()
 import common.help_tools as help_tools
 import common.models as models
 import common.utils as utils
+import db_settings
 from common.classes import SemaphoreRedis, TimedDict
 from common.realms_api import RealmsAPI
 from common.xbox_api import XboxAPI, parse_profile_response
@@ -236,9 +228,7 @@ bot.offline_realm_time = {}
 
 
 async def start() -> None:
-    await Tortoise.init(
-        db_url=os.environ.get("DB_URL"), modules={"models": ["common.models"]}
-    )
+    await Tortoise.init(db_settings.TORTOISE_ORM)
 
     # mark players as offline if they were online more than 5 minutes ago
     five_minutes_ago = naff.Timestamp.utcnow() - datetime.timedelta(minutes=5)
