@@ -202,8 +202,10 @@ class GuildConfig(utils.Extension):
                     and e.resp.status == 403
                 ):
                     raise naff.errors.BadArgument(
-                        "Invalid Realm code. Please make sure the Realm code is spelled"
-                        " correctly, and that the code is valid."
+                        "I could not join this Realm. Please make sure the Realm code"
+                        " is spelled correctly, and that the code is valid. Also make"
+                        " sure that you have not banned or kicked"
+                        f" `{self.bot.own_gamertag}` from the Realm."
                     ) from None
                 else:
                     raise
