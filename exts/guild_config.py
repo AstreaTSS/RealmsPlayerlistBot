@@ -235,7 +235,9 @@ class GuildConfig(utils.Extension):
                     else:
                         raise
 
-                self.bot.offline_realm_time.pop(int(realm_id), None)
+                self.bot.offline_realms.discard(int(realm_id))
+                self.bot.dropped_offline_realms.discard(int(realm_id))
+                await self.bot.redis.delete(f"missing-realm-{realm_id}")
 
     @config.subcommand(
         sub_cmd_name="playerlist-channel",
