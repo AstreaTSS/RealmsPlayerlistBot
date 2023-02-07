@@ -87,9 +87,9 @@ class Statistics(utils.Extension):
         self.name = "Statistics"
 
     async def xuid_from_gamertag(self, gamertag: str) -> str:
-        maybe_xuid: typing.Union[
-            str, xbox_api.ProfileResponse, None
-        ] = await self.bot.redis.get(f"rpl-{gamertag}")
+        maybe_xuid: typing.Union[str, xbox_api.ProfileResponse, None] = (
+            await self.bot.redis.get(f"rpl-{gamertag}")
+        )
 
         if maybe_xuid:
             return maybe_xuid

@@ -199,9 +199,9 @@ class GeneralCMDS(utils.Extension):
         except ValueError:
             raise naff.errors.BadArgument(f'"{xuid}" is not a valid XUID.') from None
 
-        maybe_gamertag: typing.Union[
-            str, xbox_api.ProfileResponse, None
-        ] = await self.bot.redis.get(str(valid_xuid))
+        maybe_gamertag: typing.Union[str, xbox_api.ProfileResponse, None] = (
+            await self.bot.redis.get(str(valid_xuid))
+        )
 
         if not maybe_gamertag:
             async with aiohttp.ClientSession(

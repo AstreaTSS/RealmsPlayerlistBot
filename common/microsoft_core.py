@@ -59,9 +59,11 @@ async def request_user_token(
         "Properties": {
             "AuthMethod": "RPS",
             "SiteName": "user.auth.xboxlive.com",
-            "RpsTicket": auth_mgr.oauth.access_token
-            if use_compact_ticket
-            else f"d={auth_mgr.oauth.access_token}",
+            "RpsTicket": (
+                auth_mgr.oauth.access_token
+                if use_compact_ticket
+                else f"d={auth_mgr.oauth.access_token}"
+            ),
         },
     }
 
