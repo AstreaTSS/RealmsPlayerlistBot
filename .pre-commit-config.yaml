@@ -1,6 +1,6 @@
 repos:
 - repo: https://github.com/psf/black
-  rev: 22.12.0
+  rev: 23.1.0
   hooks:
     - id: black
       args: [--target-version, py311, --preview]
@@ -11,7 +11,7 @@ repos:
     - id: trailing-whitespace
 - repo: https://github.com/charliermarsh/ruff-pre-commit
   # Ruff version.
-  rev: 'v0.0.238'
+  rev: 'v0.0.243'
   hooks:
     - id: ruff
       language_version: python3.11
