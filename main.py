@@ -94,10 +94,6 @@ if not utils.TEST_MODE:
 class RealmsPlayerlistBot(utils.RealmBotBase):
     @naff.listen("startup")
     async def on_startup(self) -> None:
-        self.redis = SemaphoreRedis.from_url(
-            os.environ["REDIS_URL"], decode_responses=True, semaphore_value=15
-        )
-
         self.xbox = XboxAPI()
         self.realms = RealmsAPI()
 
@@ -231,6 +227,9 @@ bot.dropped_offline_realms = set()
 
 async def start() -> None:
     await Tortoise.init(db_settings.TORTOISE_ORM)
+    bot.redis = SemaphoreRedis.from_url(
+        os.environ["REDIS_URL"], decode_responses=True, semaphore_value=15
+    )
 
     # mark players as offline if they were online more than 5 minutes ago
     five_minutes_ago = naff.Timestamp.utcnow() - datetime.timedelta(minutes=5)
@@ -242,6 +241,9 @@ async def start() -> None:
     async for player in models.PlayerSession.filter(online=True):
         bot.uuid_cache[player.realm_xuid_id] = player.custom_id
         bot.online_cache[int(player.realm_id)].add(player.xuid)
+
+    async for realm_id in bot.redis.scan_iter("missing-realm-*"):
+        bot.offline_realms.add(int(realm_id.removeprefix("missing-realm-")))
 
     # add info for who has live playerlist on, as we can't rely on anything other than
     # pure memory for the playerlist getting code
