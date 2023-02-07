@@ -226,17 +226,23 @@ class PermissionsResolver:
 
             match permission["type"]:  # noqa: E999
                 case 1:  # role
-                    self.allowed_roles.add(object_id) if permission[
-                        "permission"
-                    ] else self.denied_roles.add(object_id)
+                    (
+                        self.allowed_roles.add(object_id)
+                        if permission["permission"]
+                        else self.denied_roles.add(object_id)
+                    )
                 case 2:  # user
-                    self.allowed_users.add(object_id) if permission[
-                        "permission"
-                    ] else self.denied_users.add(object_id)
+                    (
+                        self.allowed_users.add(object_id)
+                        if permission["permission"]
+                        else self.denied_users.add(object_id)
+                    )
                 case 3:  # channel
-                    self.allowed_channels.add(object_id) if permission[
-                        "permission"
-                    ] else self.denied_channels.add(object_id)
+                    (
+                        self.allowed_channels.add(object_id)
+                        if permission["permission"]
+                        else self.denied_channels.add(object_id)
+                    )
 
     def has_permission(
         self,
@@ -301,10 +307,10 @@ class GuildApplicationCommandPermissionData(typing.TypedDict):
 
 
 async def process_bulk_slash_perms(bot: utils.RealmBotBase, guild_id: int) -> None:
-    perms: list[
-        GuildApplicationCommandPermissionData
-    ] = await bot.http.batch_get_application_command_permissions(  # type: ignore
-        int(bot.app.id), guild_id
+    perms: list[GuildApplicationCommandPermissionData] = (
+        await bot.http.batch_get_application_command_permissions(  # type: ignore
+            int(bot.app.id), guild_id
+        )
     )
 
     guild_perms = {}

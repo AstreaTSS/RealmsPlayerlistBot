@@ -62,9 +62,9 @@ class GamertagHandler:
     openxbl_session: aiohttp.ClientSession = attrs.field()
 
     index: int = attrs.field(init=False, default=0)
-    responses: list[
-        xbox_api.ProfileResponse | xbox_api.PeopleHubResponse
-    ] = attrs.field(init=False, factory=list)
+    responses: list[xbox_api.ProfileResponse | xbox_api.PeopleHubResponse] = (
+        attrs.field(init=False, factory=list)
+    )
     AMOUNT_TO_GET: int = attrs.field(init=False, default=500)
 
     def __attrs_post_init__(self) -> None:
