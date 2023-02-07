@@ -15,4 +15,5 @@ sentry-sdk==1.14.0
 rapidfuzz==2.13.7
 pycryptodome==3.17
 apischema==0.18.0
+ordered-set==4.1.0
 uvloop==0.17.0; platform_system == "Linux"

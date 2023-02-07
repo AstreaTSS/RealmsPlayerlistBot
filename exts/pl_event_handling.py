@@ -220,8 +220,6 @@ class PlayerlistEventHandling(naff.Extension):
                 else:
                     raise
 
-        self.bot.offline_realm_time.pop(int(event.realm_id), None)
-
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)

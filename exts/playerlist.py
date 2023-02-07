@@ -52,7 +52,7 @@ class Playerlist(utils.Extension):
             try:
                 next_time = self.next_time()
                 await self.parse_realms()
-                await self.handle_missing_warning()
+                asyncio.create_task(self.handle_missing_warning())
                 await utils.sleep_until(next_time)
             except Exception as e:
                 if not isinstance(e, asyncio.CancelledError):
@@ -114,7 +114,10 @@ class Playerlist(utils.Extension):
                 already_sent_realm_down = True
 
             self.bot.online_cache[realm.id] = player_set
-            self.bot.offline_realm_time.pop(realm.id, None)
+
+            if realm.id in self.bot.offline_realms:
+                self.bot.offline_realms.discard(realm.id)
+                self.bot.dropped_offline_realms.add(realm.id)
 
             player_objs.extend(
                 models.PlayerSession(
@@ -144,7 +147,7 @@ class Playerlist(utils.Extension):
         for missed_realm_id in online_cache_ids.difference(gotten_realm_ids):
             # adds the missing realm id to the countdown timer dict
 
-            self.bot.offline_realm_time.setdefault(missed_realm_id, 0)
+            self.bot.offline_realms.add(missed_realm_id)
 
             now_invalid = self.bot.online_cache.pop(missed_realm_id, None)
             if not now_invalid:
@@ -187,11 +190,24 @@ class Playerlist(utils.Extension):
         # try to warn the user about the realm not being there
         # ideally, this should run every minute
 
-        for key, value in self.bot.offline_realm_time.copy().items():
-            if value < 1439:  # around 24 hours
-                self.bot.offline_realm_time[key] += 1
-            else:
-                self.bot.dispatch(pl_events.WarnMissingPlayerlist(str(key)))
+        async with self.bot.redis.pipeline() as pipe:
+            for realm_id in self.bot.offline_realms:
+                pipe.incr(f"missing-realm-{realm_id}", 1)
+
+            results: list[int] = await pipe.execute()
+
+            for realm_id, value in zip(self.bot.offline_realms, results, strict=True):
+                if value >= 1440:
+                    self.bot.dispatch(pl_events.WarnMissingPlayerlist(str(realm_id)))
+                    pipe.delete(f"missing-realm-{realm_id}")
+
+            await pipe.execute()
+
+        if self.bot.dropped_offline_realms:
+            await self.bot.redis.delete(
+                *(f"missing-realm-{rid}" for rid in self.bot.dropped_offline_realms)
+            )
+            self.bot.dropped_offline_realms = set()
 
     # can't be a tansy command due to the weird stuff we do with kwargs
     @tansy.slash_command(

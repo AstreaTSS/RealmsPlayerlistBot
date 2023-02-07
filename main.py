@@ -25,6 +25,7 @@ import sentry_sdk
 import tansy
 from naff.ext.sentry import HookedTask
 from naff.models.naff.tasks.task import Task
+from ordered_set import OrderedSet
 from tortoise import Tortoise
 
 # install speedups before importing common stuff,
@@ -224,7 +225,8 @@ bot.slash_perms_cache = defaultdict(dict)
 bot.live_playerlist_store = defaultdict(set)
 bot.uuid_cache = defaultdict(uuid.uuid4)
 bot.mini_commands_per_scope = {}
-bot.offline_realm_time = {}
+bot.offline_realms = OrderedSet()  # type: ignore
+bot.dropped_offline_realms = set()
 
 
 async def start() -> None:

@@ -278,30 +278,35 @@ class RealmAutocompleteContext(naff.AutocompleteContext):
 
 
 if typing.TYPE_CHECKING:
+    from ordered_set import OrderedSet
+
     from .classes import TimedDict
     from .help_tools import MiniCommand, PermissionsResolver
     from .realms_api import RealmsAPI
     from .xbox_api import XboxAPI
 
     class RealmBotBase(naff.Client):
-        init_load: bool
+        owner: naff.User
         color: naff.Color
+        init_load: bool
+        fully_ready: asyncio.Event
+        pl_sem: asyncio.Semaphore
+
         session: aiohttp.ClientSession
         openxbl_session: aiohttp.ClientSession
         xbox: XboxAPI
         realms: RealmsAPI
-        owner: naff.User
         redis: aioredis.Redis
-        fully_ready: asyncio.Event
+        own_gamertag: str
+
         online_cache: defaultdict[int, set[str]]
         realm_name_cache: TimedDict[typing.Optional[str], str]
-        own_gamertag: str
         slash_perms_cache: defaultdict[int, dict[int, PermissionsResolver]]
         mini_commands_per_scope: dict[int, dict[str, MiniCommand]]
         live_playerlist_store: defaultdict[str, set[int]]
         uuid_cache: defaultdict[str, uuid.UUID]
-        offline_realm_time: dict[int, int]
-        pl_sem: asyncio.Semaphore
+        offline_realms: OrderedSet[int]
+        dropped_offline_realms: set[int]
 
         def mention_cmd(self, name: str, scope: int = 0) -> str:
             ...
