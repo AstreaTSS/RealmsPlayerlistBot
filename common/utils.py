@@ -204,11 +204,11 @@ class RealmContext(naff.InteractionContext):
         if self.guild_config:
             return self.guild_config
 
-        config: GuildConfig = await GuildConfig.get(
-            guild_id=self.guild.id
-        ).prefetch_related(
+        config = await GuildConfig.get_or_none(guild_id=self.guild.id).prefetch_related(
             "premium_code"
-        )  # type: ignore
+        )
+        if not config:
+            config = await GuildConfig.create(guild_id=self.guild.id)
         self.guild_config = config
         return config
 
@@ -236,11 +236,11 @@ class RealmPrefixedContext(naff.PrefixedContext):
         if self.guild_config:
             return self.guild_config
 
-        config: GuildConfig = await GuildConfig.get(
-            guild_id=self.guild.id
-        ).prefetch_related(
+        config = await GuildConfig.get_or_none(guild_id=self.guild.id).prefetch_related(
             "premium_code"
-        )  # type: ignore
+        )
+        if not config:
+            config = await GuildConfig.create(guild_id=self.guild.id)
         self.guild_config = config
         return config
 
@@ -268,11 +268,11 @@ class RealmAutocompleteContext(naff.AutocompleteContext):
         if self.guild_config:
             return self.guild_config
 
-        config: GuildConfig = await GuildConfig.get(
-            guild_id=self.guild.id
-        ).prefetch_related(
+        config = await GuildConfig.get_or_none(guild_id=self.guild.id).prefetch_related(
             "premium_code"
-        )  # type: ignore
+        )
+        if not config:
+            config = await GuildConfig.create(guild_id=self.guild.id)
         self.guild_config = config
         return config
 
