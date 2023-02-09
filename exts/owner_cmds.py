@@ -481,7 +481,13 @@ class OwnerCMDs(utils.Extension):
 
         await ctx.reply("Done!")
 
-    async def ext_error(self, error: Exception, ctx: naff.Context) -> None:
+    async def ext_error(
+        self,
+        error: Exception,
+        ctx: naff.Context,
+        *args: typing.Any,
+        **kwargs: typing.Any,
+    ) -> None:
         if isinstance(ctx, naff.PrefixedContext):
             ctx.send = ctx.message.reply  # type: ignore
 
