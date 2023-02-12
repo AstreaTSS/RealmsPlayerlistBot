@@ -48,16 +48,16 @@ PERIOD_TO_GRAPH = [
     naff.SlashCommandChoice("One day, per hour", "1pH"),
     naff.SlashCommandChoice("1 week, per day", "7pD"),
     naff.SlashCommandChoice("2 weeks, per day", "14pD"),
-    # naff.SlashCommandChoice("30 days, per day", "30pD"),
+    naff.SlashCommandChoice("30 days, per day", "30pD"),
     # naff.SlashCommandChoice("30 days, per week", "30pW"),
 ]
 
 SUMMARIZE_BY = [
     naff.SlashCommandChoice("1 week, by hour", "7bH"),
     naff.SlashCommandChoice("2 weeks, by hour", "14bH"),
-    # naff.SlashCommandChoice("30 days, by hour", "30bH"),
+    naff.SlashCommandChoice("30 days, by hour", "30bH"),
     naff.SlashCommandChoice("2 weeks, by day of the week", "14bD"),
-    # naff.SlashCommandChoice("30 days, by day of the week", "30bD"),
+    naff.SlashCommandChoice("30 days, by day of the week", "30bD"),
 ]
 
 DAY_HUMANIZED = {
