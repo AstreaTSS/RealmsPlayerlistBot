@@ -269,8 +269,9 @@ async def fetch_playerlist_channel(
 ) -> utils.GuildMessageable:
     try:
         chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
-    except naff.errors.HTTPException:
-        await eventually_invalidate(bot, config)
+    except naff.errors.HTTPException as e:
+        if e.status < 500:  # over 500 is a discord fault
+            await eventually_invalidate(bot, config)
         raise ValueError() from None
     except TypeError:  # playerlist chan is none, do nothing
         raise ValueError() from None
