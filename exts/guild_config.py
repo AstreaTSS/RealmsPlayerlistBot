@@ -269,7 +269,10 @@ class GuildConfig(utils.Extension):
 
             config.playerlist_chan = channel.id
             await config.save()
-            await self.bot.redis.delete(f"invalid-playerlist-{config.guild_id}")
+            await self.bot.redis.delete(
+                f"invalid-playerlist3-{config.guild_id}",
+                f"invalid-playerlist7-{config.guild_id}",
+            )
 
             await ctx.send(f"Set the playerlist channel to {channel.mention}.")
         else:
@@ -280,7 +283,10 @@ class GuildConfig(utils.Extension):
 
             config.playerlist_chan = None
             await config.save()
-            await self.bot.redis.delete(f"invalid-playerlist-{config.guild_id}")
+            await self.bot.redis.delete(
+                f"invalid-playerlist3-{config.guild_id}",
+                f"invalid-playerlist7-{config.guild_id}",
+            )
 
             if config.realm_id:
                 self.bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
