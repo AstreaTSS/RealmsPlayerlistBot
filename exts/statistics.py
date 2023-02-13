@@ -199,7 +199,7 @@ class Statistics(utils.Extension):
                     title="Warning",
                     description=(
                         "The bot does not have enough data to properly graph data for"
-                        " the timestan you specified (most likely, you specified a"
+                        " the timespan you specified (most likely, you specified a"
                         " timespan that goes further back than when you first set up"
                         " the bot with your Realm). This data may be inaccurate."
                     ),
