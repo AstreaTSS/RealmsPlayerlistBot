@@ -194,15 +194,27 @@ class Statistics(utils.Extension):
         embeds: list[naff.Embed] = []
 
         if warn_about_earliest:
+            # probably not the most elegant way to check if this is player-based or not
+            # but it works for now
+            if "Realm" in title:
+                description = (
+                    "The bot does not have enough data to properly graph data for the"
+                    " timespan you specified (most likely, you specified a timespan"
+                    " that goes further back than when you first set up the bot with"
+                    " your Realm). This data may be inaccurate."
+                )
+            else:
+                description = (
+                    "The bot does not have enough data to properly graph data for the"
+                    " timespan you specified (most likely, you specified a timespan"
+                    " that goes further back than when you first set up the bot with"
+                    " your Realm or when the player first started playing). This data"
+                    " may be inaccurate."
+                )
             embeds.append(
                 naff.Embed(
                     title="Warning",
-                    description=(
-                        "The bot does not have enough data to properly graph data for"
-                        " the timespan you specified (most likely, you specified a"
-                        " timespan that goes further back than when you first set up"
-                        " the bot with your Realm). This data may be inaccurate."
-                    ),
+                    description=description,
                     color=naff.RoleColors.YELLOW,
                 )
             )
