@@ -270,7 +270,7 @@ class Playerlist(utils.Extension):
         # per xuid value
         # fmt: off
         player_sessions: list[models.PlayerSession] = await models.PlayerSession.raw(
-            f"SELECT DISTINCT ON (xuid) * FROM {models.PlayerSession.Meta.table} "
+            f"SELECT DISTINCT ON (xuid) * FROM {models.PlayerSession.Meta.table} "  # noqa
             f"WHERE realm_id='{guild_config.realm_id}' AND (online=true "
             f"OR last_seen>='{time_ago.isoformat()}') ORDER BY xuid, last_seen DESC"
         )  # type: ignore

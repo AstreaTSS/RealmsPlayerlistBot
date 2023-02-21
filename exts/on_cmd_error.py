@@ -33,11 +33,8 @@ class OnCMDError(naff.Extension):
                     f" `{humanize.precisedelta(delta_wait, format='%0.0f')}`."
                 )
             )
-        elif isinstance(event.error, utils.CustomCheckFailure):
-            await event.ctx.send(embeds=self.error_embed_generate(str(event.error)))
         elif isinstance(
-            event.error,
-            naff.errors.BadArgument,
+            event.error, (utils.CustomCheckFailure, naff.errors.BadArgument)
         ):
             await event.ctx.send(embeds=self.error_embed_generate(str(event.error)))
         elif isinstance(event.error, naff.errors.CommandCheckFailure):
