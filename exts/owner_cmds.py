@@ -475,9 +475,13 @@ class OwnerCMDs(utils.Extension):
         # a lot better in the ratelimiting department, but i
         # would still advise caution to any self-hosters, and would
         # only suggest using this when necessary
-        await self.bot.synchronise_interactions(scopes=[scope], delete_commands=True)
-        self.bot.slash_perms_cache = collections.defaultdict(dict)
-        self.bot.mini_commands_per_scope = {}
+
+        async with ctx.channel.typing:
+            await self.bot.synchronise_interactions(
+                scopes=[scope], delete_commands=True
+            )
+            self.bot.slash_perms_cache = collections.defaultdict(dict)
+            self.bot.mini_commands_per_scope = {}
 
         await ctx.reply("Done!")
 

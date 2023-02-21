@@ -48,16 +48,16 @@ PERIOD_TO_GRAPH = [
     naff.SlashCommandChoice("One day, per hour", "1pH"),
     naff.SlashCommandChoice("1 week, per day", "7pD"),
     naff.SlashCommandChoice("2 weeks, per day", "14pD"),
-    # naff.SlashCommandChoice("30 days, per day", "30pD"),
+    naff.SlashCommandChoice("30 days, per day", "30pD"),
     # naff.SlashCommandChoice("30 days, per week", "30pW"),
 ]
 
 SUMMARIZE_BY = [
     naff.SlashCommandChoice("1 week, by hour", "7bH"),
     naff.SlashCommandChoice("2 weeks, by hour", "14bH"),
-    # naff.SlashCommandChoice("30 days, by hour", "30bH"),
+    naff.SlashCommandChoice("30 days, by hour", "30bH"),
     naff.SlashCommandChoice("2 weeks, by day of the week", "14bD"),
-    # naff.SlashCommandChoice("30 days, by day of the week", "30bD"),
+    naff.SlashCommandChoice("30 days, by day of the week", "30bD"),
 ]
 
 DAY_HUMANIZED = {
@@ -194,15 +194,27 @@ class Statistics(utils.Extension):
         embeds: list[naff.Embed] = []
 
         if warn_about_earliest:
+            # probably not the most elegant way to check if this is player-based or not
+            # but it works for now
+            if "Realm" in title:
+                description = (
+                    "The bot does not have enough data to properly graph data for the"
+                    " timespan you specified (most likely, you specified a timespan"
+                    " that goes further back than when you first set up the bot with"
+                    " your Realm). This data may be inaccurate."
+                )
+            else:
+                description = (
+                    "The bot does not have enough data to properly graph data for the"
+                    " timespan you specified (most likely, you specified a timespan"
+                    " that goes further back than when you first set up the bot with"
+                    " your Realm or when the player first started playing). This data"
+                    " may be inaccurate."
+                )
             embeds.append(
                 naff.Embed(
                     title="Warning",
-                    description=(
-                        "The bot does not have enough data to properly graph data for"
-                        " the timestan you specified (most likely, you specified a"
-                        " timespan that goes further back than when you first set up"
-                        " the bot with your Realm). This data may be inaccurate."
-                    ),
+                    description=description,
                     color=naff.RoleColors.YELLOW,
                 )
             )
