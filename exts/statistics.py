@@ -9,11 +9,13 @@ import aiohttp
 import humanize
 import naff
 import orjson
+import rapidfuzz
 import tansy
 from apischema import ValidationError
 from tortoise.exceptions import DoesNotExist
 from tortoise.expressions import Q
 
+import common.fuzzy as fuzzy
 import common.graph_template as graph_template
 import common.help_tools as help_tools
 import common.models as models
@@ -47,18 +49,25 @@ SHOWABLE_FORMAT = {
 PERIOD_TO_GRAPH = [
     naff.SlashCommandChoice("One day, per hour", "1pH"),
     naff.SlashCommandChoice("1 week, per day", "7pD"),
+]
+PREMIUM_PERIOD_TO_GRAPH = PERIOD_TO_GRAPH + [
     naff.SlashCommandChoice("2 weeks, per day", "14pD"),
     naff.SlashCommandChoice("30 days, per day", "30pD"),
-    # naff.SlashCommandChoice("30 days, per week", "30pW"),
 ]
+PERIODS = frozenset({p.value for p in PERIOD_TO_GRAPH})
+PREMIUM_PERIODS = frozenset({p.value for p in PREMIUM_PERIOD_TO_GRAPH})
 
 SUMMARIZE_BY = [
     naff.SlashCommandChoice("1 week, by hour", "7bH"),
+]
+PREMIUM_SUMMARIZE_BY = SUMMARIZE_BY + [
     naff.SlashCommandChoice("2 weeks, by hour", "14bH"),
     naff.SlashCommandChoice("30 days, by hour", "30bH"),
     naff.SlashCommandChoice("2 weeks, by day of the week", "14bD"),
     naff.SlashCommandChoice("30 days, by day of the week", "30bD"),
 ]
+SUMMARIES = frozenset({s.value for s in SUMMARIZE_BY})
+PREMIUM_SUMMARIES = frozenset({s.value for s in PREMIUM_SUMMARIZE_BY})
 
 DAY_HUMANIZED = {
     1: "24 hours",
@@ -74,11 +83,7 @@ async def stats_check(ctx: utils.RealmContext) -> bool:
     except DoesNotExist:
         return False
 
-    return (
-        bool(guild_config.realm_id)
-        if utils.TEST_MODE
-        else bool(guild_config.premium_code and guild_config.realm_id)
-    )
+    return bool(guild_config.realm_id)
 
 
 class Statistics(utils.Extension):
@@ -289,6 +294,10 @@ class Statistics(utils.Extension):
     ) -> None:
         config = await ctx.fetch_config()
 
+        periods = PREMIUM_PERIODS if config.premium_code else PERIODS
+        if period not in periods:
+            raise naff.errors.BadArgument("Invalid period given.")
+
         template_kwargs = {"max_value": None}
 
         period_split = period.split("p")
@@ -348,6 +357,10 @@ class Statistics(utils.Extension):
     ) -> None:
         config = await ctx.fetch_config()
 
+        summaries = PREMIUM_SUMMARIES if config.premium_code else SUMMARIES
+        if summarize_by not in summaries:
+            raise naff.errors.BadArgument("Invalid summary given.")
+
         summary_split = summarize_by.split("b")
         if len(summary_split) != 2:
             raise naff.errors.BadArgument("Invalid summary given.")
@@ -391,18 +404,18 @@ class Statistics(utils.Extension):
             template_kwargs={"max_value": None},
         )
 
-    premium = tansy.SlashCommand(
-        name="premium",  # type: ignore
-        description="Handles the configuration for Realms Playerlist Premium.",  # type: ignore
+    graph = tansy.SlashCommand(
+        name="graph",  # type: ignore
+        description="Produces various graphs about playtime on the Realm.",  # type: ignore
         default_member_permissions=naff.Permissions.MANAGE_GUILD,
         dm_permission=False,
     )
 
-    @premium.subcommand(
-        sub_cmd_name="graph-realm",
+    @graph.subcommand(
+        sub_cmd_name="realm",
         sub_cmd_description=(
             "Produces a graph of the Realm's playtime over a specifed period as a"
-            " graph. Beta, requires premium."
+            " graph."
         ),
     )
     @naff.cooldown(naff.Buckets.GUILD, 1, 5)  # type: ignore
@@ -410,17 +423,16 @@ class Statistics(utils.Extension):
     async def graph_realm(
         self,
         ctx: utils.RealmContext,
-        period: str = tansy.Option("The period to graph by.", choices=PERIOD_TO_GRAPH),  # type: ignore
+        period: str = tansy.Option("The period to graph by.", autocomplete=True),
     ) -> None:
         await self.process_unsummary(
             ctx, period, "Playtime on the Realm over the last {days_humanized}"
         )
 
-    @premium.subcommand(
-        sub_cmd_name="graph-realm-summary",
+    @graph.subcommand(
+        sub_cmd_name="realm-summary",
         sub_cmd_description=(
             "Summarizes the Realm over a specified period, by a specified interval."
-            " Beta, requires premium."
         ),
     )
     @naff.cooldown(naff.Buckets.GUILD, 1, 5)  # type: ignore
@@ -428,7 +440,7 @@ class Statistics(utils.Extension):
     async def graph_realm_summary(
         self,
         ctx: utils.RealmContext,
-        summarize_by: str = tansy.Option("What to summarize by.", choices=SUMMARIZE_BY),  # type: ignore
+        summarize_by: str = tansy.Option("What to summarize by.", autocomplete=True),
     ) -> None:
         await self.process_summary(
             ctx,
@@ -436,11 +448,10 @@ class Statistics(utils.Extension):
             "Playtime on the Realm over the past {days_humanized} by {summarize_by}",
         )
 
-    @premium.subcommand(
-        sub_cmd_name="graph-player",
+    @graph.subcommand(
+        sub_cmd_name="player",
         sub_cmd_description=(
-            "Produces a graph of a player's playtime over a specifed period as a"
-            " graph. Beta, requires premium."
+            "Produces a graph of a player's playtime over a specifed period as a graph."
         ),
     )
     @naff.cooldown(naff.Buckets.GUILD, 1, 5)  # type: ignore
@@ -449,7 +460,7 @@ class Statistics(utils.Extension):
         self,
         ctx: utils.RealmContext,
         gamertag: str = tansy.Option("The gamertag of the user to graph."),
-        period: str = tansy.Option("The period to graph by.", choices=PERIOD_TO_GRAPH),  # type: ignore
+        period: str = tansy.Option("The period to graph by.", autocomplete=True),
     ) -> None:
         xuid = await self.xuid_from_gamertag(gamertag)
         await self.process_unsummary(
@@ -460,11 +471,10 @@ class Statistics(utils.Extension):
             filter_kwargs={"xuid": xuid},
         )
 
-    @premium.subcommand(
-        sub_cmd_name="graph-player-summary",
+    @graph.subcommand(
+        sub_cmd_name="player-summary",
         sub_cmd_description=(
             "Summarizes a player over a specified period, by a specified interval."
-            " Beta, requires premium."
         ),
     )
     @naff.cooldown(naff.Buckets.GUILD, 1, 5)  # type: ignore
@@ -473,7 +483,7 @@ class Statistics(utils.Extension):
         self,
         ctx: utils.RealmContext,
         gamertag: str = tansy.Option("The gamertag of the user to graph."),
-        summarize_by: str = tansy.Option("What to summarize by.", choices=SUMMARIZE_BY),  # type: ignore
+        summarize_by: str = tansy.Option("What to summarize by.", autocomplete=True),
     ) -> None:
         xuid = await self.xuid_from_gamertag(gamertag)
         await self.process_summary(
@@ -482,6 +492,66 @@ class Statistics(utils.Extension):
             f"Playtime of {gamertag} over the past " + "{days_humanized} by hour",
             filter_kwargs={"xuid": xuid},
         )
+
+    @staticmethod
+    def _filter_for_fuzzy(period_summary: str | dict[str, typing.Any]) -> str:
+        if isinstance(period_summary, str):
+            return period_summary.lower()
+        return period_summary["name"].lower()
+
+    @graph_realm.autocomplete("period")
+    @graph_player.autocomplete("period")
+    async def period_autocomplete(
+        self,
+        ctx: utils.RealmAutocompleteContext,
+        period: typing.Optional[str] = None,
+        **kwargs: typing.Any,
+    ) -> None:
+        has_premium = await models.GuildConfig.exists(
+            guild_id=ctx.guild.id, premium_code__id__not_isnull=True
+        )
+        periods = PREMIUM_PERIOD_TO_GRAPH if has_premium else PERIOD_TO_GRAPH
+        periods_dict = [{"name": str(p.name), "value": p.value} for p in periods]
+
+        if not period:
+            await ctx.send(periods_dict)
+            return
+
+        filtered_periods = fuzzy.extract_from_list(
+            period.lower(),
+            periods_dict,
+            (self._filter_for_fuzzy,),
+            score_cutoff=80,
+            scorers=(rapidfuzz.fuzz.WRatio,),
+        )
+        await ctx.send(p[0] for p in filtered_periods)
+
+    @graph_realm_summary.autocomplete("summarize_by")
+    @graph_player_summary.autocomplete("summarize_by")
+    async def summary_autocomplete(
+        self,
+        ctx: utils.RealmAutocompleteContext,
+        summarize_by: typing.Optional[str] = None,
+        **kwargs: typing.Any,
+    ) -> None:
+        has_premium = await models.GuildConfig.exists(
+            guild_id=ctx.guild.id, premium_code__id__not_isnull=True
+        )
+        summarize_bys = PREMIUM_SUMMARIZE_BY if has_premium else SUMMARIZE_BY
+        summary_dict = [{"name": str(s.name), "value": s.value} for s in summarize_bys]
+
+        if not summarize_by:
+            await ctx.send(summary_dict)
+            return
+
+        filtered_summaries = fuzzy.extract_from_list(
+            summarize_by.lower(),
+            summary_dict,
+            (self._filter_for_fuzzy,),
+            score_cutoff=80,
+            scorers=(rapidfuzz.fuzz.WRatio,),
+        )
+        await ctx.send(s[0] for s in filtered_summaries)
 
     @tansy.slash_command(
         name="get-player-log",
@@ -598,6 +668,7 @@ class Statistics(utils.Extension):
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
+    importlib.reload(fuzzy)
     importlib.reload(stats_utils)
     importlib.reload(graph_template)
     importlib.reload(xbox_api)

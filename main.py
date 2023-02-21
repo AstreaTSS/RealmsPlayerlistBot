@@ -242,8 +242,9 @@ async def start() -> None:
         bot.uuid_cache[player.realm_xuid_id] = player.custom_id
         bot.online_cache[int(player.realm_id)].add(player.xuid)
 
-    async for realm_id in bot.redis.scan_iter("missing-realm-*"):
-        bot.offline_realms.add(int(realm_id.removeprefix("missing-realm-")))
+    if not utils.TEST_MODE:
+        async for realm_id in bot.redis.scan_iter("missing-realm-*"):
+            bot.offline_realms.add(int(realm_id.removeprefix("missing-realm-")))
 
     # add info for who has live playerlist on, as we can't rely on anything other than
     # pure memory for the playerlist getting code

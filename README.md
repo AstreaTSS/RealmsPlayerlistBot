@@ -66,6 +66,18 @@ Realms go down a lot if they're big, most likely because they can't handle the l
 
 This simply hooks onto your autorunning playerlist. The Realm offline detection is mostly accurate - it may not work as well for smaller Realms, but for larger ones, it should work fine.
 
+## Graphs
+
+You can make cool graphs about your Realm and its users:
+
+<p align="center">
+  <img src="https://cdn.discordapp.com/attachments/775915758588657664/1070079780365541417/cCdpwPq.webp" alt="Preview on how the graphs can looks like." width=550/>
+</p>
+
+There are a variety of options to chose from, from the graph up above to a day-to-day breakdown. The data isn't 100% accurate, but you can use it to observe patterns... or just show it off for fun.
+
+Free users have limited options that do not go back as far. Premium users can go all the way back to 30 days.
+
 ## Premium
 
 **Realms Playerlist Premium** allows for extra features that otherwise could not be provided by the bot without funding. While this is very basic for now, it is planned to expand heavily in the future.
@@ -84,17 +96,9 @@ It looks something like this (minus the obvious censoring):
 
 This has a variety of uses, from statistical to moderation - it's really up to you what you do with this information. I know of one Realm owner who uses it both to narrow down subjects to a precise degree while also tracking active Realm times. Using Discord's search functionality (heavily suggest looking into that if you haven't use it, by the way), the possibilities are near endless.
 
-### Graphs
+### More Options For Graphs
 
-Currently a beta feature, but you can make cool graphs about your Realm and its users:
-
-<p align="center">
-  <img src="https://cdn.discordapp.com/attachments/775915758588657664/1070079780365541417/cCdpwPq.webp" alt="Preview on how the graphs can looks like." width=550/>
-</p>
-
-There are a variety of options to chose from, from the graph up above to a day-to-day breakdown. The data isn't 100% accurate, but you can use it to observe patterns... or just show it off for fun.
-
-Free users will get a limited form of these once the command goes out of beta, though you won't be able to go back as far as the premium version.
+Free users have a limited period of how far they can go back in terms of the data graphed, and have limited options on how it can be graphs. With Premium, users can go back 30 days and graph in a variety of ways.
 
 ## Adding The Bot
 
