@@ -18,7 +18,7 @@ class AutoRunPlayerlist(utils.Extension):
 
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
-        self.playerlist_task = asyncio.create_task(self._start_playerlist())
+        self.playerlist_task = self.bot.create_task(self._start_playerlist())
         self.player_session_delete.start()
 
     def drop(self) -> None:

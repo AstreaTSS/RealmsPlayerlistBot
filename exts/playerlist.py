@@ -30,7 +30,7 @@ class Playerlist(utils.Extension):
         self.previous_now = datetime.datetime.now(tz=datetime.UTC)
 
         if not utils.TEST_MODE:
-            self.get_people_task = asyncio.create_task(self.get_people_runner())
+            self.get_people_task = self.bot.create_task(self.get_people_runner())
 
     def drop(self) -> None:
         if not utils.TEST_MODE:
@@ -52,7 +52,7 @@ class Playerlist(utils.Extension):
             try:
                 next_time = self.next_time()
                 await self.parse_realms()
-                asyncio.create_task(self.handle_missing_warning())
+                self.bot.create_task(self.handle_missing_warning())
                 await utils.sleep_until(next_time)
             except Exception as e:
                 if not isinstance(e, asyncio.CancelledError):

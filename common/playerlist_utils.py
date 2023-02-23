@@ -189,7 +189,7 @@ class GamertagHandler:
                         self._handle_new_gamertag(pipe, xuid, gamertag, dict_gamertags)
 
             # send data to pipeline in background
-            asyncio.create_task(self._execute_pipeline(pipe))
+            self.bot.create_task(self._execute_pipeline(pipe))
         except:
             await pipe.reset()
             raise

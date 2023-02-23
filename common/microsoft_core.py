@@ -127,7 +127,7 @@ class BaseMicrosoftAPI:
         self.auth_mgr.oauth = OAuth2TokenResponse.parse_file(
             os.environ["XAPI_TOKENS_LOCATION"]
         )
-        asyncio.create_task(self.refresh_tokens())
+        _ = asyncio.create_task(self.refresh_tokens())
 
     @property
     def BASE_HEADERS(self) -> dict[str, str]:  # noqa: N802

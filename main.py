@@ -179,6 +179,12 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     def mention_cmd(self, name: str, scope: int = 0) -> str:
         return self.interactions[scope][name].mention(scope)
 
+    def create_task(self, coro: typing.Coroutine) -> asyncio.Task:
+        task = asyncio.create_task(coro)
+        self.background_tasks.add(task)
+        task.add_done_callback(self.background_tasks.discard)
+        return task
+
     def load_extension(
         self, name: str, package: str | None = None, **load_kwargs: typing.Any
     ) -> None:
@@ -223,6 +229,7 @@ bot.uuid_cache = defaultdict(uuid.uuid4)
 bot.mini_commands_per_scope = {}
 bot.offline_realms = OrderedSet()  # type: ignore
 bot.dropped_offline_realms = set()
+bot.background_tasks = set()
 
 
 async def start() -> None:

@@ -298,6 +298,7 @@ if typing.TYPE_CHECKING:
         realms: RealmsAPI
         redis: aioredis.Redis
         own_gamertag: str
+        background_tasks: set[asyncio.Task]
 
         online_cache: defaultdict[int, set[str]]
         realm_name_cache: TimedDict[typing.Optional[str], str]
@@ -309,6 +310,11 @@ if typing.TYPE_CHECKING:
         dropped_offline_realms: set[int]
 
         def mention_cmd(self, name: str, scope: int = 0) -> str:
+            ...
+
+        def create_task(
+            self, coro: typing.Coroutine[typing.Any, typing.Any, naff.const.T]
+        ) -> asyncio.Task[naff.const.T]:
             ...
 
 else:

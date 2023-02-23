@@ -1,4 +1,3 @@
-import asyncio
 import importlib
 import os
 
@@ -21,7 +20,7 @@ class Voting(naff.Extension):
         self.autopost_guild_count.start()
 
     def drop(self) -> None:
-        asyncio.create_task(self.session.close())
+        self.bot.create_task(self.session.close())
         self.autopost_guild_count.stop()
         super().drop()
 
