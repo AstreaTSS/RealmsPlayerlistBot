@@ -137,6 +137,7 @@ class GeneralCMDS(utils.Extension):
         links = [
             "Support Server: [Link](https://discord.gg/NSdetwGjpK)",
             "Source Code: [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot)",
+            "Website: [Link](https://rpl.astrea.cc)",
         ]
 
         if os.environ.get("TOP_GG_TOKEN"):
@@ -144,18 +145,12 @@ class GeneralCMDS(utils.Extension):
 
         links.extend(
             (
-                f"Premium Information: [Link]({os.environ['PREMIUM_INFO_LINK']})",
-                (
-                    "FAQ: [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/FAQ)"
-                ),
+                "FAQ: [Link](https://rpl.astrea.cc/wiki/faq.html)",
                 (
                     "Privacy Policy:"
-                    " [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/Privacy-Policy)"
+                    " [Link](https://rpl.astrea.cc/legal/privacy_policy.html)"
                 ),
-                (
-                    "Terms of Service:"
-                    " [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot/wiki/Terms-of-Service)"
-                ),
+                "Terms of Service: [Link](https://rpl.astrea.cc/legal/tos.html)",
             )
         )
 
