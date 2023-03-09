@@ -137,7 +137,6 @@ class GeneralCMDS(utils.Extension):
         links = [
             "Support Server: [Link](https://discord.gg/NSdetwGjpK)",
             "Source Code: [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot)",
-            "Website: [Link](https://rpl.astrea.cc)",
         ]
 
         if os.environ.get("TOP_GG_TOKEN"):
@@ -145,6 +144,7 @@ class GeneralCMDS(utils.Extension):
 
         links.extend(
             (
+                "Website: [Link](https://rpl.astrea.cc)",
                 "FAQ: [Link](https://rpl.astrea.cc/wiki/faq.html)",
                 (
                     "Privacy Policy:"
