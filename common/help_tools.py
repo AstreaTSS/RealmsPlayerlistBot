@@ -1,7 +1,7 @@
 import asyncio
 import contextlib
-import re
 import inspect
+import re
 import typing
 
 import attrs
