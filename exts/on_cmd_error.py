@@ -19,7 +19,7 @@ class OnCMDError(naff.Extension):
         self,
         event: naff.events.CommandError,
     ) -> None:
-        if not isinstance(event.ctx, (naff.PrefixedContext, naff.InteractionContext)):
+        if not isinstance(event.ctx, naff.PrefixedContext | naff.InteractionContext):
             return await utils.error_handle(event.error)
 
         if isinstance(event.error, naff.errors.CommandOnCooldown):
@@ -34,7 +34,7 @@ class OnCMDError(naff.Extension):
                 )
             )
         elif isinstance(
-            event.error, (utils.CustomCheckFailure, naff.errors.BadArgument)
+            event.error, utils.CustomCheckFailure | naff.errors.BadArgument
         ):
             await event.ctx.send(embeds=self.error_embed_generate(str(event.error)))
         elif isinstance(event.error, naff.errors.CommandCheckFailure):

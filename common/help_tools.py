@@ -1,7 +1,7 @@
 import asyncio
 import contextlib
-import re
 import inspect
+import re
 import typing
 
 import attrs
@@ -92,7 +92,7 @@ class HelpPaginator(paginators.Paginator):
         default=None, init=False, repr=False
     )
 
-    def create_components(self, disable=False) -> list[naff.ActionRow]:
+    def create_components(self, disable: bool = False) -> list[naff.ActionRow]:
         rows = super().create_components()
 
         if self.show_select_menu:
@@ -220,7 +220,7 @@ class PermissionsResolver:
             if object_id == guild_id:  # @everyone
                 self.disabled_for_all_roles = permission["permission"]
                 continue
-            elif object_id == all_channels:
+            if object_id == all_channels:
                 self.disabled_for_all_channels = permission["permission"]
                 continue
 
@@ -259,7 +259,8 @@ class PermissionsResolver:
             and int(channel.id) not in self.allowed_channels
         ):
             return False
-        elif (
+
+        if (
             not self.disabled_for_all_channels
             and int(channel.id) in self.denied_channels
         ):
@@ -268,7 +269,7 @@ class PermissionsResolver:
         # user is prioritized over roles
         if int(author.id) in self.allowed_users:
             return True
-        elif int(author.id) in self.denied_users:
+        if int(author.id) in self.denied_users:
             return False
 
         author_roles = author._role_ids
