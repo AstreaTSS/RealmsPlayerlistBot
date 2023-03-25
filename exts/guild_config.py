@@ -344,7 +344,7 @@ class GuildConfig(utils.Extension):
                     " or the bot can mention all roles."
                 )
 
-            if not config.realm_id or not config.club_id:
+            if not config.realm_id:
                 raise utils.CustomCheckFailure(
                     "Please link your Realm with this server with"
                     f" {self.link_realm.mention()} first."
