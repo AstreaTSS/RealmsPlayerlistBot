@@ -174,6 +174,9 @@ class PlayerlistEventHandling(naff.Extension):
 
             no_playerlist_chan.append(False)
 
+            if not config.warning_notifications:
+                continue
+
             guild = self.bot.get_guild(config.guild_id)
             if not guild:
                 # could just be it's offline or something

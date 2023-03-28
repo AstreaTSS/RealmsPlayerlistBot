@@ -16,6 +16,7 @@ class GuildConfig(Model):
     realm_id: typing.Optional[str] = fields.CharField(50, null=True)
     live_playerlist: bool = fields.BooleanField(default=False)  # type: ignore
     realm_offline_role: typing.Optional[int] = fields.BigIntField(null=True)
+    warning_notifications: bool = fields.BooleanField(default=True)  # type: ignore
     premium_code: fields.ForeignKeyNullableRelation[
         "PremiumCode"
     ] = fields.ForeignKeyField(

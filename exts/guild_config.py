@@ -300,6 +300,92 @@ class GuildConfig(utils.Extension):
         return _check
 
     @config.subcommand(
+        sub_cmd_name="toggle-realm-warning",
+        sub_cmd_description=(
+            "Toggles if the warning that is sent after no activity is detected in the"
+            " Realm is sent."
+        ),
+    )
+    async def toggle_realm_warning(
+        self,
+        ctx: utils.RealmContext,
+        toggle: bool = tansy.Option("Should the warning be sent?"),
+    ) -> None:
+        """
+        Toggles if the warning that is sent after no activity is detected in the Realm is sent.
+        This warning is usually sent after 24 hours of no activity has been detected.
+        This is usually beneficial, but may be annoying if you have a Realm that is rarely used.
+
+        Do note that the Realm will still be unlinked after 7 days of inactivity, regardless of this.
+        """
+
+        config = await ctx.fetch_config()
+
+        if config.warning_notifications == toggle:
+            raise naff.errors.BadArgument("That's already the current setting.")
+
+        if not toggle:
+            embed = naff.Embed(
+                title="Warning",
+                description=(
+                    "This warning is usually a very important warning. If the bot"
+                    " cannot find any players on the Realm after 24 hours, this"
+                    " usually means that either the Realm is down, and so the"
+                    " playerlist should be turned off, or that"
+                    f" `{self.bot.own_gamertag}` has been kicked/banned, preventing the"
+                    " bot from functioning. **You should not disable this warning"
+                    " lightly, as it could be critical to fixing issues with the"
+                    " bot.**\n**Also note that the Realm will still be unlinked after"
+                    " 7 days of inactivity. It is your responsibility to keep track of"
+                    " this.**\nDisabling these warnings may still be beneficial if"
+                    " your Realm isn't as active, though, as long as you are aware of"
+                    " the risks.\n\n**If you wish to continue to silence these"
+                    " warnings, press the accept button.** You have 30 seconds to"
+                    " do so."
+                ),
+                timestamp=naff.Timestamp.utcnow(),
+                color=naff.RoleColors.YELLOW,
+            )
+
+            result = ""
+            event = None
+
+            components = [
+                naff.Button(naff.ButtonStyles.GREEN, "Accept", "✅"),
+                naff.Button(naff.ButtonStyles.RED, "Decline", "✖️"),
+            ]
+            msg = await ctx.send(embed=embed, components=components)
+
+            try:
+                event = await self.bot.wait_for_component(
+                    msg, components, self.button_check(ctx.author.id), timeout=30
+                )
+
+                if event.ctx.custom_id == components[1].custom_id:
+                    result = "Declined disabling the warnings."
+                else:
+                    config.warning_notifications = False
+                    await config.save()
+
+                    result = "Disabled the warnings."
+            except asyncio.TimeoutError:
+                result = "Timed out."
+            finally:
+                if event:
+                    await event.ctx.send(
+                        result,
+                        ephemeral=True,
+                        allowed_mentions=naff.AllowedMentions.none(),
+                    )
+                await ctx.edit(msg, content=result, embeds=[], embed=[], components=[])  # type: ignore
+
+        else:
+            config.warning_notifications = True
+            await config.save()
+
+            await ctx.send("Enabled the warnings.")
+
+    @config.subcommand(
         sub_cmd_name="realm-offline-role",
         sub_cmd_description=(
             "Sets (or unsets) the role that should be pinged in the autorunner channel"
