@@ -5,6 +5,7 @@ import os
 import subprocess
 import time
 import typing
+from importlib.metadata import version as _v
 
 import aiohttp
 import interactions as ipy
@@ -126,7 +127,7 @@ class GeneralCMDS(utils.Extension):
                     ),
                     (
                         "Interactions.py Version:"
-                        f" [{ipy.const.__version__}](https://github.com/interactions-py/interactions.py/tree/{ipy.const.__version__})"
+                        f" [{ipy.const.__version__}](https://github.com/interactions-py/interactions.py/tree/{_v('discord-py-interactions')})"
                     ),
                     "Made By: [AstreaTSS](https://github.com/AstreaTSS)",
                 )
