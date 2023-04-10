@@ -2,27 +2,28 @@ import datetime
 import importlib
 
 import humanize
-import naff
+import interactions as ipy
+from interactions.ext import prefixed_commands as prefixed
 
 import common.utils as utils
 
 
-class OnCMDError(naff.Extension):
+class OnCMDError(ipy.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
 
-    def error_embed_generate(self, error_msg: str) -> naff.Embed:
-        return naff.Embed(color=naff.MaterialColors.RED, description=error_msg)
+    def error_embed_generate(self, error_msg: str) -> ipy.Embed:
+        return ipy.Embed(color=ipy.MaterialColors.RED, description=error_msg)
 
-    @naff.listen(disable_default_listeners=True)
+    @ipy.listen(disable_default_listeners=True)
     async def on_command_error(
         self,
-        event: naff.events.CommandError,
+        event: ipy.events.CommandError,
     ) -> None:
-        if not isinstance(event.ctx, naff.PrefixedContext | naff.InteractionContext):
+        if not isinstance(event.ctx, prefixed.PrefixedContext | ipy.InteractionContext):
             return await utils.error_handle(event.error)
 
-        if isinstance(event.error, naff.errors.CommandOnCooldown):
+        if isinstance(event.error, ipy.errors.CommandOnCooldown):
             delta_wait = datetime.timedelta(
                 seconds=event.error.cooldown.get_cooldown_time()
             )
@@ -33,11 +34,9 @@ class OnCMDError(naff.Extension):
                     f" `{humanize.precisedelta(delta_wait, format='%0.0f')}`."
                 )
             )
-        elif isinstance(
-            event.error, utils.CustomCheckFailure | naff.errors.BadArgument
-        ):
+        elif isinstance(event.error, utils.CustomCheckFailure | ipy.errors.BadArgument):
             await event.ctx.send(embeds=self.error_embed_generate(str(event.error)))
-        elif isinstance(event.error, naff.errors.CommandCheckFailure):
+        elif isinstance(event.error, ipy.errors.CommandCheckFailure):
             if event.ctx.guild:
                 await event.ctx.send(
                     embeds=self.error_embed_generate(

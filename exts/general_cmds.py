@@ -7,7 +7,7 @@ import time
 import typing
 
 import aiohttp
-import naff
+import interactions as ipy
 import orjson
 import tansy
 from apischema import ValidationError
@@ -33,7 +33,7 @@ class GeneralCMDS(utils.Extension):
     async def get_commit_hash(self) -> str:
         return await asyncio.to_thread(self._get_commit_hash)
 
-    @naff.slash_command(
+    @ipy.slash_command(
         "ping",
         description=(
             "Pings the bot. Great way of finding out if the bot’s working correctly,"
@@ -63,21 +63,21 @@ class GeneralCMDS(utils.Extension):
             ),
         )
 
-    @naff.slash_command(
+    @ipy.slash_command(
         name="invite",
         description="Sends instructions on how to invite the bot.",
     )
     async def invite(self, ctx: utils.RealmContext) -> None:
         await ctx.send(os.environ["SETUP_LINK"])
 
-    @naff.slash_command(
+    @ipy.slash_command(
         "support", description="Gives an invite link to the support server."
     )
-    async def support(self, ctx: naff.InteractionContext) -> None:
+    async def support(self, ctx: ipy.InteractionContext) -> None:
         await ctx.send("Support server:\nhttps://discord.gg/NSdetwGjpK")
 
-    @naff.slash_command("about", description="Gives information about the bot.")
-    async def about(self, ctx: naff.InteractionContext) -> None:
+    @ipy.slash_command("about", description="Gives information about the bot.")
+    async def about(self, ctx: ipy.InteractionContext) -> None:
         msg_list = [
             (
                 "Hi! I'm the **Realms Playerlist Bot**, a bot that helps out owners of"
@@ -90,7 +90,7 @@ class GeneralCMDS(utils.Extension):
             ),
         ]
 
-        about_embed = naff.Embed(
+        about_embed = ipy.Embed(
             title="About",
             color=self.bot.color,
             description="\n".join(msg_list),
@@ -118,15 +118,15 @@ class GeneralCMDS(utils.Extension):
                     f"Commands: {command_num} ",
                     (
                         "Startup Time:"
-                        f" {naff.Timestamp.fromdatetime(self.bot.start_time).format(naff.TimestampStyles.RelativeTime)}"
+                        f" {ipy.Timestamp.fromdatetime(self.bot.start_time).format(ipy.TimestampStyles.RelativeTime)}"
                     ),
                     (
                         "Commit Hash:"
                         f" [{commit_hash}](https://github.com/AstreaTSS/RealmsPlayerlistBot/commit/{commit_hash})"
                     ),
                     (
-                        "NAFF Version:"
-                        f" [{naff.const.__version__}](https://github.com/NAFTeam/NAFF/tree/NAFF-{naff.const.__version__})"
+                        "Interactions.py Version:"
+                        f" [{ipy.const.__version__}](https://github.com/interactions-py/interactions.py/tree/{ipy.const.__version__})"
                     ),
                     "Made By: [AstreaTSS](https://github.com/AstreaTSS)",
                 )
@@ -159,7 +159,7 @@ class GeneralCMDS(utils.Extension):
             value="\n".join(links),
             inline=True,
         )
-        about_embed.timestamp = naff.Timestamp.utcnow()
+        about_embed.timestamp = ipy.Timestamp.utcnow()
 
         await ctx.send(embed=about_embed)
 
@@ -192,7 +192,7 @@ class GeneralCMDS(utils.Extension):
                 raise ValueError()
             valid_xuid = int(xuid)
         except ValueError:
-            raise naff.errors.BadArgument(f'"{xuid}" is not a valid XUID.') from None
+            raise ipy.errors.BadArgument(f'"{xuid}" is not a valid XUID.') from None
 
         maybe_gamertag: typing.Union[str, xbox_api.ProfileResponse, None] = (
             await self.bot.redis.get(str(valid_xuid))
@@ -242,7 +242,7 @@ class GeneralCMDS(utils.Extension):
                                 )
 
         if not maybe_gamertag:
-            raise naff.errors.BadArgument(
+            raise ipy.errors.BadArgument(
                 f"Could not find gamertag of XUID `{valid_xuid}`!"
             )
 

@@ -20,17 +20,12 @@ os.environ["XAPI_TOKENS_LOCATION"] = f"{file_location}/tokens.json"
 
 import aiohttp
 import discord_typings
-import naff
+import interactions as ipy
 import sentry_sdk
-import tansy
-from naff.ext.sentry import HookedTask
-from naff.models.naff.tasks.task import Task
+from interactions.ext import prefixed_commands as prefixed
+from interactions.ext.sentry import HookedTask
 from ordered_set import OrderedSet
 from tortoise import Tortoise
-
-# install speedups before importing common stuff,
-# since that uses naff
-tansy.install_naff_speedups()
 
 import common.help_tools as help_tools
 import common.models as models
@@ -58,9 +53,9 @@ handler.setFormatter(
 )
 logger.addHandler(handler)
 
-naff_logger = logging.getLogger("naff")
-naff_logger.setLevel(logging.INFO)
-naff_logger.addHandler(handler)
+ipy_logger = logging.getLogger("interactions")
+ipy_logger.setLevel(logging.INFO)
+ipy_logger.addHandler(handler)
 
 
 def default_sentry_filter(
@@ -68,7 +63,7 @@ def default_sentry_filter(
 ) -> typing.Optional[dict[str, typing.Any]]:
     if "log_record" in hint:
         record: logging.LogRecord = hint["log_record"]
-        if "naff" in record.name or "realms_bot" in record.name:
+        if "interactions" in record.name or "realms_bot" in record.name:
             #  There are some logging messages that are not worth sending to sentry.
             if ": 403" in record.message:
                 return None
@@ -87,12 +82,12 @@ def default_sentry_filter(
 
 # im so sorry
 if not utils.TEST_MODE:
-    Task.on_error_sentry_hook = HookedTask.on_error_sentry_hook
+    ipy.Task.on_error_sentry_hook = HookedTask.on_error_sentry_hook
     sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], before_send=default_sentry_filter)
 
 
 class RealmsPlayerlistBot(utils.RealmBotBase):
-    @naff.listen("startup")
+    @ipy.listen("startup")
     async def on_startup(self) -> None:
         self.xbox = XboxAPI()
         self.realms = RealmsAPI()
@@ -115,9 +110,9 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
         self.fully_ready.set()
 
-    @naff.listen("ready")
+    @ipy.listen("ready")
     async def on_ready(self) -> None:
-        utcnow = naff.Timestamp.utcnow()
+        utcnow = ipy.Timestamp.utcnow()
         time_format = f"<t:{int(utcnow.timestamp())}:f>"
 
         connect_msg = (
@@ -130,13 +125,13 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
         self.init_load = False
 
-        activity = naff.Activity.create(
-            name="over some Realms", type=naff.ActivityType.WATCHING
+        activity = ipy.Activity.create(
+            name="over some Realms", type=ipy.ActivityType.WATCHING
         )
 
         await self.change_presence(activity=activity)
 
-    @naff.listen("disconnect")
+    @ipy.listen("disconnect")
     async def on_disconnect(self) -> None:
         # basically, this needs to be done as otherwise, when the bot reconnects,
         # redis may complain that a connection was closed by a peer
@@ -144,17 +139,17 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         with contextlib.suppress(Exception):
             await self.redis.connection_pool.disconnect(inuse_connections=True)
 
-    @naff.listen("resume")
+    @ipy.listen("resume")
     async def on_resume_func(self) -> None:
-        activity = naff.Activity.create(
-            name="over some Realms", type=naff.ActivityType.WATCHING
+        activity = ipy.Activity.create(
+            name="over some Realms", type=ipy.ActivityType.WATCHING
         )
         await self.change_presence(activity=activity)
 
-    # technically, this is in naff itself now, but its easier for my purposes to do this
-    @naff.listen("raw_application_command_permissions_update")
+    # technically, this is in ipy itself now, but its easier for my purposes to do this
+    @ipy.listen("raw_application_command_permissions_update")
     async def i_like_my_events_very_raw(
-        self, event: naff.events.RawGatewayEvent
+        self, event: ipy.events.RawGatewayEvent
     ) -> None:
         data: discord_typings.GuildApplicationCommandPermissionData = event.data  # type: ignore
 
@@ -172,8 +167,8 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
                 cmd.default_member_permissions, guild_id, data["permissions"]  # type: ignore
             )
 
-    @naff.listen(is_default_listener=True)
-    async def on_error(self, event: naff.events.Error) -> None:
+    @ipy.listen(is_default_listener=True)
+    async def on_error(self, event: ipy.events.Error) -> None:
         await utils.error_handle(event.error)
 
     def mention_cmd(self, name: str, scope: int = 0) -> str:
@@ -190,7 +185,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     ) -> None:
         super().load_extension(name, package, **load_kwargs)
 
-        # naff forgets to do this lol
+        # ipy forgets to do this lol
         if not self.sync_ext and self._ready.is_set():
             asyncio.create_task(self._cache_interactions(warn_missing=False))
 
@@ -207,26 +202,30 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
             self._connection_state.gateway_started.clear()
 
 
-intents = naff.Intents.new(
+intents = ipy.Intents.new(
     guilds=True,
     messages=True,
 )
-mentions = naff.AllowedMentions.all()
+mentions = ipy.AllowedMentions.all()
 
 bot = RealmsPlayerlistBot(
     sync_interactions=False,  # big bots really shouldn't have this on
     sync_ext=False,
     allowed_mentions=mentions,
     intents=intents,
-    interaction_context=utils.RealmContext,
+    interaction_context=utils.RealmInteractionContext,
+    slash_context=utils.RealmContext,
+    component_context=utils.RealmComponentContext,
+    modal_context=utils.RealmModalContext,
+    context_menu_context=utils.RealmContextMenuContext,
     autocomplete_context=utils.RealmAutocompleteContext,
-    prefixed_context=utils.RealmPrefixedContext,
-    auto_defer=naff.AutoDefer(enabled=True, time_until_defer=0),
-    message_cache=naff.utils.TTLCache(10, 5, 5),  # we do not need messages
+    auto_defer=ipy.AutoDefer(enabled=True, time_until_defer=0),
+    message_cache=ipy.utils.TTLCache(10, 5, 5),  # we do not need messages
     logger=logger,
 )
+prefixed.setup(bot, prefixed_context=utils.RealmPrefixedContext)
 bot.init_load = True
-bot.color = naff.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
+bot.color = ipy.Color(int(os.environ["BOT_COLOR"]))  # 8ac249, aka 9093705
 bot.online_cache = defaultdict(set)
 bot.slash_perms_cache = defaultdict(dict)
 bot.live_playerlist_store = defaultdict(set)
@@ -244,7 +243,7 @@ async def start() -> None:
     )
 
     # mark players as offline if they were online more than 5 minutes ago
-    five_minutes_ago = naff.Timestamp.utcnow() - datetime.timedelta(minutes=5)
+    five_minutes_ago = ipy.Timestamp.utcnow() - datetime.timedelta(minutes=5)
     await models.PlayerSession.filter(
         online=True, last_seen__lt=five_minutes_ago
     ).update(online=False)
@@ -283,7 +282,7 @@ async def start() -> None:
 
         try:
             bot.load_extension(ext)
-        except naff.errors.ExtensionLoadException:
+        except ipy.errors.ExtensionLoadException:
             raise
 
     await bot.astart(os.environ["MAIN_TOKEN"])

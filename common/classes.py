@@ -2,7 +2,7 @@ import asyncio
 import typing
 
 import attrs
-import naff
+import interactions as ipy
 import redis.asyncio as aioredis
 
 import common.utils as utils
@@ -66,29 +66,29 @@ class TimedDict(typing.Generic[KT, VT]):
             self._timer.cancel()
 
 
-def valid_channel_check(channel: naff.GuildChannel) -> utils.GuildMessageable:
-    if not isinstance(channel, naff.MessageableMixin):
-        raise naff.errors.BadArgument(f"Cannot send messages in {channel.name}.")
+def valid_channel_check(channel: ipy.GuildChannel) -> utils.GuildMessageable:
+    if not isinstance(channel, ipy.MessageableMixin):
+        raise ipy.errors.BadArgument(f"Cannot send messages in {channel.name}.")
 
     perms = channel.permissions_for(channel.guild.me)
 
     if (
-        naff.Permissions.VIEW_CHANNEL not in perms
+        ipy.Permissions.VIEW_CHANNEL not in perms
     ):  # technically pointless, but who knows
-        raise naff.errors.BadArgument(f"Cannot read messages in {channel.name}.")
-    elif naff.Permissions.READ_MESSAGE_HISTORY not in perms:
-        raise naff.errors.BadArgument(f"Cannot read message history in {channel.name}.")
-    elif naff.Permissions.SEND_MESSAGES not in perms:
-        raise naff.errors.BadArgument(f"Cannot send messages in {channel.name}.")
-    elif naff.Permissions.EMBED_LINKS not in perms:
-        raise naff.errors.BadArgument(f"Cannot send embeds in {channel.name}.")
+        raise ipy.errors.BadArgument(f"Cannot read messages in {channel.name}.")
+    elif ipy.Permissions.READ_MESSAGE_HISTORY not in perms:
+        raise ipy.errors.BadArgument(f"Cannot read message history in {channel.name}.")
+    elif ipy.Permissions.SEND_MESSAGES not in perms:
+        raise ipy.errors.BadArgument(f"Cannot send messages in {channel.name}.")
+    elif ipy.Permissions.EMBED_LINKS not in perms:
+        raise ipy.errors.BadArgument(f"Cannot send embeds in {channel.name}.")
 
     return channel  # type: ignore
 
 
-class ValidChannelConverter(naff.Converter):
+class ValidChannelConverter(ipy.Converter):
     async def convert(
-        self, ctx: naff.InteractionContext, argument: naff.GuildText
+        self, ctx: ipy.InteractionContext, argument: ipy.GuildText
     ) -> utils.GuildMessageable:
         return valid_channel_check(argument)
 

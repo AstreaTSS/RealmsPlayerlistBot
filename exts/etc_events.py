@@ -3,14 +3,14 @@ import contextlib
 import importlib
 import os
 
-import naff
+import interactions as ipy
 
 import common.models as models
 import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
 
 
-class OnCMDError(naff.Extension):
+class OnCMDError(ipy.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.update_tokens.start()
@@ -19,15 +19,15 @@ class OnCMDError(naff.Extension):
         self.update_tokens.stop()
         super().drop()
 
-    @naff.listen("guild_join")
-    async def on_guild_join(self, event: naff.events.GuildJoin) -> None:
+    @ipy.listen("guild_join")
+    async def on_guild_join(self, event: ipy.events.GuildJoin) -> None:
         if not self.bot.is_ready:
             return
 
         await models.GuildConfig.get_or_create(guild_id=int(event.guild_id))
 
-    @naff.listen("guild_left")
-    async def on_guild_left(self, event: naff.events.GuildLeft) -> None:
+    @ipy.listen("guild_left")
+    async def on_guild_left(self, event: ipy.events.GuildLeft) -> None:
         if not self.bot.is_ready:
             return
 
@@ -50,7 +50,7 @@ class OnCMDError(naff.Extension):
         with open(os.environ["XAPI_TOKENS_LOCATION"], mode="w") as f:
             f.write(self.bot.xbox.auth_mgr.oauth.json())
 
-    @naff.Task.create(naff.IntervalTrigger(hours=6))
+    @ipy.Task.create(ipy.IntervalTrigger(hours=6))
     async def update_tokens(self) -> None:
         await asyncio.to_thread(self._update_tokens)
 

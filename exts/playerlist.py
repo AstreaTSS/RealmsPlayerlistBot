@@ -4,7 +4,7 @@ import importlib
 import math
 import typing
 
-import naff
+import interactions as ipy
 import tansy
 
 import common.models as models
@@ -37,12 +37,12 @@ class Playerlist(utils.Extension):
             self.get_people_task.cancel()
         super().drop()
 
-    def next_time(self) -> naff.Timestamp:
-        now = naff.Timestamp.utcnow()
+    def next_time(self) -> ipy.Timestamp:
+        now = ipy.Timestamp.utcnow()
         # margin of error
         multiplicity = math.ceil((now.timestamp() + 0.1) / 60)
         next_time = multiplicity * 60
-        return naff.Timestamp.utcfromtimestamp(next_time)
+        return ipy.Timestamp.utcfromtimestamp(next_time)
 
     async def get_people_runner(self) -> None:
         await self.bot.fully_ready.wait()
@@ -213,11 +213,11 @@ class Playerlist(utils.Extension):
     @tansy.slash_command(
         name="playerlist",
         description="Sends a playerlist, a log of players who have joined and left.",
-        default_member_permissions=naff.Permissions.MANAGE_GUILD,
+        default_member_permissions=ipy.Permissions.MANAGE_GUILD,
         dm_permission=False,
-    )  # type: ignore
-    @naff.check(pl_utils.can_run_playerlist)  # type: ignore
-    @naff.cooldown(naff.Buckets.GUILD, 1, 60)  # type: ignore
+    )
+    @ipy.check(pl_utils.can_run_playerlist)
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 60)
     async def playerlist(
         self,
         ctx: utils.RealmContext | utils.RealmPrefixedContext,
@@ -256,7 +256,7 @@ class Playerlist(utils.Extension):
         # as the data collector thing will not take a whole 30 seconds to process things
         # this is very useful for the autorunners, which always have a chance of taking a bit
         # long due to random chance
-        now = naff.Timestamp.utcnow().replace(second=30)
+        now = ipy.Timestamp.utcnow().replace(second=30)
         time_delta = datetime.timedelta(hours=hours_ago, minutes=1)
         time_ago = now - time_delta
 
@@ -312,22 +312,22 @@ class Playerlist(utils.Extension):
                 f"No one has been on the Realm for the last {hours_ago} hour(s)."
             )
 
-        embeds: list[naff.Embed] = []
-        timestamp = naff.Timestamp.fromdatetime(self.previous_now)
+        embeds: list[ipy.Embed] = []
+        timestamp = ipy.Timestamp.fromdatetime(self.previous_now)
 
         if online_list:
             embeds.append(
-                naff.Embed(
+                ipy.Embed(
                     color=self.bot.color,
                     title="People online right now",
                     description="\n".join(online_list),
-                    footer=naff.EmbedFooter(text="As of"),
+                    footer=ipy.EmbedFooter(text="As of"),
                     timestamp=timestamp,
                 )
             )
 
         if offline_list:
-            offline_embeds: list[naff.Embed] = []
+            offline_embeds: list[ipy.Embed] = []
 
             current_entries: list[str] = []
             current_length: int = 0
@@ -336,10 +336,10 @@ class Playerlist(utils.Extension):
                 current_length += len(entry)
                 if current_length > 3900:
                     offline_embeds.append(
-                        naff.Embed(
-                            color=naff.Color.from_hex("95a5a6"),
+                        ipy.Embed(
+                            color=ipy.Color.from_hex("95a5a6"),
                             description="\n".join(current_entries),
-                            footer=naff.EmbedFooter(text="As of"),
+                            footer=ipy.EmbedFooter(text="As of"),
                             timestamp=timestamp,
                         )
                     )
@@ -350,10 +350,10 @@ class Playerlist(utils.Extension):
 
             if current_entries:
                 offline_embeds.append(
-                    naff.Embed(
-                        color=naff.Color.from_hex("95a5a6"),
+                    ipy.Embed(
+                        color=ipy.Color.from_hex("95a5a6"),
                         description="\n".join(current_entries),
-                        footer=naff.EmbedFooter(text="As of"),
+                        footer=ipy.EmbedFooter(text="As of"),
                         timestamp=timestamp,
                     )
                 )
@@ -385,13 +385,13 @@ class Playerlist(utils.Extension):
             # we also make sure we don't get ratelimited hard
             await asyncio.sleep(0.2)
 
-    @naff.slash_command(
+    @ipy.slash_command(
         "online",
         description="Allows you to see if anyone is online on the Realm right now.",
         dm_permission=False,
-    )  # type: ignore
-    @naff.cooldown(naff.Buckets.GUILD, 1, 10)
-    @naff.check(pl_utils.can_run_playerlist)  # type: ignore
+    )
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 10)
+    @ipy.check(pl_utils.can_run_playerlist)
     async def online(self, ctx: utils.RealmContext) -> None:
         """
         Allows you to see if anyone is online on the Realm right now.
@@ -409,12 +409,12 @@ class Playerlist(utils.Extension):
         if online_list := sorted(
             (p.display for p in playerlist if p.online), key=lambda g: g.lower()
         ):
-            embed = naff.Embed(
+            embed = ipy.Embed(
                 color=self.bot.color,
                 title=f"{len(online_list)}/10 people online",
                 description="\n".join(online_list),
-                footer=naff.EmbedFooter(text="As of"),
-                timestamp=naff.Timestamp.fromdatetime(self.previous_now),
+                footer=ipy.EmbedFooter(text="As of"),
+                timestamp=ipy.Timestamp.fromdatetime(self.previous_now),
             )
             await ctx.send(embed=embed)
         else:

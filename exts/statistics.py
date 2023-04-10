@@ -7,7 +7,7 @@ import typing
 
 import aiohttp
 import humanize
-import naff
+import interactions as ipy
 import orjson
 import rapidfuzz
 import tansy
@@ -47,24 +47,24 @@ SHOWABLE_FORMAT = {
 }
 
 PERIOD_TO_GRAPH = [
-    naff.SlashCommandChoice("One day, per hour", "1pH"),
-    naff.SlashCommandChoice("1 week, per day", "7pD"),
+    ipy.SlashCommandChoice("One day, per hour", "1pH"),
+    ipy.SlashCommandChoice("1 week, per day", "7pD"),
 ]
 PREMIUM_PERIOD_TO_GRAPH = PERIOD_TO_GRAPH + [
-    naff.SlashCommandChoice("2 weeks, per day", "14pD"),
-    naff.SlashCommandChoice("30 days, per day", "30pD"),
+    ipy.SlashCommandChoice("2 weeks, per day", "14pD"),
+    ipy.SlashCommandChoice("30 days, per day", "30pD"),
 ]
 PERIODS = frozenset({p.value for p in PERIOD_TO_GRAPH})
 PREMIUM_PERIODS = frozenset({p.value for p in PREMIUM_PERIOD_TO_GRAPH})
 
 SUMMARIZE_BY = [
-    naff.SlashCommandChoice("1 week, by hour", "7bH"),
+    ipy.SlashCommandChoice("1 week, by hour", "7bH"),
 ]
 PREMIUM_SUMMARIZE_BY = SUMMARIZE_BY + [
-    naff.SlashCommandChoice("2 weeks, by hour", "14bH"),
-    naff.SlashCommandChoice("30 days, by hour", "30bH"),
-    naff.SlashCommandChoice("2 weeks, by day of the week", "14bD"),
-    naff.SlashCommandChoice("30 days, by day of the week", "30bD"),
+    ipy.SlashCommandChoice("2 weeks, by hour", "14bH"),
+    ipy.SlashCommandChoice("30 days, by hour", "30bH"),
+    ipy.SlashCommandChoice("2 weeks, by day of the week", "14bD"),
+    ipy.SlashCommandChoice("30 days, by day of the week", "30bD"),
 ]
 SUMMARIES = frozenset({s.value for s in SUMMARIZE_BY})
 PREMIUM_SUMMARIES = frozenset({s.value for s in PREMIUM_SUMMARIZE_BY})
@@ -128,7 +128,7 @@ class Statistics(utils.Extension):
                     maybe_xuid = xbox_api.parse_profile_response(resp)
 
         if not maybe_xuid:
-            raise naff.errors.BadArgument(f"`{gamertag}` is not a valid gamertag.")
+            raise ipy.errors.BadArgument(f"`{gamertag}` is not a valid gamertag.")
 
         xuid = maybe_xuid.profile_users[0].id
 
@@ -196,7 +196,7 @@ class Statistics(utils.Extension):
             **template_kwargs,
         )
 
-        embeds: list[naff.Embed] = []
+        embeds: list[ipy.Embed] = []
 
         if warn_about_earliest:
             # probably not the most elegant way to check if this is player-based or not
@@ -217,14 +217,14 @@ class Statistics(utils.Extension):
                     " may be inaccurate."
                 )
             embeds.append(
-                naff.Embed(
+                ipy.Embed(
                     title="Warning",
                     description=description,
-                    color=naff.RoleColors.YELLOW,
+                    color=ipy.RoleColors.YELLOW,
                 )
             )
 
-        embed = naff.Embed(
+        embed = ipy.Embed(
             color=self.bot.color,
             timestamp=now,  # type: ignore
         )
@@ -296,18 +296,18 @@ class Statistics(utils.Extension):
 
         periods = PREMIUM_PERIODS if config.premium_code else PERIODS
         if period not in periods:
-            raise naff.errors.BadArgument("Invalid period given.")
+            raise ipy.errors.BadArgument("Invalid period given.")
 
         template_kwargs = {"max_value": None}
 
         period_split = period.split("p")
         if len(period_split) != 2:
-            raise naff.errors.BadArgument("Invalid period given.")
+            raise ipy.errors.BadArgument("Invalid period given.")
 
         try:
             num_days = int(period_split[0])
         except ValueError:
-            raise naff.errors.BadArgument("Invalid period given.") from None
+            raise ipy.errors.BadArgument("Invalid period given.") from None
 
         actual_period = period_split[1]
 
@@ -359,16 +359,16 @@ class Statistics(utils.Extension):
 
         summaries = PREMIUM_SUMMARIES if config.premium_code else SUMMARIES
         if summarize_by not in summaries:
-            raise naff.errors.BadArgument("Invalid summary given.")
+            raise ipy.errors.BadArgument("Invalid summary given.")
 
         summary_split = summarize_by.split("b")
         if len(summary_split) != 2:
-            raise naff.errors.BadArgument("Invalid summary given.")
+            raise ipy.errors.BadArgument("Invalid summary given.")
 
         try:
             num_days = int(summary_split[0])
         except ValueError:
-            raise naff.errors.BadArgument("Invalid summary given.") from None
+            raise ipy.errors.BadArgument("Invalid summary given.") from None
 
         now = datetime.datetime.now(datetime.UTC)
         num_days_ago = (
@@ -405,9 +405,9 @@ class Statistics(utils.Extension):
         )
 
     graph = tansy.SlashCommand(
-        name="graph",  # type: ignore
-        description="Produces various graphs about playtime on the Realm.",  # type: ignore
-        default_member_permissions=naff.Permissions.MANAGE_GUILD,
+        name="graph",
+        description="Produces various graphs about playtime on the Realm.",
+        default_member_permissions=ipy.Permissions.MANAGE_GUILD,
         dm_permission=False,
     )
 
@@ -418,8 +418,8 @@ class Statistics(utils.Extension):
             " graph."
         ),
     )
-    @naff.cooldown(naff.Buckets.GUILD, 1, 5)  # type: ignore
-    @naff.check(stats_check)  # type: ignore
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    @ipy.check(stats_check)
     async def graph_realm(
         self,
         ctx: utils.RealmContext,
@@ -435,8 +435,8 @@ class Statistics(utils.Extension):
             "Summarizes the Realm over a specified period, by a specified interval."
         ),
     )
-    @naff.cooldown(naff.Buckets.GUILD, 1, 5)  # type: ignore
-    @naff.check(stats_check)  # type: ignore
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    @ipy.check(stats_check)
     async def graph_realm_summary(
         self,
         ctx: utils.RealmContext,
@@ -454,8 +454,8 @@ class Statistics(utils.Extension):
             "Produces a graph of a player's playtime over a specifed period as a graph."
         ),
     )
-    @naff.cooldown(naff.Buckets.GUILD, 1, 5)  # type: ignore
-    @naff.check(stats_check)  # type: ignore
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    @ipy.check(stats_check)
     async def graph_player(
         self,
         ctx: utils.RealmContext,
@@ -477,8 +477,8 @@ class Statistics(utils.Extension):
             "Summarizes a player over a specified period, by a specified interval."
         ),
     )
-    @naff.cooldown(naff.Buckets.GUILD, 1, 5)  # type: ignore
-    @naff.check(stats_check)  # type: ignore
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    @ipy.check(stats_check)
     async def graph_player_summary(
         self,
         ctx: utils.RealmContext,
@@ -556,10 +556,10 @@ class Statistics(utils.Extension):
     @tansy.slash_command(
         name="get-player-log",
         description="Gets a log of every time a specific player joined and left.",
-        default_member_permissions=naff.Permissions.MANAGE_GUILD,
+        default_member_permissions=ipy.Permissions.MANAGE_GUILD,
         dm_permission=False,
-    )  # type: ignore
-    @naff.cooldown(naff.Buckets.GUILD, 1, 5)  # type: ignore
+    )
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
     async def get_player_log(
         self,
         ctx: utils.RealmContext,
@@ -586,7 +586,7 @@ class Statistics(utils.Extension):
 
         config = await ctx.fetch_config()
 
-        now = naff.Timestamp.utcnow().replace(second=30)
+        now = ipy.Timestamp.utcnow().replace(second=30)
         time_delta = datetime.timedelta(days=days_ago, minutes=1)
         time_ago = now - time_delta
 
@@ -637,11 +637,11 @@ class Statistics(utils.Extension):
         # to get our original session str in the original list - we add one though because humans
         # don't index at 0
         embeds = [
-            naff.Embed(
+            ipy.Embed(
                 title=f"Log for {gamertag} for the past {days_ago} days(s)",
                 description=f"Total playtime over this period: {natural_playtime}",
                 fields=[
-                    naff.EmbedField(
+                    ipy.EmbedField(
                         f"Session {(chunk_index * 6) + (session_index + 1)}:",
                         session,
                         inline=True,
@@ -649,7 +649,7 @@ class Statistics(utils.Extension):
                     for session_index, session in enumerate(chunk)
                 ],
                 color=ctx.bot.color,
-                footer=naff.EmbedFooter("As of"),
+                footer=ipy.EmbedFooter("As of"),
                 timestamp=now,
             )
             for chunk_index, chunk in enumerate(chunks)

@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import importlib
 
-import naff
+import interactions as ipy
 from dateutil.relativedelta import relativedelta
 
 import common.classes as cclasses
@@ -32,7 +32,7 @@ class AutoRunPlayerlist(utils.Extension):
         try:
             while True:
                 # margin of error
-                now = naff.Timestamp.utcnow() + datetime.timedelta(milliseconds=1)
+                now = ipy.Timestamp.utcnow() + datetime.timedelta(milliseconds=1)
                 next_delta = relativedelta(hours=+1, minute=0, second=5, microsecond=0)
                 next_time = now + next_delta
 
@@ -48,7 +48,7 @@ class AutoRunPlayerlist(utils.Extension):
             if not isinstance(e, asyncio.CancelledError):
                 await utils.error_handle(e)
 
-    @naff.Task.create(naff.TimeTrigger())
+    @ipy.Task.create(ipy.TimeTrigger())
     async def player_session_delete(self) -> None:
         now = datetime.datetime.now(tz=datetime.UTC)
         time_back = now - datetime.timedelta(days=31)
@@ -91,7 +91,7 @@ class AutoRunPlayerlist(utils.Extension):
 
     async def auto_run_playerlist(
         self,
-        list_cmd: naff.InteractionCommand,
+        list_cmd: ipy.InteractionCommand,
         guild_config: models.GuildConfig,
         upsell: bool = False,
         upsell_type: int = -1,
@@ -109,13 +109,17 @@ class AutoRunPlayerlist(utils.Extension):
             return
 
         # make a fake context to make things easier
-        a_ctx: utils.RealmPrefixedContext = utils.RealmPrefixedContext(
-            client=self.bot,  # type: ignore
-            author=chan.guild.me,
-            channel=chan,
-            guild_id=chan._guild_id,
-            guild_config=guild_config,
-        )
+        a_ctx = utils.RealmPrefixedContext(client=self.bot)
+        a_ctx.author_id = chan.guild.me.id
+        a_ctx.channel_id = chan.id
+        a_ctx.guild_id = chan._guild_id
+        a_ctx.guild_config = guild_config
+
+        a_ctx.prefix = ""
+        a_ctx.content_parameters = ""
+        a_ctx.command = None  # type: ignore
+        a_ctx.args = []
+        a_ctx.kwargs = {}
 
         # take advantage of the fact that users cant really use kwargs for commands
         # the ones listed here silence the 'this may take a long time' message
@@ -126,7 +130,7 @@ class AutoRunPlayerlist(utils.Extension):
             await list_cmd.callback(
                 a_ctx, 1, autorunner=True, upsell=upsell, upsell_type=upsell_type
             )
-        except naff.errors.HTTPException:
+        except ipy.errors.HTTPException:
             # likely a can't send in channel, eventually invalidate and move on
             await pl_utils.eventually_invalidate(self.bot, guild_config)
 

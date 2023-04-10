@@ -7,7 +7,7 @@ import re
 import typing
 
 import aiohttp
-import naff
+import interactions as ipy
 import tansy
 
 import common.classes as cclasses
@@ -45,8 +45,8 @@ class GuildConfig(utils.Extension):
 
     config = tansy.TansySlashCommand(
         name="config",
-        description="Handles configuration of the bot.",  # type: ignore
-        default_member_permissions=naff.Permissions.MANAGE_GUILD,
+        description="Handles configuration of the bot.",
+        default_member_permissions=ipy.Permissions.MANAGE_GUILD,
         dm_permission=False,
     )
 
@@ -57,7 +57,7 @@ class GuildConfig(utils.Extension):
     async def info(self, ctx: utils.RealmContext) -> None:
         config = await ctx.fetch_config()
 
-        embed = naff.Embed(
+        embed = ipy.Embed(
             color=self.bot.color, title=f"Server Config for {ctx.guild.name}:"
         )
         playerlist_channel = (
@@ -92,10 +92,10 @@ class GuildConfig(utils.Extension):
             f" {utils.toggle_friendly_str(config.live_playerlist)}"
         )
 
-        embeds: list[naff.Embed] = []
+        embeds: list[ipy.Embed] = []
 
         if realm_not_found:
-            warning_embed = naff.Embed(
+            warning_embed = ipy.Embed(
                 title="Warning!",
                 description=(
                     "There is a Realm ID associated with this Realm, but I could not"
@@ -134,7 +134,7 @@ class GuildConfig(utils.Extension):
         ),
     ) -> None:
         if not (unlink ^ bool(_realm_code)):
-            raise naff.errors.BadArgument(
+            raise ipy.errors.BadArgument(
                 "You must either give a realm code/link or explictly unlink your Realm."
                 " One must be given."
             )
@@ -145,7 +145,7 @@ class GuildConfig(utils.Extension):
             realm_code_matches = REALMS_LINK_REGEX.fullmatch(_realm_code)
 
             if not realm_code_matches:
-                raise naff.errors.BadArgument("Invalid Realm code!")
+                raise ipy.errors.BadArgument("Invalid Realm code!")
 
             realm_code = realm_code_matches[1]
 
@@ -155,7 +155,7 @@ class GuildConfig(utils.Extension):
                 config.realm_id = str(realm.id)
                 self.bot.realm_name_cache.add_one(config.realm_id, realm.name)
 
-                embeds: collections.deque[naff.Embed] = collections.deque()
+                embeds: collections.deque[ipy.Embed] = collections.deque()
 
                 if (
                     realm.club_id
@@ -168,7 +168,7 @@ class GuildConfig(utils.Extension):
                         self.bot, config.realm_id, config.club_id
                     )
                 else:
-                    warning_embed = naff.Embed(
+                    warning_embed = ipy.Embed(
                         title="Warning",
                         description=(
                             "I was unable to backfill player data for this Realm. If"
@@ -176,13 +176,13 @@ class GuildConfig(utils.Extension):
                             " show imcomplete player data. This should resolve itself"
                             " in about 24 hours."
                         ),
-                        color=naff.RoleColors.YELLOW,
+                        color=ipy.RoleColors.YELLOW,
                     )
                     embeds.appendleft(warning_embed)
 
                 await config.save()
 
-                confirm_embed = naff.Embed(
+                confirm_embed = ipy.Embed(
                     title="Linked!",
                     description=(
                         "Linked this server to the Realm:"
@@ -191,7 +191,7 @@ class GuildConfig(utils.Extension):
                         " player roster (and even the playerlist). *Do not ban or kick"
                         " them.* The bot will not work with your Realm if you do so."
                     ),
-                    color=naff.RoleColors.GREEN,
+                    color=ipy.RoleColors.GREEN,
                 )
                 embeds.appendleft(confirm_embed)
                 await ctx.send(embeds=list(embeds))
@@ -200,7 +200,7 @@ class GuildConfig(utils.Extension):
                     isinstance(e.error, aiohttp.ClientResponseError)
                     and e.resp.status == 403
                 ):
-                    raise naff.errors.BadArgument(
+                    raise ipy.errors.BadArgument(
                         "I could not join this Realm. Please make sure the Realm code"
                         " is spelled correctly, and that the code is valid. Also make"
                         " sure that you have not banned or kicked"
@@ -247,7 +247,7 @@ class GuildConfig(utils.Extension):
     async def set_playerlist_channel(
         self,
         ctx: utils.RealmContext,
-        channel: typing.Optional[naff.GuildText] = tansy.Option(
+        channel: typing.Optional[ipy.GuildText] = tansy.Option(
             "The channel to set the playerlist to.",
             converter=cclasses.ValidChannelConverter,
         ),
@@ -255,7 +255,7 @@ class GuildConfig(utils.Extension):
     ) -> None:
         # xors, woo!
         if not (unset ^ bool(channel)):
-            raise naff.errors.BadArgument(
+            raise ipy.errors.BadArgument(
                 "You must either set a channel or explictly unset the channel. One must"
                 " be given."
             )
@@ -264,7 +264,7 @@ class GuildConfig(utils.Extension):
 
         if channel:
             if typing.TYPE_CHECKING:
-                assert isinstance(channel, naff.GuildText)  # noqa: S101
+                assert isinstance(channel, ipy.GuildText)  # noqa: S101
 
             config.playerlist_chan = channel.id
             await config.save()
@@ -294,7 +294,7 @@ class GuildConfig(utils.Extension):
 
     @staticmethod
     def button_check(author_id: int) -> typing.Callable[..., bool]:
-        def _check(event: naff.events.Component) -> bool:
+        def _check(event: ipy.events.Component) -> bool:
             return event.ctx.author.id == author_id
 
         return _check
@@ -322,10 +322,10 @@ class GuildConfig(utils.Extension):
         config = await ctx.fetch_config()
 
         if config.warning_notifications == toggle:
-            raise naff.errors.BadArgument("That's already the current setting.")
+            raise ipy.errors.BadArgument("That's already the current setting.")
 
         if not toggle:
-            embed = naff.Embed(
+            embed = ipy.Embed(
                 title="Warning",
                 description=(
                     "This warning is usually a very important warning. If the bot"
@@ -343,16 +343,16 @@ class GuildConfig(utils.Extension):
                     " warnings, press the accept button.** You have 30 seconds to"
                     " do so."
                 ),
-                timestamp=naff.Timestamp.utcnow(),
-                color=naff.RoleColors.YELLOW,
+                timestamp=ipy.Timestamp.utcnow(),
+                color=ipy.RoleColors.YELLOW,
             )
 
             result = ""
             event = None
 
             components = [
-                naff.Button(naff.ButtonStyles.GREEN, "Accept", "✅"),
-                naff.Button(naff.ButtonStyles.RED, "Decline", "✖️"),
+                ipy.Button(style=ipy.ButtonStyle.GREEN, label="Accept", emoji="✅"),
+                ipy.Button(style=ipy.ButtonStyle.RED, label="Decline", emoji="✖️"),
             ]
             msg = await ctx.send(embed=embed, components=components)
 
@@ -375,7 +375,7 @@ class GuildConfig(utils.Extension):
                     await event.ctx.send(
                         result,
                         ephemeral=True,
-                        allowed_mentions=naff.AllowedMentions.none(),
+                        allowed_mentions=ipy.AllowedMentions.none(),
                     )
                 await ctx.edit(msg, content=result, embeds=[], embed=[], components=[])  # type: ignore
 
@@ -395,9 +395,7 @@ class GuildConfig(utils.Extension):
     async def set_realm_offline_role(
         self,
         ctx: utils.RealmContext,
-        role: typing.Optional[naff.Role] = tansy.Option(
-            "The role to use for the ping."
-        ),
+        role: typing.Optional[ipy.Role] = tansy.Option("The role to use for the ping."),
         unset: bool = tansy.Option("Should the role be unset?", default=False),
     ) -> None:
         """
@@ -412,7 +410,7 @@ class GuildConfig(utils.Extension):
         """
         # xors, woo!
         if not (unset ^ bool(role)):
-            raise naff.errors.BadArgument(
+            raise ipy.errors.BadArgument(
                 "You must either set a role or explictly unset the role. One must be"
                 " given."
             )
@@ -422,7 +420,7 @@ class GuildConfig(utils.Extension):
         if role:
             if (
                 not role.mentionable
-                and naff.Permissions.MENTION_EVERYONE
+                and ipy.Permissions.MENTION_EVERYONE
                 not in ctx.channel.permissions_for(ctx.guild.me)
             ):
                 raise utils.CustomCheckFailure(
@@ -442,7 +440,7 @@ class GuildConfig(utils.Extension):
                     f" {self.set_playerlist_channel.mention()} first."
                 )
 
-            embed = naff.Embed(
+            embed = ipy.Embed(
                 title="Warning",
                 description=(
                     "This ping won't be 100% accurate. The ping hooks onto an event"
@@ -453,16 +451,16 @@ class GuildConfig(utils.Extension):
                     " continue with adding the role, press the accept button.** You"
                     " have 30 seconds to do so."
                 ),
-                timestamp=naff.Timestamp.utcnow(),
-                color=naff.RoleColors.YELLOW,
+                timestamp=ipy.Timestamp.utcnow(),
+                color=ipy.RoleColors.YELLOW,
             )
 
             result = ""
             event = None
 
             components = [
-                naff.Button(naff.ButtonStyles.GREEN, "Accept", "✅"),
-                naff.Button(naff.ButtonStyles.RED, "Decline", "✖️"),
+                ipy.Button(style=ipy.ButtonStyle.GREEN, label="Accept", emoji="✅"),
+                ipy.Button(style=ipy.ButtonStyle.RED, label="Decline", emoji="✖️"),
             ]
             msg = await ctx.send(embed=embed, components=components)
 
@@ -485,7 +483,7 @@ class GuildConfig(utils.Extension):
                     await event.ctx.send(
                         result,
                         ephemeral=True,
-                        allowed_mentions=naff.AllowedMentions.none(),
+                        allowed_mentions=ipy.AllowedMentions.none(),
                     )
                 await ctx.edit(msg, content=result, embeds=[], embed=[], components=[])  # type: ignore
         else:

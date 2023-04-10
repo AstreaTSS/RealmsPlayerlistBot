@@ -9,9 +9,10 @@ from collections import defaultdict
 from pathlib import Path
 
 import aiohttp
-import naff
+import interactions as ipy
 import redis.asyncio as aioredis
 import sentry_sdk
+from interactions.ext import prefixed_commands as prefixed
 
 from common.models import GuildConfig
 
@@ -34,7 +35,7 @@ async def sleep_until(dt: datetime.datetime) -> None:
 
 
 async def error_handle(
-    error: Exception, *, ctx: typing.Optional[naff.Context] = None
+    error: Exception, *, ctx: typing.Optional[ipy.BaseContext] = None
 ) -> None:
     if not isinstance(error, aiohttp.ServerDisconnectedError):
         if TEST_MODE:
@@ -45,18 +46,18 @@ async def error_handle(
                     scope.set_context(
                         type(ctx).__name__,
                         {
-                            "args": ctx.args,
-                            "kwargs": ctx.kwargs,
+                            "args": ctx.args,  # type: ignore
+                            "kwargs": ctx.kwargs,  # type: ignore
                             "message": ctx.message,
                         },
                     )
                 sentry_sdk.capture_exception(error)
     if ctx:
-        if isinstance(ctx, naff.PrefixedContext):
+        if isinstance(ctx, prefixed.PrefixedContext):
             await ctx.reply(
                 "An internal error has occured. The bot owner has been notified."
             )
-        elif isinstance(ctx, naff.InteractionContext):
+        elif isinstance(ctx, ipy.InteractionContext):
             await ctx.send(
                 content=(
                     "An internal error has occured. The bot owner has been notified."
@@ -82,7 +83,7 @@ def line_split(content: str, split_by: int = 20) -> list[list[str]]:
     ]
 
 
-def embed_check(embed: naff.Embed) -> bool:
+def embed_check(embed: ipy.Embed) -> bool:
     """
     Checks if an embed is valid, as per Discord's guidelines.
     See https://discord.com/developers/docs/resources/channel#embed-limits for details.
@@ -110,9 +111,9 @@ def embed_check(embed: naff.Embed) -> bool:
     return True
 
 
-def deny_mentions(user: naff.BaseUser) -> naff.AllowedMentions:
+def deny_mentions(user: ipy.BaseUser) -> ipy.AllowedMentions:
     # generates an AllowedMentions object that only pings the user specified
-    return naff.AllowedMentions(users=[user])
+    return ipy.AllowedMentions(users=[user])
 
 
 def error_format(error: Exception) -> str:
@@ -172,27 +173,30 @@ def na_friendly_str(obj: typing.Any) -> str:
     return str(obj) if obj else "N/A"
 
 
-def error_embed_generate(error_msg: str) -> naff.Embed:
-    return naff.Embed(color=naff.MaterialColors.RED, description=error_msg)
+def error_embed_generate(error_msg: str) -> ipy.Embed:
+    return ipy.Embed(color=ipy.MaterialColors.RED, description=error_msg)
 
 
-class CustomCheckFailure(naff.errors.BadArgument):
+class CustomCheckFailure(ipy.errors.BadArgument):
     # custom classs for custom prerequisite failures outside of normal command checks
     pass
 
 
-@naff.utils.define
-class RealmContext(naff.InteractionContext):
-    guild_config: typing.Optional[GuildConfig] = naff.utils.field(default=None)
+class RealmContextMixin:
+    guild_config: typing.Optional[GuildConfig]
+
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        self.guild_config = None
+        super().__init__(*args, **kwargs)
 
     @property
-    def guild(self) -> naff.Guild:
-        return self._client.cache.get_guild(self.guild_id)  # type: ignore
+    def guild(self) -> ipy.Guild:
+        return self.client.cache.get_guild(self.guild_id)  # type: ignore
 
     @property
     def bot(self) -> "RealmBotBase":
         """A reference to the bot instance."""
-        return self._client  # type: ignore
+        return self.client  # type: ignore
 
     async def fetch_config(self) -> GuildConfig:
         """
@@ -213,68 +217,32 @@ class RealmContext(naff.InteractionContext):
         return config
 
 
-@naff.utils.define
-class RealmPrefixedContext(naff.PrefixedContext):
-    guild_config: typing.Optional[GuildConfig] = naff.utils.field(default=None)
-
-    @property
-    def guild(self) -> naff.Guild:
-        return self._client.cache.get_guild(self.guild_id)  # type: ignore
-
-    @property
-    def bot(self) -> "RealmBotBase":
-        """A reference to the bot instance."""
-        return self._client  # type: ignore
-
-    async def fetch_config(self) -> GuildConfig:
-        """
-        Gets the configuration for the context's guild.
-
-        Returns:
-            GuildConfig: The guild config.
-        """
-        if self.guild_config:
-            return self.guild_config
-
-        config = await GuildConfig.get_or_none(guild_id=self.guild.id).prefetch_related(
-            "premium_code"
-        )
-        if not config:
-            config = await GuildConfig.create(guild_id=self.guild.id)
-        self.guild_config = config
-        return config
+class RealmInteractionContext(RealmContextMixin, ipy.InteractionContext):
+    pass
 
 
-@naff.utils.define
-class RealmAutocompleteContext(naff.AutocompleteContext):
-    guild_config: typing.Optional[GuildConfig] = naff.utils.field(default=None)
+class RealmContext(RealmContextMixin, ipy.SlashContext):
+    pass
 
-    @property
-    def guild(self) -> naff.Guild:
-        return self._client.cache.get_guild(self.guild_id)  # type: ignore
 
-    @property
-    def bot(self) -> "RealmBotBase":
-        """A reference to the bot instance."""
-        return self._client  # type: ignore
+class RealmComponentContext(RealmContextMixin, ipy.ComponentContext):
+    pass
 
-    async def fetch_config(self) -> GuildConfig:
-        """
-        Gets the configuration for the context's guild.
 
-        Returns:
-            GuildConfig: The guild config.
-        """
-        if self.guild_config:
-            return self.guild_config
+class RealmContextMenuContext(RealmContextMixin, ipy.ContextMenuContext):
+    pass
 
-        config = await GuildConfig.get_or_none(guild_id=self.guild.id).prefetch_related(
-            "premium_code"
-        )
-        if not config:
-            config = await GuildConfig.create(guild_id=self.guild.id)
-        self.guild_config = config
-        return config
+
+class RealmModalContext(RealmContextMixin, ipy.ModalContext):
+    pass
+
+
+class RealmPrefixedContext(RealmContextMixin, prefixed.PrefixedContext):
+    pass
+
+
+class RealmAutocompleteContext(RealmContextMixin, ipy.AutocompleteContext):
+    pass
 
 
 if typing.TYPE_CHECKING:
@@ -285,9 +253,9 @@ if typing.TYPE_CHECKING:
     from .realms_api import RealmsAPI
     from .xbox_api import XboxAPI
 
-    class RealmBotBase(naff.Client):
-        owner: naff.User
-        color: naff.Color
+    class RealmBotBase(ipy.Client):
+        owner: ipy.User
+        color: ipy.Color
         init_load: bool
         fully_ready: asyncio.Event
         pl_sem: asyncio.Semaphore
@@ -313,17 +281,17 @@ if typing.TYPE_CHECKING:
             ...
 
         def create_task(
-            self, coro: typing.Coroutine[typing.Any, typing.Any, naff.const.T]
-        ) -> asyncio.Task[naff.const.T]:
+            self, coro: typing.Coroutine[typing.Any, typing.Any, ipy.const.T]
+        ) -> asyncio.Task[ipy.const.T]:
             ...
 
 else:
 
-    class RealmBotBase(naff.Client):
+    class RealmBotBase(ipy.Client):
         pass
 
 
-async def _global_checks(ctx: naff.Context) -> bool:
+async def _global_checks(ctx: ipy.BaseContext) -> bool:
     # sourcery skip: assign-if-exp, boolean-if-exp-identity, hoist-statement-from-if, reintroduce-else, swap-if-expression
     if not ctx.bot.fully_ready.is_set():  # type: ignore
         return False
@@ -337,14 +305,14 @@ async def _global_checks(ctx: naff.Context) -> bool:
     return True
 
 
-class Extension(naff.Extension):
+class Extension(ipy.Extension):
     def __new__(
-        cls, bot: naff.Client, *args: typing.Any, **kwargs: typing.Any
-    ) -> naff.Extension:
+        cls, bot: ipy.Client, *args: typing.Any, **kwargs: typing.Any
+    ) -> ipy.Extension:
         new_cls = super().__new__(cls, bot, *args, **kwargs)
         new_cls.add_ext_check(_global_checks)  # type: ignore
         return new_cls
 
 
-class GuildMessageable(naff.GuildChannel, naff.MessageableMixin):
+class GuildMessageable(ipy.GuildChannel, ipy.MessageableMixin):
     pass

@@ -4,7 +4,7 @@ import os
 import secrets
 import typing
 
-import naff
+import interactions as ipy
 import tansy
 from Crypto.Cipher import AES
 
@@ -12,7 +12,7 @@ import common.models as models
 import common.utils as utils
 
 
-class PremiumHandling(naff.Extension):
+class PremiumHandling(ipy.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.name = "Premium Handling"
@@ -37,11 +37,11 @@ class PremiumHandling(naff.Extension):
         name="generate-code",
         description="Generates a premium code. Can only be used by the bot's owner.",
         scopes=[utils.DEV_GUILD_ID],
-        default_member_permissions=naff.Permissions.ADMINISTRATOR,
+        default_member_permissions=ipy.Permissions.ADMINISTRATOR,
     )
     async def generate_code(
         self,
-        ctx: naff.InteractionContext,
+        ctx: ipy.InteractionContext,
         max_uses: int = tansy.Option("How many uses the code has.", default=3),
         user_id: typing.Optional[str] = tansy.Option(
             "The user ID this is tied to if needed.", default=None
@@ -62,9 +62,9 @@ class PremiumHandling(naff.Extension):
         await ctx.send(f"Code created!\nCode: `{code}`")
 
     premium = tansy.TansySlashCommand(
-        name="premium",  # type: ignore
-        description="Handles the configuration for Realms Playerlist Premium.",  # type: ignore
-        default_member_permissions=naff.Permissions.MANAGE_GUILD,
+        name="premium",
+        description="Handles the configuration for Realms Playerlist Premium.",
+        default_member_permissions=ipy.Permissions.MANAGE_GUILD,
         dm_permission=False,
     )
 
@@ -81,24 +81,24 @@ class PremiumHandling(naff.Extension):
         code_obj = await models.PremiumCode.get_or_none(code=encrypted_code)
 
         if not code_obj:
-            raise naff.errors.BadArgument(
+            raise ipy.errors.BadArgument(
                 f'Invalid code: "{code}". Are you sure this is the correct code and'
                 " that you typed it in correctly?"
             )
 
         if code_obj.user_id and ctx.author.id != code_obj.user_id:
-            raise naff.errors.BadArgument(
+            raise ipy.errors.BadArgument(
                 f'Invalid code: "{code}". Are you sure this is the correct code and'
                 " that you typed it in correctly?"
             )
 
         if code_obj.max_uses == code_obj.uses:
-            raise naff.errors.BadArgument("This code cannot be redeemed anymore.")
+            raise ipy.errors.BadArgument("This code cannot be redeemed anymore.")
 
         config = await ctx.fetch_config()
 
         if config.premium_code and config.premium_code.code == code:
-            raise naff.errors.BadArgument("This code has already been redeem here.")
+            raise ipy.errors.BadArgument("This code has already been redeem here.")
 
         config.premium_code = code_obj
         code_obj.uses += 1

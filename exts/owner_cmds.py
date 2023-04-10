@@ -10,10 +10,11 @@ import traceback
 import typing
 import unicodedata
 
-import naff
+import interactions as ipy
 import tansy
-from naff.ext import paginators
-from naff.ext.debug_extension.utils import debug_embed, get_cache_state
+from interactions.ext import paginators
+from interactions.ext import prefixed_commands as prefixed
+from interactions.ext.debug_extension.utils import debug_embed, get_cache_state
 
 import common.utils as utils
 from common.clubs_playerlist import fill_in_data_from_clubs
@@ -28,7 +29,7 @@ class OwnerCMDs(utils.Extension):
         self.name = "Owner"
 
         self.set_extension_error(self.ext_error)
-        self.add_ext_check(naff.checks.is_owner())
+        self.add_ext_check(ipy.is_owner())
 
     def _ascii_name(self, name: str) -> str:
         # source - https://github.com/daveoncode/python-string-utils/blob/78929d/string_utils/manipulation.py#L433
@@ -42,7 +43,7 @@ class OwnerCMDs(utils.Extension):
         return mapping[:25]
 
     async def _autocomplete_guilds(
-        self, ctx: naff.AutocompleteContext, argument: str
+        self, ctx: ipy.AutocompleteContext, argument: str
     ) -> None:
         guild_mapping = [
             {"name": guild.name, "value": str(guild.id)} for guild in ctx.bot.guilds
@@ -63,7 +64,7 @@ class OwnerCMDs(utils.Extension):
         name="view-guild",
         description="Displays a guild's config. Can only be used by the bot's owner.",
         scopes=[DEV_GUILD_ID],
-        default_member_permissions=naff.Permissions.ADMINISTRATOR,
+        default_member_permissions=ipy.Permissions.ADMINISTRATOR,
     )
     async def view_guild(
         self,
@@ -73,9 +74,9 @@ class OwnerCMDs(utils.Extension):
         config = await GuildConfig.get(guild_id=int(guild)).prefetch_related(
             "premium_code"
         )
-        actual_guild: naff.Guild = ctx.bot.get_guild(int(guild))
+        actual_guild: ipy.Guild = ctx.bot.get_guild(int(guild))
 
-        embed = naff.Embed(
+        embed = ipy.Embed(
             color=self.bot.color, title=f"Server Config for {actual_guild.name}:"
         )
         playerlist_channel = utils.na_friendly_str(config.playerlist_chan)
@@ -107,7 +108,7 @@ class OwnerCMDs(utils.Extension):
 
     @view_guild.autocomplete("guild")
     async def view_get_guild(
-        self, ctx: naff.AutocompleteContext, guild: str, **kwargs: typing.Any
+        self, ctx: ipy.AutocompleteContext, guild: str, **kwargs: typing.Any
     ) -> None:
         await self._autocomplete_guilds(ctx, guild)
 
@@ -117,7 +118,7 @@ class OwnerCMDs(utils.Extension):
             "Adds a guild to the bot's configs. Can only be used by the bot's owner."
         ),
         scopes=[DEV_GUILD_ID],
-        default_member_permissions=naff.Permissions.ADMINISTRATOR,
+        default_member_permissions=ipy.Permissions.ADMINISTRATOR,
     )
     async def add_guild(
         self,
@@ -153,7 +154,7 @@ class OwnerCMDs(utils.Extension):
             "Edits a guild in the bot's configs. Can only be used by the bot's owner."
         ),
         scopes=[DEV_GUILD_ID],
-        default_member_permissions=naff.Permissions.ADMINISTRATOR,
+        default_member_permissions=ipy.Permissions.ADMINISTRATOR,
     )
     async def edit_guild(
         self,
@@ -187,7 +188,7 @@ class OwnerCMDs(utils.Extension):
 
     @edit_guild.autocomplete("guild")
     async def edit_get_guild(
-        self, ctx: naff.AutocompleteContext, guild: str, **kwargs: typing.Any
+        self, ctx: ipy.AutocompleteContext, guild: str, **kwargs: typing.Any
     ) -> None:
         await self._autocomplete_guilds(ctx, guild)
 
@@ -197,7 +198,7 @@ class OwnerCMDs(utils.Extension):
             "Edits a guild in the bot's configs. Can only be used by the bot's owner."
         ),
         scopes=[DEV_GUILD_ID],
-        default_member_permissions=naff.Permissions.ADMINISTRATOR,
+        default_member_permissions=ipy.Permissions.ADMINISTRATOR,
     )
     async def edit_guild_via_id(
         self,
@@ -236,7 +237,7 @@ class OwnerCMDs(utils.Extension):
             " owner."
         ),
         scopes=[DEV_GUILD_ID],
-        default_member_permissions=naff.Permissions.ADMINISTRATOR,
+        default_member_permissions=ipy.Permissions.ADMINISTRATOR,
     )
     async def remove_guild(
         self,
@@ -246,23 +247,23 @@ class OwnerCMDs(utils.Extension):
         await GuildConfig.filter(guild_id=int(guild_id)).delete()
         await ctx.send("Deleted!")
 
-    @naff.prefixed_command(aliases=["jsk"])
-    async def debug(self, ctx: naff.PrefixedContext) -> None:
+    @prefixed.prefixed_command(aliases=["jsk"])
+    async def debug(self, ctx: prefixed.PrefixedContext) -> None:
         """Get basic information about the bot."""
-        uptime = naff.Timestamp.fromdatetime(self.bot.start_time)
+        uptime = ipy.Timestamp.fromdatetime(self.bot.start_time)
         e = debug_embed("General")
         e.set_thumbnail(self.bot.user.avatar.url)
         e.add_field("Operating System", platform.platform())
 
         e.add_field(
             "Version Info",
-            f"NAFF@{naff.__version__} | Py@{naff.__py_version__}",
+            f"interactions.py@{ipy.__version__} | Py@{ipy.__py_version__}",
         )
 
-        e.add_field("Start Time", f"{uptime.format(naff.TimestampStyles.RelativeTime)}")
+        e.add_field("Start Time", f"{uptime.format(ipy.TimestampStyles.RelativeTime)}")
 
         if privileged_intents := [
-            i.name for i in self.bot.intents if i in naff.Intents.PRIVILEGED
+            i.name for i in self.bot.intents if i in ipy.Intents.PRIVILEGED
         ]:
             e.add_field("Privileged Intents", " | ".join(privileged_intents))
 
@@ -273,7 +274,7 @@ class OwnerCMDs(utils.Extension):
         await ctx.reply(embeds=[e])
 
     @debug.subcommand(aliases=["cache"])
-    async def cache_info(self, ctx: naff.PrefixedContext) -> None:
+    async def cache_info(self, ctx: prefixed.PrefixedContext) -> None:
         """Get information about the current cache state."""
         e = debug_embed("Cache")
 
@@ -281,13 +282,13 @@ class OwnerCMDs(utils.Extension):
         await ctx.reply(embeds=[e])
 
     @debug.subcommand()
-    async def shutdown(self, ctx: naff.PrefixedContext) -> None:
+    async def shutdown(self, ctx: prefixed.PrefixedContext) -> None:
         """Shuts down the bot."""
         await ctx.reply("Shutting down 😴")
         await self.bot.stop()
 
     @debug.subcommand()
-    async def reload(self, ctx: naff.PrefixedContext, *, module: str) -> None:
+    async def reload(self, ctx: prefixed.PrefixedContext, *, module: str) -> None:
         """Regrows an extension."""
         self.bot.reload_extension(module)
         self.bot.slash_perms_cache = collections.defaultdict(dict)
@@ -295,7 +296,7 @@ class OwnerCMDs(utils.Extension):
         await ctx.reply(f"Reloaded `{module}`.")
 
     @debug.subcommand()
-    async def load(self, ctx: naff.PrefixedContext, *, module: str) -> None:
+    async def load(self, ctx: prefixed.PrefixedContext, *, module: str) -> None:
         """Grows a scale."""
         self.bot.load_extension(module)
         self.bot.slash_perms_cache = collections.defaultdict(dict)
@@ -303,15 +304,15 @@ class OwnerCMDs(utils.Extension):
         await ctx.reply(f"Loaded `{module}`.")
 
     @debug.subcommand()
-    async def unload(self, ctx: naff.PrefixedContext, *, module: str) -> None:
+    async def unload(self, ctx: prefixed.PrefixedContext, *, module: str) -> None:
         """Sheds a scale."""
         self.bot.unload_extension(module)
         self.bot.slash_perms_cache = collections.defaultdict(dict)
         self.bot.mini_commands_per_scope = {}
         await ctx.reply(f"Unloaded `{module}`.")
 
-    @naff.prefixed_command(aliases=["reloadallextensions"])
-    async def reload_all_extensions(self, ctx: naff.PrefixedContext) -> None:
+    @prefixed.prefixed_command(aliases=["reloadallextensions"])
+    async def reload_all_extensions(self, ctx: prefixed.PrefixedContext) -> None:
         for ext in (e.extension_name for e in self.bot.ext.copy().values()):
             self.bot.reload_extension(ext)
         await ctx.reply("All extensions reloaded!")
@@ -320,9 +321,9 @@ class OwnerCMDs(utils.Extension):
     @load.error
     @unload.error
     async def extension_error(
-        self, error: Exception, ctx: naff.PrefixedContext, *args: typing.Any
-    ) -> naff.Message | None:
-        if isinstance(error, naff.errors.CommandCheckFailure):
+        self, error: Exception, ctx: prefixed.PrefixedContext, *args: typing.Any
+    ) -> ipy.Message | None:
+        if isinstance(error, ipy.errors.CommandCheckFailure):
             return await ctx.reply(
                 "You do not have permission to execute this command."
             )
@@ -330,7 +331,7 @@ class OwnerCMDs(utils.Extension):
         return None
 
     @debug.subcommand(aliases=["python", "exc"])
-    async def exec(self, ctx: naff.PrefixedContext, *, body: str) -> naff.Message:
+    async def exec(self, ctx: prefixed.PrefixedContext, *, body: str) -> ipy.Message:
         """Direct evaluation of Python code."""
         await ctx.channel.trigger_typing()
         env = {
@@ -368,14 +369,14 @@ class OwnerCMDs(utils.Extension):
             return await self.handle_exec_result(ctx, ret, stdout.getvalue())
 
     async def handle_exec_result(
-        self, ctx: naff.PrefixedContext, result: typing.Any, value: typing.Any
-    ) -> naff.Message:
+        self, ctx: prefixed.PrefixedContext, result: typing.Any, value: typing.Any
+    ) -> ipy.Message:
         if result is None:
             result = value or "No Output!"
 
         await ctx.message.add_reaction("✅")
 
-        if isinstance(result, naff.Message):
+        if isinstance(result, ipy.Message):
             try:
                 e = debug_embed(
                     "Exec", timestamp=result.created_at, url=result.jump_url
@@ -393,10 +394,10 @@ class OwnerCMDs(utils.Extension):
             except Exception:
                 return await ctx.message.reply(result.jump_url)
 
-        if isinstance(result, naff.Embed):
+        if isinstance(result, ipy.Embed):
             return await ctx.message.reply(embeds=result)
 
-        if isinstance(result, naff.File):
+        if isinstance(result, ipy.File):
             return await ctx.message.reply(file=result)
 
         if isinstance(result, paginators.Paginator):
@@ -404,7 +405,7 @@ class OwnerCMDs(utils.Extension):
 
         if hasattr(result, "__iter__"):
             l_result = list(result)
-            if all(isinstance(r, naff.Embed) for r in result):
+            if all(isinstance(r, ipy.Embed) for r in result):
                 paginator = paginators.Paginator.create_from_embeds(self.bot, *l_result)
                 return await paginator.reply(ctx)
 
@@ -423,7 +424,7 @@ class OwnerCMDs(utils.Extension):
         return await paginator.reply(ctx)
 
     @debug.subcommand()
-    async def shell(self, ctx: naff.PrefixedContext, *, cmd: str) -> naff.Message:
+    async def shell(self, ctx: prefixed.PrefixedContext, *, cmd: str) -> ipy.Message:
         """Executes statements in the system shell."""
         async with ctx.channel.typing:
             process = await asyncio.create_subprocess_shell(
@@ -444,21 +445,21 @@ class OwnerCMDs(utils.Extension):
 
     @debug.subcommand()
     async def git(
-        self, ctx: naff.PrefixedContext, *, cmd: typing.Optional[str] = None
+        self, ctx: prefixed.PrefixedContext, *, cmd: typing.Optional[str] = None
     ) -> None:
         """Shortcut for 'debug shell git'. Invokes the system shell."""
         await self.shell.callback(ctx, cmd=f"git {cmd}" if cmd else "git")
 
     @debug.subcommand()
     async def pip(
-        self, ctx: naff.PrefixedContext, *, cmd: typing.Optional[str] = None
+        self, ctx: prefixed.PrefixedContext, *, cmd: typing.Optional[str] = None
     ) -> None:
         """Shortcut for 'debug shell pip'. Invokes the system shell."""
         await self.shell.callback(ctx, cmd=f"pip {cmd}" if cmd else "pip")
 
     @debug.subcommand(aliases=["sync-interactions", "sync-cmds", "sync_cmds", "sync"])
     async def sync_interactions(
-        self, ctx: naff.PrefixedContext, scope: int = 0
+        self, ctx: prefixed.PrefixedContext, scope: int = 0
     ) -> None:
         """
         Synchronizes all interaction commands with Discord.
@@ -488,15 +489,15 @@ class OwnerCMDs(utils.Extension):
     async def ext_error(
         self,
         error: Exception,
-        ctx: naff.Context,
+        ctx: ipy.BaseContext,
         *args: typing.Any,
         **kwargs: typing.Any,
     ) -> None:
-        if isinstance(ctx, naff.PrefixedContext):
+        if isinstance(ctx, prefixed.PrefixedContext):
             ctx.send = ctx.message.reply  # type: ignore
 
-        if isinstance(error, naff.errors.CommandCheckFailure):
-            if isinstance(ctx, naff.SendableContext):
+        if isinstance(error, ipy.errors.CommandCheckFailure):
+            if hasattr(ctx, "send"):
                 await ctx.send("Nice try.")
             return
 
@@ -516,7 +517,7 @@ class OwnerCMDs(utils.Extension):
 
         await utils.msg_to_owner(self.bot, to_send, split)
 
-        if isinstance(ctx, naff.SendableContext):
+        if hasattr(ctx, "send"):
             await ctx.send("An error occured. Please check your DMs.")
 
 

@@ -6,9 +6,10 @@ import typing
 
 import attrs
 import discord_typings
-import naff
-from naff.ext import paginators
-from naff.models.discord.emoji import process_emoji
+import interactions as ipy
+from interactions.ext import paginators
+from interactions.ext import prefixed_commands as prefixed
+from interactions.models.discord.emoji import process_emoji
 
 import common.utils as utils
 
@@ -16,7 +17,7 @@ import common.utils as utils
 DOUBLE_TAB = re.compile(r" {8}")
 
 
-@naff.utils.define(kw_only=False)
+@ipy.utils.define(kw_only=False)
 class CustomTimeout(paginators.Timeout):
     if typing.TYPE_CHECKING:
         paginator: "HelpPaginator"
@@ -29,7 +30,7 @@ class CustomTimeout(paginators.Timeout):
                 )
             except asyncio.TimeoutError:
                 if self.paginator.message:
-                    with contextlib.suppress(naff.errors.HTTPException):
+                    with contextlib.suppress(ipy.errors.HTTPException):
                         await self.paginator.message.edit(
                             components=[],
                             context=self.paginator.context,
@@ -39,10 +40,10 @@ class CustomTimeout(paginators.Timeout):
                 self.ping.clear()
 
 
-async def callback(ctx: naff.ComponentContext) -> None:
+async def callback(ctx: ipy.ComponentContext) -> None:
     """Shows how to use the bot"""
 
-    embed = naff.Embed(color=ctx.bot.color)
+    embed = ipy.Embed(color=ctx.bot.color)
 
     embed.title = "Using this command"
     embed.description = "Hello! Welcome to the help page."
@@ -70,7 +71,7 @@ async def callback(ctx: naff.ComponentContext) -> None:
     await ctx.send(embed=embed, ephemeral=True)
 
 
-@naff.utils.define(kw_only=False, auto_detect=True)
+@ipy.utils.define(kw_only=False, auto_detect=True)
 class HelpPaginator(paginators.Paginator):
     callback: typing.Callable[..., typing.Coroutine] = attrs.field(default=callback)
     """A coroutine to call should the select button be pressed"""
@@ -80,31 +81,31 @@ class HelpPaginator(paginators.Paginator):
     """The message to be sent when the wrong user uses this paginator."""
 
     callback_button_emoji: typing.Optional[
-        typing.Union["naff.PartialEmoji", dict, str]
-    ] = attrs.field(default="❔", metadata=naff.utils.export_converter(process_emoji))
+        typing.Union["ipy.PartialEmoji", dict, str]
+    ] = attrs.field(default="❔", metadata=ipy.utils.export_converter(process_emoji))
     """The emoji to use for the callback button."""
     show_callback_button: bool = attrs.field(default=True)
     """Show a button which will call the `callback`"""
     show_select_menu: bool = attrs.field(default=True)
     """Should a select menu be shown for navigation"""
 
-    context: naff.InteractionContext | None = attrs.field(
+    context: ipy.InteractionContext | None = attrs.field(
         default=None, init=False, repr=False
     )
 
-    def create_components(self, disable: bool = False) -> list[naff.ActionRow]:
+    def create_components(self, disable: bool = False) -> list[ipy.ActionRow]:
         rows = super().create_components()
 
         if self.show_select_menu:
             current = self.pages[self.page_index]
-            rows[0].components[0] = naff.StringSelectMenu(
+            rows[0].components[0] = ipy.StringSelectMenu(
                 [
-                    naff.SelectOption(
-                        (
+                    ipy.StringSelectOption(
+                        label=(
                             f"{i+1}:"
                             f" {p.get_summary if isinstance(p, paginators.Page) else p.title}"
                         ),
-                        str(i),
+                        value=str(i),
                     )
                     for i, p in enumerate(self.pages)
                 ],
@@ -137,7 +138,7 @@ class HelpPaginator(paginators.Paginator):
             "components": [c.to_dict() for c in self.create_components()],
         }
 
-    async def send(self, ctx: naff.SendableContext) -> naff.Message:
+    async def send(self, ctx: ipy.BaseContext) -> ipy.Message:
         """
         Send this paginator.
 
@@ -149,7 +150,7 @@ class HelpPaginator(paginators.Paginator):
 
         """
 
-        if isinstance(ctx, naff.InteractionContext):
+        if isinstance(ctx, ipy.InteractionContext):
             self.context = ctx
 
         self._message = await ctx.send(**self.to_dict())
@@ -161,7 +162,7 @@ class HelpPaginator(paginators.Paginator):
 
         return self._message
 
-    async def reply(self, ctx: naff.PrefixedContext) -> naff.Message:
+    async def reply(self, ctx: prefixed.PrefixedContext) -> ipy.Message:
         """
         Reply this paginator to ctx.
 
@@ -184,7 +185,7 @@ class HelpPaginator(paginators.Paginator):
 class PermissionsResolver:
     """An attempt to make a class that can handle slash command permissions."""
 
-    default_member_permissions: typing.Optional[naff.Permissions] = attrs.field(
+    default_member_permissions: typing.Optional[ipy.Permissions] = attrs.field(
         default=None
     )
 
@@ -199,7 +200,7 @@ class PermissionsResolver:
 
     def __init__(
         self,
-        default_member_permissions: typing.Optional[naff.Permissions],
+        default_member_permissions: typing.Optional[ipy.Permissions],
         guild_id: int,
         permissions_data: list[discord_typings.ApplicationCommandPermissionsData],
     ) -> None:
@@ -246,10 +247,10 @@ class PermissionsResolver:
 
     def has_permission(
         self,
-        channel: naff.GuildChannel,
-        author: naff.Member,
+        channel: ipy.GuildChannel,
+        author: ipy.Member,
     ) -> bool:
-        if author.has_permission(naff.Permissions.ADMINISTRATOR):
+        if author.has_permission(ipy.Permissions.ADMINISTRATOR):
             # bypasses literally everything lol
             return True
 
@@ -296,7 +297,7 @@ class PermissionsResolver:
             else True
         )
 
-    def has_permission_ctx(self, ctx: naff.Context) -> bool:
+    def has_permission_ctx(self, ctx: ipy.BaseContext) -> bool:
         return self.has_permission(ctx.channel, ctx.author)  # type: ignore
 
 
@@ -335,13 +336,12 @@ async def process_bulk_slash_perms(bot: utils.RealmBotBase, guild_id: int) -> No
     bot.slash_perms_cache[guild_id] = guild_perms
 
 
-def _generate_signature(cmd: naff.SlashCommand) -> str:
+def _generate_signature(cmd: ipy.SlashCommand) -> str:
     if not cmd.options:
         return ""
 
     standardized_options = (
-        (naff.SlashCommandOption(**o) if isinstance(o, dict) else o)
-        for o in cmd.options
+        (ipy.SlashCommandOption(**o) if isinstance(o, dict) else o) for o in cmd.options
     )
     signatures: list[str] = [
         f"<{str(option.name)}>" if option.required else f"[{str(option.name)}]"
@@ -350,13 +350,12 @@ def _generate_signature(cmd: naff.SlashCommand) -> str:
     return " ".join(signatures)
 
 
-def _generate_bottom_text(cmd: naff.SlashCommand) -> str:
+def _generate_bottom_text(cmd: ipy.SlashCommand) -> str:
     if not cmd.options:
         return ""
 
     standardized_options = (
-        (naff.SlashCommandOption(**o) if isinstance(o, dict) else o)
-        for o in cmd.options
+        (ipy.SlashCommandOption(**o) if isinstance(o, dict) else o) for o in cmd.options
     )
     str_builder = ["__Options:__"]
     str_builder.extend(
@@ -375,9 +374,9 @@ class MiniCommand:
     description: str = attrs.field()
     type_: typing.Literal["base", "group", "sub"] = attrs.field()
     signature: str = attrs.field()
-    slash_command: naff.SlashCommand = attrs.field()
-    extension: typing.Optional[naff.Extension] = attrs.field(default=None)
-    default_member_permissions: typing.Optional[naff.Permissions] = attrs.field(
+    slash_command: ipy.SlashCommand = attrs.field()
+    extension: typing.Optional[ipy.Extension] = attrs.field(default=None)
+    default_member_permissions: typing.Optional[ipy.Permissions] = attrs.field(
         default=None
     )
     subcommands: set["MiniCommand"] = attrs.field(factory=set)
@@ -388,7 +387,7 @@ class MiniCommand:
     @classmethod
     def from_slash_command(
         cls,
-        cmd: naff.SlashCommand,
+        cmd: ipy.SlashCommand,
         type_: typing.Literal["base", "group", "sub"],
         *,
         use_docstring: bool = False,
@@ -447,13 +446,13 @@ class MiniCommand:
 
 
 def get_commands_for_scope_by_ids(bot: utils.RealmBotBase, guild_id: int) -> dict:
-    scope_cmds = bot.interactions.get(
-        naff.const.GLOBAL_SCOPE, {}
-    ) | bot.interactions.get(guild_id, {})
+    scope_cmds = bot.interactions_by_scope.get(
+        ipy.const.GLOBAL_SCOPE, {}
+    ) | bot.interactions_by_scope.get(guild_id, {})
     return {
         v.get_cmd_id(guild_id): v
         for v in scope_cmds.values()
-        if isinstance(v, naff.SlashCommand)
+        if isinstance(v, ipy.SlashCommand)
     }
 
 
@@ -461,29 +460,27 @@ def get_mini_commands_for_scope(
     bot: utils.RealmBotBase, guild_id: int
 ) -> dict[str, MiniCommand]:
     if (
-        mini_cmds := bot.mini_commands_per_scope.get(guild_id, naff.MISSING)
-    ) is not naff.MISSING:
+        mini_cmds := bot.mini_commands_per_scope.get(guild_id, ipy.MISSING)
+    ) is not ipy.MISSING:
         return mini_cmds  # type: ignore
 
-    # sourcery skip: dict-comprehension
-    scope_cmds = bot.interactions.get(
-        naff.const.GLOBAL_SCOPE, {}
-    ) | bot.interactions.get(guild_id, {})
-    commands = [v for v in scope_cmds.values() if isinstance(v, naff.SlashCommand)]
+    scope_cmds = bot.interactions_by_scope.get(
+        ipy.const.GLOBAL_SCOPE, {}
+    ) | bot.interactions_by_scope.get(guild_id, {})
+    commands = [v for v in scope_cmds.values() if isinstance(v, ipy.SlashCommand)]
 
     top_level = {c for c in commands if not c.is_subcommand}
     has_one_level_down = {c for c in commands if c.sub_cmd_name and not c.group_name}
     has_two_levels_down = {c for c in commands if c.group_name}
 
-    commands_dict: dict[str, MiniCommand] = {}
-
-    for cmd in top_level:
-        commands_dict[cmd.resolved_name] = MiniCommand.from_slash_command(
+    commands_dict: dict[str, MiniCommand] = {
+        cmd.resolved_name: MiniCommand.from_slash_command(
             cmd, "base", use_docstring=True
         )
-
+        for cmd in top_level
+    }
     for cmd in has_one_level_down:
-        if commands_dict.get(str(cmd.name), naff.MISSING) is naff.MISSING:
+        if commands_dict.get(str(cmd.name), ipy.MISSING) is ipy.MISSING:
             commands_dict[str(cmd.name)] = MiniCommand.from_slash_command(cmd, "base")
 
         base_mini_cmd = commands_dict[str(cmd.name)]
@@ -492,13 +489,13 @@ def get_mini_commands_for_scope(
         commands_dict[cmd.resolved_name] = mini_cmd
 
     for cmd in has_two_levels_down:
-        if commands_dict.get(str(cmd.name), naff.MISSING) is naff.MISSING:
+        if commands_dict.get(str(cmd.name), ipy.MISSING) is ipy.MISSING:
             commands_dict[str(cmd.name)] = MiniCommand.from_slash_command(cmd, "base")
 
         base_mini_cmd = commands_dict[str(cmd.name)]
 
         group_name = f"{str(cmd.name)} {str(cmd.group_name)}"
-        if commands_dict.get(group_name, naff.MISSING) is naff.MISSING:
+        if commands_dict.get(group_name, ipy.MISSING) is ipy.MISSING:
             commands_dict[group_name] = MiniCommand.from_slash_command(cmd, "group")
 
         group_mini_cmd = commands_dict[group_name]

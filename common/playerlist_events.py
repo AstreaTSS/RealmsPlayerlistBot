@@ -2,7 +2,7 @@ import typing
 from datetime import datetime
 
 import attrs
-import naff
+import interactions as ipy
 from tortoise.queryset import QuerySet
 
 import common.models as models
@@ -22,12 +22,12 @@ def define() -> typing.Callable[[_C], _C]:
 
 
 @define()
-class PlayerlistParseFinish(naff.events.BaseEvent):
+class PlayerlistParseFinish(ipy.events.BaseEvent):
     containers: tuple[pl_utils.RealmPlayersContainer, ...] = attrs.field(repr=False)
 
 
 @define()
-class PlayerlistEvent(naff.events.BaseEvent):
+class PlayerlistEvent(ipy.events.BaseEvent):
     realm_id: str = attrs.field(repr=False)
 
     @property

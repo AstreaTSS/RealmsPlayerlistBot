@@ -2,12 +2,12 @@ import importlib
 import os
 
 import aiohttp
-import naff
+import interactions as ipy
 
 import common.utils as utils
 
 
-class Voting(naff.Extension):
+class Voting(ipy.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.name = "Voting"
@@ -24,7 +24,7 @@ class Voting(naff.Extension):
         self.autopost_guild_count.stop()
         super().drop()
 
-    @naff.Task.create(naff.IntervalTrigger(minutes=30))
+    @ipy.Task.create(ipy.IntervalTrigger(minutes=30))
     async def autopost_guild_count(self) -> None:
         server_count = {"server_count": len(self.bot.guilds)}
         async with self.session.post(
@@ -35,7 +35,7 @@ class Voting(naff.Extension):
             except aiohttp.ClientResponseError as e:
                 await utils.error_handle(e)
 
-    @naff.slash_command(
+    @ipy.slash_command(
         name="vote",
         description="Vote for the bot on top.gg.",
     )

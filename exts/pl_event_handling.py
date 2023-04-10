@@ -3,7 +3,7 @@ import importlib
 import logging
 import os
 
-import naff
+import interactions as ipy
 
 import common.models as models
 import common.playerlist_events as pl_events
@@ -12,12 +12,12 @@ import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
 
 
-class PlayerlistEventHandling(naff.Extension):
+class PlayerlistEventHandling(ipy.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.name = "Playerlist Event Handling"
 
-    @naff.listen("playerlist_parse_finish", is_default_listener=True)
+    @ipy.listen("playerlist_parse_finish", is_default_listener=True)
     async def on_playerlist_finish(
         self, event: pl_events.PlayerlistParseFinish
     ) -> None:
@@ -28,7 +28,7 @@ class PlayerlistEventHandling(naff.Extension):
                 update_fields=container.fields,
             )
 
-    @naff.listen("live_playerlist_send", is_default_listener=True)
+    @ipy.listen("live_playerlist_send", is_default_listener=True)
     async def on_live_playerlist_send(
         self, event: pl_events.LivePlayerlistSend
     ) -> None:
@@ -47,9 +47,9 @@ class PlayerlistEventHandling(naff.Extension):
         )
         gamertag_mapping = {p.xuid: p.base_display for p in players}
 
-        embed = naff.Embed(
+        embed = ipy.Embed(
             color=self.bot.color,
-            timestamp=naff.Timestamp.fromdatetime(event.timestamp),
+            timestamp=ipy.Timestamp.fromdatetime(event.timestamp),
         )
         embed.set_footer(
             f"{len(self.bot.online_cache[int(event.realm_id)])} players online as of"
@@ -85,11 +85,11 @@ class PlayerlistEventHandling(naff.Extension):
                 await chan.send(embeds=embed)
             except ValueError:
                 continue
-            except naff.errors.HTTPException:
+            except ipy.errors.HTTPException:
                 await pl_utils.eventually_invalidate(self.bot, config)
                 continue
 
-    @naff.listen("realm_down", is_default_listener=True)
+    @ipy.listen("realm_down", is_default_listener=True)
     async def realm_down(self, event: pl_events.RealmDown) -> None:
         # live playerlists are time sensitive, get them out first
         if self.bot.live_playerlist_store[event.realm_id]:
@@ -113,14 +113,14 @@ class PlayerlistEventHandling(naff.Extension):
             if role:
                 role_mention = role.mention
 
-            embed = naff.Embed(
+            embed = ipy.Embed(
                 title="Realm Offline",
                 description=(
                     "The bot has detected that the Realm is offline (or possibly that"
                     " it has no users)."
                 ),
-                timestamp=naff.Timestamp.fromdatetime(event.timestamp),
-                color=naff.RoleColors.YELLOW,
+                timestamp=ipy.Timestamp.fromdatetime(event.timestamp),
+                color=ipy.RoleColors.YELLOW,
             )
 
             try:
@@ -128,7 +128,7 @@ class PlayerlistEventHandling(naff.Extension):
 
                 if not role or (
                     not role.mentionable
-                    and naff.Permissions.MENTION_EVERYONE
+                    and ipy.Permissions.MENTION_EVERYONE
                     not in chan.permissions_for(guild.me)
                 ):
                     addition = (
@@ -149,15 +149,15 @@ class PlayerlistEventHandling(naff.Extension):
                 await chan.send(
                     role_mention,
                     embeds=embed,
-                    allowed_mentions=naff.AllowedMentions.all(),
+                    allowed_mentions=ipy.AllowedMentions.all(),
                 )
             except ValueError:
                 continue
-            except naff.errors.HTTPException:
+            except ipy.errors.HTTPException:
                 await pl_utils.eventually_invalidate(self.bot, config)
                 continue
 
-    @naff.listen("warn_missing_playerlist", is_default_listener=True)
+    @ipy.listen("warn_missing_playerlist", is_default_listener=True)
     async def warning_missing_playerlist(
         self, event: pl_events.WarnMissingPlayerlist
     ) -> None:
@@ -189,8 +189,8 @@ class PlayerlistEventHandling(naff.Extension):
             except ValueError:
                 continue
 
-            with contextlib.suppress(naff.errors.HTTPException):
-                embed = naff.Embed(
+            with contextlib.suppress(ipy.errors.HTTPException):
+                embed = ipy.Embed(
                     title="Warning",
                     description=(
                         "I have been unable to get any information about your Realm"
@@ -205,7 +205,7 @@ class PlayerlistEventHandling(naff.Extension):
                         f" {self.bot.mention_cmd('config playerlist-channel')} to"
                         " do so."
                     ),
-                    color=naff.RoleColors.YELLOW,
+                    color=ipy.RoleColors.YELLOW,
                 )
                 await chan.send(embeds=embed)
 

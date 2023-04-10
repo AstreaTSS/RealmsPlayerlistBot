@@ -4,7 +4,7 @@ import logging
 
 import aiohttp
 import attrs
-import naff
+import interactions as ipy
 import orjson
 from apischema import ValidationError
 from redis.asyncio.client import Pipeline
@@ -265,11 +265,11 @@ async def eventually_invalidate_realm_offline(
 
 
 async def fetch_playerlist_channel(
-    bot: utils.RealmBotBase, guild: naff.Guild, config: models.GuildConfig
+    bot: utils.RealmBotBase, guild: ipy.Guild, config: models.GuildConfig
 ) -> utils.GuildMessageable:
     try:
         chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
-    except naff.errors.HTTPException as e:
+    except ipy.errors.HTTPException as e:
         if e.status < 500:  # over 500 is a discord fault
             await eventually_invalidate(bot, config)
         raise ValueError() from None
@@ -283,7 +283,7 @@ async def fetch_playerlist_channel(
 
         try:
             chan = cclasses.valid_channel_check(chan)
-        except naff.errors.BadArgument:
+        except ipy.errors.BadArgument:
             await eventually_invalidate(bot, config)
             raise ValueError() from None
 
