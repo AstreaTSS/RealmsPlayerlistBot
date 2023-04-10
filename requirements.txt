@@ -1,7 +1,6 @@
 discord-py-interactions==5.0.0
 tansy==0.6.1
 humanize==4.6.0
-websockets==10.4
 xbox-webapi==2.0.11
 aiodns==3.0.0
 attrs==22.2.0
