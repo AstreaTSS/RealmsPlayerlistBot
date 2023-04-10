@@ -172,7 +172,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         await utils.error_handle(event.error)
 
     def mention_cmd(self, name: str, scope: int = 0) -> str:
-        return self.interactions[scope][name].mention(scope)
+        return self.interactions_by_scope[scope][name].mention(scope)
 
     def create_task(self, coro: typing.Coroutine) -> asyncio.Task:
         task = asyncio.create_task(coro)
