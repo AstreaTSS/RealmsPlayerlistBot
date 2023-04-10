@@ -285,7 +285,8 @@ async def start() -> None:
         except ipy.errors.ExtensionLoadException:
             raise
 
-    await bot.astart(os.environ["MAIN_TOKEN"])
+    with contextlib.suppress(asyncio.CancelledError):
+        await bot.astart(os.environ["MAIN_TOKEN"])
 
 
 if __name__ == "__main__":
