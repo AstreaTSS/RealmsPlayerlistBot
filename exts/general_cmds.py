@@ -18,6 +18,8 @@ import common.utils as utils
 import common.xbox_api as xbox_api
 from common.microsoft_core import MicrosoftAPIException
 
+IPY_VERSION = _v("discord-py-interactions")
+
 
 class GeneralCMDS(utils.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
@@ -127,7 +129,7 @@ class GeneralCMDS(utils.Extension):
                     ),
                     (
                         "Interactions.py Version:"
-                        f" [{ipy.const.__version__}](https://github.com/interactions-py/interactions.py/tree/{_v('discord-py-interactions')})"
+                        f" [{IPY_VERSION}](https://github.com/interactions-py/interactions.py/tree/{IPY_VERSION})"
                     ),
                     "Made By: [AstreaTSS](https://github.com/AstreaTSS)",
                 )
