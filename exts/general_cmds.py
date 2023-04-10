@@ -103,7 +103,7 @@ class GeneralCMDS(utils.Extension):
 
         commit_hash = await self.get_commit_hash()
         command_num = len(self.bot.application_commands) + len(
-            self.bot.prefixed_commands
+            self.bot.prefixed.commands
         )
         premium_count = await models.GuildConfig.filter(
             premium_code__id__not_isnull=True

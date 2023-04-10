@@ -253,7 +253,7 @@ if typing.TYPE_CHECKING:
     from .realms_api import RealmsAPI
     from .xbox_api import XboxAPI
 
-    class RealmBotBase(ipy.Client):
+    class RealmBotBase(prefixed.PrefixedInjectedClient):
         owner: ipy.User
         color: ipy.Color
         init_load: bool
