@@ -24,5 +24,4 @@ class ProfileResponse:
     profile_users: list[ProfileUser]
 
 
-def parse_profile_response(resp: dict) -> ProfileResponse:
-    return apischema.deserialize(ProfileResponse, resp)
+parse_profile_response = apischema.deserialization_method(ProfileResponse)

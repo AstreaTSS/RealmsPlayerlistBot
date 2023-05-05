@@ -80,6 +80,11 @@ class ActivityList:
     servers: list[PartialRealm]
 
 
+full_realm_deserialize = apischema.deserialization_method(FullRealm)
+full_worlds_deserialize = apischema.deserialization_method(FullWorlds)
+activity_list_deserialize = apischema.deserialization_method(ActivityList)
+
+
 @attrs.define()
 class RealmsAPI(BaseMicrosoftAPI):
     relying_party: str = attrs.field(default=utils.REALMS_API_URL)
@@ -94,17 +99,13 @@ class RealmsAPI(BaseMicrosoftAPI):
         return await super().request(*args, **kwargs, headers=HEADERS)
 
     async def join_realm_from_code(self, code: str) -> FullRealm:
-        return apischema.deserialize(
-            FullRealm, await self.post(f"invites/v1/link/accept/{code}")
-        )
+        return full_realm_deserialize(await self.post(f"invites/v1/link/accept/{code}"))
 
     async def fetch_realms(self) -> FullWorlds:
-        return apischema.deserialize(FullWorlds, await self.get("worlds"))
+        return full_worlds_deserialize(await self.get("worlds"))
 
     async def fetch_activities(self) -> ActivityList:
-        return apischema.deserialize(
-            ActivityList, await self.get("activities/live/players")
-        )
+        return activity_list_deserialize(await self.get("activities"))
 
     async def leave_realm(self, realm_id: int | str) -> None:
         await self.delete(f"invites/{realm_id}")

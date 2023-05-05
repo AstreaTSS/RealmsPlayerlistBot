@@ -15,6 +15,8 @@ from xbox.webapi.authentication.models import (
 
 apischema.settings.additional_properties = True
 apischema.settings.camel_case = True
+apischema.settings.deserialization.no_copy = True
+apischema.settings.deserialization.override_dataclass_constructors = True
 
 
 # these methods are ripped out of xbox-webapi, but optimized for speed

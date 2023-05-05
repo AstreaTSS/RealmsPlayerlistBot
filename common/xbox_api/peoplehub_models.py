@@ -235,5 +235,4 @@ class PeopleHubResponse:
     account_link_details: typing.Optional[list[LinkedAccount]] = None
 
 
-def parse_peoplehub_reponse(resp: dict) -> PeopleHubResponse:
-    return apischema.deserialize(PeopleHubResponse, resp)
+parse_peoplehub_reponse = apischema.deserialization_method(PeopleHubResponse)
