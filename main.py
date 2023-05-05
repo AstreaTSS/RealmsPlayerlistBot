@@ -6,17 +6,10 @@ import os
 import typing
 import uuid
 from collections import defaultdict
-from pathlib import Path
 
 import rpl_config
 
 rpl_config.load()
-
-file_location = Path(__file__).parent.absolute().as_posix()
-os.environ["DIRECTORY_OF_BOT"] = file_location
-os.environ["LOG_FILE_PATH"] = f"{file_location}/discord.log"
-os.environ["XAPI_TOKENS_LOCATION"] = f"{file_location}/tokens.json"
-
 
 import aiohttp
 import discord_typings

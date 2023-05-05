@@ -1,5 +1,6 @@
 import os
 import tomllib
+from pathlib import Path
 
 IS_LOADED = False
 
@@ -27,5 +28,10 @@ def load() -> None:
         toml_dict = tomllib.load(f)
         for key, value in toml_dict.items():
             os.environ[key] = str(value)
+
+    file_location = Path(__file__).parent.absolute().as_posix()
+    os.environ["DIRECTORY_OF_BOT"] = file_location
+    os.environ["LOG_FILE_PATH"] = f"{file_location}/discord.log"
+    os.environ["XAPI_TOKENS_LOCATION"] = f"{file_location}/tokens.json"
 
     set_loaded()
