@@ -105,7 +105,7 @@ class RealmsAPI(BaseMicrosoftAPI):
         return full_worlds_deserialize(await self.get("worlds"))
 
     async def fetch_activities(self) -> ActivityList:
-        return activity_list_deserialize(await self.get("activities"))
+        return activity_list_deserialize(await self.get("activities/live/players"))
 
     async def leave_realm(self, realm_id: int | str) -> None:
         await self.delete(f"invites/{realm_id}")
