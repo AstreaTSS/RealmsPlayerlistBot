@@ -108,9 +108,10 @@ class OwnerCMDs(utils.Extension):
 
     @view_guild.autocomplete("guild")
     async def view_get_guild(
-        self, ctx: ipy.AutocompleteContext, guild: str, **kwargs: typing.Any
+        self,
+        ctx: ipy.AutocompleteContext,
     ) -> None:
-        await self._autocomplete_guilds(ctx, guild)
+        await self._autocomplete_guilds(ctx, ctx.kwargs.get("guild"))
 
     @tansy.slash_command(
         name="add-guild",
@@ -188,9 +189,10 @@ class OwnerCMDs(utils.Extension):
 
     @edit_guild.autocomplete("guild")
     async def edit_get_guild(
-        self, ctx: ipy.AutocompleteContext, guild: str, **kwargs: typing.Any
+        self,
+        ctx: ipy.AutocompleteContext,
     ) -> None:
-        await self._autocomplete_guilds(ctx, guild)
+        await self._autocomplete_guilds(ctx, ctx.kwargs.get("guild"))
 
     @tansy.slash_command(
         name="edit-guild-via-id",

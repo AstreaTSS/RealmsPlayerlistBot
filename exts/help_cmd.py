@@ -239,9 +239,9 @@ class HelpCMD(utils.Extension):
     async def query_autocomplete(
         self,
         ctx: utils.RealmAutocompleteContext,
-        query: typing.Optional[str] = None,
-        **kwargs: typing.Any,
     ) -> None:
+        query = ctx.kwargs.get("query")
+
         if not self.bot.slash_perms_cache[int(ctx.guild_id)]:
             await help_tools.process_bulk_slash_perms(self.bot, int(ctx.guild_id))
 

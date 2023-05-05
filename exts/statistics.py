@@ -504,9 +504,9 @@ class Statistics(utils.Extension):
     async def period_autocomplete(
         self,
         ctx: utils.RealmAutocompleteContext,
-        period: typing.Optional[str] = None,
-        **kwargs: typing.Any,
     ) -> None:
+        period = ctx.kwargs.get("period")
+
         has_premium = await models.GuildConfig.exists(
             guild_id=ctx.guild.id, premium_code__id__not_isnull=True
         )
@@ -531,9 +531,9 @@ class Statistics(utils.Extension):
     async def summary_autocomplete(
         self,
         ctx: utils.RealmAutocompleteContext,
-        summarize_by: typing.Optional[str] = None,
-        **kwargs: typing.Any,
     ) -> None:
+        summarize_by = ctx.kwargs.get("summarize_by")
+
         has_premium = await models.GuildConfig.exists(
             guild_id=ctx.guild.id, premium_code__id__not_isnull=True
         )
