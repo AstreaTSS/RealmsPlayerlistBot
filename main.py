@@ -223,7 +223,6 @@ bot = RealmsPlayerlistBot(
     user_guilds=ipy.utils.NullCache(),
     dm_channels=ipy.utils.NullCache(),
     # lets not make this too huge
-    role_cache=ipy.utils.TTLCache(600, 1000, 2000),
     channel_cache=ipy.utils.TTLCache(600, 5000, 10000),
     logger=logger,
 )
