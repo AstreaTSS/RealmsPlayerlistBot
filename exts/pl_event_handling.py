@@ -109,7 +109,7 @@ class PlayerlistEventHandling(ipy.Extension):
                 continue
 
             role_mention = f"<@&{config.realm_offline_role}>"
-            role = guild.get_role(config.realm_offline_role)
+            role = await guild.fetch_role(config.realm_offline_role)
             if role:
                 role_mention = role.mention
 

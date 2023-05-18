@@ -213,7 +213,18 @@ bot = RealmsPlayerlistBot(
     context_menu_context=utils.RealmContextMenuContext,
     autocomplete_context=utils.RealmAutocompleteContext,
     auto_defer=ipy.AutoDefer(enabled=True, time_until_defer=0),
-    message_cache=ipy.utils.TTLCache(10, 5, 5),  # we do not need messages
+    # we do not need messages
+    message_cache=ipy.utils.TTLCache(10, 10, 50),
+    # we don't need that many
+    user_cache=ipy.utils.TTLCache(60, 50, 100),
+    member_cache=ipy.utils.TTLCache(60, 50, 100),
+    # do not need at all
+    voice_state_cache=ipy.utils.NullCache(),
+    user_guilds=ipy.utils.NullCache(),
+    dm_channels=ipy.utils.NullCache(),
+    # lets not make this too huge
+    role_cache=ipy.utils.TTLCache(600, 1000, 2000),
+    channel_cache=ipy.utils.TTLCache(600, 5000, 10000),
     logger=logger,
 )
 prefixed.setup(bot, prefixed_context=utils.RealmPrefixedContext)
