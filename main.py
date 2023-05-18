@@ -216,8 +216,7 @@ bot = RealmsPlayerlistBot(
     # we do not need messages
     message_cache=ipy.utils.TTLCache(10, 10, 50),
     # we don't need that many
-    user_cache=ipy.utils.TTLCache(60, 50, 100),
-    member_cache=ipy.utils.TTLCache(60, 50, 100),
+    user_cache=ipy.utils.TTLCache(60, 500, 1000),
     # do not need at all
     voice_state_cache=ipy.utils.NullCache(),
     user_guilds=ipy.utils.NullCache(),
