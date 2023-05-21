@@ -37,6 +37,9 @@ class HelpCMD(utils.Extension):
         if not slash_cmd.get_cmd_id(int(ctx.guild_id)):
             return False
 
+        if not self.bot.slash_perms_cache.get(int(ctx.guild_id)):
+            return False
+
         if not self.bot.slash_perms_cache[int(ctx.guild_id)][
             int(slash_cmd.get_cmd_id(int(ctx.guild_id)))
         ].has_permission_ctx(ctx):
