@@ -237,6 +237,9 @@ bot.offline_realms = OrderedSet()  # type: ignore
 bot.dropped_offline_realms = set()
 bot.background_tasks = set()
 
+# TODO: remove once discord patches this properly
+ipy.const.CLIENT_FEATURE_FLAGS["FOLLOWUP_INTERACTIONS_FOR_IMAGES"] = True
+
 
 async def start() -> None:
     await Tortoise.init(db_settings.TORTOISE_ORM)
