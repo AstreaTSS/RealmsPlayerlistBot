@@ -299,7 +299,7 @@ async def _global_checks(ctx: ipy.BaseContext) -> bool:
     if not ctx.guild:
         return False
 
-    if ctx.author.id == ctx.bot.owner.id:
+    if ctx.author.id == ctx.bot.app.owner_id:
         return True
 
     return True
