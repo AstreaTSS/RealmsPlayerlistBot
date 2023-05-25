@@ -326,7 +326,7 @@ async def process_bulk_slash_perms(bot: utils.RealmBotBase, guild_id: int) -> No
         resolver = PermissionsResolver(
             cmd.default_member_permissions, guild_id, cmd_perm["permissions"]
         )
-        guild_perms[cmd_perm["id"]] = resolver
+        guild_perms[int(cmd_perm["id"])] = resolver
 
     for cmd in (c for i, c in cmds.items() if not guild_perms.get(i)):
         guild_perms[int(cmd.get_cmd_id(guild_id))] = PermissionsResolver(
