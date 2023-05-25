@@ -73,7 +73,7 @@ async def msg_to_owner(
 
     str_chunks = string_split(string) if split else content
     for chunk in str_chunks:
-        await bot.owner.send(f"{chunk}")
+        await bot.bot_owner.send(f"{chunk}")
 
 
 def line_split(content: str, split_by: int = 20) -> list[list[str]]:
@@ -254,7 +254,7 @@ if typing.TYPE_CHECKING:
     from .xbox_api import XboxAPI
 
     class RealmBotBase(prefixed.PrefixedInjectedClient):
-        owner: ipy.User
+        bot_owner: ipy.User
         color: ipy.Color
         init_load: bool
         fully_ready: asyncio.Event
@@ -299,7 +299,7 @@ async def _global_checks(ctx: ipy.BaseContext) -> bool:
     if not ctx.guild:
         return False
 
-    if ctx.author.id == ctx.bot.app.owner_id:
+    if ctx.author.id in ctx.bot.owner_ids:
         return True
 
     return True

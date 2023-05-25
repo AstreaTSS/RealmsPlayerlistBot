@@ -114,7 +114,12 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
             else f"Reconnected at {time_format}!"
         )
 
-        await self.owner.send(connect_msg)
+        if not self.bot_owner:
+            self.bot_owner = self.owner  # type: ignore
+        if not self.bot_owner:
+            self.bot_owner = await self.fetch_user(self.app.owner_id)  # type: ignore
+
+        await self.bot_owner.send(connect_msg)
 
         self.init_load = False
 
