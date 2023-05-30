@@ -83,7 +83,7 @@ if not utils.TEST_MODE:
 def to_proper_word(num: int) -> str:
     num_str = humanize.intword(num)
     if num_str.startswith("1.0"):
-        num_str.replace("1.0", "1")
+        num_str = num_str.replace("1.0", "1")
     return num_str
 
 
