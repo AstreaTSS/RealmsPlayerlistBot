@@ -13,6 +13,7 @@ rpl_config.load()
 
 import aiohttp
 import discord_typings
+import humanize
 import interactions as ipy
 import sentry_sdk
 from interactions.ext import prefixed_commands as prefixed
@@ -79,6 +80,13 @@ if not utils.TEST_MODE:
     sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], before_send=default_sentry_filter)
 
 
+def to_proper_word(num: int) -> str:
+    num_str = humanize.intword(num)
+    if num_str.startswith("1.0"):
+        num_str.replace("1.0", "1")
+    return num_str
+
+
 class RealmsPlayerlistBot(utils.RealmBotBase):
     @ipy.listen("startup")
     async def on_startup(self) -> None:
@@ -124,7 +132,8 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         self.init_load = False
 
         activity = ipy.Activity.create(
-            name="over some Realms", type=ipy.ActivityType.WATCHING
+            name=f"around {to_proper_word(len(bot.guilds))} Realms",
+            type=ipy.ActivityType.WATCHING,
         )
 
         await self.change_presence(activity=activity)
@@ -140,7 +149,8 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     @ipy.listen("resume")
     async def on_resume_func(self) -> None:
         activity = ipy.Activity.create(
-            name="over some Realms", type=ipy.ActivityType.WATCHING
+            name=f"around {to_proper_word(len(bot.guilds))} Realms",
+            type=ipy.ActivityType.WATCHING,
         )
         await self.change_presence(activity=activity)
 
