@@ -39,32 +39,40 @@ class GeneralCMDS(utils.Extension):
     @ipy.slash_command(
         "ping",
         description=(
-            "Pings the bot. Great way of finding out if the bot’s working correctly,"
+            "Pings the bot. Great way of finding out if the bot's working correctly,"
             " but has no real use."
         ),
     )
     async def ping(self, ctx: utils.RealmContext) -> None:
         """
-        Pings the bot. Great way of finding out if the bot’s working correctly, but has no real use.
+        Pings the bot. Great way of finding out if the bot's working correctly, but has no real use.
         """
 
         start_time = time.perf_counter()
-        ping_discord = round((self.bot.latency * 1000), 2)
+        average_ping = round((self.bot.latency * 1000), 2)
+        shard_id = self.bot.get_shard_id(ctx.guild_id) if ctx.guild_id else 0
+        shard_ping = round((self.bot.latencies[shard_id] * 1000), 2)
 
-        mes = await ctx.send(
-            f"Pong!\n`{ping_discord}` ms from Discord.\nCalculating personal ping..."
+        embed = ipy.Embed(
+            "Pong!", color=self.bot.color, timestamp=ipy.Timestamp.utcnow()
         )
+        embed.set_footer(text="As of")
+        embed.description = (
+            f"Average Ping: `{average_ping}` ms\nShard Ping: `{shard_ping}`"
+            " ms\nCalculating RTT..."
+        )
+
+        mes = await ctx.send(embed=embed)
 
         end_time = time.perf_counter()
-        ping_personal = round(((end_time - start_time) * 1000), 2)
-
-        await ctx.edit(
-            message=mes,
-            content=(
-                f"Pong!\n`{ping_discord}` ms from Discord.\n`{ping_personal}` ms"
-                " personally."
-            ),
+        # not really rtt ping but shh
+        rtt_ping = round(((end_time - start_time) * 1000), 2)
+        embed.description = (
+            f"Average Ping: `{average_ping}` ms\nShard Ping: `{shard_ping}` ms\nRTT"
+            f" Ping: `{rtt_ping}` ms"
         )
+
+        await ctx.edit(message=mes, embed=embed)
 
     @ipy.slash_command(
         name="invite",
@@ -112,11 +120,14 @@ class GeneralCMDS(utils.Extension):
             premium_code__id__not_isnull=True
         ).count()
 
+        num_shards = len(self.bot.shards)
+        shards_str = f"{num_shards} shards" if num_shards != 1 else "1 shard"
+
         about_embed.add_field(
             name="Stats",
             value="\n".join(
                 (
-                    f"Servers: {len(self.bot.guilds)}",
+                    f"Servers: {len(self.bot.guilds)} ({shards_str})",
                     f"Premium Servers: {premium_count}",
                     f"Commands: {command_num} ",
                     (
@@ -163,6 +174,9 @@ class GeneralCMDS(utils.Extension):
             inline=True,
         )
         about_embed.timestamp = ipy.Timestamp.utcnow()
+
+        shard_id = self.bot.get_shard_id(ctx.guild_id) if ctx.guild_id else 0
+        about_embed.set_footer(f"Shard ID: {shard_id}")
 
         await ctx.send(embed=about_embed)
 
