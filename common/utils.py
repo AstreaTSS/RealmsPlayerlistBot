@@ -289,7 +289,7 @@ if typing.TYPE_CHECKING:
 
 else:
 
-    class RealmBotBase(ipy.Client):
+    class RealmBotBase(ipy.AutoShardedClient):
         pass
 
 

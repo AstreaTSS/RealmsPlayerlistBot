@@ -203,11 +203,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         await Tortoise.close_connections()
         await bot.redis.close(close_connection_pool=True)
 
-        try:
-            return await super().stop()
-        except asyncio.CancelledError:
-            # idk, weird bugs are weird
-            self._connection_state.gateway_started.clear()
+        return await super().stop()
 
 
 intents = ipy.Intents.new(
