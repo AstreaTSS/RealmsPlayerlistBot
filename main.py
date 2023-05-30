@@ -199,7 +199,10 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
     @property
     def start_time(self) -> datetime.datetime:
-        return self._connection_states[0].start_time  # type: ignore
+        try:
+            return self._connection_states[0].start_time  # type: ignore
+        except IndexError:
+            return ipy.MISSING
 
     async def stop(self) -> None:
         await bot.session.close()
