@@ -123,8 +123,6 @@ class GeneralCMDS(utils.Extension):
         num_shards = len(self.bot.shards)
         shards_str = f"{num_shards} shards" if num_shards != 1 else "1 shard"
 
-        start_time = self.bot.shards[0].start_time
-
         about_embed.add_field(
             name="Stats",
             value="\n".join(
@@ -134,7 +132,7 @@ class GeneralCMDS(utils.Extension):
                     f"Commands: {command_num} ",
                     (
                         "Startup Time:"
-                        f" {ipy.Timestamp.fromdatetime(start_time).format(ipy.TimestampStyles.RelativeTime)}"
+                        f" {ipy.Timestamp.fromdatetime(self.bot.start_time).format(ipy.TimestampStyles.RelativeTime)}"
                     ),
                     (
                         "Commit Hash:"

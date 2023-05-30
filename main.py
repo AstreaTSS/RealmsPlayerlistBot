@@ -197,6 +197,10 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         if not self.sync_ext and self._ready.is_set():
             asyncio.create_task(self._cache_interactions(warn_missing=False))
 
+    @property
+    def start_time(self) -> datetime.datetime:
+        return bot._connection_states[0].start_time  # type: ignore
+
     async def stop(self) -> None:
         await bot.session.close()
         await bot.realms.close()
