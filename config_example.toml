@@ -3,7 +3,7 @@
 MAIN_TOKEN = "TOKEN"  # your discord bot token, of course!
 
 DEV_GUILD_ID = 11111111111111111  # guild id that you own and that will not be used for a playerlist
-BOT_COLOR = 9093705  # a color to color some embeds and all - it's nice for branding.
+BOT_COLOR = 11557887  # a color to color some embeds and all - it's nice for branding.
 SETUP_LINK = "https://rpl.astrea.cc/wiki/server_setup.html"  # a link to how to set up the bot for a server
 PREMIUM_INFO_LINK = "https://rpl.astrea.cc/wiki/premium.html"  # a link about premium
 

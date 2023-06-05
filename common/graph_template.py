@@ -22,7 +22,7 @@ def graph_template(
         "data": {
             "datasets": [
                 {
-                    "backgroundColor": "#8ac249",
+                    "backgroundColor": "#a682e3",
                     "borderColor": "#92b972",
                     "borderWidth": 0,
                     "data": list(data),

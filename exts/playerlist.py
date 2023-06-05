@@ -318,7 +318,7 @@ class Playerlist(utils.Extension):
         if online_list:
             embeds.append(
                 ipy.Embed(
-                    color=self.bot.color,
+                    color=ipy.Color.from_hex("7abd59"),
                     title="People online right now",
                     description="\n".join(online_list),
                     footer=ipy.EmbedFooter(text="As of"),

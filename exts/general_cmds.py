@@ -151,25 +151,17 @@ class GeneralCMDS(utils.Extension):
         links = [
             "Support Server: [Link](https://discord.gg/NSdetwGjpK)",
             "Source Code: [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot)",
+            "Website: [Link](https://rpl.astrea.cc)",
+            "FAQ: [Link](https://rpl.astrea.cc/wiki/faq.html)",
+            "Privacy Policy: [Link](https://rpl.astrea.cc/legal/privacy_policy.html)",
+            "Terms of Service: [Link](https://rpl.astrea.cc/legal/tos.html)",
         ]
 
         if os.environ.get("TOP_GG_TOKEN"):
             links.append(f"Top.gg Page: [Link](https://top.gg/bot/{self.bot.user.id})")
 
-        links.extend(
-            (
-                "Website: [Link](https://rpl.astrea.cc)",
-                "FAQ: [Link](https://rpl.astrea.cc/wiki/faq.html)",
-                (
-                    "Privacy Policy:"
-                    " [Link](https://rpl.astrea.cc/legal/privacy_policy.html)"
-                ),
-                "Terms of Service: [Link](https://rpl.astrea.cc/legal/tos.html)",
-            )
-        )
-
         about_embed.add_field(
-            name="Links:",
+            name="Links",
             value="\n".join(links),
             inline=True,
         )

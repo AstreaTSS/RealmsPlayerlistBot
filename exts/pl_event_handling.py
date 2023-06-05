@@ -48,7 +48,7 @@ class PlayerlistEventHandling(ipy.Extension):
         gamertag_mapping = {p.xuid: p.base_display for p in players}
 
         embed = ipy.Embed(
-            color=self.bot.color,
+            color=ipy.RoleColors.DARK_GREY,
             timestamp=ipy.Timestamp.fromdatetime(event.timestamp),
         )
         embed.set_footer(
