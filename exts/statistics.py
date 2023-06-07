@@ -323,6 +323,11 @@ class Statistics(utils.Extension):
                 f" {limit}."
             )
 
+        if len(gamertags_list) == 1:
+            raise ipy.errors.BadArgument(
+                "Cannot graph a single player using this command."
+            )
+
         xuid_list = [
             await stats_utils.xuid_from_gamertag(self.bot, gamertag)
             for gamertag in gamertags_list
@@ -336,9 +341,9 @@ class Statistics(utils.Extension):
     @amazing_modal_error_handler
     async def handle_multi_players(
         self,
+        ctx: utils.RealmModalContext,
         returned_data: stats_utils.ProcessSummaryReturn
         | stats_utils.ProcessUnsummaryReturn,
-        ctx: utils.RealmModalContext,
         now: datetime.datetime,
         xuid_list: list[str],
         gamertags: list[str],
@@ -388,7 +393,7 @@ class Statistics(utils.Extension):
             "Playtime of various players over the last {days_humanized}",
             indivdual=True,
         )
-        await self.handle_multi_players(returned_data, ctx, now, xuid_list, gamertags)
+        await self.handle_multi_players(ctx, returned_data, now, xuid_list, gamertags)
 
     @amazing_modal_error_handler
     async def multi_player_summary_handle(
@@ -407,7 +412,7 @@ class Statistics(utils.Extension):
                 " {summarize_by}"
             ),
         )
-        await self.handle_multi_players(returned_data, ctx, now, xuid_list, gamertags)
+        await self.handle_multi_players(ctx, returned_data, now, xuid_list, gamertags)
 
     @staticmethod
     def _filter_for_fuzzy(period_summary: str | dict[str, typing.Any]) -> str:

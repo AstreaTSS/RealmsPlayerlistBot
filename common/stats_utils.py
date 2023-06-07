@@ -624,6 +624,14 @@ async def send_graph(
                 " that goes further back than when you first set up the bot with"
                 " your Realm). This data may be inaccurate."
             )
+        elif "various players" in title:
+            description = (
+                "The bot does not have enough data to properly graph data for the"
+                " timespan you specified (most likely, you specified a timespan that"
+                " goes further back than when you first set up the bot with your Realm"
+                " or when the oldest player first started playing). This data may be"
+                " inaccurate."
+            )
         else:
             description = (
                 "The bot does not have enough data to properly graph data for the"
