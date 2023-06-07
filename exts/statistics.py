@@ -258,7 +258,7 @@ class Statistics(utils.Extension):
                 custom_id="gamertags",
                 placeholder=(
                     "Gamertags only. For non-premium, max of 2 users - premium has 5."
-                    " Use lines to separate players."
+                    " Use new lines to separate players."
                 ),
             ),
             title="Multi-Player Graph Input",
@@ -292,7 +292,7 @@ class Statistics(utils.Extension):
                 custom_id="gamertags",
                 placeholder=(
                     "Gamertags only. For non-premium, max of 2 users - premium has 5."
-                    " Use lines to separate players."
+                    " Use new lines to separate players."
                 ),
             ),
             title="Multi-Player Summary Graph Input",
