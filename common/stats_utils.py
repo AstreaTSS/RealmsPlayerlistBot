@@ -1,7 +1,73 @@
+import asyncio
+import contextlib
 import datetime
+import os
 import typing
 from collections import defaultdict
 from enum import IntEnum
+
+import aiohttp
+import interactions as ipy
+import orjson
+from apischema import ValidationError
+
+import common.graph_template as graph_template
+import common.models as models
+import common.utils as utils
+import common.xbox_api as xbox_api
+from common.microsoft_core import MicrosoftAPIException
+
+VALID_TIME_DICTS = typing.Union[
+    dict[datetime.datetime, int], dict[datetime.date, int], dict[datetime.time, int]
+]
+
+US_FORMAT_TIME = "%l %p"
+US_FORMAT_DATE = "%m/%d/%y"
+US_FORMAT = f"{US_FORMAT_DATE} {US_FORMAT_TIME}"
+INTERNATIONAL_FORMAT_TIME = "%k:%M"
+INTERNATIONAL_FORMAT_DATE = "%d/%m/%y"
+INTERNATIONAL_FORMAT = f"{INTERNATIONAL_FORMAT_DATE} {INTERNATIONAL_FORMAT_TIME}"
+DAY_OF_THE_WEEK = "%A"
+
+SHOWABLE_FORMAT = {
+    US_FORMAT_TIME: "HH AM/PM",
+    US_FORMAT_DATE: "MM/DD/YY",
+    US_FORMAT: "MM/DD/YY HH AM/PM",
+    INTERNATIONAL_FORMAT_TIME: "HH:MM",
+    INTERNATIONAL_FORMAT_DATE: "DD/MM/YY",
+    INTERNATIONAL_FORMAT: "DD/MM/YY HH:MM",
+    DAY_OF_THE_WEEK: "",  # no localization needed, here just so things don't fail
+}
+
+PERIOD_TO_GRAPH = [
+    ipy.SlashCommandChoice("One day, per hour", "1pH"),
+    ipy.SlashCommandChoice("1 week, per day", "7pD"),
+]
+PREMIUM_PERIOD_TO_GRAPH = PERIOD_TO_GRAPH + [
+    ipy.SlashCommandChoice("2 weeks, per day", "14pD"),
+    ipy.SlashCommandChoice("30 days, per day", "30pD"),
+]
+PERIODS = frozenset({p.value for p in PERIOD_TO_GRAPH})
+PREMIUM_PERIODS = frozenset({p.value for p in PREMIUM_PERIOD_TO_GRAPH})
+
+SUMMARIZE_BY = [
+    ipy.SlashCommandChoice("1 week, by hour", "7bH"),
+]
+PREMIUM_SUMMARIZE_BY = SUMMARIZE_BY + [
+    ipy.SlashCommandChoice("2 weeks, by hour", "14bH"),
+    ipy.SlashCommandChoice("30 days, by hour", "30bH"),
+    ipy.SlashCommandChoice("2 weeks, by day of the week", "14bD"),
+    ipy.SlashCommandChoice("30 days, by day of the week", "30bD"),
+]
+SUMMARIES = frozenset({s.value for s in SUMMARIZE_BY})
+PREMIUM_SUMMARIES = frozenset({s.value for s in PREMIUM_SUMMARIZE_BY})
+
+DAY_HUMANIZED = {
+    1: "24 hours",
+    7: "1 week",
+    14: "2 weeks",
+    30: "30 days",
+}
 
 
 class InSeconds(IntEnum):
@@ -192,3 +258,393 @@ def timespan_minutes_per_day_of_the_week(
         datetime.date(year=1970, month=1, day=(k - 3) + 7): v
         for k, v in minutes_per_day_of_the_week.items()
     }
+
+
+async def xuid_from_gamertag(bot: utils.RealmBotBase, gamertag: str) -> str:
+    maybe_xuid: typing.Union[str, xbox_api.ProfileResponse, None] = await bot.redis.get(
+        f"rpl-{gamertag}"
+    )
+
+    if maybe_xuid:
+        return maybe_xuid
+
+    async with aiohttp.ClientSession(
+        timeout=aiohttp.ClientTimeout(total=2.5)
+    ) as session:
+        headers = {
+            "X-Authorization": os.environ["OPENXBL_KEY"],
+            "Accept": "application/json",
+            "Accept-Language": "en-US",
+        }
+        with contextlib.suppress(asyncio.TimeoutError):
+            async with session.get(
+                f"https://xbl.io/api/v2/search/{gamertag}",
+                headers=headers,
+            ) as r:
+                with contextlib.suppress(ValidationError, aiohttp.ContentTypeError):
+                    maybe_xuid = xbox_api.parse_profile_response(
+                        await r.json(loads=orjson.loads)
+                    )
+
+        if not maybe_xuid:
+            with contextlib.suppress(
+                aiohttp.ClientResponseError,
+                asyncio.TimeoutError,
+                ValidationError,
+                MicrosoftAPIException,
+            ):
+                resp = await bot.xbox.fetch_profile_by_gamertag(gamertag)
+                maybe_xuid = xbox_api.parse_profile_response(resp)
+
+    if not maybe_xuid:
+        raise ipy.errors.BadArgument(f"`{gamertag}` is not a valid gamertag.")
+
+    xuid = maybe_xuid.profile_users[0].id
+
+    async with bot.redis.pipeline() as pipe:
+        pipe.setex(
+            name=str(xuid),
+            time=utils.EXPIRE_GAMERTAGS_AT,
+            value=gamertag,
+        )
+        pipe.setex(
+            name=f"rpl-{gamertag}",
+            time=utils.EXPIRE_GAMERTAGS_AT,
+            value=str(xuid),
+        )
+        await pipe.execute()
+
+    return xuid
+
+
+async def gather_datetimes(
+    config: models.GuildConfig,
+    min_datetime: datetime.datetime,
+    *,
+    gamertag: typing.Optional[str] = None,
+    **filter_kwargs: typing.Any,
+) -> list[tuple[datetime.datetime, datetime.datetime]]:
+    datetimes_to_use: list[tuple[datetime.datetime, datetime.datetime]] = []
+
+    async for entry in models.PlayerSession.filter(
+        realm_id=config.realm_id, joined_at__gte=min_datetime, **filter_kwargs
+    ):
+        if not entry.joined_at or not entry.last_seen:
+            continue
+
+        datetimes_to_use.append((entry.joined_at, entry.last_seen))  # type: ignore
+
+    if not datetimes_to_use:
+        if gamertag:
+            raise utils.CustomCheckFailure(
+                f"There's no data for `{gamertag}` on the linked Realm for this"
+                " timespan."
+            )
+        else:
+            raise utils.CustomCheckFailure(
+                "There's no data for the linked Realm for this timespan."
+            )
+
+    return datetimes_to_use
+
+
+def period_parse(config: models.GuildConfig, period: str) -> tuple[int, str]:
+    periods = PREMIUM_PERIODS if config.premium_code else PERIODS
+    if period not in periods:
+        raise ipy.errors.BadArgument("Invalid period given.")
+
+    period_split = period.split("p")
+    if len(period_split) != 2:
+        raise ipy.errors.BadArgument("Invalid period given.")
+
+    try:
+        num_days = int(period_split[0])
+    except ValueError:
+        raise ipy.errors.BadArgument("Invalid period given.") from None
+
+    return num_days, period_split[1]
+
+
+def summary_parse(config: models.GuildConfig, summarize_by: str) -> tuple[int, str]:
+    summaries = PREMIUM_SUMMARIES if config.premium_code else SUMMARIES
+    if summarize_by not in summaries:
+        raise ipy.errors.BadArgument("Invalid summary given.")
+
+    summary_split = summarize_by.split("b")
+    if len(summary_split) != 2:
+        raise ipy.errors.BadArgument("Invalid summary given.")
+
+    try:
+        num_days = int(summary_split[0])
+    except ValueError:
+        raise ipy.errors.BadArgument("Invalid summary given.") from None
+
+    return num_days, summary_split[1]
+
+
+class ProcessUnsummaryReturn(typing.NamedTuple):
+    func_to_use: typing.Callable[..., VALID_TIME_DICTS]
+    bottom_label: str
+    localizations: tuple[str, ...]
+    min_datetime: datetime.datetime
+    formatted_title: str
+    template_kwargs: dict[str, typing.Any]
+
+
+class ProcessSummaryReturn(typing.NamedTuple):
+    func_to_use: typing.Callable[..., VALID_TIME_DICTS]
+    bottom_label: str
+    localizations: tuple[str, ...]
+    formatted_title: str
+    min_datetime: datetime.datetime
+
+
+async def process_unsummary(
+    ctx: utils.RealmContext | utils.RealmModalContext,
+    now: datetime.datetime,
+    period: str,
+    title: str,
+    *,
+    indivdual: bool = False,
+) -> ProcessUnsummaryReturn:
+    config = await ctx.fetch_config()
+    template_kwargs = {"max_value": None}
+
+    num_days, actual_period = period_parse(config, period)
+
+    min_datetime = (
+        now - datetime.timedelta(days=num_days) + datetime.timedelta(minutes=1)
+    )
+
+    if actual_period == "H":
+        func_to_use = get_minutes_per_hour
+        bottom_label = "Date and Hour (UTC) in {localized_format}"
+        localizations = (US_FORMAT, INTERNATIONAL_FORMAT)
+
+        min_datetime = min_datetime.replace(minute=0, second=0, microsecond=0)
+
+        if indivdual:
+            template_kwargs = {"max_value": 60}
+    else:
+        func_to_use = get_minutes_per_day
+        bottom_label = "Date (UTC) in {localized_format}"
+        localizations = (US_FORMAT_DATE, INTERNATIONAL_FORMAT_DATE)
+
+        min_datetime = min_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    return ProcessUnsummaryReturn(
+        func_to_use,
+        bottom_label,
+        localizations,
+        min_datetime,
+        title.format(days_humanized=DAY_HUMANIZED[num_days]),
+        template_kwargs,
+    )
+
+
+async def process_summary(
+    ctx: utils.RealmContext | utils.RealmModalContext,
+    now: datetime.datetime,
+    summarize_by: str,
+    title: str,
+) -> ProcessSummaryReturn:
+    config = await ctx.fetch_config()
+
+    num_days, actual_summarize_by = summary_parse(config, summarize_by)
+    min_datetime = (
+        now - datetime.timedelta(days=num_days) + datetime.timedelta(minutes=1)
+    )
+
+    if actual_summarize_by == "H":
+        func_to_use = timespan_minutes_per_hour
+        bottom_label = "Hour (UTC) in {localized_format}"
+        localizations = (US_FORMAT_TIME, INTERNATIONAL_FORMAT_TIME)
+        summarize_by_string = "hour"
+
+    else:
+        func_to_use = timespan_minutes_per_day_of_the_week
+        bottom_label = "Day of the week (UTC)"
+        localizations = (DAY_OF_THE_WEEK, DAY_OF_THE_WEEK)
+        summarize_by_string = "day of the week"
+
+    return ProcessSummaryReturn(
+        func_to_use,
+        bottom_label,
+        localizations,
+        title.format(
+            days_humanized=DAY_HUMANIZED[num_days], summarize_by=summarize_by_string
+        ),
+        min_datetime,
+    )
+
+
+async def process_single_graph_data(
+    config: models.GuildConfig,
+    *,
+    min_datetime: datetime.datetime,
+    now: datetime.datetime,
+    func_to_use: typing.Callable[..., VALID_TIME_DICTS],
+    gamertag: typing.Optional[str] = None,
+    filter_kwargs: typing.Optional[dict[str, typing.Any]] = None,
+) -> tuple[VALID_TIME_DICTS, list[tuple[datetime.datetime, datetime.datetime]]]:
+    if filter_kwargs is None:
+        filter_kwargs = {}
+
+    datetimes_to_use = await gather_datetimes(
+        config, min_datetime, gamertag=gamertag, **filter_kwargs
+    )
+
+    return (
+        func_to_use(
+            datetimes_to_use,
+            min_datetime=min_datetime,
+            max_datetime=now,
+        ),
+        datetimes_to_use,
+    )
+
+
+async def process_multi_graph_data(
+    config: models.GuildConfig,
+    xuid_list: list[str],
+    *,
+    gamertag_list: list[str],
+    min_datetime: datetime.datetime,
+    now: datetime.datetime,
+    func_to_use: typing.Callable[..., VALID_TIME_DICTS],
+) -> tuple[dict[str, VALID_TIME_DICTS], datetime.datetime]:
+    xuid_datetime_map: dict[str, list[tuple[datetime.datetime, datetime.datetime]]] = {}
+
+    for xuid, gamertag in zip(xuid_list, gamertag_list, strict=True):
+        xuid_datetime_map[xuid] = await gather_datetimes(
+            config, min_datetime, gamertag=gamertag, xuid=xuid
+        )
+
+    earliest_datetime = min(
+        d[0]
+        for d in (
+            entry
+            for datetime_lists in xuid_datetime_map.values()
+            for entry in datetime_lists
+        )
+    )
+
+    minutes_per_period_map = {
+        xuid: func_to_use(datetimes_to_use, min_datetime=min_datetime, max_datetime=now)
+        for xuid, datetimes_to_use in xuid_datetime_map.items()
+    }
+
+    return minutes_per_period_map, earliest_datetime
+
+
+def create_single_graph_url(
+    ctx: utils.RealmContext,
+    *,
+    title: str,
+    bottom_label: str,
+    time_data: VALID_TIME_DICTS,
+    localizations: tuple[str, str],
+    **template_kwargs: typing.Any,
+) -> str:
+    locale = ctx.locale or ctx.guild_locale or "en_GB"
+    # im aware theres countries that do yy/mm/dd - i'll add them in soon
+    locale_to_use = localizations[0] if locale == "en-US" else localizations[1]
+
+    localized = {k.strftime(locale_to_use): v for k, v in time_data.items()}
+    return graph_template.graph_template(
+        title,
+        "Total Minutes Played",
+        bottom_label.format(localized_format=SHOWABLE_FORMAT[locale_to_use]),
+        tuple(localized.keys()),
+        tuple(localized.values()),
+        **template_kwargs,
+    )
+
+
+def create_multi_graph_url(
+    ctx: utils.RealmContext | utils.RealmModalContext,
+    *,
+    title: str,
+    bottom_label: str,
+    time_data: dict[str, VALID_TIME_DICTS],
+    gamertags: list[str],
+    localizations: tuple[str, str],
+    **template_kwargs: typing.Any,
+) -> str:
+    first_xuid: str = next(iter(time_data.keys()))
+
+    locale = ctx.locale or ctx.guild_locale or "en_GB"
+    # im aware theres countries that do yy/mm/dd - i'll add them in soon
+    locale_to_use = localizations[0] if locale == "en-US" else localizations[1]
+
+    localized_keys = tuple(v.strftime(locale_to_use) for v in time_data[first_xuid])
+    data_points = tuple(tuple(v.values()) for v in time_data.values())
+
+    return graph_template.multi_graph_template(
+        title,
+        "Total Minutes Played",
+        bottom_label.format(localized_format=SHOWABLE_FORMAT[locale_to_use]),
+        localized_keys,
+        tuple(gamertags),
+        data_points,
+        **template_kwargs,
+    )
+
+
+async def send_graph(
+    ctx: utils.RealmContext | utils.RealmModalContext,
+    *,
+    graph_url: str,
+    now: datetime.datetime,
+    title: str,
+    min_datetime: datetime.datetime,
+    datetimes_used: typing.Optional[
+        list[tuple[datetime.datetime, datetime.datetime]]
+    ] = None,
+    earliest_datetime: typing.Optional[datetime.datetime] = None,
+) -> None:
+    if not earliest_datetime:
+        # if the minimum datetime plus one day that we passed is still before
+        # the earliest datetime we've gathered, that probably means the bot
+        # has only recently tracked a realm, and so we want to warn that
+        # the data might not be the best
+        earliest_datetime = min(d[0] for d in datetimes_used)  # type: ignore
+
+    warn_about_earliest = min_datetime + datetime.timedelta(days=1) < earliest_datetime
+
+    embeds: list[ipy.Embed] = []
+
+    if warn_about_earliest:
+        # probably not the most elegant way to check if this is player-based or not
+        # but it works for now
+        if "Realm" in title:
+            description = (
+                "The bot does not have enough data to properly graph data for the"
+                " timespan you specified (most likely, you specified a timespan"
+                " that goes further back than when you first set up the bot with"
+                " your Realm). This data may be inaccurate."
+            )
+        else:
+            description = (
+                "The bot does not have enough data to properly graph data for the"
+                " timespan you specified (most likely, you specified a timespan"
+                " that goes further back than when you first set up the bot with"
+                " your Realm or when the player first started playing). This data"
+                " may be inaccurate."
+            )
+        embeds.append(
+            ipy.Embed(
+                title="Warning",
+                description=description,
+                color=ipy.RoleColors.YELLOW,
+            )
+        )
+
+    embed = ipy.Embed(
+        color=ctx.bot.color,
+        timestamp=now,  # type: ignore
+    )
+    embed.set_image(graph_url)
+    embeds.append(embed)
+
+    await ctx.send(embeds=embeds)
