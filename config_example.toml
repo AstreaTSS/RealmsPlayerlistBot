@@ -22,6 +22,14 @@ TOP_GG_TOKEN = ""  # optional, allows top.gg integration if it exists
 # various emojis used throughout the bot. more or less self explanatory
 GREEN_CIRCLE_EMOJI="RAW EMOJI STRING"
 GRAY_CIRCLE_EMOJI="RAW EMOJI STRING"
+WINDOWS_EMOJI_ID="EMOJI ID"
+SWITCH_EMOJI_ID="EMOJI ID"
+IOS_EMOJI_ID="EMOJI ID"
+ANDROID_EMOJI_ID="EMOJI ID"
+XBOX_ONE_EMOJI_ID="EMOJI ID"
+XBOX_SERIES_EMOJI_ID="EMOJI ID"
+PLAYSTATION_EMOJI_ID="EMOJI ID"
+UNKNOWN_DEVICE_EMOJI_ID="EMOJI ID"
 
 # the key used to encrypt premium codes. make this a very strong and random 64 character code
 PREMIUM_ENCRYPTION_KEY = "KEY"
