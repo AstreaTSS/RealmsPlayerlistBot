@@ -356,7 +356,7 @@ class GuildConfig(utils.Extension):
                     " this.**\nDisabling these warnings may still be beneficial if"
                     " your Realm isn't as active, though, as long as you are aware of"
                     " the risks.\n\n**If you wish to continue to silence these"
-                    " warnings, press the accept button.** You have 30 seconds to"
+                    " warnings, press the accept button.** You have two minutes to"
                     " do so."
                 ),
                 timestamp=ipy.Timestamp.utcnow(),
@@ -374,7 +374,7 @@ class GuildConfig(utils.Extension):
 
             try:
                 event = await self.bot.wait_for_component(
-                    msg, components, self.button_check(ctx.author.id), timeout=30
+                    msg, components, self.button_check(ctx.author.id), timeout=120
                 )
 
                 if event.ctx.custom_id == components[1].custom_id:
@@ -465,7 +465,7 @@ class GuildConfig(utils.Extension):
                     " when no one is on the server. Because of this, *it is recommended"
                     " that this is only enabled for large Realms.*\n\n**If you wish to"
                     " continue with adding the role, press the accept button.** You"
-                    " have 30 seconds to do so."
+                    " have one minute to do so."
                 ),
                 timestamp=ipy.Timestamp.utcnow(),
                 color=ipy.RoleColors.YELLOW,
@@ -482,7 +482,7 @@ class GuildConfig(utils.Extension):
 
             try:
                 event = await self.bot.wait_for_component(
-                    msg, components, self.button_check(ctx.author.id), timeout=30
+                    msg, components, self.button_check(ctx.author.id), timeout=60
                 )
 
                 if event.ctx.custom_id == components[1].custom_id:

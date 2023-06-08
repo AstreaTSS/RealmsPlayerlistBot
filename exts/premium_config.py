@@ -194,7 +194,7 @@ class PremiumHandling(ipy.Extension):
                     " slightly (if enabled), as fetching the device requires a bit more"
                     " information that what is usually stored.\n\n**If you wish to"
                     " continue with enabling the fetching and displaying of devices,"
-                    " press the accept button.** You have 30 seconds to do so."
+                    " press the accept button.** You have a minute to do so."
                 ),
                 timestamp=ipy.Timestamp.utcnow(),
                 color=ipy.RoleColors.YELLOW,
@@ -211,7 +211,7 @@ class PremiumHandling(ipy.Extension):
 
             try:
                 event = await self.bot.wait_for_component(
-                    msg, components, self.button_check(ctx.author.id), timeout=30
+                    msg, components, self.button_check(ctx.author.id), timeout=60
                 )
 
                 if event.ctx.custom_id == components[1].custom_id:
