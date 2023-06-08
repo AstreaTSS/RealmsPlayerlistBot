@@ -202,8 +202,8 @@ class GamertagHandler:
                         if (
                             user.xuid in self.gather_devices_for
                             and user.presence_details
-                        ) and (
-                            a_match := next(
+                        ):
+                            if a_match := next(
                                 (
                                     p
                                     for p in user.presence_details
@@ -211,14 +211,30 @@ class GamertagHandler:
                                     and p.is_primary
                                 ),
                                 None,
-                            )
-                        ):
-                            device = a_match.device
+                            ):
+                                device = a_match.device
 
-                            # kindle fire is way too niche for me to find it without resorting to this
-                            if a_match.title_id == "1944307183":
+                                # kindle fire is way too niche for me to find it without resorting to this
+                                if a_match.title_id == "1944307183":
+                                    await utils.msg_to_owner(
+                                        self.bot, f"Kindle Fire Device: {device}"
+                                    )
+                            elif maybe_match := next(
+                                (
+                                    p
+                                    for p in user.presence_details
+                                    if "minecraft" in p.presence_text.lower()
+                                    and p.is_primary
+                                ),
+                                None,
+                            ):
+                                device = maybe_match.device
                                 await utils.msg_to_owner(
-                                    self.bot, f"Kindle Fire Device: {device}"
+                                    self.bot,
+                                    (
+                                        f"Possible device: {device} with title ID"
+                                        f" {maybe_match.title_id}"
+                                    ),
                                 )
 
                         self._handle_new_gamertag(
