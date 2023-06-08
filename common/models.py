@@ -1,3 +1,4 @@
+import os
 import typing
 from datetime import datetime
 from uuid import UUID
@@ -17,6 +18,7 @@ class GuildConfig(Model):
     live_playerlist: bool = fields.BooleanField(default=False)  # type: ignore
     realm_offline_role: typing.Optional[int] = fields.BigIntField(null=True)
     warning_notifications: bool = fields.BooleanField(default=True)  # type: ignore
+    fetch_devices: bool = fields.BooleanField(default=False)  # type: ignore
     premium_code: fields.ForeignKeyNullableRelation[
         "PremiumCode"
     ] = fields.ForeignKeyField(
@@ -25,6 +27,17 @@ class GuildConfig(Model):
         on_delete=fields.SET_NULL,
         null=True,
     )  # type: ignore
+
+
+EMOJI_DEVICE_NAMES = {
+    "Android": "android",
+    "iOS": "ios",
+    "WindowsOneCore": "windows",
+    "XboxOne": "xbox_one",
+    "Scarlett": "xbox_series",
+    "Nintendo": "switch",
+    "PlayStation": "playstation",
+}
 
 
 class PlayerSession(Model):
@@ -40,6 +53,35 @@ class PlayerSession(Model):
     joined_at: typing.Optional[datetime] = fields.DatetimeField(null=True)
 
     gamertag: typing.Optional[str] = None
+    device: typing.Optional[str] = None
+
+    @property
+    def device_emoji(self) -> str | None:
+        if not self.device:
+            return None
+
+        # case statement, woo!
+        match self.device:
+            case "Android":
+                base_emoji_id = os.environ["ANDROID_EMOJI_ID"]
+            case "iOS":
+                base_emoji_id = os.environ["IOS_EMOJI_ID"]
+            case "WindowsOneCore":
+                base_emoji_id = os.environ["WINDOWS_EMOJI_ID"]
+            case "XboxOne":
+                base_emoji_id = os.environ["XBOX_ONE_EMOJI_ID"]
+            case "Scarlett":
+                base_emoji_id = os.environ["XBOX_SERIES_EMOJI_ID"]
+            case "Nintendo":
+                base_emoji_id = os.environ["SWITCH_EMOJI_ID"]
+            case "PlayStation":
+                base_emoji_id = os.environ["PLAYSTATION_EMOJI_ID"]
+            case _:
+                base_emoji_id = os.environ["UNKNOWN_DEVICE_EMOJI_ID"]
+
+        return (
+            f"<:{EMOJI_DEVICE_NAMES.get(self.device, self.device.lower().replace(' ', '_'))}:{base_emoji_id}>"
+        )
 
     @property
     def realm_xuid_id(self) -> str:
@@ -51,11 +93,14 @@ class PlayerSession(Model):
 
     @property
     def base_display(self) -> str:
-        return (
+        display = (
             f"`{self.gamertag}`"
             if self.gamertag
             else f"User with XUID `{self.xuid or 'N/A'}`"
         )
+        if self.device_emoji:
+            display += f" ({self.device_emoji})"
+        return display
 
     @property
     def display(self) -> str:

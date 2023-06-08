@@ -244,7 +244,7 @@ class Playerlist(utils.Extension):
         upsell: bool = kwargs.get("upsell", False)
         upsell_type: int = kwargs.get("upsell_type", -1)
 
-        guild_config = await ctx.fetch_config()
+        config = await ctx.fetch_config()
 
         # this may seem a bit weird to you... but let's say it's 8:00:03, and we want to
         # go one hour back
@@ -271,7 +271,7 @@ class Playerlist(utils.Extension):
         # fmt: off
         player_sessions: list[models.PlayerSession] = await models.PlayerSession.raw(
             f"SELECT DISTINCT ON (xuid) * FROM {models.PlayerSession.Meta.table} "  # noqa
-            f"WHERE realm_id='{guild_config.realm_id}' AND (online=true "
+            f"WHERE realm_id='{config.realm_id}' AND (online=true "
             f"OR last_seen>='{time_ago.isoformat()}') ORDER BY xuid, last_seen DESC"
         )  # type: ignore
         # fmt: on
@@ -288,8 +288,15 @@ class Playerlist(utils.Extension):
                 " happens."
             )
 
+        bypass_cache_for: typing.Optional[set[str]] = None
+        if config.fetch_devices:
+            if not config.premium_code:
+                await pl_utils.invalidate_premium(self.bot, config)
+            else:
+                bypass_cache_for = {p.xuid for p in player_sessions if p.online}
+
         player_list = await pl_utils.fill_in_gamertags_for_sessions(
-            self.bot, player_sessions
+            self.bot, player_sessions, bypass_cache_for=bypass_cache_for
         )
 
         online_list = sorted(
@@ -361,7 +368,7 @@ class Playerlist(utils.Extension):
             offline_embeds[0].title = f"People on in the last {hours_ago} hour(s)"
             embeds.extend(offline_embeds)
 
-        if upsell and not guild_config.premium_code:
+        if upsell and not config.premium_code:
             # add upsell message to last embed
             embeds[-1].set_footer(UPSELLS[upsell_type])
 
@@ -397,13 +404,23 @@ class Playerlist(utils.Extension):
         Allows you to see if anyone is online on the Realm right now.
         Has a cooldown of 10 seconds.
         """
-        guild_config = await ctx.fetch_config()
+        config = await ctx.fetch_config()
 
         player_sessions = await models.PlayerSession.filter(
-            realm_id=guild_config.realm_id, online=True
+            realm_id=config.realm_id, online=True
         )
+
+        bypass_cache = False
+        if config.fetch_devices:
+            if not config.premium_code:
+                await pl_utils.invalidate_premium(self.bot, config)
+            else:
+                bypass_cache = True
+
         playerlist = await pl_utils.fill_in_gamertags_for_sessions(
-            self.bot, player_sessions
+            self.bot,
+            player_sessions,
+            bypass_cache=bypass_cache,
         )
 
         if online_list := sorted(

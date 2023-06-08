@@ -37,13 +37,20 @@ class PlayerlistEventHandling(ipy.Extension):
                 custom_id=self.bot.uuid_cache[f"{event.realm_id}-{p}"],
                 realm_id=event.realm_id,
                 xuid=p,
-                online=True,
+                online=p in event.joined,
                 last_seen=event.timestamp,
             )
             for p in event.joined.union(event.left)
         ]
+
+        bypass_cache_for = set()
+        if event.realm_id in self.bot.fetch_devices_for:
+            bypass_cache_for.update(p.xuid for p in player_sessions if p.online)
+
         players = await pl_utils.fill_in_gamertags_for_sessions(
-            self.bot, player_sessions
+            self.bot,
+            player_sessions,
+            bypass_cache_for=bypass_cache_for,
         )
         gamertag_mapping = {p.xuid: p.base_display for p in players}
 
@@ -71,8 +78,14 @@ class PlayerlistEventHandling(ipy.Extension):
                 "premium_code"
             )
 
-            if not config.premium_code or not config.playerlist_chan:
+            if not config.premium_code:
+                await pl_utils.invalidate_premium(self.bot, config)
+                continue
+
+            if not config.playerlist_chan:
+                config.live_playerlist = False
                 self.bot.live_playerlist_store[event.realm_id].discard(guild_id)
+                await config.save()
                 continue
 
             guild = self.bot.get_guild(guild_id)
@@ -165,8 +178,16 @@ class PlayerlistEventHandling(ipy.Extension):
 
         async for config in event.configs:
             if not config.playerlist_chan:
+                if config.realm_id and config.live_playerlist:
+                    self.bot.live_playerlist_store[config.realm_id].discard(
+                        config.guild_id
+                    )
+
                 config.realm_id = None
                 config.club_id = None
+                config.live_playerlist = False
+                config.fetch_devices = False
+
                 await config.save()
 
                 no_playerlist_chan.append(True)
@@ -210,6 +231,8 @@ class PlayerlistEventHandling(ipy.Extension):
                 await chan.send(embeds=embed)
 
         if all(no_playerlist_chan) or not no_playerlist_chan:
+            self.bot.fetch_devices_for.discard(event.realm_id)
+
             # we don't want to stop the whole thing, but as of right now i would
             # like to know what happens with invalid stuff
             try:

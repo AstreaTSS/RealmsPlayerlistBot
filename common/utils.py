@@ -210,9 +210,8 @@ class RealmContextMixin:
 
         config = await GuildConfig.get_or_none(guild_id=self.guild.id).prefetch_related(
             "premium_code"
-        )
-        if not config:
-            config = await GuildConfig.create(guild_id=self.guild.id)
+        ) or await GuildConfig.create(guild_id=self.guild.id)
+
         self.guild_config = config
         return config
 
@@ -278,6 +277,7 @@ if typing.TYPE_CHECKING:
         uuid_cache: defaultdict[str, uuid.UUID]
         offline_realms: OrderedSet[int]
         dropped_offline_realms: set[int]
+        fetch_devices_for: set[str]
 
         def mention_cmd(self, name: str, scope: int = 0) -> str:
             ...

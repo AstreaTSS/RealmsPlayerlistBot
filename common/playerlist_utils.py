@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import logging
+import typing
 
 import aiohttp
 import attrs
@@ -14,6 +15,10 @@ import common.classes as cclasses
 import common.models as models
 import common.utils as utils
 import common.xbox_api as xbox_api
+
+MINECRAFT_TITLE_IDS = frozenset(
+    {"1828326430", "2047319603", "2044456598", "896928775", "1739947436", "1810924247"}
+)
 
 
 def _convert_fields(value: tuple[str, ...] | None) -> tuple[str, ...]:
@@ -51,15 +56,23 @@ class GamertagServiceDown(Exception):
         )
 
 
+class GamertagInfo(typing.NamedTuple):
+    gamertag: str
+    device: str | None = None
+
+
 @attrs.define()
 class GamertagHandler:
-    """A special class made to handle the complexities of getting gamertags
-    from XUIDs."""
+    """
+    A special class made to handle the complexities of getting gamertags
+    from XUIDs.
+    """
 
     bot: utils.RealmBotBase = attrs.field()
     sem: asyncio.Semaphore = attrs.field()
     xuids_to_get: tuple[str, ...] = attrs.field()
     openxbl_session: aiohttp.ClientSession = attrs.field()
+    gather_devices_for: set[str] = attrs.field(kw_only=True, factory=set)
 
     index: int = attrs.field(init=False, default=0)
     responses: list[xbox_api.ProfileResponse | xbox_api.PeopleHubResponse] = (
@@ -134,12 +147,18 @@ class GamertagHandler:
             self.index += 1
 
     def _handle_new_gamertag(
-        self, pipe: Pipeline, xuid: str, gamertag: str, dict_gamertags: dict[str, str]
+        self,
+        pipe: Pipeline,
+        xuid: str,
+        gamertag: str,
+        dict_gamertags: dict[str, GamertagInfo],
+        *,
+        device: str | None = None,
     ) -> None:
         if not xuid or not gamertag:
             return
 
-        dict_gamertags[xuid] = gamertag
+        dict_gamertags[xuid] = GamertagInfo(gamertag, device)
 
         pipe.setex(name=xuid, time=utils.EXPIRE_GAMERTAGS_AT, value=gamertag)
         pipe.setex(name=f"rpl-{gamertag}", time=utils.EXPIRE_GAMERTAGS_AT, value=xuid)
@@ -150,7 +169,7 @@ class GamertagHandler:
         finally:
             await pipe.reset()
 
-    async def run(self) -> dict[str, str]:
+    async def run(self) -> dict[str, GamertagInfo]:
         while self.index < len(self.xuids_to_get):
             current_xuid_list = list(
                 self.xuids_to_get[self.index : self.index + self.AMOUNT_TO_GET]
@@ -164,15 +183,35 @@ class GamertagHandler:
                     with contextlib.suppress(asyncio.TimeoutError):
                         await asyncio.wait_for(self.backup_get_gamertags(), timeout=15)
 
-        dict_gamertags: dict[str, str] = {}
+        dict_gamertags: dict[str, GamertagInfo] = {}
         pipe = self.bot.redis.pipeline()
 
         try:
             for response in self.responses:
                 if isinstance(response, xbox_api.PeopleHubResponse):
                     for user in response.people:
+                        device = None
+                        if (
+                            user.xuid in self.gather_devices_for
+                            and user.presence_details
+                        ) and (
+                            a_match := next(
+                                (
+                                    p
+                                    for p in user.presence_details
+                                    if p.title_id in MINECRAFT_TITLE_IDS
+                                ),
+                                None,
+                            )
+                        ):
+                            device = a_match.device
+
                         self._handle_new_gamertag(
-                            pipe, user.xuid, user.gamertag, dict_gamertags
+                            pipe,
+                            user.xuid,
+                            user.gamertag,
+                            dict_gamertags,
+                            device=device,
                         )
                 elif isinstance(response, xbox_api.ProfileResponse):
                     for user in response.profile_users:
@@ -206,6 +245,23 @@ async def can_run_playerlist(ctx: utils.RealmContext) -> bool:
     return bool(guild_config.realm_id)
 
 
+async def invalidate_premium(
+    bot: utils.RealmBotBase, config: models.GuildConfig
+) -> None:
+    config.premium_code = None
+    config.live_playerlist = False
+    config.fetch_devices = False
+
+    await config.save()
+
+    if config.realm_id:
+        bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
+        if not await models.GuildConfig.filter(
+            realm_id=config.realm_id, fetch_devices=True
+        ).exists():
+            bot.fetch_devices_for.discard(config.realm_id)
+
+
 async def eventually_invalidate(
     bot: utils.RealmBotBase,
     guild_config: models.GuildConfig,
@@ -217,12 +273,9 @@ async def eventually_invalidate(
     # the idea here is to invalidate autorunners that simply can't be run
     # there's a bit of generousity here, as the code gives a total of 3 tries
     # before actually doing it
-    num_times = await bot.redis.get(
-        f"invalid-playerlist{limit}-{guild_config.guild_id}"
+    num_times = (
+        await bot.redis.get(f"invalid-playerlist{limit}-{guild_config.guild_id}") or "0"
     )
-
-    if not num_times:
-        num_times = "0"
     int_num_times = int(num_times) + 1
 
     if int_num_times >= limit:
@@ -293,21 +346,36 @@ async def fetch_playerlist_channel(
 async def fill_in_gamertags_for_sessions(
     bot: utils.RealmBotBase,
     player_sessions: list[models.PlayerSession],
+    *,
+    bypass_cache: bool = False,
+    bypass_cache_for: set[str] | None = None,
 ) -> list[models.PlayerSession]:
     session_dict = {session.xuid: session for session in player_sessions}
     unresolved: list[str] = []
 
-    async with bot.redis.pipeline() as pipeline:
-        for session in player_sessions:
-            pipeline.get(session.xuid)
-        gamertag_list: list[str | None] = await pipeline.execute()
+    if bypass_cache_for is None:
+        bypass_cache_for = set()
 
-    for index, xuid in enumerate(session_dict.keys()):
-        gamertag = gamertag_list[index]
-        session_dict[xuid].gamertag = gamertag
+    if not bypass_cache:
+        async with bot.redis.pipeline() as pipeline:
+            for session in player_sessions:
+                if session.xuid not in bypass_cache_for:
+                    pipeline.get(session.xuid)
+                else:
+                    # yes, this is dumb. yes, it works
+                    pipeline.get("PURPOSELY_INVALID_KEY_AAAAAAAAAAAAAAAA")
 
-        if not gamertag:
-            unresolved.append(xuid)
+            gamertag_list: list[str | None] = await pipeline.execute()
+
+        for index, xuid in enumerate(session_dict.keys()):
+            gamertag = gamertag_list[index]
+            session_dict[xuid].gamertag = gamertag
+
+            if not gamertag:
+                unresolved.append(xuid)
+    else:
+        unresolved = list(session_dict.keys())
+        bypass_cache_for = set(unresolved)
 
     if unresolved:
         gamertag_handler = GamertagHandler(
@@ -315,10 +383,12 @@ async def fill_in_gamertags_for_sessions(
             bot.pl_sem,
             tuple(unresolved),
             bot.openxbl_session,
+            gather_devices_for=bypass_cache_for,
         )
         gamertag_dict = await gamertag_handler.run()
 
-        for xuid, gamertag in gamertag_dict.items():
-            session_dict[xuid].gamertag = gamertag
+        for xuid, gamertag_info in gamertag_dict.items():
+            session_dict[xuid].gamertag = gamertag_info.gamertag
+            session_dict[xuid].device = gamertag_info.device
 
     return list(session_dict.values())

@@ -254,6 +254,7 @@ bot.uuid_cache = defaultdict(uuid.uuid4)
 bot.mini_commands_per_scope = {}
 bot.offline_realms = OrderedSet()  # type: ignore
 bot.dropped_offline_realms = set()
+bot.fetch_devices_for = set()
 bot.background_tasks = set()
 
 
@@ -287,6 +288,11 @@ async def start() -> None:
         live_playerlist=True,
     ).prefetch_related("premium_code"):
         bot.live_playerlist_store[config.realm_id].add(config.guild_id)  # type: ignore
+
+    async for config in models.GuildConfig.filter(
+        premium_code__id__not_isnull=True, realm_id__not_isnull=True, fetch_devices=True
+    ):
+        bot.fetch_devices_for.add(config.realm_id)
 
     bot.realm_name_cache = TimedDict(expires=300)
     bot.fully_ready = asyncio.Event()

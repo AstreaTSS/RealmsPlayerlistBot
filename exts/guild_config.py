@@ -13,6 +13,7 @@ import tansy
 import common.classes as cclasses
 import common.clubs_playerlist as clubs_playerlist
 import common.models as models
+import common.playerlist_utils as pl_utils
 import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
 
@@ -84,12 +85,16 @@ class GuildConfig(utils.Extension):
             f"<@&{config.realm_offline_role}>" if config.realm_offline_role else "N/A"
         )
 
+        if not config.premium_code and (config.live_playerlist or config.fetch_devices):
+            await pl_utils.invalidate_premium(self.bot, config)
+
         embed.description = (
             f"Realm Name: {realm_name}\nAutorunner: {autorunner}\nAutorun Playerlist"
             f" Channel: {playerlist_channel}\nOffline Realm Ping Role:"
             f" {offline_realm_ping}\n\nPremium Activated:"
             f" {utils.yesno_friendly_str(bool(config.premium_code))}\nLive Playerlist:"
-            f" {utils.toggle_friendly_str(config.live_playerlist)}"
+            f" {utils.toggle_friendly_str(config.live_playerlist)}\nFetch Devices:"
+            f" {utils.toggle_friendly_str(config.fetch_devices)}"
         )
 
         embeds: list[ipy.Embed] = []
@@ -219,10 +224,20 @@ class GuildConfig(utils.Extension):
             config.playerlist_chan = None
             config.realm_offline_role = None
             config.live_playerlist = False
+            config.fetch_devices = False
 
             await config.save()
 
             await ctx.send("Unlinked Realm.")
+
+            self.bot.live_playerlist_store[realm_id].discard(config.guild_id)
+            await self.bot.redis.delete(f"invalid-playerlist3-{config.guild_id}")
+            await self.bot.redis.delete(f"invalid-playerlist7-{config.guild_id}")
+
+            if not await models.GuildConfig.filter(
+                realm_id=realm_id, fetch_devices=True
+            ).exists():
+                self.bot.fetch_devices_for.discard(realm_id)
 
             if not await models.GuildConfig.filter(realm_id=realm_id).exists():
                 try:
@@ -239,6 +254,7 @@ class GuildConfig(utils.Extension):
                 self.bot.offline_realms.discard(int(realm_id))
                 self.bot.dropped_offline_realms.discard(int(realm_id))
                 await self.bot.redis.delete(f"missing-realm-{realm_id}")
+                await self.bot.redis.delete(f"invalid-realmoffline-{realm_id}")
 
     @config.subcommand(
         sub_cmd_name="playerlist-channel",

@@ -99,8 +99,9 @@ class OwnerCMDs(utils.Extension):
             f" {realm_name}\nAutorunner: {autorunner}\nOffline Realm Ping Role ID:"
             f" {offline_realm_ping}\n\nPremium Activated:"
             f" {utils.yesno_friendly_str(bool(config.premium_code))}\nLive Playerlist:"
-            f" {utils.toggle_friendly_str(config.live_playerlist)}\n\nExtra"
-            f" Info:\nRealm ID: {utils.na_friendly_str(config.realm_id)}\nClub ID:"
+            f" {utils.toggle_friendly_str(config.live_playerlist)}\nFetch Devices:"
+            f" {utils.toggle_friendly_str(config.fetch_devices)}\n\nExtra Info:\nRealm"
+            f" ID: {utils.na_friendly_str(config.realm_id)}\nClub ID:"
             f" {utils.na_friendly_str(config.club_id)}"
         )
 

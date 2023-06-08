@@ -150,6 +150,99 @@ class PremiumHandling(ipy.Extension):
             f"Turned {utils.toggle_friendly_str(toggle)} the live playerlist!"
         )
 
+    @staticmethod
+    def button_check(author_id: int) -> typing.Callable[..., bool]:
+        def _check(event: ipy.events.Component) -> bool:
+            return event.ctx.author.id == author_id
+
+        return _check
+
+    @premium.subcommand(
+        sub_cmd_name="fetch-devices",
+        sub_cmd_description=(
+            "If enabled, fetches and displays devices of online players. Will make bot"
+            " slower. Premium only."
+        ),
+    )
+    async def toggle_fetch_devices(
+        self,
+        ctx: utils.RealmContext,
+        toggle: bool = tansy.Option("Should it be on (true) or off (false)?"),
+    ) -> None:
+        config = await ctx.fetch_config()
+
+        if not config.premium_code:
+            raise utils.CustomCheckFailure(
+                "This server does not have premium activated! Check out"
+                f" {self.premium_info.mention()} for more information about it."
+            )
+        if not config.realm_id:
+            raise utils.CustomCheckFailure(
+                "You need to link your Realm before running this."
+            )
+        if config.fetch_devices == toggle:
+            raise ipy.errors.BadArgument("That's already the current setting.")
+
+        if toggle:
+            embed = ipy.Embed(
+                title="Warning",
+                description=(
+                    "This will fetch display the device the user is playing on if they"
+                    " are on the Realm whenever the bot shows them.\n**However, this"
+                    " will make the bot slower with certain commands**, like `/online`"
+                    " and `/playerlist`, and also slow down the live playerlist"
+                    " slightly (if enabled), as fetching the device requires a bit more"
+                    " information that what is usually stored.\n\n**If you wish to"
+                    " continue with enabling the fetching and displaying of devices,"
+                    " press the accept button.** You have 30 seconds to do so."
+                ),
+                timestamp=ipy.Timestamp.utcnow(),
+                color=ipy.RoleColors.YELLOW,
+            )
+
+            result = ""
+            event = None
+
+            components = [
+                ipy.Button(style=ipy.ButtonStyle.GREEN, label="Accept", emoji="✅"),
+                ipy.Button(style=ipy.ButtonStyle.RED, label="Decline", emoji="✖️"),
+            ]
+            msg = await ctx.send(embed=embed, components=components)
+
+            try:
+                event = await self.bot.wait_for_component(
+                    msg, components, self.button_check(ctx.author.id), timeout=30
+                )
+
+                if event.ctx.custom_id == components[1].custom_id:
+                    result = "Declined fetching and displaying devices."
+                else:
+                    config.fetch_devices = True
+                    await config.save()
+                    self.bot.fetch_devices_for.add(config.realm_id)
+
+                    result = "Turned on fetching and displaying devices."
+            except asyncio.TimeoutError:
+                result = "Timed out."
+            finally:
+                if event:
+                    await event.ctx.send(
+                        result,
+                        ephemeral=True,
+                        allowed_mentions=ipy.AllowedMentions.none(),
+                    )
+                await ctx.edit(msg, content=result, embeds=[], embed=[], components=[])  # type: ignore
+        else:
+            config.fetch_devices = False
+            await config.save()
+
+            await ctx.send("Turned off fetching and displaying devices.")
+
+            if not await models.GuildConfig.filter(
+                realm_id=config.realm_id, fetch_devices=True
+            ).exists():
+                self.bot.fetch_devices_for.discard(config.realm_id)
+
     @premium.subcommand(
         sub_cmd_name="info",
         sub_cmd_description=(
