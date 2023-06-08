@@ -192,9 +192,11 @@ class PremiumHandling(ipy.Extension):
                     " will make the bot slower with certain commands**, like `/online`"
                     " and `/playerlist`, and also slow down the live playerlist"
                     " slightly (if enabled), as fetching the device requires a bit more"
-                    " information that what is usually stored.\n\n**If you wish to"
-                    " continue with enabling the fetching and displaying of devices,"
-                    " press the accept button.** You have a minute to do so."
+                    " information that what is usually stored.\n*This will also not"
+                    " work with every single player* - privacy settings may make the"
+                    " bot unable to fetch the device.\n\n**If you wish to continue with"
+                    " enabling the fetching and displaying of devices, press the accept"
+                    " button.** You have a minute to do so."
                 ),
                 timestamp=ipy.Timestamp.utcnow(),
                 color=ipy.RoleColors.YELLOW,
