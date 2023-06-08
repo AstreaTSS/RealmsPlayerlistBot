@@ -196,7 +196,7 @@ class PremiumHandling(ipy.Extension):
                     " work with every single player* - privacy settings may make the"
                     " bot unable to fetch the device.\n\n**If you wish to continue with"
                     " enabling the fetching and displaying of devices, press the accept"
-                    " button.** You have a minute to do so."
+                    " button.** You have 90 seconds to do so."
                 ),
                 timestamp=ipy.Timestamp.utcnow(),
                 color=ipy.RoleColors.YELLOW,
@@ -213,7 +213,7 @@ class PremiumHandling(ipy.Extension):
 
             try:
                 event = await self.bot.wait_for_component(
-                    msg, components, self.button_check(ctx.author.id), timeout=60
+                    msg, components, self.button_check(ctx.author.id), timeout=90
                 )
 
                 if event.ctx.custom_id == components[1].custom_id:
