@@ -223,7 +223,7 @@ class GamertagHandler:
                                 (
                                     p
                                     for p in user.presence_details
-                                    if "minecraft" in p.presence_text.lower()
+                                    if "minecraft for" in p.presence_text.lower()
                                     and p.is_primary
                                 ),
                                 None,
