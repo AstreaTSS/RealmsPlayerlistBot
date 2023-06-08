@@ -233,7 +233,8 @@ class GamertagHandler:
                                     self.bot,
                                     (
                                         f"Possible device: {device} with title ID"
-                                        f" {maybe_match.title_id}"
+                                        f" {maybe_match.title_id} and presence text"
+                                        f" {maybe_match.presence_text}"
                                     ),
                                 )
 
