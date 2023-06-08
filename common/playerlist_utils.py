@@ -17,7 +17,15 @@ import common.utils as utils
 import common.xbox_api as xbox_api
 
 MINECRAFT_TITLE_IDS = frozenset(
-    {"1828326430", "2047319603", "2044456598", "896928775", "1739947436", "1810924247"}
+    {
+        "1828326430",
+        "2047319603",
+        "2044456598",
+        "896928775",
+        "1739947436",
+        "1810924247",
+        "1944307183",
+    }
 )
 
 
@@ -200,11 +208,18 @@ class GamertagHandler:
                                     p
                                     for p in user.presence_details
                                     if p.title_id in MINECRAFT_TITLE_IDS
+                                    and p.is_primary
                                 ),
                                 None,
                             )
                         ):
                             device = a_match.device
+
+                            # kindle fire is way too niche for me to find it without resorting to this
+                            if a_match.title_id == "1944307183":
+                                await utils.msg_to_owner(
+                                    self.bot, f"Kindle Fire Device: {device}"
+                                )
 
                         self._handle_new_gamertag(
                             pipe,
