@@ -214,11 +214,6 @@ class GamertagHandler:
                             ):
                                 device = a_match.device
 
-                                # kindle fire is way too niche for me to find it without resorting to this
-                                if a_match.title_id == "1944307183":
-                                    await utils.msg_to_owner(
-                                        self.bot, f"Kindle Fire Device: {device}"
-                                    )
                             elif maybe_match := next(
                                 (
                                     p
