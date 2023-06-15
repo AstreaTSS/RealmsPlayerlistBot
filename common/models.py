@@ -19,6 +19,7 @@ class GuildConfig(Model):
     realm_offline_role: typing.Optional[int] = fields.BigIntField(null=True)
     warning_notifications: bool = fields.BooleanField(default=True)  # type: ignore
     fetch_devices: bool = fields.BooleanField(default=False)  # type: ignore
+    live_online_channel: typing.Optional[str] = fields.CharField(75, null=True)  # type: ignore
     premium_code: fields.ForeignKeyNullableRelation[
         "PremiumCode"
     ] = fields.ForeignKeyField(
@@ -54,6 +55,7 @@ class PlayerSession(Model):
 
     gamertag: typing.Optional[str] = None
     device: typing.Optional[str] = None
+    show_left: bool = True
 
     @property
     def device_emoji(self) -> str | None:
@@ -108,7 +110,7 @@ class PlayerSession(Model):
         if self.joined_at:
             notes.append(f"joined <t:{int(self.joined_at.timestamp())}:f>")
 
-        if not self.online:
+        if not self.online and self.show_left:
             notes.append(f"left <t:{int(self.last_seen.timestamp())}:f>")
 
         return (

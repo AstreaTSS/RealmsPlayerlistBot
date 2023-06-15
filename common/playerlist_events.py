@@ -49,5 +49,15 @@ class LivePlayerlistSend(PlayerlistEvent):
 
 
 @define()
+class LiveOnlineUpdate(LivePlayerlistSend):
+    gamertag_mapping: dict[str, str] = attrs.field(repr=False)
+    config: models.GuildConfig = attrs.field(repr=False)
+
+    @property
+    def live_online_channel(self) -> str:
+        return self.config.live_online_channel  # type: ignore
+
+
+@define()
 class WarnMissingPlayerlist(PlayerlistEvent):
     pass

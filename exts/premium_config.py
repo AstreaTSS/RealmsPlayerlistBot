@@ -7,9 +7,28 @@ import typing
 import interactions as ipy
 import tansy
 from Crypto.Cipher import AES
+from interactions.models.internal.application_commands import auto_defer
 
 import common.models as models
+import common.playerlist_utils as pl_utils
 import common.utils as utils
+
+CommandT = typing.TypeVar("CommandT", ipy.BaseCommand, ipy.const.AsyncCallable)
+
+
+def premium_check() -> typing.Callable[[CommandT], CommandT]:
+    async def check(ctx: utils.RealmContext) -> bool:
+        config = await ctx.fetch_config()
+
+        if not config.premium_code:
+            raise utils.CustomCheckFailure(
+                "This server does not have premium activated! Check out"
+                f" {ctx.bot.mention_cmd('premium info')} for more information about it."
+            )
+
+        return True
+
+    return ipy.check(check)
 
 
 class PremiumHandling(ipy.Extension):
@@ -120,18 +139,13 @@ class PremiumHandling(ipy.Extension):
             " premium activated."
         ),
     )
+    @premium_check()
     async def toggle_live_playerlist(
         self,
         ctx: utils.RealmContext,
         toggle: bool = tansy.Option("Should it be on (true) or off (false)?"),
     ) -> None:
         config = await ctx.fetch_config()
-
-        if not config.premium_code:
-            raise utils.CustomCheckFailure(
-                "This server does not have premium activated! Check out"
-                f" {self.premium_info.mention()} for more information about it."
-            )
 
         if not (config.realm_id and config.playerlist_chan):
             raise utils.CustomCheckFailure(
@@ -150,6 +164,67 @@ class PremiumHandling(ipy.Extension):
             f"Turned {utils.toggle_friendly_str(toggle)} the live playerlist!"
         )
 
+    @premium.subcommand(
+        sub_cmd_name="send-live-online-list",
+        sub_cmd_description=(
+            "Sends out a message that updates with players currently online to the"
+            " current channel. Premium only."
+        ),
+    )
+    @auto_defer(ephemeral=True)
+    @premium_check()
+    async def send_live_online_list(self, ctx: utils.RealmContext) -> None:
+        config = await ctx.fetch_config()
+
+        if not (config.realm_id and config.playerlist_chan):
+            raise utils.CustomCheckFailure(
+                "You need to link your Realm and set a playerlist channel before"
+                " running this."
+            )
+        if not config.live_playerlist:
+            raise utils.CustomCheckFailure(
+                "You need to turn on the live playerlist to use this as of right now."
+            )
+
+        if (
+            ipy.Permissions.VIEW_CHANNEL
+            | ipy.Permissions.SEND_MESSAGES
+            | ipy.Permissions.READ_MESSAGE_HISTORY
+            not in ctx.app_permissions
+        ):
+            raise utils.CustomCheckFailure(
+                "I need the `View Channel`, `Send Messages`, and `Read Message History`"
+                " permissions in this channel to send out and be able to edit the live"
+                " online list.\n*As for how this message has been sent, slash commands"
+                " are weird. I still need those permissions regardless.*"
+            )
+
+        player_sessions = await models.PlayerSession.filter(
+            realm_id=config.realm_id, online=True
+        )
+        playerlist = await pl_utils.fill_in_gamertags_for_sessions(
+            self.bot,
+            player_sessions,
+            bypass_cache=config.fetch_devices,
+        )
+
+        online_list = sorted(
+            (p.display for p in playerlist if p.online), key=lambda g: g.lower()
+        )
+        embed = ipy.Embed(
+            title=f"{len(online_list)}/10 people online",
+            description="\n".join(online_list) or "*No players online.*",
+            color=self.bot.color,
+            timestamp=ipy.Timestamp.utcnow(),
+        )
+        embed.set_footer("As of")
+        msg = await ctx.channel.send(embed=embed)
+
+        config.live_online_channel = f"{msg._channel_id}|{msg.id}"
+        await config.save()
+
+        await ctx.send("Done!", ephemeral=True)
+
     @staticmethod
     def button_check(author_id: int) -> typing.Callable[..., bool]:
         def _check(event: ipy.events.Component) -> bool:
@@ -164,6 +239,7 @@ class PremiumHandling(ipy.Extension):
             " slower. Premium only."
         ),
     )
+    @premium_check()
     async def toggle_fetch_devices(
         self,
         ctx: utils.RealmContext,
@@ -171,11 +247,6 @@ class PremiumHandling(ipy.Extension):
     ) -> None:
         config = await ctx.fetch_config()
 
-        if not config.premium_code:
-            raise utils.CustomCheckFailure(
-                "This server does not have premium activated! Check out"
-                f" {self.premium_info.mention()} for more information about it."
-            )
         if not config.realm_id:
             raise utils.CustomCheckFailure(
                 "You need to link your Realm before running this."
@@ -257,4 +328,5 @@ class PremiumHandling(ipy.Extension):
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
+    importlib.reload(pl_utils)
     PremiumHandling(bot)

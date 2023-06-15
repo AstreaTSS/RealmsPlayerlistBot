@@ -17,6 +17,7 @@ from interactions.ext import prefixed_commands as prefixed
 from common.models import GuildConfig
 
 TEST_MODE: bool = os.environ.get("TEST_MODE", False)  # type: ignore
+SENTRY_ENABLED = bool(os.environ.get("SENTRY_DSN", False))  # type: ignore
 
 DEV_GUILD_ID = int(os.environ.get("DEV_GUILD_ID", "0"))
 XBOX_API_RELYING_PARTY = "http://xboxlive.com"
@@ -38,7 +39,7 @@ async def error_handle(
     error: Exception, *, ctx: typing.Optional[ipy.BaseContext] = None
 ) -> None:
     if not isinstance(error, aiohttp.ServerDisconnectedError):
-        if TEST_MODE:
+        if TEST_MODE or not SENTRY_ENABLED:
             traceback.print_exception(error)
         else:
             with sentry_sdk.configure_scope() as scope:

@@ -278,6 +278,7 @@ async def invalidate_premium(
     config.premium_code = None
     config.live_playerlist = False
     config.fetch_devices = False
+    config.live_online_channel = None
 
     await config.save()
 
@@ -342,6 +343,21 @@ async def eventually_invalidate_realm_offline(
         guild_config.realm_offline_role = None
         await guild_config.save()
         await bot.redis.delete(f"invalid-realmoffline-{guild_config.guild_id}")
+
+
+async def eventually_invalidate_live_online(
+    bot: utils.RealmBotBase,
+    guild_config: models.GuildConfig,
+) -> None:
+    if utils.TEST_MODE:
+        return
+
+    num_times = await bot.redis.incr(f"invalid-liveonline-{guild_config.guild_id}")
+
+    if num_times >= 3:
+        guild_config.live_online_channel = None
+        await guild_config.save()
+        await bot.redis.delete(f"invalid-liveonline-{guild_config.guild_id}")
 
 
 async def fetch_playerlist_channel(

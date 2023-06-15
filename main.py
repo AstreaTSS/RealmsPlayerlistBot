@@ -75,7 +75,7 @@ def default_sentry_filter(
 
 
 # im so sorry
-if not utils.TEST_MODE:
+if not utils.TEST_MODE and utils.SENTRY_ENABLED:
     ipy.Task.on_error_sentry_hook = HookedTask.on_error_sentry_hook
     sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], before_send=default_sentry_filter)
 
@@ -266,9 +266,16 @@ async def start() -> None:
 
     # mark players as offline if they were online more than 5 minutes ago
     five_minutes_ago = ipy.Timestamp.utcnow() - datetime.timedelta(minutes=5)
-    await models.PlayerSession.filter(
+    num_updated = await models.PlayerSession.filter(
         online=True, last_seen__lt=five_minutes_ago
     ).update(online=False)
+
+    if num_updated > 0:
+        async for config in models.GuildConfig.filter(
+            live_online_channel__not_isnull=True
+        ):
+            await bot.redis.hset(config.live_online_channel, "xuids", "")
+            await bot.redis.hset(config.live_online_channel, "gamertags", "")
 
     # add all online players to the online cache
     async for player in models.PlayerSession.filter(online=True):

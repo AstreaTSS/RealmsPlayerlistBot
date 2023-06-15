@@ -2,6 +2,7 @@ import contextlib
 import importlib
 import logging
 import os
+import typing
 
 import interactions as ipy
 
@@ -37,11 +38,22 @@ class PlayerlistEventHandling(ipy.Extension):
                 custom_id=self.bot.uuid_cache[f"{event.realm_id}-{p}"],
                 realm_id=event.realm_id,
                 xuid=p,
-                online=p in event.joined,
-                last_seen=event.timestamp,
+                online=True,
+                joined_at=event.timestamp,
             )
-            for p in event.joined.union(event.left)
+            for p in event.joined
         ]
+        player_sessions.extend(
+            models.PlayerSession(
+                custom_id=self.bot.uuid_cache[f"{event.realm_id}-{p}"],
+                realm_id=event.realm_id,
+                xuid=p,
+                online=False,
+                last_seen=event.timestamp,
+                show_left=False,
+            )
+            for p in event.left
+        )
 
         bypass_cache_for = set()
         if event.realm_id in self.bot.fetch_devices_for:
@@ -53,6 +65,7 @@ class PlayerlistEventHandling(ipy.Extension):
             bypass_cache_for=bypass_cache_for,
         )
         gamertag_mapping = {p.xuid: p.base_display for p in players}
+        full_gamertag_mapping = {p.xuid: p.display for p in players}
 
         embed = ipy.Embed(
             color=ipy.RoleColors.DARK_GREY,
@@ -82,6 +95,10 @@ class PlayerlistEventHandling(ipy.Extension):
                 await pl_utils.invalidate_premium(self.bot, config)
                 continue
 
+            if not config.live_playerlist:
+                self.bot.live_playerlist_store[event.realm_id].discard(guild_id)
+                continue
+
             if not config.playerlist_chan:
                 config.live_playerlist = False
                 self.bot.live_playerlist_store[event.realm_id].discard(guild_id)
@@ -93,6 +110,18 @@ class PlayerlistEventHandling(ipy.Extension):
                 # could just be it's offline or something
                 continue
 
+            if config.live_online_channel:
+                self.bot.dispatch(
+                    pl_events.LiveOnlineUpdate(
+                        event.realm_id,
+                        event.joined,
+                        event.left,
+                        event.timestamp,
+                        full_gamertag_mapping,
+                        config,
+                    )
+                )
+
             try:
                 chan = await pl_utils.fetch_playerlist_channel(self.bot, guild, config)
                 await chan.send(embeds=embed)
@@ -101,6 +130,60 @@ class PlayerlistEventHandling(ipy.Extension):
             except ipy.errors.HTTPException:
                 await pl_utils.eventually_invalidate(self.bot, config)
                 continue
+
+    @ipy.listen("live_online_update", is_default_listener=True)
+    async def on_live_online_update(self, event: pl_events.LiveOnlineUpdate) -> None:
+        xuid_str: str | None = await self.bot.redis.hget(
+            event.live_online_channel, "xuids"
+        )
+        gamertag_str: str | None = await self.bot.redis.hget(
+            event.live_online_channel, "gamertags"
+        )
+
+        if typing.TYPE_CHECKING:
+            # a lie, but a harmless one and one needed to make typehints properly work
+            assert isinstance(xuid_str, str)
+            assert isinstance(gamertag_str, str)
+
+        xuids_init: list[str] = xuid_str.split(",") if xuid_str else []
+        gamertags: list[str] = gamertag_str.splitlines() if gamertag_str else []
+
+        event.gamertag_mapping.update(dict(zip(xuids_init, gamertags, strict=True)))
+        reverse_gamertag_map = {v: k for k, v in event.gamertag_mapping.items()}
+
+        xuids: set[str] = set(xuids_init)
+        xuids = xuids.union(event.joined).difference(event.left)
+
+        gamertag_list = sorted(
+            (event.gamertag_mapping[xuid] for xuid in xuids), key=lambda g: g.lower()
+        )
+        xuid_list = [reverse_gamertag_map[g] for g in gamertag_list]
+
+        new_gamertag_str = "\n".join(gamertag_list)
+
+        await self.bot.redis.hset(
+            event.live_online_channel, "xuids", ",".join(xuid_list)
+        )
+        await self.bot.redis.hset(
+            event.live_online_channel, "gamertags", new_gamertag_str
+        )
+
+        embed = ipy.Embed(
+            title=f"{len(xuids)}/10 people online",
+            description=new_gamertag_str or "*No players online.*",
+            color=self.bot.color,
+            timestamp=event.timestamp,  # type: ignore
+        )
+        embed.set_footer("As of")
+
+        chan_id, msg_id = event.live_online_channel.split("|")
+
+        fake_msg = ipy.Message(client=self.bot, id=int(msg_id), channel_id=int(chan_id))  # type: ignore
+
+        try:
+            await fake_msg.edit(embed=embed)
+        except ipy.errors.HTTPException:
+            await pl_utils.eventually_invalidate_live_online(self.bot, event.config)
 
     @ipy.listen("realm_down", is_default_listener=True)
     async def realm_down(self, event: pl_events.RealmDown) -> None:
