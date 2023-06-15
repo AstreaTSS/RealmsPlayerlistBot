@@ -78,12 +78,22 @@ class PlayerlistEventHandling(ipy.Extension):
         if event.joined:
             embed.add_field(
                 name=f"{os.environ['GREEN_CIRCLE_EMOJI']} Joined",
-                value="\n".join(gamertag_mapping[p] for p in event.joined),
+                value="\n".join(
+                    sorted(
+                        (gamertag_mapping[p] for p in event.joined),
+                        key=lambda x: x.lower(),
+                    )
+                ),
             )
         if event.left:
             embed.add_field(
                 name=f"{os.environ['GRAY_CIRCLE_EMOJI']} Left",
-                value="\n".join(gamertag_mapping[p] for p in event.left),
+                value="\n".join(
+                    sorted(
+                        (gamertag_mapping[p] for p in event.left),
+                        key=lambda x: x.lower(),
+                    )
+                ),
             )
 
         for guild_id in self.bot.live_playerlist_store[event.realm_id].copy():
