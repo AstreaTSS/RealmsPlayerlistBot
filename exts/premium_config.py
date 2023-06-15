@@ -209,11 +209,14 @@ class PremiumHandling(ipy.Extension):
         )
 
         online_list = sorted(
-            (p.display for p in playerlist if p.online), key=lambda g: g.lower()
+            (p for p in playerlist if p.online), key=lambda g: g.display.lower()
         )
+        online_str = "\n".join(p.display for p in online_list)
+        xuids = ",".join(p.xuid for p in online_list)
+
         embed = ipy.Embed(
             title=f"{len(online_list)}/10 people online",
-            description="\n".join(online_list) or "*No players online.*",
+            description=online_str or "*No players online.*",
             color=self.bot.color,
             timestamp=ipy.Timestamp.utcnow(),
         )
@@ -222,6 +225,9 @@ class PremiumHandling(ipy.Extension):
 
         config.live_online_channel = f"{msg._channel_id}|{msg.id}"
         await config.save()
+
+        await self.bot.redis.hset(config.live_online_channel, "xuids", xuids)
+        await self.bot.redis.hset(config.live_online_channel, "gamertags", online_str)
 
         await ctx.send("Done!", ephemeral=True)
 
