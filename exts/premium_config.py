@@ -167,7 +167,7 @@ class PremiumHandling(ipy.Extension):
     @premium.subcommand(
         sub_cmd_name="send-live-online-list",
         sub_cmd_description=(
-            "Sends out a message that updates with players currently online to the"
+            "Sends out a message that updates with currently online players to the"
             " current channel. Premium only."
         ),
     )
@@ -220,7 +220,7 @@ class PremiumHandling(ipy.Extension):
             color=self.bot.color,
             timestamp=ipy.Timestamp.utcnow(),
         )
-        embed.set_footer("As of")
+        embed.set_footer("WIP Feature")
         msg = await ctx.channel.send(embed=embed)
 
         config.live_online_channel = f"{msg._channel_id}|{msg.id}"
@@ -229,7 +229,10 @@ class PremiumHandling(ipy.Extension):
         await self.bot.redis.hset(config.live_online_channel, "xuids", xuids)
         await self.bot.redis.hset(config.live_online_channel, "gamertags", online_str)
 
-        await ctx.send("Done!", ephemeral=True)
+        await ctx.send(
+            "Done!\n*A reminder that this feature is WIP, and may have bugs.*",
+            ephemeral=True,
+        )
 
     @staticmethod
     def button_check(author_id: int) -> typing.Callable[..., bool]:

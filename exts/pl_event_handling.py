@@ -184,7 +184,7 @@ class PlayerlistEventHandling(ipy.Extension):
             color=self.bot.color,
             timestamp=event.timestamp,  # type: ignore
         )
-        embed.set_footer("As of")
+        embed.set_footer("WIP Feature")
 
         chan_id, msg_id = event.live_online_channel.split("|")
 
