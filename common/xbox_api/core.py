@@ -14,7 +14,8 @@ class XboxAPI(BaseMicrosoftAPI):
     relying_party: str = attrs.field(default=utils.XBOX_API_RELYING_PARTY)
 
     async def request(self, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
-        return await super().request(*args, **kwargs, raise_status=False)
+        new_kwargs = {"raise_status": False} | kwargs
+        return await super().request(*args, **new_kwargs)
 
     async def fetch_profiles(self, xuid_list: list[str] | list[int]) -> dict:
         URL = "https://profile.xboxlive.com/users/batch/profile/settings"
@@ -39,7 +40,9 @@ class XboxAPI(BaseMicrosoftAPI):
 
         return await self.get(url, params=PARAMS, headers=HEADERS)  # type: ignore
 
-    async def fetch_club_presences(self, club_id: int | str) -> dict:
+    async def fetch_club_presence(
+        self, club_id: int | str, *, raise_status: bool = False
+    ) -> dict:
         HEADERS = {"x-xbl-contract-version": "4", "Accept-Language": "en-US"}
         url = (
             f"https://clubhub.xboxlive.com/clubs/Ids({club_id})/decoration/clubpresence"

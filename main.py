@@ -16,6 +16,7 @@ import discord_typings
 import humanize
 import interactions as ipy
 import sentry_sdk
+from cachetools import TTLCache
 from interactions.ext import prefixed_commands as prefixed
 from interactions.ext.sentry import HookedTask
 from ordered_set import OrderedSet
@@ -25,7 +26,7 @@ import common.help_tools as help_tools
 import common.models as models
 import common.utils as utils
 import db_settings
-from common.classes import SemaphoreRedis, TimedDict
+from common.classes import SemaphoreRedis
 from common.realms_api import RealmsAPI
 from common.xbox_api import XboxAPI, parse_profile_response
 
@@ -303,7 +304,7 @@ async def start() -> None:
     ):
         bot.fetch_devices_for.add(config.realm_id)
 
-    bot.realm_name_cache = TimedDict(expires=300)
+    bot.realm_name_cache = TTLCache(maxsize=5000, ttl=600)
     bot.fully_ready = asyncio.Event()
     bot.pl_sem = asyncio.Semaphore(12)
 

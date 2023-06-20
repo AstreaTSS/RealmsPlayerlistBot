@@ -16,6 +16,7 @@ import common.models as models
 import common.playerlist_utils as pl_utils
 import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
+from common.xbox_api import parse_club_response
 
 # regex that takes in:
 # - https://realms.gg/XXXXXXX
@@ -41,8 +42,8 @@ class GuildConfig(utils.Extension):
 
     async def _gather_realm_names(self) -> None:
         response = await self.bot.realms.fetch_realms()
-        name_dict = {str(realm.id): realm.name for realm in response.servers}
-        self.bot.realm_name_cache.insert(name_dict)  # type: ignore
+        names = tuple((str(realm.id), realm.name) for realm in response.servers)
+        self.bot.realm_name_cache.update(names)
 
     config = tansy.TansySlashCommand(
         name="config",
@@ -65,12 +66,27 @@ class GuildConfig(utils.Extension):
             f"<#{config.playerlist_chan}>" if config.playerlist_chan else "N/A"
         )
 
-        if not self.bot.realm_name_cache.filled:
-            await self._gather_realm_names()
+        self.bot.realm_name_cache.expire()
 
-        realm_name = utils.na_friendly_str(
-            self.bot.realm_name_cache.get(config.realm_id)
-        )
+        maybe_realm_name: str | None = self.bot.realm_name_cache.get(config.realm_id)
+        if not maybe_realm_name and config.club_id:
+            resp_json, _ = await clubs_playerlist.realm_club_json(
+                self.bot, config.club_id
+            )
+
+            if resp_json:
+                club = parse_club_response(resp_json)
+                maybe_realm_name = club.clubs[0].profile.name.value  # type: ignore
+
+                if maybe_realm_name:
+                    self.bot.realm_name_cache[config.realm_id] = maybe_realm_name
+
+        if not maybe_realm_name:
+            await self._gather_realm_names()
+            maybe_realm_name = self.bot.realm_name_cache.get(config.realm_id)
+
+        realm_name = utils.na_friendly_str(maybe_realm_name)
+
         realm_not_found = False
         if realm_name != "N/A":
             realm_name = f"`{realm_name}`"
@@ -158,7 +174,7 @@ class GuildConfig(utils.Extension):
                 realm = await ctx.bot.realms.join_realm_from_code(realm_code)
 
                 config.realm_id = str(realm.id)
-                self.bot.realm_name_cache.add_one(config.realm_id, realm.name)
+                self.bot.realm_name_cache[config.realm_id] = realm.name
 
                 embeds: collections.deque[ipy.Embed] = collections.deque()
 

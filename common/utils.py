@@ -246,9 +246,9 @@ class RealmAutocompleteContext(RealmContextMixin, ipy.AutocompleteContext):
 
 
 if typing.TYPE_CHECKING:
+    from cachetools import TTLCache
     from ordered_set import OrderedSet
 
-    from .classes import TimedDict
     from .help_tools import MiniCommand, PermissionsResolver
     from .realms_api import RealmsAPI
     from .xbox_api import XboxAPI
@@ -271,7 +271,7 @@ if typing.TYPE_CHECKING:
         background_tasks: set[asyncio.Task]
 
         online_cache: defaultdict[int, set[str]]
-        realm_name_cache: TimedDict[typing.Optional[str], str]
+        realm_name_cache: TTLCache[typing.Optional[str], str]
         slash_perms_cache: defaultdict[int, dict[int, PermissionsResolver]]
         mini_commands_per_scope: dict[int, dict[str, MiniCommand]]
         live_playerlist_store: defaultdict[str, set[int]]

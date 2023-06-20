@@ -1,7 +1,6 @@
 import asyncio
 import datetime
 import typing
-from enum import IntEnum
 
 import aiohttp
 import orjson
@@ -9,30 +8,10 @@ import orjson
 import common.models as models
 import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
+from common.xbox_api import ClubUserPresence, parse_club_response
 
-
-def _camel_to_const_snake(s: str) -> str:
-    return "".join([f"_{c}" if c.isupper() else c.upper() for c in s]).lstrip("_")
-
-
-class ClubUserPresence(IntEnum):
-    UNKNOWN = -1
-    NOT_IN_CLUB = 0
-    IN_CLUB = 1
-    CHAT = 2
-    FEED = 3
-    ROSTER = 4
-    PLAY = 5
-    IN_GAME = 6
-
-    @classmethod
-    def from_xbox_api(cls, value: str) -> typing.Self:
-        try:
-            return cls[_camel_to_const_snake(value)]
-        except KeyError:
-            # it's not like i forgot a value, it's just that some are
-            # literally not documented
-            return cls.UNKNOWN
+if typing.TYPE_CHECKING:
+    from common.xbox_api import ClubPresence
 
 
 class ClubOnCooldown(Exception):
@@ -40,11 +19,11 @@ class ClubOnCooldown(Exception):
         super().__init__("The club handler is on cooldown!")
 
 
-async def _realm_club_json(
+async def realm_club_json(
     bot: utils.RealmBotBase, club_id: str
 ) -> tuple[typing.Optional[dict], typing.Optional[aiohttp.ClientResponse]]:
     try:
-        resp_json = await bot.xbox.fetch_club_presences(club_id)
+        resp_json = await bot.xbox.fetch_club_presence(club_id)
 
         if resp_json.get("limitType"):
             # ratelimit, not much we can do here
@@ -69,15 +48,17 @@ async def _realm_club_json(
                     else:
                         await asyncio.sleep(15)
 
-                    return await _realm_club_json(bot, club_id)
+                    return await realm_club_json(bot, club_id)
 
                 return resp_json, r
             except aiohttp.ContentTypeError:
                 return None, r
 
 
-async def realm_club_get(bot: utils.RealmBotBase, club_id: str) -> typing.Any:
-    resp_json, resp = await _realm_club_json(bot, club_id)
+async def realm_club_get(
+    bot: utils.RealmBotBase, club_id: str
+) -> list["ClubPresence"] | None:
+    resp_json, resp = await realm_club_json(bot, club_id)
 
     if not resp_json:
         if typing.TYPE_CHECKING:
@@ -90,16 +71,18 @@ async def realm_club_get(bot: utils.RealmBotBase, club_id: str) -> typing.Any:
         return None
 
     try:
+        clubs = parse_club_response(resp_json)
+
         # again, the xbox live api gives every response as a list
         # even when requesting for one thing
         # and we only need the presences of the users
         # not the other stuff
-        return resp_json["clubs"][0]["clubPresence"]
+        return clubs.clubs[0].club_presence
     except (KeyError, TypeError):
         # who knows x2
 
         if resp_json.get("code") and resp_json["code"] == 1018:
-            return "Unauthorized"
+            return None
 
         await utils.msg_to_owner(bot, resp_json)
         if resp:
@@ -115,14 +98,14 @@ async def get_players_from_club_data(
     time_ago: datetime.datetime,
 ) -> list[models.PlayerSession] | None:
     club_presence = await realm_club_get(bot, club_id)
-    if not club_presence or club_presence == "Unauthorized":
+    if not club_presence:
         return None
 
     now = datetime.datetime.now(tz=datetime.UTC)
     player_list: list[models.PlayerSession] = []
 
     for member in club_presence:
-        last_seen_state = ClubUserPresence.from_xbox_api(member["lastSeenState"])
+        last_seen_state = member.last_seen_state_enum
 
         if last_seen_state not in {
             ClubUserPresence.IN_GAME,
@@ -135,9 +118,7 @@ async def get_players_from_club_data(
 
         # xbox live uses a bit more precision than python can understand
         # so we cut out that precision
-        last_seen = datetime.datetime.strptime(
-            member["lastSeenTimestamp"][:-2], "%Y-%m-%dT%H:%M:%S.%f"
-        ).replace(tzinfo=datetime.UTC)
+        last_seen = member.last_seen_timestamp.replace(tzinfo=datetime.UTC)
 
         # if this person was on the realm longer than the time period specified
         # we can stop this for loop
@@ -149,14 +130,14 @@ async def get_players_from_club_data(
         online = last_seen_state == ClubUserPresence.IN_GAME
         player_list.append(
             models.PlayerSession(
-                custom_id=bot.uuid_cache[f"{realm_id}-{member['xuid']}"],
+                custom_id=bot.uuid_cache[f"{realm_id}-{member.xuid}"],
                 realm_id=realm_id,
-                xuid=member["xuid"],
+                xuid=member.xuid,
                 online=online,
                 last_seen=now if online else last_seen,
             )
         )
-        bot.online_cache[int(realm_id)].add(member["xuid"])
+        bot.online_cache[int(realm_id)].add(member.xuid)
 
     return player_list
 
