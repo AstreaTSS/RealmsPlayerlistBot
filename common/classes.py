@@ -1,8 +1,10 @@
 import asyncio
 import typing
 
+import attrs
 import interactions as ipy
 import redis.asyncio as aioredis
+from interactions.models.discord.guild import Guild
 
 import common.utils as utils
 
@@ -31,6 +33,27 @@ class ValidChannelConverter(ipy.Converter):
         self, ctx: ipy.InteractionContext, argument: ipy.GuildText
     ) -> utils.GuildMessageable:
         return valid_channel_check(argument)
+
+
+# monkeypatch to work around bugs
+@attrs.define(eq=False, order=False, hash=False, kw_only=True)
+class PatchedGuild(Guild):
+    @property
+    def members(self) -> list[ipy.Member]:
+        members = (
+            self._client.cache.get_member(self.id, m_id) for m_id in self._member_ids
+        )
+        return [m for m in members if m]
+
+    @property
+    def roles(self) -> list[ipy.Role]:
+        roles = super().roles
+        return [r for r in roles if r]
+
+
+Guild.__init__ = PatchedGuild.__init__
+Guild.from_dict = PatchedGuild.from_dict
+Guild.from_list = PatchedGuild.from_list
 
 
 class SemaphoreRedis(aioredis.Redis):
