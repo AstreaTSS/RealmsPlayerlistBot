@@ -110,7 +110,7 @@ class AutoRunPlayerlist(utils.Extension):
 
         # make a fake context to make things easier
         a_ctx = utils.RealmPrefixedContext(client=self.bot)
-        a_ctx.author_id = chan.guild.me.id
+        a_ctx.author_id = self.bot.user.id
         a_ctx.channel_id = chan.id
         a_ctx.guild_id = chan._guild_id
         a_ctx.guild_config = guild_config
