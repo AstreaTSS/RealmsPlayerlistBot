@@ -66,6 +66,9 @@ def default_sentry_filter(
                 return None
             if record.message.startswith("Ignoring exception in "):
                 return None
+            if record.message.startswith("Unsupported channel type for "):
+                # please shut up
+                return None
 
     if "exc_info" in hint:
         exc_type, exc_value, tb = hint["exc_info"]
