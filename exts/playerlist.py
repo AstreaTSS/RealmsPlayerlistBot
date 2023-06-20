@@ -28,6 +28,7 @@ class Playerlist(utils.Extension):
         self.name = "Playerlist Related"
 
         self.previous_now = datetime.datetime.now(tz=datetime.UTC)
+        self.forbidden_count: int = 0
 
         if not utils.TEST_MODE:
             self.get_people_task = self.bot.create_task(self.get_people_runner())
@@ -63,10 +64,22 @@ class Playerlist(utils.Extension):
     async def parse_realms(self) -> None:
         try:
             realms = await self.bot.realms.fetch_activities()
+            self.forbidden_count = 0
         except Exception as e:
             if isinstance(e, MicrosoftAPIException) and e.resp.status == 502:
                 # bad gateway, can't do much about it
                 return
+            if isinstance(e, MicrosoftAPIException) and e.resp.status == 403:
+                # oh boy, this one's painful
+                self.forbidden_count += 1
+                if self.forbidden_count > 3:
+                    await utils.msg_to_owner(
+                        self.bot,
+                        (
+                            "Got forbidden 3 times in a row. High chance account is"
+                            " banned - please manually check to verify this."
+                        ),
+                    )
             raise
 
         player_objs: list[models.PlayerSession] = []
