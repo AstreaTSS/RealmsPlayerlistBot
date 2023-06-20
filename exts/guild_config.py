@@ -33,6 +33,7 @@ REALMS_LINK_REGEX = re.compile(
     r"\.net/pocket/realms/invite/|(?:minecraft://)?acceptRealmInvite\?inviteID="
     r")?([\w-]{7,16})"
 )
+FORMAT_CODE_REGEX = re.compile(r"§\S")
 
 
 class GuildConfig(utils.Extension):
@@ -84,6 +85,9 @@ class GuildConfig(utils.Extension):
         if not maybe_realm_name:
             await self._gather_realm_names()
             maybe_realm_name = self.bot.realm_name_cache.get(config.realm_id)
+
+        if maybe_realm_name:
+            maybe_realm_name = FORMAT_CODE_REGEX.sub("", maybe_realm_name)
 
         realm_name = utils.na_friendly_str(maybe_realm_name)
 
