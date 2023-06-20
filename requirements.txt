@@ -1,4 +1,4 @@
-discord-py-interactions==5.6.0
+discord-py-interactions==5.7.0
 tansy==0.7.0
 humanize==4.6.0
 xbox-webapi==2.0.11
