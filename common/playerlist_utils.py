@@ -11,7 +11,6 @@ from apischema import ValidationError
 from redis.asyncio.client import Pipeline
 from tortoise.exceptions import DoesNotExist
 
-import common.classes as cclasses
 import common.models as models
 import common.utils as utils
 import common.xbox_api as xbox_api
@@ -329,22 +328,6 @@ async def eventually_invalidate(
         )
 
 
-async def eventually_invalidate_realm_offline(
-    bot: utils.RealmBotBase,
-    guild_config: models.GuildConfig,
-    limit: int = 3,
-) -> None:
-    if utils.TEST_MODE:
-        return
-
-    num_times = await bot.redis.incr(f"invalid-realmoffline-{guild_config.guild_id}")
-
-    if num_times >= limit:
-        guild_config.realm_offline_role = None
-        await guild_config.save()
-        await bot.redis.delete(f"invalid-realmoffline-{guild_config.guild_id}")
-
-
 async def eventually_invalidate_live_online(
     bot: utils.RealmBotBase,
     guild_config: models.GuildConfig,
@@ -376,12 +359,6 @@ async def fetch_playerlist_channel(
             # invalid channel
             await eventually_invalidate(bot, config)
             raise ValueError()
-
-        try:
-            chan = cclasses.valid_channel_check(chan)
-        except ipy.errors.BadArgument:
-            await eventually_invalidate(bot, config)
-            raise ValueError() from None
 
     return chan
 

@@ -215,9 +215,6 @@ class PlayerlistEventHandling(ipy.Extension):
                 continue
 
             role_mention = f"<@&{config.realm_offline_role}>"
-            role = await guild.fetch_role(config.realm_offline_role)
-            if role:
-                role_mention = role.mention
 
             embed = ipy.Embed(
                 title="Realm Offline",
@@ -231,27 +228,6 @@ class PlayerlistEventHandling(ipy.Extension):
 
             try:
                 chan = await pl_utils.fetch_playerlist_channel(self.bot, guild, config)
-
-                if not role or (
-                    not role.mentionable
-                    and ipy.Permissions.MENTION_EVERYONE
-                    not in chan.permissions_for(guild.me)
-                ):
-                    addition = (
-                        "\n\n**I also am unable to ping the role you set.** Make sure"
-                        " the role still exists, and that it's either mentionable or"
-                        " the bot can ping all roles.\n*After a while, the bot will"
-                        " stop sending offline notices if it keeps being unable to ping"
-                        " the role.*"
-                    )
-
-                    # make typehinting be quiet
-                    if embed.description is None:
-                        embed.description = ""
-                    embed.description += addition
-
-                    await pl_utils.eventually_invalidate_realm_offline(self.bot, config)
-
                 await chan.send(
                     role_mention,
                     embeds=embed,

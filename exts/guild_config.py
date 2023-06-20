@@ -435,8 +435,7 @@ class GuildConfig(utils.Extension):
         if role:
             if (
                 not role.mentionable
-                and ipy.Permissions.MENTION_EVERYONE
-                not in ctx.channel.permissions_for(ctx.guild.me)
+                and ipy.Permissions.MENTION_EVERYONE not in ctx.app_permissions
             ):
                 raise utils.CustomCheckFailure(
                     "I cannot ping this role. Make sure the role is either mentionable"
