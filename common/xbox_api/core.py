@@ -40,9 +40,7 @@ class XboxAPI(BaseMicrosoftAPI):
 
         return await self.get(url, params=PARAMS, headers=HEADERS)  # type: ignore
 
-    async def fetch_club_presence(
-        self, club_id: int | str, *, raise_status: bool = False
-    ) -> dict:
+    async def fetch_club_presence(self, club_id: int | str) -> dict:
         HEADERS = {"x-xbl-contract-version": "4", "Accept-Language": "en-US"}
         url = (
             f"https://clubhub.xboxlive.com/clubs/Ids({club_id})/decoration/clubpresence"
