@@ -76,7 +76,7 @@ class Playerlist(utils.Extension):
                     await utils.msg_to_owner(
                         self.bot,
                         (
-                            "Got forbidden 3 times in a row. High chance account is"
+                            "Got forbidden 3+ times in a row. High chance account is"
                             " banned - please manually check to verify this."
                         ),
                     )
