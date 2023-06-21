@@ -14,6 +14,7 @@ from tortoise.exceptions import DoesNotExist
 import common.models as models
 import common.utils as utils
 import common.xbox_api as xbox_api
+from common.microsoft_core import MicrosoftAPIException
 
 MINECRAFT_TITLE_IDS = frozenset(
     {
@@ -135,11 +136,10 @@ class GamertagHandler:
                         await utils.msg_to_owner(self.bot, resp_json)
                         raise GamertagServiceDown()
                     else:
-                        with contextlib.suppress(ValidationError):
-                            self.responses.append(
-                                xbox_api.parse_profile_response(resp_json)
-                            )
-                except aiohttp.ContentTypeError:
+                        self.responses.append(
+                            xbox_api.parse_profile_response(resp_json)
+                        )
+                except (aiohttp.ContentTypeError, ValidationError):
                     # can happen, if not rare
                     text = await r.text()
                     logging.getLogger(
@@ -185,7 +185,7 @@ class GamertagHandler:
             async with self.sem:
                 try:
                     await self.get_gamertags(current_xuid_list)
-                except GamertagOnCooldown:
+                except (GamertagOnCooldown, ValidationError, MicrosoftAPIException):
                     # hopefully fixes itself in 15 seconds
                     with contextlib.suppress(asyncio.TimeoutError):
                         await asyncio.wait_for(self.backup_get_gamertags(), timeout=15)
