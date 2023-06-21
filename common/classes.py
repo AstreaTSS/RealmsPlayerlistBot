@@ -5,6 +5,7 @@ import attrs
 import interactions as ipy
 import redis.asyncio as aioredis
 from interactions.models.discord.guild import Guild
+from interactions.models.discord.user import Member
 
 import common.utils as utils
 
@@ -51,9 +52,21 @@ class PatchedGuild(Guild):
         return [r for r in roles if r]
 
 
+@attrs.define(eq=False, order=False, hash=False, kw_only=True)
+class PatchedMember(Member):
+    permissions: typing.Optional[ipy.Permissions] = attrs.field(
+        repr=False, default=None, converter=ipy.utils.optional(ipy.Permissions)
+    )
+    """Calculated permissions for the member, only given in slash commands"""
+
+
 Guild.__init__ = PatchedGuild.__init__
 Guild.from_dict = PatchedGuild.from_dict
 Guild.from_list = PatchedGuild.from_list
+
+Member.__init__ = PatchedMember.__init__
+Member.from_dict = PatchedMember.from_dict
+Member.from_list = PatchedMember.from_list
 
 
 class SemaphoreRedis(aioredis.Redis):
