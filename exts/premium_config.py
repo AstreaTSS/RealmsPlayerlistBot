@@ -225,7 +225,7 @@ class PremiumHandling(ipy.Extension):
             color=self.bot.color,
             timestamp=ipy.Timestamp.utcnow(),
         )
-        embed.set_footer("WIP Feature")
+        embed.set_footer("As of")
         msg = await ctx.channel.send(embed=embed)
 
         config.live_online_channel = f"{msg._channel_id}|{msg.id}"
@@ -234,10 +234,7 @@ class PremiumHandling(ipy.Extension):
         await self.bot.redis.hset(config.live_online_channel, "xuids", xuids)
         await self.bot.redis.hset(config.live_online_channel, "gamertags", online_str)
 
-        await ctx.send(
-            "Done!\n*A reminder that this feature is WIP, and may have bugs.*",
-            ephemeral=True,
-        )
+        await ctx.send("Done!", ephemeral=True)
 
     @staticmethod
     def button_check(author_id: int) -> typing.Callable[..., bool]:
