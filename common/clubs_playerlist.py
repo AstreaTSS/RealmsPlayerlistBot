@@ -4,6 +4,7 @@ import typing
 
 import aiohttp
 import orjson
+from apischema import ValidationError
 
 import common.models as models
 import common.utils as utils
@@ -78,7 +79,7 @@ async def realm_club_get(
         # and we only need the presences of the users
         # not the other stuff
         return clubs.clubs[0].club_presence
-    except (KeyError, TypeError):
+    except (KeyError, TypeError, ValidationError):
         # who knows x2
 
         if resp_json.get("code") and resp_json["code"] == 1018:
