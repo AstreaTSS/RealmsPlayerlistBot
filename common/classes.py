@@ -41,15 +41,22 @@ class ValidChannelConverter(ipy.Converter):
 class PatchedGuild(Guild):
     @property
     def members(self) -> list[ipy.Member]:
-        members = (
-            self._client.cache.get_member(self.id, m_id) for m_id in self._member_ids
-        )
-        return [m for m in members if m]
+        return [
+            m
+            for m_id in self._member_ids
+            if (m := self._client.cache.get_member(self.id, m_id))
+        ]
 
     @property
     def roles(self) -> list[ipy.Role]:
-        roles = super().roles
-        return [r for r in roles if r]
+        return sorted(
+            (
+                role
+                for r_id in self._role_ids
+                if (role := self._client.cache.get_role(r_id))
+            ),
+            reverse=True,
+        )
 
 
 @attrs.define(eq=False, order=False, hash=False, kw_only=True)
