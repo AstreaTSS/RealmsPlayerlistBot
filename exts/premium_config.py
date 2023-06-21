@@ -355,4 +355,5 @@ class PremiumHandling(ipy.Extension):
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
     importlib.reload(pl_utils)
+    importlib.reload(premium_code)
     PremiumHandling(bot)
