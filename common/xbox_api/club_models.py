@@ -2,7 +2,6 @@ import typing
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import IntEnum
-from typing import Optional, Union
 from uuid import UUID
 
 import apischema
@@ -13,9 +12,7 @@ __all__ = (
     "ClubDeeplinks",
     "ClubPresence",
     "ClubType",
-    "AssociatedTitles",
     "ProfileMetadata",
-    "IsRecommendable",
     "Profile",
     "TitleDeeplinkMetadata",
     "TitleDeeplinks",
@@ -81,24 +78,10 @@ class ClubType:
 
 
 @dataclass
-class AssociatedTitles:
-    value: list[str]
-    can_viewer_change_setting: bool
-    allowed_values: typing.Optional[typing.Any] = None
-
-
-@dataclass
 class ProfileMetadata:
     can_viewer_change_setting: bool
-    value: Optional[Union[list[str], str]] = None
+    value: typing.Optional[typing.Any] = None
     allowed_values: typing.Optional[typing.Any] = None
-
-
-@dataclass
-class IsRecommendable:
-    value: bool
-    can_viewer_change_setting: bool
-    allowed_values: Optional[list[bool]] = None
 
 
 @dataclass
@@ -107,19 +90,19 @@ class Profile:
     rules: ProfileMetadata
     name: ProfileMetadata
     short_name: ProfileMetadata
-    is_searchable: IsRecommendable
-    is_recommendable: IsRecommendable
-    request_to_join_enabled: IsRecommendable
-    open_join_enabled: IsRecommendable
-    leave_enabled: IsRecommendable
-    transfer_ownership_enabled: IsRecommendable
-    mature_content_enabled: IsRecommendable
-    watch_club_titles_only: IsRecommendable
+    is_searchable: ProfileMetadata
+    is_recommendable: ProfileMetadata
+    request_to_join_enabled: ProfileMetadata
+    open_join_enabled: ProfileMetadata
+    leave_enabled: ProfileMetadata
+    transfer_ownership_enabled: ProfileMetadata
+    mature_content_enabled: ProfileMetadata
+    watch_club_titles_only: ProfileMetadata
     display_image_url: ProfileMetadata
     background_image_url: ProfileMetadata
     preferred_locale: ProfileMetadata
     tags: ProfileMetadata
-    associated_titles: AssociatedTitles
+    associated_titles: ProfileMetadata
     primary_color: ProfileMetadata
     secondary_color: ProfileMetadata
     tertiary_color: ProfileMetadata

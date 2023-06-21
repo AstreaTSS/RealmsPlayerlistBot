@@ -76,7 +76,7 @@ class GuildConfig(utils.Extension):
 
             if resp_json:
                 club = parse_club_response(resp_json)
-                maybe_realm_name = club.clubs[0].profile.name.value  # type: ignore
+                maybe_realm_name = club.clubs[0].profile.name.value
 
                 if maybe_realm_name:
                     self.bot.realm_name_cache[config.realm_id] = maybe_realm_name
