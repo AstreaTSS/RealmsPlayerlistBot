@@ -237,13 +237,13 @@ bot = RealmsPlayerlistBot(
     auto_defer=ipy.AutoDefer(enabled=True, time_until_defer=0),
     # we do not need messages
     message_cache=ipy.utils.TTLCache(10, 10, 50),
+    role_cache=ipy.utils.TTLCache(60, 100, 200),
     # we don't need that many
     user_cache=ipy.utils.TTLCache(60, 500, 1000),
     member_cache=ipy.utils.TTLCache(60, 500, 1000),
     # lets not make this too huge
     channel_cache=ipy.utils.TTLCache(600, 5000, 10000),
     # do not need at all
-    role_cache=ipy.utils.NullCache(),
     voice_state_cache=ipy.utils.NullCache(),
     user_guilds=ipy.utils.NullCache(),
     dm_channels=ipy.utils.NullCache(),
