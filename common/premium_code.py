@@ -5,7 +5,7 @@ import typing
 
 import interactions as ipy
 
-__all__ = ("base_code_generate", "base_code_validate")
+__all__ = ("full_code_generate", "full_code_validate", "bytestring_length_decode")
 
 # code modified from https://github.com/brett-patterson/coupon_codes - 2015 Brett Patterson, MIT License
 
