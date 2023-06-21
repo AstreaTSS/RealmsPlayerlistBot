@@ -1,7 +1,6 @@
 import asyncio
 import importlib
 import os
-import secrets
 import typing
 
 import interactions as ipy
@@ -11,6 +10,7 @@ from interactions.models.internal.application_commands import auto_defer
 
 import common.models as models
 import common.playerlist_utils as pl_utils
+import common.premium_code as premium_code
 import common.utils as utils
 
 CommandT = typing.TypeVar("CommandT", ipy.BaseCommand, ipy.const.AsyncCallable)
@@ -61,7 +61,7 @@ class PremiumHandling(ipy.Extension):
     async def generate_code(
         self,
         ctx: ipy.InteractionContext,
-        max_uses: int = tansy.Option("How many uses the code has.", default=3),
+        max_uses: int = tansy.Option("How many uses the code has.", default=2),
         user_id: typing.Optional[str] = tansy.Option(
             "The user ID this is tied to if needed.", default=None
         ),
@@ -72,7 +72,7 @@ class PremiumHandling(ipy.Extension):
 
         actual_user_id = int(user_id) if user_id is not None else None
 
-        code = secrets.token_urlsafe(16)
+        code = premium_code.full_code_generate(max_uses, user_id)
         encrypted_code = await self.encrypt_input(code)
 
         await models.PremiumCode.create(
@@ -96,7 +96,22 @@ class PremiumHandling(ipy.Extension):
     async def redeem_premium(
         self, ctx: utils.RealmContext, code: str = tansy.Option("The code for premium.")
     ) -> None:
-        encrypted_code = await self.encrypt_input(code)
+        encrypted_code: str | None = None
+
+        if maybe_valid_code := premium_code.full_code_validate(code, ctx.author.id):
+            encrypted_code = await self.encrypt_input(maybe_valid_code)
+        else:
+            if 20 < len(code) < 24:  # support old codes
+                encrypted_code = await self.encrypt_input(code)
+            if (
+                not encrypted_code
+                or premium_code.bytestring_length_decode(encrypted_code) != 22
+            ):
+                raise ipy.errors.BadArgument(
+                    f'Invalid code: "{code}". Are you sure this is the correct code and'
+                    " that you typed it in correctly?"
+                )
+
         code_obj = await models.PremiumCode.get_or_none(code=encrypted_code)
 
         if not code_obj:
@@ -117,7 +132,7 @@ class PremiumHandling(ipy.Extension):
         config = await ctx.fetch_config()
 
         if config.premium_code and config.premium_code.code == code:
-            raise ipy.errors.BadArgument("This code has already been redeem here.")
+            raise ipy.errors.BadArgument("This code has already been redeemed here.")
 
         config.premium_code = code_obj
         code_obj.uses += 1
