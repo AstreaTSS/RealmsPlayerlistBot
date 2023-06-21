@@ -1,5 +1,4 @@
 import asyncio
-import collections
 import importlib
 import logging
 import os
@@ -180,7 +179,7 @@ class GuildConfig(utils.Extension):
                 config.realm_id = str(realm.id)
                 self.bot.realm_name_cache[config.realm_id] = realm.name
 
-                embeds: collections.deque[ipy.Embed] = collections.deque()
+                embeds: list[ipy.Embed] = []
 
                 if (
                     realm.club_id
@@ -203,7 +202,7 @@ class GuildConfig(utils.Extension):
                         ),
                         color=ipy.RoleColors.YELLOW,
                     )
-                    embeds.appendleft(warning_embed)
+                    embeds.append(warning_embed)
 
                 await config.save()
 
@@ -218,8 +217,8 @@ class GuildConfig(utils.Extension):
                     ),
                     color=ipy.RoleColors.GREEN,
                 )
-                embeds.appendleft(confirm_embed)
-                await ctx.send(embeds=list(embeds))
+                embeds.append(confirm_embed)
+                await ctx.send(embeds=embeds)
             except MicrosoftAPIException as e:
                 if (
                     isinstance(e.error, aiohttp.ClientResponseError)
