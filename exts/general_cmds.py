@@ -107,7 +107,7 @@ class GeneralCMDS(utils.Extension):
             description="\n".join(msg_list),
         )
         about_embed.set_thumbnail(
-            ctx.guild.me.display_avatar.url
+            ctx.bot.user.display_avatar.url
             if ctx.guild
             else self.bot.user.display_avatar.url
         )
