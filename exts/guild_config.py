@@ -455,6 +455,9 @@ class GuildConfig(utils.Extension):
         config = await ctx.fetch_config()
 
         if role:
+            if isinstance(role, str):  # ???
+                role = await ctx.guild.fetch_role(role)
+
             if (
                 not role.mentionable
                 and ipy.Permissions.MENTION_EVERYONE not in ctx.app_permissions
