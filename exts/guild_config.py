@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import importlib
 import logging
 import os
@@ -8,6 +9,7 @@ import typing
 import aiohttp
 import interactions as ipy
 import tansy
+from apischema import ValidationError
 
 import common.classes as cclasses
 import common.clubs_playerlist as clubs_playerlist
@@ -74,12 +76,13 @@ class GuildConfig(utils.Extension):
                 self.bot, config.club_id
             )
 
-            if resp_json:
-                club = parse_club_response(resp_json)
-                maybe_realm_name = club.clubs[0].profile.name.value
+            if resp_json and resp_json.get("code", -1) != 1018:
+                with contextlib.suppress(ValidationError):
+                    club = parse_club_response(resp_json)
+                    maybe_realm_name = club.clubs[0].profile.name.value
 
-                if maybe_realm_name:
-                    self.bot.realm_name_cache[config.realm_id] = maybe_realm_name
+                    if maybe_realm_name:
+                        self.bot.realm_name_cache[config.realm_id] = maybe_realm_name
 
         if not maybe_realm_name:
             await self._gather_realm_names()
