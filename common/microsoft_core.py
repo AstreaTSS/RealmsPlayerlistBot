@@ -449,7 +449,14 @@ class BaseMicrosoftAPI:
         resp = await self.session.request(**req_kwargs)
 
         try:
-            resp.raise_for_status()
+            if not resp.ok:
+                raise aiohttp.ClientResponseError(
+                    resp.request_info,
+                    resp.history,
+                    status=resp.status,
+                    message=resp.reason,
+                    headers=resp.headers,
+                )
 
             parsed_data = None if resp.status == 204 else await resp.read()
             resp.close()
