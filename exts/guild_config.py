@@ -45,7 +45,7 @@ class GuildConfig(utils.Extension):
         self.name = "Server Config"
         self.bot: utils.RealmBotBase = bot
 
-    async def _gather_realm_names(self, specific_realm_id: str) -> FullRealm | None:
+    async def _gather_realm_names(self, specific_realm_id: str) -> "FullRealm | None":
         response = await self.bot.realms.fetch_realms()
         names = tuple((str(realm.id), realm.name) for realm in response.servers)
         self.bot.realm_name_cache.update(names)
