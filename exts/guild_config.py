@@ -9,7 +9,7 @@ import typing
 import aiohttp
 import interactions as ipy
 import tansy
-from apischema import ValidationError
+from msgspec import ValidationError
 
 import common.classes as cclasses
 import common.clubs_playerlist as clubs_playerlist
@@ -17,7 +17,7 @@ import common.models as models
 import common.playerlist_utils as pl_utils
 import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
-from common.xbox_api import parse_club_response
+from common.xbox_api import ClubResponse
 
 # regex that takes in:
 # - https://realms.gg/XXXXXXX
@@ -72,13 +72,13 @@ class GuildConfig(utils.Extension):
 
         maybe_realm_name: str | None = self.bot.realm_name_cache.get(config.realm_id)
         if not maybe_realm_name and config.club_id:
-            resp_json, _ = await clubs_playerlist.realm_club_json(
+            resp_bytes = await clubs_playerlist.realm_club_bytes(
                 self.bot, config.club_id
             )
 
-            if resp_json and resp_json.get("code", -1) != 1018:
+            if resp_bytes:
                 with contextlib.suppress(ValidationError):
-                    club = parse_club_response(resp_json)
+                    club = ClubResponse.from_bytes(resp_bytes)
                     maybe_realm_name = club.clubs[0].profile.name.value
 
                     if maybe_realm_name:

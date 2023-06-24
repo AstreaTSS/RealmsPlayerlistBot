@@ -1,8 +1,7 @@
 import typing
-from dataclasses import dataclass
 from datetime import datetime
 
-import apischema
+import common.microsoft_core as mscore
 
 __all__ = (
     "PeopleSummaryResponse",
@@ -22,12 +21,10 @@ __all__ = (
     "RecommendationSummary",
     "FriendFinderState",
     "PeopleHubResponse",
-    "parse_peoplehub_reponse",
 )
 
 
-@dataclass
-class PeopleSummaryResponse:
+class PeopleSummaryResponse(mscore.CamelBaseModel):
     target_following_count: int
     target_follower_count: int
     is_caller_following_target: bool
@@ -41,51 +38,40 @@ class PeopleSummaryResponse:
 
 
 # microsoft is a great and consistent company
-@apischema.alias(apischema.utils.to_pascal_case)
-@dataclass
-class Suggestion:
+class Suggestion(mscore.PascalBaseModel):
     priority: int
     type: typing.Optional[str] = None
     reasons: typing.Optional[str] = None
     title_id: typing.Optional[str] = None
 
 
-@apischema.alias(apischema.utils.to_pascal_case)
-@dataclass
-class Recommendation:
+class Recommendation(mscore.PascalBaseModel):
     type: str
     reasons: list[str]
 
 
-@apischema.alias(apischema.utils.to_pascal_case)
-@dataclass
-class MultiplayerSummary:
+class MultiplayerSummary(mscore.PascalBaseModel):
     in_multiplayer_session: int
     in_party: int
 
 
-@dataclass
-class RecentPlayer:
+class RecentPlayer(mscore.CamelBaseModel):
     titles: list[str]
     text: typing.Optional[str] = None
 
 
-@dataclass
-class Follower:
+class Follower(mscore.CamelBaseModel):
     text: typing.Optional[str] = None
     followed_date_time: typing.Optional[datetime] = None
 
 
-@dataclass
-class PreferredColor:
+class PreferredColor(mscore.CamelBaseModel):
     primary_color: typing.Optional[str] = None
     secondary_color: typing.Optional[str] = None
     tertiary_color: typing.Optional[str] = None
 
 
-@apischema.alias(apischema.utils.to_pascal_case)
-@dataclass
-class PresenceDetail:
+class PresenceDetail(mscore.PascalBaseModel):
     is_broadcasting: bool
     device: str
     presence_text: str
@@ -97,17 +83,14 @@ class PresenceDetail:
     rich_presence_text: typing.Optional[str] = None
 
 
-@apischema.alias(apischema.utils.to_pascal_case)
-@dataclass
-class TitlePresence:
+class TitlePresence(mscore.PascalBaseModel):
     is_currently_playing: bool
     presence_text: typing.Optional[str] = None
     title_name: typing.Optional[str] = None
     title_id: typing.Optional[str] = None
 
 
-@dataclass
-class Detail:
+class Detail(mscore.CamelBaseModel):
     account_tier: str
     is_verified: bool
     watermarks: list[str]
@@ -121,20 +104,17 @@ class Detail:
     tenure: typing.Optional[str] = None
 
 
-@dataclass
-class SocialManager:
+class SocialManager(mscore.CamelBaseModel):
     title_ids: list[str]
     pages: list[str]
 
 
-@dataclass
-class Avatar:
+class Avatar(mscore.CamelBaseModel):
     update_time_offset: typing.Optional[datetime] = None
     spritesheet_metadata: typing.Optional[typing.Any] = None
 
 
-@dataclass
-class LinkedAccount:
+class LinkedAccount(mscore.CamelBaseModel):
     network_name: str
     show_on_profile: bool
     is_family_friendly: bool
@@ -142,8 +122,7 @@ class LinkedAccount:
     deeplink: typing.Optional[str] = None
 
 
-@dataclass
-class Person:
+class Person(mscore.CamelBaseModel):
     xuid: str
     is_favorite: bool
     is_following_caller: bool
@@ -192,8 +171,7 @@ class Person:
     last_seen_date_time_utc: typing.Optional[datetime] = None
 
 
-@dataclass
-class RecommendationSummary:
+class RecommendationSummary(mscore.CamelBaseModel):
     friend_of_friend: int
     facebook_friend: int
     phone_contact: int
@@ -203,8 +181,7 @@ class RecommendationSummary:
     promote_suggestions: bool
 
 
-@dataclass
-class FriendFinderState:
+class FriendFinderState(mscore.CamelBaseModel):
     facebook_opt_in_status: str
     facebook_token_status: str
     phone_opt_in_status: str
@@ -227,12 +204,9 @@ class FriendFinderState:
     you_tube_token_status: str
 
 
-@dataclass
-class PeopleHubResponse:
+@mscore.add_decoder
+class PeopleHubResponse(mscore.ParsableCamelModel):
     people: list[Person]
     recommendation_summary: typing.Optional[RecommendationSummary] = None
     friend_finder_state: typing.Optional[FriendFinderState] = None
     account_link_details: typing.Optional[list[LinkedAccount]] = None
-
-
-parse_peoplehub_reponse = apischema.deserialization_method(PeopleHubResponse)

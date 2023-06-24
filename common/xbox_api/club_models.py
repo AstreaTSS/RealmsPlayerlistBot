@@ -1,10 +1,11 @@
 import typing
-from dataclasses import dataclass, field
 from datetime import datetime
 from enum import IntEnum
 from uuid import UUID
 
-import apischema
+import msgspec
+
+import common.microsoft_core as mscore
 
 __all__ = (
     "ClubUserPresence",
@@ -18,7 +19,6 @@ __all__ = (
     "TitleDeeplinks",
     "Club",
     "ClubResponse",
-    "parse_club_response",
 )
 
 
@@ -46,46 +46,40 @@ class ClubUserPresence(IntEnum):
             return cls.UNKNOWN
 
 
-@dataclass
-class ClubDeeplinkMetadata:
+class ClubDeeplinkMetadata(mscore.CamelBaseModel):
     page_name: str
     uri: str
 
 
-@dataclass
-class ClubDeeplinks:
+class ClubDeeplinks(mscore.CamelBaseModel):
     xbox: list[ClubDeeplinkMetadata]
     pc: list[ClubDeeplinkMetadata]
 
 
-@dataclass
-class ClubPresence:
+class ClubPresence(mscore.CamelBaseModel):
     xuid: str
     last_seen_timestamp: datetime
-    last_seen_state: str
+    _last_seen_state: str = msgspec.field(name="lastSeenState")
 
     @property
-    def last_seen_state_enum(self) -> ClubUserPresence:
-        return ClubUserPresence.from_xbox_api(self.last_seen_state)
+    def last_seen_state(self) -> ClubUserPresence:
+        return ClubUserPresence.from_xbox_api(self._last_seen_state)
 
 
-@dataclass
-class ClubType:
+class ClubType(mscore.CamelBaseModel):
     type: str
     genre: str
     localized_title_family_name: str
     title_family_id: UUID
 
 
-@dataclass
-class ProfileMetadata:
+class ProfileMetadata(mscore.CamelBaseModel):
     can_viewer_change_setting: bool
     value: typing.Optional[typing.Any] = None
     allowed_values: typing.Optional[typing.Any] = None
 
 
-@dataclass
-class Profile:
+class Profile(mscore.CamelBaseModel):
     description: ProfileMetadata
     rules: ProfileMetadata
     name: ProfileMetadata
@@ -108,24 +102,21 @@ class Profile:
     tertiary_color: ProfileMetadata
 
 
-@dataclass
-class TitleDeeplinkMetadata:
+class TitleDeeplinkMetadata(mscore.CamelBaseModel):
     title_id: str
-    uri: str = field(metadata=apischema.alias("Uri"))  # wtf
+    uri: str = msgspec.field(name="Uri")
 
 
-@dataclass
-class TitleDeeplinks:
+class TitleDeeplinks(mscore.BaseModel):
     xbox: list[TitleDeeplinkMetadata]
     pc: list[TitleDeeplinkMetadata]
     android: list[TitleDeeplinkMetadata]
-    ios: list[TitleDeeplinkMetadata] = field(
-        metadata=apischema.alias("iOS")
+    ios: list[TitleDeeplinkMetadata] = msgspec.field(
+        name="iOS"
     )  # this makes more sense at least
 
 
-@dataclass
-class Club:
+class Club(mscore.CamelBaseModel):
     id: str
     club_type: ClubType
     creation_date_utc: datetime
@@ -158,12 +149,9 @@ class Club:
     short_name: typing.Optional[typing.Any] = None
 
 
-@dataclass
-class ClubResponse:
+@mscore.add_decoder
+class ClubResponse(mscore.ParsableCamelModel):
     clubs: list[Club]
     search_facet_results: typing.Optional[typing.Any] = None
     recommendation_counts: typing.Optional[typing.Any] = None
     club_deeplinks: typing.Optional[typing.Any] = None
-
-
-parse_club_response = apischema.deserialization_method(ClubResponse)

@@ -9,9 +9,8 @@ from importlib.metadata import version as _v
 
 import aiohttp
 import interactions as ipy
-import orjson
 import tansy
-from apischema import ValidationError
+from msgspec import ValidationError
 
 import common.models as models
 import common.utils as utils
@@ -224,8 +223,8 @@ class GeneralCMDS(utils.Extension):
                         with contextlib.suppress(
                             ValidationError, aiohttp.ContentTypeError
                         ):
-                            maybe_gamertag = xbox_api.parse_profile_response(
-                                await r.json(loads=orjson.loads)
+                            maybe_gamertag = (
+                                await xbox_api.ProfileResponse.from_response(r)
                             )
 
                 if not maybe_gamertag:
@@ -235,20 +234,10 @@ class GeneralCMDS(utils.Extension):
                         ValidationError,
                         MicrosoftAPIException,
                     ):
-                        resp = await self.bot.xbox.fetch_profile_by_xuid(valid_xuid)
-                        maybe_gamertag = xbox_api.parse_profile_response(resp)
-
-                if not maybe_gamertag:
-                    with contextlib.suppress(asyncio.TimeoutError):
-                        async with session.get(
-                            f"https://xbl-api.prouser123.me/profile/xuid/{valid_xuid}"
-                        ) as r:
-                            with contextlib.suppress(
-                                ValidationError, aiohttp.ContentTypeError
-                            ):
-                                maybe_gamertag = xbox_api.parse_profile_response(
-                                    await r.json(loads=orjson.loads)
-                                )
+                        resp_bytes = await self.bot.xbox.fetch_profile_by_xuid(
+                            valid_xuid
+                        )
+                        maybe_gamertag = xbox_api.ProfileResponse.from_bytes(resp_bytes)
 
         if not maybe_gamertag:
             raise ipy.errors.BadArgument(

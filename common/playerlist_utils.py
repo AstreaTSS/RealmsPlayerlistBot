@@ -7,7 +7,7 @@ import aiohttp
 import attrs
 import interactions as ipy
 import orjson
-from apischema import ValidationError
+from msgspec import ValidationError
 from redis.asyncio.client import Pipeline
 from tortoise.exceptions import DoesNotExist
 
@@ -54,14 +54,7 @@ class GamertagOnCooldown(Exception):
     def __init__(self) -> None:
         # i could make this anything since this should never be exposed
         # to the user, but who knows
-        super().__init__("The gamertag handler is on cooldown!")
-
-
-class GamertagServiceDown(Exception):
-    def __init__(self) -> None:
-        super().__init__(
-            "The gamertag service is down! The bot is unavailable at this time."
-        )
+        super().__init__("The gamertag handler is on cooldown.")
 
 
 class GamertagInfo(typing.NamedTuple):
@@ -96,26 +89,35 @@ class GamertagHandler:
         # this endpoint is absolutely op and should rarely fail
         # franky, we usually don't need the backup thing, but you can't go wrong
         # having it
-        people_json = await self.bot.xbox.fetch_people_batch(xuid_list)
 
-        if people_json.get("code"):  # usually means ratelimited or invalid xuid
-            description: str = people_json["description"]
+        try:
+            people_bytes = await self.bot.xbox.fetch_people_batch(
+                xuid_list, bypass_ratelimit=True
+            )
 
-            if description.startswith("Throttled"):  # ratelimited
-                raise GamertagOnCooldown()
+        except MicrosoftAPIException as e:
+            people_json = await e.resp.json(loads=orjson.loads)
 
-            # otherwise, invalid xuid
-            desc_split = description.split(" ")
-            xuid_list.remove(desc_split[1])
+            if people_json.get("code"):  # usually means ratelimited or invalid xuid
+                description: str = people_json["description"]
 
-            await self.get_gamertags(
-                xuid_list
-            )  # after removing, try getting data again
+                if description.startswith("Throttled"):  # ratelimited
+                    raise GamertagOnCooldown() from e
 
-        elif people_json.get("limitType"):  # ratelimit
-            raise GamertagOnCooldown()
+                # otherwise, invalid xuid
+                desc_split = description.split(" ")
+                xuid_list.remove(desc_split[1])
 
-        self.responses.append(xbox_api.parse_peoplehub_reponse(people_json))
+                # after removing, try getting data again
+                return await self.get_gamertags(xuid_list)
+
+            if people_json.get("limitType"):  # ratelimit
+                raise GamertagOnCooldown() from e
+
+            else:
+                raise
+
+        self.responses.append(xbox_api.PeopleHubResponse.from_bytes(people_bytes))
         self.index += self.AMOUNT_TO_GET
 
     async def backup_get_gamertags(self) -> None:
@@ -131,24 +133,21 @@ class GamertagHandler:
                 f"https://xbl.io/api/v2/account/{xuid}"
             ) as r:
                 try:
-                    resp_json = await r.json(loads=orjson.loads)
-                    if "code" in resp_json.keys():  # service is down
-                        await utils.msg_to_owner(self.bot, resp_json)
-                        raise GamertagServiceDown()
-                    else:
-                        self.responses.append(
-                            xbox_api.parse_profile_response(resp_json)
-                        )
-                except (aiohttp.ContentTypeError, ValidationError):
+                    r.raise_for_status()
+
+                    self.responses.append(
+                        await xbox_api.PeopleHubResponse.from_response(r)
+                    )
+                except (
+                    aiohttp.ContentTypeError,
+                    aiohttp.ClientResponseError,
+                    ValidationError,
+                ):
                     # can happen, if not rare
                     text = await r.text()
-                    logging.getLogger(
-                        "realms_bot"
-                    ).info(  # this is more common than you would expect
-                        (
-                            f"Failed to get gamertag of user `{xuid}`.\nResponse code:"
-                            f" {r.status}\nText: {text}"
-                        ),
+                    logging.getLogger("realms_bot").info(
+                        f"Failed to get gamertag of user `{xuid}`.\nResponse code:"
+                        f" {r.status}\nText: {text}"
                     )
 
             self.index += 1

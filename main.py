@@ -28,7 +28,7 @@ import common.utils as utils
 import db_settings
 from common.classes import SemaphoreRedis
 from common.realms_api import RealmsAPI
-from common.xbox_api import XboxAPI, parse_profile_response
+from common.xbox_api import ProfileResponse, XboxAPI
 
 with contextlib.suppress(ImportError):
     import rook  # type: ignore
@@ -94,12 +94,18 @@ def to_proper_word(num: int) -> str:
 class RealmsPlayerlistBot(utils.RealmBotBase):
     @ipy.listen("startup")
     async def on_startup(self) -> None:
-        self.xbox = XboxAPI()
-        self.realms = RealmsAPI()
+        self.xbox = await XboxAPI.from_file(
+            os.environ["XBOX_CLIENT_ID"],
+            os.environ["XBOX_CLIENT_SECRET"],
+            os.environ["XAPI_TOKENS_LOCATION"],
+        )
+        self.realms = await RealmsAPI.from_file(
+            os.environ["XBOX_CLIENT_ID"],
+            os.environ["XBOX_CLIENT_SECRET"],
+            os.environ["XAPI_TOKENS_LOCATION"],
+        )
 
-        await self.xbox.set_up.wait()
-
-        profile = parse_profile_response(
+        profile = ProfileResponse.from_bytes(
             await self.xbox.fetch_profile_by_xuid(self.xbox.auth_mgr.xsts_token.xuid)
         )
         user = profile.profile_users[0]
@@ -206,7 +212,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         try:
             return self._connection_states[0].start_time  # type: ignore
         except IndexError:
-            return ipy.MISSING
+            return ipy.MISSING  # type: ignore
 
     async def stop(self) -> None:
         await bot.session.close()

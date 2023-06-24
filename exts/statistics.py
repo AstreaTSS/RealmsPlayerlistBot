@@ -16,7 +16,6 @@ import common.help_tools as help_tools
 import common.models as models
 import common.stats_utils as stats_utils
 import common.utils as utils
-import common.xbox_api as xbox_api
 
 AsyncCallableT = typing.TypeVar("AsyncCallableT", bound=ipy.const.AsyncCallable)
 
@@ -602,6 +601,5 @@ def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(fuzzy)
     importlib.reload(stats_utils)
     importlib.reload(graph_template)
-    importlib.reload(xbox_api)
     importlib.reload(help_tools)
     Statistics(bot)

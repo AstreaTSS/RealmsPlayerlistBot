@@ -1,7 +1,6 @@
 discord-py-interactions==5.7.0
 tansy==0.7.0
 humanize==4.6.0
-xbox-webapi==2.0.11
 aiodns==3.0.0
 attrs==23.1.0
 asyncpg==0.27.0
@@ -14,7 +13,7 @@ python-dateutil==2.8.2
 sentry-sdk==1.25.1
 rapidfuzz==3.1.1
 pycryptodome==3.18.0
-apischema==0.18.0
 ordered-set==4.1.0
 cachetools==5.3.1
+aiohttp-retry==2.8.3
 uvloop==0.17.0; platform_system == "Linux"

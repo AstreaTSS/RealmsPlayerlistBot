@@ -8,8 +8,7 @@ from enum import IntEnum
 
 import aiohttp
 import interactions as ipy
-import orjson
-from apischema import ValidationError
+from msgspec import ValidationError
 
 import common.graph_template as graph_template
 import common.models as models
@@ -282,9 +281,7 @@ async def xuid_from_gamertag(bot: utils.RealmBotBase, gamertag: str) -> str:
                 headers=headers,
             ) as r:
                 with contextlib.suppress(ValidationError, aiohttp.ContentTypeError):
-                    maybe_xuid = xbox_api.parse_profile_response(
-                        await r.json(loads=orjson.loads)
-                    )
+                    maybe_xuid = await xbox_api.ProfileResponse.from_response(r)
 
         if not maybe_xuid:
             with contextlib.suppress(
@@ -293,8 +290,8 @@ async def xuid_from_gamertag(bot: utils.RealmBotBase, gamertag: str) -> str:
                 ValidationError,
                 MicrosoftAPIException,
             ):
-                resp = await bot.xbox.fetch_profile_by_gamertag(gamertag)
-                maybe_xuid = xbox_api.parse_profile_response(resp)
+                resp_bytes = await bot.xbox.fetch_profile_by_gamertag(gamertag)
+                maybe_xuid = xbox_api.ProfileResponse.from_bytes(resp_bytes)
 
     if not maybe_xuid:
         raise ipy.errors.BadArgument(f"`{gamertag}` is not a valid gamertag.")

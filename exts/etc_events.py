@@ -10,7 +10,7 @@ import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
 
 
-class OnCMDError(ipy.Extension):
+class EtcEvents(ipy.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.update_tokens.start()
@@ -57,4 +57,4 @@ class OnCMDError(ipy.Extension):
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
-    OnCMDError(bot)
+    EtcEvents(bot)

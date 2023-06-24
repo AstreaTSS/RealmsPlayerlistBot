@@ -1,27 +1,20 @@
-from dataclasses import dataclass
+import common.microsoft_core as mscore
 
-import apischema
-
-__all__ = ("Setting", "ProfileUser", "ProfileResponse", "parse_profile_response")
+__all__ = ("Setting", "ProfileUser", "ProfileResponse")
 
 
-@dataclass
-class Setting:
+class Setting(mscore.CamelBaseModel):
     id: str
     value: str
 
 
-@dataclass
-class ProfileUser:
+class ProfileUser(mscore.CamelBaseModel):
     id: str
     host_id: str
     settings: list[Setting]
     is_sponsored_user: bool
 
 
-@dataclass
-class ProfileResponse:
+@mscore.add_decoder
+class ProfileResponse(mscore.ParsableCamelModel):
     profile_users: list[ProfileUser]
-
-
-parse_profile_response = apischema.deserialization_method(ProfileResponse)
