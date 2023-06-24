@@ -94,32 +94,7 @@ def to_proper_word(num: int) -> str:
 class RealmsPlayerlistBot(utils.RealmBotBase):
     @ipy.listen("startup")
     async def on_startup(self) -> None:
-        self.xbox = await XboxAPI.from_file(
-            os.environ["XBOX_CLIENT_ID"],
-            os.environ["XBOX_CLIENT_SECRET"],
-            os.environ["XAPI_TOKENS_LOCATION"],
-        )
-        self.realms = await RealmsAPI.from_file(
-            os.environ["XBOX_CLIENT_ID"],
-            os.environ["XBOX_CLIENT_SECRET"],
-            os.environ["XAPI_TOKENS_LOCATION"],
-        )
-
-        profile = ProfileResponse.from_bytes(
-            await self.xbox.fetch_profile_by_xuid(self.xbox.auth_mgr.xsts_token.xuid)
-        )
-        user = profile.profile_users[0]
-        self.own_gamertag = next(s.value for s in user.settings if s.id == "Gamertag")
-
-        self.session = aiohttp.ClientSession()
-        headers = {
-            "X-Authorization": os.environ["OPENXBL_KEY"],
-            "Accept": "application/json",
-            "Accept-Language": "en-US",
-        }
-        self.openxbl_session = aiohttp.ClientSession(headers=headers)
-
-        self.fully_ready.set()
+        self.fully_ready.set()  # only here because im too lazy to rewrite code
 
     @ipy.listen("ready")
     async def on_ready(self) -> None:
@@ -316,6 +291,31 @@ async def start() -> None:
     bot.realm_name_cache = TTLCache(maxsize=5000, ttl=600)
     bot.fully_ready = asyncio.Event()
     bot.pl_sem = asyncio.Semaphore(12)
+
+    bot.xbox = await XboxAPI.from_file(
+        os.environ["XBOX_CLIENT_ID"],
+        os.environ["XBOX_CLIENT_SECRET"],
+        os.environ["XAPI_TOKENS_LOCATION"],
+    )
+    bot.realms = await RealmsAPI.from_file(
+        os.environ["XBOX_CLIENT_ID"],
+        os.environ["XBOX_CLIENT_SECRET"],
+        os.environ["XAPI_TOKENS_LOCATION"],
+    )
+
+    profile = ProfileResponse.from_bytes(
+        await bot.xbox.fetch_profile_by_xuid(bot.xbox.auth_mgr.xsts_token.xuid)
+    )
+    user = profile.profile_users[0]
+    bot.own_gamertag = next(s.value for s in user.settings if s.id == "Gamertag")
+
+    bot.session = aiohttp.ClientSession()
+    headers = {
+        "X-Authorization": os.environ["OPENXBL_KEY"],
+        "Accept": "application/json",
+        "Accept-Language": "en-US",
+    }
+    bot.openxbl_session = aiohttp.ClientSession(headers=headers)
 
     ext_list = utils.get_all_extensions(os.environ["DIRECTORY_OF_BOT"])
     for ext in ext_list:
