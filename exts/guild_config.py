@@ -19,6 +19,9 @@ import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
 from common.xbox_api import ClubResponse
 
+if typing.TYPE_CHECKING:
+    from common.realms_api import FullRealm
+
 # regex that takes in:
 # - https://realms.gg/XXXXXXX
 # - https://open.minecraft.net/pocket/realms/invite/XXXXXXX
@@ -42,10 +45,15 @@ class GuildConfig(utils.Extension):
         self.name = "Server Config"
         self.bot: utils.RealmBotBase = bot
 
-    async def _gather_realm_names(self) -> None:
+    async def _gather_realm_names(self, specific_realm_id: str) -> FullRealm | None:
         response = await self.bot.realms.fetch_realms()
         names = tuple((str(realm.id), realm.name) for realm in response.servers)
         self.bot.realm_name_cache.update(names)
+
+        return next(
+            (realm for realm in response.servers if str(realm.id) == specific_realm_id),
+            None,
+        )
 
     config = tansy.TansySlashCommand(
         name="config",
@@ -68,30 +76,42 @@ class GuildConfig(utils.Extension):
             f"<#{config.playerlist_chan}>" if config.playerlist_chan else "N/A"
         )
 
-        self.bot.realm_name_cache.expire()
+        if config.realm_id:
+            self.bot.realm_name_cache.expire()
 
-        maybe_realm_name: str | None = self.bot.realm_name_cache.get(config.realm_id)
-        if not maybe_realm_name and config.club_id:
-            resp_bytes = await clubs_playerlist.realm_club_bytes(
-                self.bot, config.club_id
+            maybe_realm_name: str | None = self.bot.realm_name_cache.get(
+                config.realm_id
             )
+            if not maybe_realm_name and config.club_id:
+                resp_bytes = await clubs_playerlist.realm_club_bytes(
+                    self.bot, config.club_id
+                )
 
-            if resp_bytes:
-                with contextlib.suppress(ValidationError):
-                    club = ClubResponse.from_bytes(resp_bytes)
-                    maybe_realm_name = club.clubs[0].profile.name.value
+                if resp_bytes:
+                    with contextlib.suppress(ValidationError):
+                        club = ClubResponse.from_bytes(resp_bytes)
+                        maybe_realm_name = club.clubs[0].profile.name.value
 
-                    if maybe_realm_name:
-                        self.bot.realm_name_cache[config.realm_id] = maybe_realm_name
+                        if maybe_realm_name:
+                            self.bot.realm_name_cache[config.realm_id] = (
+                                maybe_realm_name
+                            )
 
-        if not maybe_realm_name:
-            await self._gather_realm_names()
-            maybe_realm_name = self.bot.realm_name_cache.get(config.realm_id)
+            if not maybe_realm_name:
+                realm = await self._gather_realm_names(config.realm_id)
 
-        if maybe_realm_name:
-            maybe_realm_name = FORMAT_CODE_REGEX.sub("", maybe_realm_name)
+                if realm:
+                    maybe_realm_name = realm.name
+                    if config.club_id != str(realm.club_id):
+                        config.club_id = str(realm.club_id)
+                        await config.save()
 
-        realm_name = utils.na_friendly_str(maybe_realm_name)
+            if maybe_realm_name:
+                maybe_realm_name = FORMAT_CODE_REGEX.sub("", maybe_realm_name)
+
+            realm_name = utils.na_friendly_str(maybe_realm_name)
+        else:
+            realm_name = "N/A"
 
         realm_not_found = False
         if realm_name != "N/A":
