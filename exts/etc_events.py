@@ -4,6 +4,7 @@ import importlib
 import os
 
 import interactions as ipy
+import msgspec
 
 import common.models as models
 import common.utils as utils
@@ -47,8 +48,8 @@ class EtcEvents(ipy.Extension):
             await config.delete()
 
     def _update_tokens(self) -> None:
-        with open(os.environ["XAPI_TOKENS_LOCATION"], mode="w") as f:
-            f.write(self.bot.xbox.auth_mgr.oauth.json())
+        with open(os.environ["XAPI_TOKENS_LOCATION"], mode="wb") as f:
+            f.write(msgspec.json.encode(self.bot.xbox.auth_mgr.oauth))
 
     @ipy.Task.create(ipy.IntervalTrigger(hours=6))
     async def update_tokens(self) -> None:
