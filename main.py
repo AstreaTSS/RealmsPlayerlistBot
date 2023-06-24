@@ -26,7 +26,7 @@ import common.help_tools as help_tools
 import common.models as models
 import common.utils as utils
 import db_settings
-from common.classes import SemaphoreRedis
+from common.classes import BetterResponse, SemaphoreRedis
 from common.realms_api import RealmsAPI
 from common.xbox_api import ProfileResponse, XboxAPI
 
@@ -309,13 +309,15 @@ async def start() -> None:
     user = profile.profile_users[0]
     bot.own_gamertag = next(s.value for s in user.settings if s.id == "Gamertag")
 
-    bot.session = aiohttp.ClientSession()
+    bot.session = aiohttp.ClientSession(response_class=BetterResponse)
     headers = {
         "X-Authorization": os.environ["OPENXBL_KEY"],
         "Accept": "application/json",
         "Accept-Language": "en-US",
     }
-    bot.openxbl_session = aiohttp.ClientSession(headers=headers)
+    bot.openxbl_session = aiohttp.ClientSession(
+        headers=headers, response_class=BetterResponse
+    )
 
     ext_list = utils.get_all_extensions(os.environ["DIRECTORY_OF_BOT"])
     for ext in ext_list:

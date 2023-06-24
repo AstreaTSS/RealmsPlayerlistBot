@@ -9,6 +9,8 @@ import msgspec
 import orjson
 from aiohttp import ClientResponse
 
+from common.classes import BetterResponse
+
 __all__ = (
     "BaseModel",
     "CamelBaseModel",
@@ -366,6 +368,7 @@ class BaseMicrosoftAPI:
                 random_interval_size=0.2,
                 evaluate_response_callback=evaluate_response_callback,
             ),
+            response_class=BetterResponse,
             json_serialize=_orjson_dumps_wrapper,
         )
         auth_mgr = await AuthenticationManager.from_file(
@@ -449,14 +452,7 @@ class BaseMicrosoftAPI:
         resp = await self.session.request(**req_kwargs)
 
         try:
-            if not resp.ok:
-                raise aiohttp.ClientResponseError(
-                    resp.request_info,
-                    resp.history,
-                    status=resp.status,
-                    message=resp.reason,
-                    headers=resp.headers,
-                )
+            resp.raise_for_status()
 
             parsed_data = None if resp.status == 204 else await resp.read()
             resp.close()

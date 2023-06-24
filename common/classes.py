@@ -1,6 +1,7 @@
 import asyncio
 import typing
 
+import aiohttp
 import attrs
 import interactions as ipy
 import redis.asyncio as aioredis
@@ -88,3 +89,18 @@ class SemaphoreRedis(aioredis.Redis):
     ) -> typing.Any:
         async with self.semaphore:
             return await super().execute_command(*args, **options)
+
+
+class BetterResponse(aiohttp.ClientResponse):
+    def raise_for_status(self) -> None:
+        # i just dont want the resp to close lol
+        if not self.ok:
+            # reason should always be not None for a started response
+            assert self.reason is not None  # noqa: S101
+            raise aiohttp.ClientResponseError(
+                self.request_info,
+                self.history,
+                status=self.status,
+                message=self.reason,
+                headers=self.headers,
+            )
