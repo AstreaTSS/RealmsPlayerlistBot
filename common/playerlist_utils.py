@@ -4,6 +4,7 @@ import logging
 import typing
 
 import aiohttp
+import aiohttp_retry
 import attrs
 import interactions as ipy
 import orjson
@@ -72,7 +73,7 @@ class GamertagHandler:
     bot: utils.RealmBotBase = attrs.field()
     sem: asyncio.Semaphore = attrs.field()
     xuids_to_get: tuple[str, ...] = attrs.field()
-    openxbl_session: aiohttp.ClientSession = attrs.field()
+    openxbl_session: aiohttp_retry.RetryClient = attrs.field()
     gather_devices_for: set[str] = attrs.field(kw_only=True, factory=set)
 
     index: int = attrs.field(init=False, default=0)

@@ -11,7 +11,7 @@ import rpl_config
 
 rpl_config.load()
 
-import aiohttp
+import aiohttp_retry
 import discord_typings
 import humanize
 import interactions as ipy
@@ -190,7 +190,8 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
             return ipy.MISSING  # type: ignore
 
     async def stop(self) -> None:
-        await bot.session.close()
+        await bot.openxbl_session.close()
+        await bot.xbox.close()
         await bot.realms.close()
         await Tortoise.close_connections()
         await bot.redis.close(close_connection_pool=True)
@@ -309,13 +310,12 @@ async def start() -> None:
     user = profile.profile_users[0]
     bot.own_gamertag = next(s.value for s in user.settings if s.id == "Gamertag")
 
-    bot.session = aiohttp.ClientSession(response_class=BetterResponse)
     headers = {
         "X-Authorization": os.environ["OPENXBL_KEY"],
         "Accept": "application/json",
         "Accept-Language": "en-US",
     }
-    bot.openxbl_session = aiohttp.ClientSession(
+    bot.openxbl_session = aiohttp_retry.RetryClient(
         headers=headers, response_class=BetterResponse
     )
 

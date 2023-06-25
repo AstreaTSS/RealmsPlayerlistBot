@@ -246,6 +246,7 @@ class RealmAutocompleteContext(RealmContextMixin, ipy.AutocompleteContext):
 
 
 if typing.TYPE_CHECKING:
+    from aiohttp_retry import RetryClient
     from cachetools import TTLCache
     from ordered_set import OrderedSet
 
@@ -263,7 +264,7 @@ if typing.TYPE_CHECKING:
         pl_sem: asyncio.Semaphore
 
         session: aiohttp.ClientSession
-        openxbl_session: aiohttp.ClientSession
+        openxbl_session: RetryClient
         xbox: XboxAPI
         realms: RealmsAPI
         redis: aioredis.Redis
