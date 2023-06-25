@@ -160,14 +160,16 @@ class GamertagHandler:
         dict_gamertags: dict[str, GamertagInfo],
         *,
         device: str | None = None,
-    ) -> None:
+    ) -> dict[str, GamertagInfo]:
         if not xuid or not gamertag:
-            return
+            return dict_gamertags
 
         dict_gamertags[xuid] = GamertagInfo(gamertag, device)
 
         pipe.setex(name=xuid, time=utils.EXPIRE_GAMERTAGS_AT, value=gamertag)
         pipe.setex(name=f"rpl-{gamertag}", time=utils.EXPIRE_GAMERTAGS_AT, value=xuid)
+
+        return dict_gamertags
 
     async def _execute_pipeline(self, pipe: Pipeline) -> None:
         try:
@@ -231,7 +233,7 @@ class GamertagHandler:
                                     ),
                                 )
 
-                        self._handle_new_gamertag(
+                        dict_gamertags = self._handle_new_gamertag(
                             pipe,
                             user.xuid,
                             user.gamertag,
@@ -250,7 +252,9 @@ class GamertagHandler:
                         except (KeyError, StopIteration):
                             continue
 
-                        self._handle_new_gamertag(pipe, xuid, gamertag, dict_gamertags)
+                        dict_gamertags = self._handle_new_gamertag(
+                            pipe, xuid, gamertag, dict_gamertags
+                        )
 
             # send data to pipeline in background
             self.bot.create_task(self._execute_pipeline(pipe))
