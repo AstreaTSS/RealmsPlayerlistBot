@@ -136,7 +136,7 @@ class GamertagHandler:
                     r.raise_for_status()
 
                     self.responses.append(
-                        await xbox_api.PeopleHubResponse.from_response(r)
+                        await xbox_api.ProfileResponse.from_response(r)
                     )
                 except (
                     aiohttp.ContentTypeError,
@@ -240,7 +240,7 @@ class GamertagHandler:
                             dict_gamertags,
                             device=device,
                         )
-                elif isinstance(response, xbox_api.ProfileResponse):
+                else:
                     for user in response.profile_users:
                         xuid = user.id
                         try:
