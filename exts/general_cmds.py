@@ -207,37 +207,23 @@ class GeneralCMDS(utils.Extension):
         )
 
         if not maybe_gamertag:
-            async with aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=2.5)
-            ) as session:
-                headers = {
-                    "X-Authorization": os.environ["OPENXBL_KEY"],
-                    "Accept": "application/json",
-                    "Accept-Language": "en-US",
-                }
-                with contextlib.suppress(asyncio.TimeoutError):
-                    async with session.get(
-                        f"https://xbl.io/api/v2/account/{valid_xuid}",
-                        headers=headers,
-                    ) as r:
-                        with contextlib.suppress(
-                            ValidationError, aiohttp.ContentTypeError
-                        ):
-                            maybe_gamertag = (
-                                await xbox_api.ProfileResponse.from_response(r)
-                            )
+            with contextlib.suppress(asyncio.TimeoutError):
+                async with self.bot.openxbl_session.get(
+                    f"https://xbl.io/api/v2/account/{valid_xuid}",
+                    timeout=10,
+                ) as r:
+                    with contextlib.suppress(ValidationError, aiohttp.ContentTypeError):
+                        maybe_gamertag = await xbox_api.ProfileResponse.from_response(r)
 
-                if not maybe_gamertag:
-                    with contextlib.suppress(
-                        aiohttp.ClientResponseError,
-                        asyncio.TimeoutError,
-                        ValidationError,
-                        MicrosoftAPIException,
-                    ):
-                        resp_bytes = await self.bot.xbox.fetch_profile_by_xuid(
-                            valid_xuid
-                        )
-                        maybe_gamertag = xbox_api.ProfileResponse.from_bytes(resp_bytes)
+        if not maybe_gamertag:
+            with contextlib.suppress(
+                aiohttp.ClientResponseError,
+                asyncio.TimeoutError,
+                ValidationError,
+                MicrosoftAPIException,
+            ):
+                resp_bytes = await self.bot.xbox.fetch_profile_by_xuid(valid_xuid)
+                maybe_gamertag = xbox_api.ProfileResponse.from_bytes(resp_bytes)
 
         if not maybe_gamertag:
             raise ipy.errors.BadArgument(
