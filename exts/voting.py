@@ -35,9 +35,9 @@ class Voting(ipy.Extension):
                     session=aiohttp.ClientSession(
                         headers={"Authorization": os.environ["TOP_GG_TOKEN"]}
                     ),
-                    data_url=f"/bots/{self.bot.user.id}/stats",
+                    data_url="/bots/{bot_id}/stats",
                     data_callback=lambda guild_count: {"server_count": guild_count},
-                    vote_url=f"https://top.gg/bot/{self.bot.user.id}/vote",
+                    vote_url="https://top.gg/bot/{bot_id}/vote",
                 )
             )
 
@@ -49,7 +49,7 @@ class Voting(ipy.Extension):
                     session=aiohttp.ClientSession(
                         headers={"Authorization": os.environ["DBL_TOKEN"]}
                     ),
-                    data_url=f"/bots/{self.bot.user.id}/stats",
+                    data_url="/bots/{bot_id}/stats",
                     data_callback=lambda guild_count: {"guilds": guild_count},
                     vote_url=(
                         "https://discordbotlist.com/bots/realms-playerlist-bot/upvote"
@@ -75,7 +75,7 @@ class Voting(ipy.Extension):
 
         for handler in self.handlers:
             async with handler.session.post(
-                f"{handler.base_url}{handler.data_url}",
+                f"{handler.base_url.format(bot_id=self.bot.user.id)}{handler.data_url}",
                 json=handler.data_callback(server_count),
             ) as r:
                 try:
@@ -89,7 +89,8 @@ class Voting(ipy.Extension):
     )
     async def vote(self, ctx: utils.RealmContext) -> None:
         website_votes: list[str] = [
-            f"**{handler.name}** - <{handler.vote_url}>" for handler in self.handlers
+            f"**{handler.name}** - <{handler.vote_url.format(bot_id=self.bot.user.id)}>"
+            for handler in self.handlers
         ]
         await ctx.send("\n".join(website_votes))
 
