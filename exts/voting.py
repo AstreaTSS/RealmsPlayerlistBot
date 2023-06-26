@@ -89,7 +89,7 @@ class Voting(ipy.Extension):
     )
     async def vote(self, ctx: utils.RealmContext) -> None:
         website_votes: list[str] = [
-            f"**{handler.name}** - {handler.vote_url}" for handler in self.handlers
+            f"**{handler.name}** - <{handler.vote_url}>" for handler in self.handlers
         ]
         await ctx.send("\n".join(website_votes))
 
