@@ -13,14 +13,6 @@ import common.playerlist_utils as pl_utils
 import common.utils as utils
 from common.microsoft_core import MicrosoftAPIException
 
-UPSELLS = {
-    1: (
-        "Want minute-to-minute updates on your Realm? Check out Live Playerlist on"
-        " Playerlist Premium: /premium info"
-    ),
-    2: "If you like the bot, you can vote for it via /vote!",
-}
-
 
 class Playerlist(utils.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
@@ -254,8 +246,7 @@ class Playerlist(utils.Extension):
         """
 
         autorunner: bool = kwargs.get("autorunner", False)
-        upsell: bool = kwargs.get("upsell", False)
-        upsell_type: int = kwargs.get("upsell_type", -1)
+        upsell: str | None = kwargs.get("upsell")
 
         config = await ctx.fetch_config()
 
@@ -383,7 +374,7 @@ class Playerlist(utils.Extension):
 
         if upsell and not config.premium_code:
             # add upsell message to last embed
-            embeds[-1].set_footer(UPSELLS[upsell_type])
+            embeds[-1].set_footer(upsell)
 
         first_embed = True
 
