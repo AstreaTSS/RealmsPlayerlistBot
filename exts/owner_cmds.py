@@ -10,6 +10,7 @@ import traceback
 import typing
 import unicodedata
 
+import aiohttp
 import interactions as ipy
 import tansy
 from interactions.ext import paginators
@@ -486,6 +487,24 @@ class OwnerCMDs(utils.Extension):
             )
             self.bot.slash_perms_cache = collections.defaultdict(dict)
             self.bot.mini_commands_per_scope = {}
+
+        await ctx.reply("Done!")
+
+    @debug.subcommand(aliases=["sync-dbl-cmds", "sync-dbl", "sync-dbl-commands"])
+    async def sync_dbl_commands(self, ctx: prefixed.PrefixedContext) -> None:
+        if not os.environ.get("DBL_TOKEN"):
+            raise ipy.errors.BadArgument("DBL_TOKEN is not set.")
+
+        async with ctx.channel.typing:
+            data = await self.bot.http.get_application_commands(self.bot.user.id, 0)
+            async with aiohttp.ClientSession(
+                headers={"Authorization": os.environ["DBL_TOKEN"]}
+            ) as session:
+                async with session.post(
+                    f"https://discordbotlist.com/api/v1/bots/{self.bot.user.id}/commands",
+                    json=data,
+                ) as r:
+                    r.raise_for_status()
 
         await ctx.reply("Done!")
 
