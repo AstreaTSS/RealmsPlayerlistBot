@@ -346,4 +346,4 @@ if __name__ == "__main__":
         loop_factory = uvloop.new_event_loop
 
     with asyncio.Runner(loop_factory=loop_factory) as runner:
-        asyncio.run(start())
+        runner.run(start())
