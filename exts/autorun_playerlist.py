@@ -17,7 +17,7 @@ UPSELLS = [
     ),
     (
         "If you like the bot, you can vote for it via /vote! Voting helps the bot grow"
-        " and get more features!"
+        " and get more features."
     ),
 ]
 LENGTH_UPSELLS = len(UPSELLS)
