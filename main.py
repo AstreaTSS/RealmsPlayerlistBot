@@ -193,6 +193,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
     async def stop(self) -> None:
         await bot.openxbl_session.close()
+        await bot.session.close()
         await bot.xbox.close()
         await bot.realms.close()
         await Tortoise.close_connections()
