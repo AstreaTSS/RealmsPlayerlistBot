@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import datetime
+import io
 import os
 import typing
 from collections import defaultdict
@@ -534,7 +535,7 @@ async def process_multi_graph_data(
     return minutes_per_period_map, earliest_datetime
 
 
-def create_single_graph_url(
+def create_single_graph(
     ctx: utils.RealmContext,
     *,
     title: str,
@@ -542,13 +543,13 @@ def create_single_graph_url(
     time_data: VALID_TIME_DICTS,
     localizations: tuple[str, str],
     **template_kwargs: typing.Any,
-) -> str:
+) -> str | dict[str, typing.Any]:
     locale = ctx.locale or ctx.guild_locale or "en_GB"
     # im aware theres countries that do yy/mm/dd - i'll add them in soon
     locale_to_use = localizations[0] if locale == "en-US" else localizations[1]
 
     localized = {k.strftime(locale_to_use): v for k, v in time_data.items()}
-    return graph_template.graph_template(
+    url = graph_template.graph_template(
         title,
         "Total Minutes Played",
         bottom_label.format(localized_format=SHOWABLE_FORMAT[locale_to_use]),
@@ -557,8 +558,20 @@ def create_single_graph_url(
         **template_kwargs,
     )
 
+    # discord doesn't like this, return dict so we can make post req later
+    if len(url) > 2048:
+        return graph_template.graph_dict(
+            title,
+            "Total Minutes Played",
+            bottom_label.format(localized_format=SHOWABLE_FORMAT[locale_to_use]),
+            tuple(localized.keys()),
+            tuple(localized.values()),
+            **template_kwargs,
+        )
+    return url
 
-def create_multi_graph_url(
+
+def create_multi_graph(
     ctx: utils.RealmContext | utils.RealmModalContext,
     *,
     title: str,
@@ -567,7 +580,7 @@ def create_multi_graph_url(
     gamertags: list[str],
     localizations: tuple[str, str],
     **template_kwargs: typing.Any,
-) -> str:
+) -> str | dict[str, typing.Any]:
     first_xuid: str = next(iter(time_data.keys()))
 
     locale = ctx.locale or ctx.guild_locale or "en_GB"
@@ -577,7 +590,7 @@ def create_multi_graph_url(
     localized_keys = tuple(v.strftime(locale_to_use) for v in time_data[first_xuid])
     data_points = tuple(tuple(v.values()) for v in time_data.values())
 
-    return graph_template.multi_graph_template(
+    url = graph_template.multi_graph_template(
         title,
         "Total Minutes Played",
         bottom_label.format(localized_format=SHOWABLE_FORMAT[locale_to_use]),
@@ -586,12 +599,23 @@ def create_multi_graph_url(
         data_points,
         **template_kwargs,
     )
+    if len(url) > 2048:
+        return graph_template.multi_graph_dict(
+            title,
+            "Total Minutes Played",
+            bottom_label.format(localized_format=SHOWABLE_FORMAT[locale_to_use]),
+            localized_keys,
+            tuple(gamertags),
+            data_points,
+            **template_kwargs,
+        )
+    return url
 
 
 async def send_graph(
     ctx: utils.RealmContext | utils.RealmModalContext,
     *,
-    graph_url: str,
+    graph: str | dict[str, typing.Any],
     now: datetime.datetime,
     title: str,
     min_datetime: datetime.datetime,
@@ -600,56 +624,81 @@ async def send_graph(
     ] = None,
     earliest_datetime: typing.Optional[datetime.datetime] = None,
 ) -> None:
-    if not earliest_datetime:
-        # if the minimum datetime plus one day that we passed is still before
-        # the earliest datetime we've gathered, that probably means the bot
-        # has only recently tracked a realm, and so we want to warn that
-        # the data might not be the best
-        earliest_datetime = min(d[0] for d in datetimes_used)  # type: ignore
+    kwargs: dict[str, typing.Any] = {}
 
-    warn_about_earliest = min_datetime + datetime.timedelta(days=1) < earliest_datetime
+    try:
+        if isinstance(graph, dict):
+            payload = {
+                "bkg": "white",
+                "w": 700,
+                "h": 400,
+                "chart": graph,
+            }
+            async with ctx.bot.session.post(
+                "https://quickchart.io/chart", json=payload
+            ) as resp:
+                resp.raise_for_status()
+                file = ipy.File(io.BytesIO(await resp.read()), file_name="graph.png")
+                kwargs["file"] = file
 
-    embeds: list[ipy.Embed] = []
+        if not earliest_datetime:
+            # if the minimum datetime plus one day that we passed is still before
+            # the earliest datetime we've gathered, that probably means the bot
+            # has only recently tracked a realm, and so we want to warn that
+            # the data might not be the best
+            earliest_datetime = min(d[0] for d in datetimes_used)  # type: ignore
 
-    if warn_about_earliest:
-        # probably not the most elegant way to check if this is player-based or not
-        # but it works for now
-        if "Realm" in title:
-            description = (
-                "The bot does not have enough data to properly graph data for the"
-                " timespan you specified (most likely, you specified a timespan"
-                " that goes further back than when you first set up the bot with"
-                " your Realm). This data may be inaccurate."
-            )
-        elif "various players" in title:
-            description = (
-                "The bot does not have enough data to properly graph data for the"
-                " timespan you specified (most likely, you specified a timespan that"
-                " goes further back than when you first set up the bot with your Realm"
-                " or when the oldest player first started playing). This data may be"
-                " inaccurate."
-            )
-        else:
-            description = (
-                "The bot does not have enough data to properly graph data for the"
-                " timespan you specified (most likely, you specified a timespan"
-                " that goes further back than when you first set up the bot with"
-                " your Realm or when the player first started playing). This data"
-                " may be inaccurate."
-            )
-        embeds.append(
-            ipy.Embed(
-                title="Warning",
-                description=description,
-                color=ipy.RoleColors.YELLOW,
-            )
+        warn_about_earliest = (
+            min_datetime + datetime.timedelta(days=1) < earliest_datetime
         )
 
-    embed = ipy.Embed(
-        color=ctx.bot.color,
-        timestamp=now,  # type: ignore
-    )
-    embed.set_image(graph_url)
-    embeds.append(embed)
+        embeds: list[ipy.Embed] = []
 
-    await ctx.send(embeds=embeds)
+        if warn_about_earliest:
+            # probably not the most elegant way to check if this is player-based or not
+            # but it works for now
+            if "Realm" in title:
+                description = (
+                    "The bot does not have enough data to properly graph data for the"
+                    " timespan you specified (most likely, you specified a timespan"
+                    " that goes further back than when you first set up the bot with"
+                    " your Realm). This data may be inaccurate."
+                )
+            elif "various players" in title:
+                description = (
+                    "The bot does not have enough data to properly graph data for the"
+                    " timespan you specified (most likely, you specified a timespan"
+                    " that goes further back than when you first set up the bot with"
+                    " your Realm or when the oldest player first started playing). This"
+                    " data may be inaccurate."
+                )
+            else:
+                description = (
+                    "The bot does not have enough data to properly graph data for the"
+                    " timespan you specified (most likely, you specified a timespan"
+                    " that goes further back than when you first set up the bot with"
+                    " your Realm or when the player first started playing). This data"
+                    " may be inaccurate."
+                )
+            embeds.append(
+                ipy.Embed(
+                    title="Warning",
+                    description=description,
+                    color=ipy.RoleColors.YELLOW,
+                )
+            )
+
+        embed = ipy.Embed(
+            color=ctx.bot.color,
+            timestamp=now,  # type: ignore
+        )
+        embed.set_image(graph if isinstance(graph, str) else "attachment://graph.png")
+        embeds.append(embed)
+        kwargs["embeds"] = embeds
+
+        await ctx.send(**kwargs)
+    finally:
+        if kwargs.get("file") and isinstance(
+            kwargs["file"].file, io.IOBase | typing.BinaryIO
+        ):
+            kwargs["file"].file.close()

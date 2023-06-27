@@ -11,6 +11,7 @@ import rpl_config
 
 rpl_config.load()
 
+import aiohttp
 import aiohttp_retry
 import discord_typings
 import humanize
@@ -27,6 +28,7 @@ import common.models as models
 import common.utils as utils
 import db_settings
 from common.classes import BetterResponse, SemaphoreRedis
+from common.microsoft_core import _orjson_dumps_wrapper
 from common.realms_api import RealmsAPI
 from common.xbox_api import ProfileResponse, XboxAPI
 
@@ -318,6 +320,7 @@ async def start() -> None:
     bot.openxbl_session = aiohttp_retry.RetryClient(
         headers=headers, response_class=BetterResponse
     )
+    bot.session = aiohttp.ClientSession(json_serialize=_orjson_dumps_wrapper)
 
     ext_list = utils.get_all_extensions(os.environ["DIRECTORY_OF_BOT"])
     for ext in ext_list:

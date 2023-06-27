@@ -83,7 +83,7 @@ class Statistics(utils.Extension):
             gamertag=gamertag,
             filter_kwargs=filter_kwargs,
         )
-        graph_url = stats_utils.create_single_graph_url(
+        graph = stats_utils.create_single_graph(
             ctx,
             title=returned_data.formatted_title,
             bottom_label=returned_data.bottom_label,
@@ -93,7 +93,7 @@ class Statistics(utils.Extension):
         )
         await stats_utils.send_graph(
             ctx,
-            graph_url=graph_url,
+            graph=graph,
             now=now,
             title=returned_data.formatted_title,
             min_datetime=returned_data.min_datetime,
@@ -123,7 +123,7 @@ class Statistics(utils.Extension):
             gamertag=gamertag,
             filter_kwargs=filter_kwargs,
         )
-        graph_url = stats_utils.create_single_graph_url(
+        graph = stats_utils.create_single_graph(
             ctx,
             title=returned_data.formatted_title,
             bottom_label=returned_data.bottom_label,
@@ -133,7 +133,7 @@ class Statistics(utils.Extension):
         )
         await stats_utils.send_graph(
             ctx,
-            graph_url=graph_url,
+            graph=graph,
             now=now,
             title=returned_data.formatted_title,
             min_datetime=returned_data.min_datetime,
@@ -355,7 +355,7 @@ class Statistics(utils.Extension):
             now=now,
             func_to_use=returned_data.func_to_use,
         )
-        graph_url = stats_utils.create_multi_graph_url(
+        graph = stats_utils.create_multi_graph(
             ctx,
             title=returned_data.formatted_title,
             bottom_label=returned_data.bottom_label,
@@ -370,7 +370,7 @@ class Statistics(utils.Extension):
         )
         await stats_utils.send_graph(
             ctx,
-            graph_url=graph_url,
+            graph=graph,
             now=now,
             title=returned_data.formatted_title,
             min_datetime=returned_data.min_datetime,

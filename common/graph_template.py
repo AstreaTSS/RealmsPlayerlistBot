@@ -6,17 +6,15 @@ import orjson
 
 
 @functools.lru_cache(maxsize=128)
-def graph_template(
+def graph_dict(
     title: str,
     scale_label: str,
     bottom_label: str,
     labels: tuple[str, ...],
     data: tuple[int, ...],
     *,
-    width: int = 700,
-    height: int = 400,
     max_value: typing.Optional[int] = 70,
-) -> str:
+) -> dict[str, typing.Any]:
     config = {
         "type": "bar",
         "data": {
@@ -73,6 +71,25 @@ def graph_template(
     if not max_value:
         config["options"]["scales"]["yAxes"][0]["ticks"].pop("max", None)
 
+    return config
+
+
+@functools.lru_cache(maxsize=128)
+def graph_template(
+    title: str,
+    scale_label: str,
+    bottom_label: str,
+    labels: tuple[str, ...],
+    data: tuple[int, ...],
+    *,
+    width: int = 700,
+    height: int = 400,
+    max_value: typing.Optional[int] = 70,
+) -> str:
+    config = graph_dict(
+        title, scale_label, bottom_label, labels, data, max_value=max_value
+    )
+
     payload = {
         "bkg": "white",
         "w": width,
@@ -84,7 +101,7 @@ def graph_template(
 
 
 @functools.lru_cache(maxsize=128)
-def multi_graph_template(
+def multi_graph_dict(
     title: str,
     scale_label: str,
     bottom_label: str,
@@ -92,10 +109,8 @@ def multi_graph_template(
     gamertags: typing.Iterable[str],
     datas: tuple[tuple[int, ...], ...],
     *,
-    width: int = 700,
-    height: int = 400,
     max_value: typing.Optional[int] = 70,
-) -> str:
+) -> dict[str, typing.Any]:
     config = {
         "type": "bar",
         "data": {
@@ -146,6 +161,26 @@ def multi_graph_template(
 
     if not max_value:
         config["options"]["scales"]["yAxes"][0]["ticks"].pop("max", None)
+
+    return config
+
+
+@functools.lru_cache(maxsize=128)
+def multi_graph_template(
+    title: str,
+    scale_label: str,
+    bottom_label: str,
+    labels: tuple[str, ...],
+    gamertags: typing.Iterable[str],
+    datas: tuple[tuple[int, ...], ...],
+    *,
+    width: int = 700,
+    height: int = 400,
+    max_value: typing.Optional[int] = 70,
+) -> str:
+    config = multi_graph_dict(
+        title, scale_label, bottom_label, labels, gamertags, datas, max_value=max_value
+    )
 
     payload = {
         "bkg": "white",
