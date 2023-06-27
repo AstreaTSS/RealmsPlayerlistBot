@@ -315,18 +315,20 @@ def _orjson_dumps_wrapper(obj: typing.Any) -> str:
 
 
 class CustomRetry(aiohttp_retry.JitterRetry):
-    def get_timeout(self, attempt: int, resp: ClientResponse | None = None) -> float:
-        if not resp:
-            return super().get_timeout(attempt, resp)
+    def get_timeout(
+        self, attempt: int, response: ClientResponse | None = None
+    ) -> float:
+        if not response:
+            return super().get_timeout(attempt, response)
 
-        if resp.status == 401:
+        if response.status == 401:
             timeout = self._start_timeout
             self._start_timeout = 0.5
-            result = super().get_timeout(attempt, resp)
+            result = super().get_timeout(attempt, response)
             self._start_timeout = timeout
             return result
 
-        return super().get_timeout(attempt, resp)
+        return super().get_timeout(attempt, response)
 
 
 async def evaluate_response_callback(resp: aiohttp.ClientResponse) -> bool:
