@@ -201,7 +201,7 @@ class PremiumHandling(ipy.Extension):
                 "You need to turn on the live playerlist to use this as of right now."
             )
 
-        if not ctx.channel.permissions:
+        if not ctx.app_permissions:
             raise utils.CustomCheckFailure(
                 "Could not resolve permissions for this channel."
             )
@@ -210,7 +210,7 @@ class PremiumHandling(ipy.Extension):
             ipy.Permissions.VIEW_CHANNEL
             | ipy.Permissions.SEND_MESSAGES
             | ipy.Permissions.READ_MESSAGE_HISTORY
-            not in ctx.channel.permissions
+            not in ctx.app_permissions
         ):
             raise utils.CustomCheckFailure(
                 "I need the `View Channel`, `Send Messages`, and `Read Message History`"
