@@ -1,6 +1,6 @@
 discord-py-interactions==5.7.0
 tansy==0.7.0
-humanize==4.6.0
+humanize==4.7.0
 aiodns==3.0.0
 attrs==23.1.0
 asyncpg==0.27.0
