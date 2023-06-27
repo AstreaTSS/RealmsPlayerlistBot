@@ -499,12 +499,11 @@ class OwnerCMDs(utils.Extension):
             data = await self.bot.http.get_application_commands(self.bot.user.id, 0)
             async with aiohttp.ClientSession(
                 headers={"Authorization": os.environ["DBL_TOKEN"]}
-            ) as session:
-                async with session.post(
-                    f"https://discordbotlist.com/api/v1/bots/{self.bot.user.id}/commands",
-                    json=data,
-                ) as r:
-                    r.raise_for_status()
+            ) as session, session.post(
+                f"https://discordbotlist.com/api/v1/bots/{self.bot.user.id}/commands",
+                json=data,
+            ) as r:
+                r.raise_for_status()
 
         await ctx.reply("Done!")
 
