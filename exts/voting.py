@@ -75,7 +75,7 @@ class Voting(ipy.Extension):
 
         for handler in self.handlers:
             async with handler.session.post(
-                f"{handler.base_url.format(bot_id=self.bot.user.id)}{handler.data_url}",
+                f"{handler.base_url}{handler.data_url.format(bot_id=self.bot.user.id)}",
                 json=handler.data_callback(server_count),
             ) as r:
                 try:
