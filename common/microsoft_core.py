@@ -357,7 +357,7 @@ class BaseMicrosoftAPI:
             retry_options=CustomRetry(
                 attempts=3,
                 start_timeout=0.1,
-                random_interval_size=0.5,
+                random_interval_size=0.35,
             ),
             response_class=BetterResponse,
             json_serialize=_orjson_dumps_wrapper,
