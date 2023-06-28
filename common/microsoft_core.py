@@ -313,7 +313,7 @@ class CustomRetry(aiohttp_retry.JitterRetry):
         if not response:
             return super().get_timeout(attempt, response)
 
-        if response.headers.get("Retry-After"):
+        if not response.ok and response.headers.get("Retry-After"):
             timeout = self._start_timeout
             self._start_timeout = 0.5
             result = super().get_timeout(attempt, response)
@@ -328,8 +328,9 @@ async def evaluate_response_callback(
 ) -> bool:
     if resp.status == 401:
         await auth_mgr.refresh_tokens(force_refresh=True)
+        return False
 
-    if retry_after := resp.headers.get("Retry-After"):
+    if not resp.ok and (retry_after := resp.headers.get("Retry-After")):
         await asyncio.sleep(float(retry_after))
         return False
     return True
@@ -356,7 +357,7 @@ class BaseMicrosoftAPI:
             retry_options=CustomRetry(
                 attempts=3,
                 start_timeout=0.1,
-                random_interval_size=0.2,
+                random_interval_size=0.5,
             ),
             response_class=BetterResponse,
             json_serialize=_orjson_dumps_wrapper,
