@@ -276,9 +276,11 @@ async def can_run_playerlist(ctx: utils.RealmContext) -> bool:
 
 
 async def invalidate_premium(
-    bot: utils.RealmBotBase, config: models.GuildConfig
+    bot: utils.RealmBotBase,
+    config: models.GuildConfig,
 ) -> None:
-    config.premium_code = None
+    if config.valid_premium:
+        config.premium_code = None
     config.live_playerlist = False
     config.fetch_devices = False
     config.live_online_channel = None

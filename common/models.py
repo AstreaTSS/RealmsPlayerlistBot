@@ -1,6 +1,7 @@
 import os
 import typing
-from datetime import datetime
+from datetime import UTC, datetime
+from functools import cached_property
 from uuid import UUID
 
 from tortoise import fields
@@ -28,6 +29,16 @@ class GuildConfig(Model):
         on_delete=fields.SET_NULL,
         null=True,
     )  # type: ignore
+
+    @cached_property
+    def valid_premium(self) -> bool:
+        return bool(
+            self.premium_code
+            and (
+                not self.premium_code.expires_at
+                or self.premium_code.expires_at > datetime.now(UTC)
+            )
+        )
 
 
 EMOJI_DEVICE_NAMES = {
@@ -124,8 +135,10 @@ class PremiumCode(Model):
 
     id: int = fields.IntField(pk=True)
     code: str = fields.CharField(100)
-    user_id: int = fields.BigIntField(null=True)
+    user_id: int | None = fields.BigIntField(null=True)
     uses: int = fields.IntField(default=0)
-    max_uses: int = fields.IntField(default=1)
+    max_uses: int = fields.IntField(default=2)
+    customer_id: typing.Optional[str] = fields.CharField(50, null=True)
+    expires_at: typing.Optional[datetime] = fields.DatetimeField(null=True)
 
     guilds: fields.ReverseRelation["GuildConfig"]

@@ -294,7 +294,7 @@ class Playerlist(utils.Extension):
 
         bypass_cache_for: typing.Optional[set[str]] = None
         if config.fetch_devices:
-            if not config.premium_code:
+            if not config.valid_premium:
                 await pl_utils.invalidate_premium(self.bot, config)
             else:
                 bypass_cache_for = {p.xuid for p in player_sessions if p.online}
@@ -372,7 +372,7 @@ class Playerlist(utils.Extension):
             offline_embeds[0].title = f"People on in the last {hours_ago} hour(s)"
             embeds.extend(offline_embeds)
 
-        if upsell and not config.premium_code:
+        if upsell and not config.valid_premium:
             # add upsell message to last embed
             embeds[-1].set_footer(upsell)
 
@@ -416,7 +416,7 @@ class Playerlist(utils.Extension):
 
         bypass_cache = False
         if config.fetch_devices:
-            if not config.premium_code:
+            if not config.valid_premium:
                 await pl_utils.invalidate_premium(self.bot, config)
             else:
                 bypass_cache = True

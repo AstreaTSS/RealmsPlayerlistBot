@@ -127,14 +127,16 @@ class GuildConfig(utils.Extension):
             f"<@&{config.realm_offline_role}>" if config.realm_offline_role else "N/A"
         )
 
-        if not config.premium_code and (config.live_playerlist or config.fetch_devices):
+        if not config.valid_premium and (
+            config.live_playerlist or config.fetch_devices or config.live_online_channel
+        ):
             await pl_utils.invalidate_premium(self.bot, config)
 
         embed.description = (
             f"Realm Name: {realm_name}\nAutorunner: {autorunner}\nAutorun Playerlist"
             f" Channel: {playerlist_channel}\nOffline Realm Ping Role:"
             f" {offline_realm_ping}\n\nPremium Activated:"
-            f" {utils.yesno_friendly_str(bool(config.premium_code))}\nLive Playerlist:"
+            f" {utils.yesno_friendly_str(config.valid_premium)}\nLive Playerlist:"
             f" {utils.toggle_friendly_str(config.live_playerlist)}\nFetch Devices:"
             f" {utils.toggle_friendly_str(config.fetch_devices)}"
         )

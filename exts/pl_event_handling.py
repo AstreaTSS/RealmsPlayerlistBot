@@ -105,7 +105,7 @@ class PlayerlistEventHandling(ipy.Extension):
                 self.bot.live_playerlist_store[event.realm_id].discard(guild_id)
                 continue
 
-            if not config.premium_code:
+            if not config.valid_premium:
                 await pl_utils.invalidate_premium(self.bot, config)
                 continue
 

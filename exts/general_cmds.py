@@ -11,6 +11,7 @@ import aiohttp
 import interactions as ipy
 import tansy
 from msgspec import ValidationError
+from tortoise.expressions import Q
 
 import common.models as models
 import common.utils as utils
@@ -116,7 +117,11 @@ class GeneralCMDS(utils.Extension):
             self.bot.prefixed.commands
         )
         premium_count = await models.GuildConfig.filter(
-            premium_code__id__not_isnull=True
+            Q(premium_code__id__not_isnull=True)
+            & Q(
+                Q(premium_code__expires_at__isnull=True)
+                | Q(premium_code__expires_at__gt=ctx.id.created_at)
+            )
         ).count()
 
         num_shards = len(self.bot.shards)

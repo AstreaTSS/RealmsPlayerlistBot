@@ -22,6 +22,7 @@ from interactions.ext import prefixed_commands as prefixed
 from interactions.ext.sentry import HookedTask
 from ordered_set import OrderedSet
 from tortoise import Tortoise
+from tortoise.expressions import Q
 
 import common.help_tools as help_tools
 import common.models as models
@@ -280,15 +281,25 @@ async def start() -> None:
     # add info for who has live playerlist on, as we can't rely on anything other than
     # pure memory for the playerlist getting code
     async for config in models.GuildConfig.filter(
-        premium_code__id__not_isnull=True,
-        realm_id__not_isnull=True,
-        playerlist_chan__not_isnull=True,
-        live_playerlist=True,
+        Q(premium_code__id__not_isnull=True)
+        & Q(
+            Q(premium_code__expires_at__isnull=True)
+            | Q(premium_code__expires_at__gt=ipy.Timestamp.utcnow())
+        )
+        & Q(realm_id__not_isnull=True)
+        & Q(playerlist_chan__not_isnull=True)
+        & Q(live_playerlist=True)
     ).prefetch_related("premium_code"):
         bot.live_playerlist_store[config.realm_id].add(config.guild_id)  # type: ignore
 
     async for config in models.GuildConfig.filter(
-        premium_code__id__not_isnull=True, realm_id__not_isnull=True, fetch_devices=True
+        Q(premium_code__id__not_isnull=True)
+        & Q(
+            Q(premium_code__expires_at__isnull=True)
+            | Q(premium_code__expires_at__gt=ipy.Timestamp.utcnow())
+        )
+        & Q(realm_id__not_isnull=True)
+        & Q(fetch_devices=True)
     ):
         bot.fetch_devices_for.add(config.realm_id)
 

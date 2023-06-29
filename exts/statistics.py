@@ -314,7 +314,7 @@ class Statistics(utils.Extension):
 
         gamertags_list = gamertags.splitlines()
 
-        limit = 5 if config.premium_code else 2
+        limit = 5 if config.valid_premium else 2
 
         if len(gamertags_list) > limit:
             raise ipy.errors.BadArgument(
@@ -428,12 +428,10 @@ class Statistics(utils.Extension):
     ) -> None:
         period = ctx.kwargs.get("period")
 
-        has_premium = await models.GuildConfig.exists(
-            guild_id=ctx.guild.id, premium_code__id__not_isnull=True
-        )
+        config = await ctx.fetch_config()
         periods = (
             stats_utils.PREMIUM_PERIOD_TO_GRAPH
-            if has_premium
+            if config.valid_premium
             else stats_utils.PERIOD_TO_GRAPH
         )
         periods_dict = [{"name": str(p.name), "value": p.value} for p in periods]
@@ -460,12 +458,10 @@ class Statistics(utils.Extension):
     ) -> None:
         summarize_by = ctx.kwargs.get("summarize_by")
 
-        has_premium = await models.GuildConfig.exists(
-            guild_id=ctx.guild.id, premium_code__id__not_isnull=True
-        )
+        config = await ctx.fetch_config()
         summarize_bys = (
             stats_utils.PREMIUM_SUMMARIZE_BY
-            if has_premium
+            if config.valid_premium
             else stats_utils.SUMMARIZE_BY
         )
         summary_dict = [{"name": str(s.name), "value": s.value} for s in summarize_bys]

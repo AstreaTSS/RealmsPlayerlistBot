@@ -20,7 +20,7 @@ def premium_check() -> typing.Callable[[CommandT], CommandT]:
     async def check(ctx: utils.RealmContext) -> bool:
         config = await ctx.fetch_config()
 
-        if not config.premium_code:
+        if not config.valid_premium:
             raise utils.CustomCheckFailure(
                 "This server does not have premium activated! Check out"
                 f" {ctx.bot.mention_cmd('premium info')} for more information about it."

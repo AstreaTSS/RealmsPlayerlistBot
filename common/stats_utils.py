@@ -348,7 +348,7 @@ async def gather_datetimes(
 
 
 def period_parse(config: models.GuildConfig, period: str) -> tuple[int, str]:
-    periods = PREMIUM_PERIODS if config.premium_code else PERIODS
+    periods = PREMIUM_PERIODS if config.valid_premium else PERIODS
     if period not in periods:
         raise ipy.errors.BadArgument("Invalid period given.")
 
@@ -365,7 +365,7 @@ def period_parse(config: models.GuildConfig, period: str) -> tuple[int, str]:
 
 
 def summary_parse(config: models.GuildConfig, summarize_by: str) -> tuple[int, str]:
-    summaries = PREMIUM_SUMMARIES if config.premium_code else SUMMARIES
+    summaries = PREMIUM_SUMMARIES if config.valid_premium else SUMMARIES
     if summarize_by not in summaries:
         raise ipy.errors.BadArgument("Invalid summary given.")
 
@@ -697,7 +697,7 @@ async def send_graph(
         )
         embed.set_image(graph if isinstance(graph, str) else "attachment://graph.png")
 
-        if not config.premium_code and random.randint(1, 7) == 1:  # noqa: S311
+        if not config.valid_premium and random.randint(1, 7) == 1:  # noqa: S311
             embed.set_footer(
                 "Premium users have more options and can go back to 30 days prior."
                 " Check it out through /premium info!"
