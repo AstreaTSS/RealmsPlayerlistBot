@@ -210,13 +210,15 @@ class PremiumHandling(ipy.Extension):
             ipy.Permissions.VIEW_CHANNEL
             | ipy.Permissions.SEND_MESSAGES
             | ipy.Permissions.READ_MESSAGE_HISTORY
+            | ipy.Permissions.EMBED_LINKS
             not in ctx.app_permissions
         ):
             raise utils.CustomCheckFailure(
-                "I need the `View Channel`, `Send Messages`, and `Read Message History`"
-                " permissions in this channel to send out and be able to edit the live"
-                " online list.\n*As for how this message has been sent, slash commands"
-                " are weird. I still need those permissions regardless.*"
+                "I need the `View Channel`, `Send Messages`, `Read Message History`,"
+                " and `Embed Links` permissions in this channel to send out and be able"
+                " to edit the live online list.\n*As for how this message has been"
+                " sent, slash commands are weird. I still need those permissions"
+                " regardless.*"
             )
 
         player_sessions = await models.PlayerSession.filter(
@@ -241,7 +243,15 @@ class PremiumHandling(ipy.Extension):
             timestamp=ipy.Timestamp.utcnow(),
         )
         embed.set_footer("As of")
-        msg = await ctx.channel.send(embed=embed)
+
+        try:
+            msg = await ctx.channel.send(embed=embed)
+        except ipy.errors.HTTPException:
+            raise utils.CustomCheckFailure(
+                "An error occured when trying to send the live online list. Make sure"
+                " the bot has `View Channel`, `Send Messages`, `Read Message"
+                " History`, and `Embed Links` enabled for this channel."
+            ) from None
 
         config.live_online_channel = f"{msg._channel_id}|{msg.id}"
         await config.save()
