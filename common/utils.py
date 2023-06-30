@@ -309,17 +309,10 @@ else:
 
 
 async def _global_checks(ctx: ipy.BaseContext) -> bool:
-    # sourcery skip: assign-if-exp, boolean-if-exp-identity, hoist-statement-from-if, reintroduce-else, swap-if-expression
-    if not ctx.bot.fully_ready.is_set():  # type: ignore
-        return False
-
-    if not ctx.guild:
-        return False
-
     if ctx.author.id in ctx.bot.owner_ids:
         return True
 
-    return True
+    return bool(ctx.bot.fully_ready.is_set())
 
 
 class Extension(ipy.Extension):

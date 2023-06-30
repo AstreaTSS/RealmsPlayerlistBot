@@ -7,6 +7,8 @@ import typing
 import uuid
 from collections import defaultdict
 
+from interactions.models import InteractionCommand
+
 import rpl_config
 
 rpl_config.load()
@@ -92,6 +94,10 @@ def to_proper_word(num: int) -> str:
     if num_str.startswith("1.0"):
         num_str = num_str.replace("1.0", "1")
     return num_str
+
+
+async def basic_guild_check(ctx: ipy.SlashContext) -> bool:
+    return ctx.guild_id is not None if ctx.command.dm_permission else True
 
 
 class RealmsPlayerlistBot(utils.RealmBotBase):
@@ -184,6 +190,12 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         # ipy forgets to do this lol
         if not self.sync_ext and self._ready.is_set():
             asyncio.create_task(self._cache_interactions(warn_missing=False))
+
+    def add_interaction(self, command: InteractionCommand) -> bool:
+        result = super().add_interaction(command)
+        if result and self.enforce_interaction_perms:
+            command.checks.append(basic_guild_check)
+        return result
 
     @property
     def start_time(self) -> datetime.datetime:

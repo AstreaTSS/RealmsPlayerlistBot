@@ -179,7 +179,9 @@ class GeneralCMDS(utils.Extension):
     @tansy.slash_command(
         "gamertag-from-xuid",
         description="Gets the gamertag for a specified XUID.",
+        dm_permission=False,
     )
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
     async def gamertag_from_xuid(
         self,
         ctx: utils.RealmContext,
