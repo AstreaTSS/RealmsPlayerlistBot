@@ -97,7 +97,7 @@ def to_proper_word(num: int) -> str:
 
 
 async def basic_guild_check(ctx: ipy.SlashContext) -> bool:
-    return ctx.guild_id is not None if ctx.command.dm_permission else True
+    return True if ctx.command.dm_permission else ctx.guild_id is not None
 
 
 class RealmsPlayerlistBot(utils.RealmBotBase):
