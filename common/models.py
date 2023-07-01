@@ -54,8 +54,10 @@ EMOJI_DEVICE_NAMES = {
 
 class PlayerSession(Model):
     class Meta:
+        # pro tip: this table REALLY needs a good index for bigger instances -
+        # something i cant do automatically here through tortoise
+        # recommend using an index for (xuid, realm_id, online, last_seen DESC)
         table = "realmplayersession"
-        indexes = ("realm_id", "xuid", "last_seen", "joined_at")
 
     custom_id: UUID = fields.UUIDField(pk=True)
     realm_id: str = fields.CharField(50)
