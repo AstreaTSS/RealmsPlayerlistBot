@@ -7,8 +7,6 @@ import typing
 import uuid
 from collections import defaultdict
 
-from interactions.models import InteractionCommand
-
 import rpl_config
 
 rpl_config.load()
@@ -183,7 +181,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         if not self.sync_ext and self._ready.is_set():
             asyncio.create_task(self._cache_interactions(warn_missing=False))
 
-    def add_interaction(self, command: InteractionCommand) -> bool:
+    def add_interaction(self, command: ipy.InteractionCommand) -> bool:
         result = super().add_interaction(command)
         if result and self.enforce_interaction_perms:
             command.checks.append(basic_guild_check)
