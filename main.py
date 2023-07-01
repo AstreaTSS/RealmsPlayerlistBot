@@ -16,7 +16,6 @@ rpl_config.load()
 import aiohttp
 import aiohttp_retry
 import discord_typings
-import humanize
 import interactions as ipy
 import sentry_sdk
 from cachetools import TTLCache
@@ -89,13 +88,6 @@ if not utils.TEST_MODE and utils.SENTRY_ENABLED:
     sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], before_send=default_sentry_filter)
 
 
-def to_proper_word(num: int) -> str:
-    num_str = humanize.intword(num)
-    if num_str.startswith("1.0"):
-        num_str = num_str.replace("1.0", "1")
-    return num_str
-
-
 async def basic_guild_check(ctx: ipy.SlashContext) -> bool:
     return True if ctx.command.dm_permission else ctx.guild_id is not None
 
@@ -126,7 +118,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         self.init_load = False
 
         activity = ipy.Activity.create(
-            name=f"around {to_proper_word(len(bot.guilds))} Realms",
+            name="players on Realms",
             type=ipy.ActivityType.WATCHING,
         )
 
@@ -143,7 +135,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     @ipy.listen("resume")
     async def on_resume_func(self) -> None:
         activity = ipy.Activity.create(
-            name=f"around {to_proper_word(len(bot.guilds))} Realms",
+            name="players on Realms",
             type=ipy.ActivityType.WATCHING,
         )
         await self.change_presence(activity=activity)
