@@ -32,13 +32,13 @@ class EtcEvents(ipy.Extension):
         if not self.bot.is_ready:
             return
 
-        if config := await models.GuildConfig.get_or_none(guild_id=int(event.guild.id)):
+        if config := await models.GuildConfig.get_or_none(guild_id=int(event.guild_id)):
             if (
                 config.realm_id
                 and await models.GuildConfig.filter(
-                    guild_id__not=int(event.guild.id)
+                    realm_id=config.realm_id, guild_id__not=int(event.guild_id)
                 ).count()
-                == 0
+                == 1
             ):
                 # don't want to keep around entries we no longer need, so delete them
                 await models.PlayerSession.filter(realm_id=config.realm_id).delete()
