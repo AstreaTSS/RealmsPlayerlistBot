@@ -697,7 +697,7 @@ async def send_graph(
         )
         embed.set_image(graph if isinstance(graph, str) else "attachment://graph.png")
 
-        if not config.valid_premium and random.randint(1, 7) == 1:  # noqa: S311
+        if not config.valid_premium and random.randint(1, 10) == 1:  # noqa: S311
             embed.set_footer(
                 "Premium users have more options and can go back to 30 days prior."
                 " Check it out through /premium info!"
