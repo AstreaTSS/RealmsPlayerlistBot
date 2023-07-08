@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import logging
+import os
 import typing
 
 import aiohttp
@@ -266,13 +267,18 @@ class GamertagHandler:
         return dict_gamertags
 
 
-async def can_run_playerlist(ctx: utils.RealmContext) -> bool:
-    # simple check to see if a person can run the playerlist command
+async def has_linked_realm(ctx: utils.RealmContext) -> bool:
     try:
         guild_config = await ctx.fetch_config()
     except DoesNotExist:
         return False
-    return bool(guild_config.realm_id)
+
+    if not guild_config.realm_id:
+        raise utils.CustomCheckFailure(
+            "This server is not linked to any Realm. Please check out [the Server"
+            f" Setup Guide]({os.environ['SETUP_LINK']}) for more information."
+        )
+    return True
 
 
 async def invalidate_premium(

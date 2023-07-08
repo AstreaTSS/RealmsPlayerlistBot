@@ -7,13 +7,13 @@ import interactions as ipy
 import rapidfuzz
 import tansy
 from interactions.models.internal.application_commands import auto_defer
-from tortoise.exceptions import DoesNotExist
 from tortoise.expressions import Q
 
 import common.fuzzy as fuzzy
 import common.graph_template as graph_template
 import common.help_tools as help_tools
 import common.models as models
+import common.playerlist_utils as pl_utils
 import common.stats_utils as stats_utils
 import common.utils as utils
 
@@ -39,15 +39,6 @@ def amazing_modal_error_handler(func: AsyncCallableT) -> AsyncCallableT:
             await utils.error_handle(e, ctx=ctx)
 
     return wrapper  # type: ignore
-
-
-async def stats_check(ctx: utils.RealmContext) -> bool:
-    try:
-        guild_config = await ctx.fetch_config()
-    except DoesNotExist:
-        return False
-
-    return bool(guild_config.realm_id)
 
 
 class Statistics(utils.Extension):
@@ -155,7 +146,7 @@ class Statistics(utils.Extension):
         ),
     )
     @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
-    @ipy.check(stats_check)
+    @ipy.check(pl_utils.has_linked_realm)
     async def graph_realm(
         self,
         ctx: utils.RealmContext,
@@ -172,7 +163,7 @@ class Statistics(utils.Extension):
         ),
     )
     @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
-    @ipy.check(stats_check)
+    @ipy.check(pl_utils.has_linked_realm)
     async def graph_realm_summary(
         self,
         ctx: utils.RealmContext,
@@ -191,7 +182,7 @@ class Statistics(utils.Extension):
         ),
     )
     @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
-    @ipy.check(stats_check)
+    @ipy.check(pl_utils.has_linked_realm)
     async def graph_player(
         self,
         ctx: utils.RealmContext,
@@ -215,7 +206,7 @@ class Statistics(utils.Extension):
         ),
     )
     @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
-    @ipy.check(stats_check)
+    @ipy.check(pl_utils.has_linked_realm)
     async def graph_player_summary(
         self,
         ctx: utils.RealmContext,
@@ -239,7 +230,7 @@ class Statistics(utils.Extension):
         ),
     )
     @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
-    @ipy.check(stats_check)
+    @ipy.check(pl_utils.has_linked_realm)
     @auto_defer(enabled=False)
     async def graph_multi_player(
         self,
@@ -273,7 +264,7 @@ class Statistics(utils.Extension):
         ),
     )
     @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
-    @ipy.check(stats_check)
+    @ipy.check(pl_utils.has_linked_realm)
     @auto_defer(enabled=False)
     async def graph_multi_player_summary(
         self,
@@ -486,6 +477,7 @@ class Statistics(utils.Extension):
         dm_permission=False,
     )
     @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    @ipy.check(pl_utils.has_linked_realm)
     async def get_player_log(
         self,
         ctx: utils.RealmContext,
