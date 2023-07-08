@@ -318,6 +318,7 @@ async def eventually_invalidate(
     int_num_times = int(num_times) + 1
 
     if int_num_times >= limit:
+        old_playerlist_chan = guild_config.playerlist_chan
         guild_config.playerlist_chan = None
         old_live_playerlist = guild_config.live_playerlist
         guild_config.live_playerlist = False
@@ -332,6 +333,22 @@ async def eventually_invalidate(
             bot.live_playerlist_store[guild_config.realm_id].discard(
                 guild_config.guild_id
             )
+
+        if old_playerlist_chan:
+            with contextlib.suppress(ipy.errors.HTTPException, AttributeError):
+                chan = await bot.fetch_channel(old_playerlist_chan)
+                if not chan:
+                    return
+
+                msg = (
+                    "The playerlist channel has been unlinked as the bot has not been"
+                    " able to properly send messages to it. Please check your"
+                    " permissions, make sure the bot has `View Channel`, `Send"
+                    " Messages`, and `Embed Links` enabled, and then re-set the"
+                    " playerlist channel."
+                )
+
+                await chan.send(msg)
     else:
         await bot.redis.set(
             f"invalid-playerlist{limit}-{guild_config.guild_id}",
