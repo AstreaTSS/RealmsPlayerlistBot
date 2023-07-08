@@ -17,8 +17,11 @@ XBOX_CLIENT_ID = "ID"
 XBOX_CLIENT_SECRET = "SECRET"
 
 OPENXBL_KEY = "KEY"  # register an account at https://xbl.io/ and you'll get a token to use
-TOP_GG_TOKEN = ""  # optional, allows top.gg integration if it exists
-DBL_TOKEN = ""  # also optional, for discord bot list integration
+
+# bot list site tokens. leave blank or remove the entries if you don't want to use them
+TOP_GG_TOKEN = ""
+DBL_TOKEN = ""
+DISCORDSCOM_TOKEN = ""
 
 # various emojis used throughout the bot. more or less self explanatory
 GREEN_CIRCLE_EMOJI="RAW EMOJI STRING"

@@ -57,6 +57,20 @@ class Voting(ipy.Extension):
                 )
             )
 
+        if os.environ.get("DISCORDSCOM_TOKEN"):
+            self.handlers.append(
+                VoteHandler(
+                    name="Discords.com",
+                    base_url="https://discords.com",
+                    session=aiohttp.ClientSession(
+                        headers={"Authorization": os.environ["DISCORDSCOM_TOKEN"]}
+                    ),
+                    data_url="/bots/api/bot/{bot_id}",
+                    data_callback=lambda guild_count: {"server_count": guild_count},
+                    vote_url="https://discords.com/bots/bot/{bot_id}/vote",
+                ),
+            )
+
         if not self.handlers:
             raise ValueError("No voting handlers were configured.")
 

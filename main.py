@@ -340,7 +340,9 @@ async def start() -> None:
     for ext in ext_list:
         # skip loading voting ext if token doesn't exist
         if "voting" in ext and not (
-            os.environ.get("TOP_GG_TOKEN") or os.environ.get("DBL_TOKEN")
+            os.environ.get("TOP_GG_TOKEN")
+            or os.environ.get("DBL_TOKEN")
+            or os.environ.get("DISCORDSCOM_TOKEN")
         ):
             continue
 
