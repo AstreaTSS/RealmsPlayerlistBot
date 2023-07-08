@@ -1,4 +1,3 @@
-import asyncio
 import importlib
 import os
 import typing
@@ -14,7 +13,7 @@ import common.utils as utils
 class VoteHandler:
     name: str = attrs.field()
     base_url: str = attrs.field()
-    session: aiohttp.ClientSession = attrs.field()
+    headers: dict[str, str] = attrs.field()
     data_url: str = attrs.field()
     data_callback: typing.Callable[[int], dict[str, typing.Any]] = attrs.field()
     vote_url: str = attrs.field()
@@ -32,28 +31,10 @@ class Voting(ipy.Extension):
                 VoteHandler(
                     name="Top.gg",
                     base_url="https://top.gg/api",
-                    session=aiohttp.ClientSession(
-                        headers={"Authorization": os.environ["TOP_GG_TOKEN"]}
-                    ),
+                    headers={"Authorization": os.environ["TOP_GG_TOKEN"]},
                     data_url="/bots/{bot_id}/stats",
                     data_callback=lambda guild_count: {"server_count": guild_count},
                     vote_url="https://top.gg/bot/{bot_id}/vote",
-                )
-            )
-
-        if os.environ.get("DBL_TOKEN"):
-            self.handlers.append(
-                VoteHandler(
-                    name="Discord Bot List",
-                    base_url="https://discordbotlist.com/api/v1",
-                    session=aiohttp.ClientSession(
-                        headers={"Authorization": os.environ["DBL_TOKEN"]}
-                    ),
-                    data_url="/bots/{bot_id}/stats",
-                    data_callback=lambda guild_count: {"guilds": guild_count},
-                    vote_url=(
-                        "https://discordbotlist.com/bots/realms-playerlist-bot/upvote"
-                    ),
                 )
             )
 
@@ -62,13 +43,25 @@ class Voting(ipy.Extension):
                 VoteHandler(
                     name="Discords.com",
                     base_url="https://discords.com",
-                    session=aiohttp.ClientSession(
-                        headers={"Authorization": os.environ["DISCORDSCOM_TOKEN"]}
-                    ),
+                    headers={"Authorization": os.environ["DISCORDSCOM_TOKEN"]},
                     data_url="/bots/api/bot/{bot_id}",
                     data_callback=lambda guild_count: {"server_count": guild_count},
                     vote_url="https://discords.com/bots/bot/{bot_id}/vote",
                 ),
+            )
+
+        if os.environ.get("DBL_TOKEN"):
+            self.handlers.append(
+                VoteHandler(
+                    name="Discord Bot List",
+                    base_url="https://discordbotlist.com/api/v1",
+                    headers={"Authorization": os.environ["DBL_TOKEN"]},
+                    data_url="/bots/{bot_id}/stats",
+                    data_callback=lambda guild_count: {"guilds": guild_count},
+                    vote_url=(
+                        "https://discordbotlist.com/bots/realms-playerlist-bot/upvote"
+                    ),
+                )
             )
 
         if not self.handlers:
@@ -77,9 +70,6 @@ class Voting(ipy.Extension):
         self.autopost_guild_count.start()
 
     def drop(self) -> None:
-        for handler in self.handlers:
-            asyncio.create_task(handler.session.close())
-
         self.autopost_guild_count.stop()
         super().drop()
 
@@ -88,9 +78,10 @@ class Voting(ipy.Extension):
         server_count = len(self.bot.guilds)
 
         for handler in self.handlers:
-            async with handler.session.post(
+            async with self.bot.session.post(
                 f"{handler.base_url}{handler.data_url.format(bot_id=self.bot.user.id)}",
                 json=handler.data_callback(server_count),
+                headers=handler.headers,
             ) as r:
                 try:
                     r.raise_for_status()
