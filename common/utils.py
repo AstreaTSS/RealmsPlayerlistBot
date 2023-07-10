@@ -20,9 +20,6 @@ TEST_MODE: bool = os.environ.get("TEST_MODE", False)  # type: ignore
 SENTRY_ENABLED = bool(os.environ.get("SENTRY_DSN", False))  # type: ignore
 
 DEV_GUILD_ID = int(os.environ.get("DEV_GUILD_ID", "0"))
-XBOX_API_RELYING_PARTY = "http://xboxlive.com"
-REALMS_API_URL = "https://pocket.realms.minecraft.net/"
-MC_VERSION = "1.19.0"  # this can be a few versions behind
 
 EXPIRE_GAMERTAGS_AT = int(datetime.timedelta(days=14).total_seconds())
 
@@ -259,13 +256,12 @@ class RealmAutocompleteContext(
 
 
 if typing.TYPE_CHECKING:
+    import elytra
     from aiohttp_retry import RetryClient
     from cachetools import TTLCache
     from ordered_set import OrderedSet
 
     from .help_tools import MiniCommand, PermissionsResolver
-    from .realms_api import RealmsAPI
-    from .xbox_api import XboxAPI
 
     class RealmBotBase(ipy.AutoShardedClient):
         prefixed: prefixed.PrefixedManager
@@ -278,8 +274,8 @@ if typing.TYPE_CHECKING:
 
         session: aiohttp.ClientSession
         openxbl_session: RetryClient
-        xbox: XboxAPI
-        realms: RealmsAPI
+        xbox: elytra.XboxAPI
+        realms: elytra.BedrockRealmsAPI
         redis: aioredis.Redis
         own_gamertag: str
         background_tasks: set[asyncio.Task]

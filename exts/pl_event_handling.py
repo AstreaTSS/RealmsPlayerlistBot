@@ -4,13 +4,13 @@ import logging
 import os
 import typing
 
+import elytra
 import interactions as ipy
 
 import common.models as models
 import common.playerlist_events as pl_events
 import common.playerlist_utils as pl_utils
 import common.utils as utils
-from common.microsoft_core import MicrosoftAPIException
 
 
 class PlayerlistEventHandling(ipy.Extension):
@@ -310,7 +310,7 @@ class PlayerlistEventHandling(ipy.Extension):
             # like to know what happens with invalid stuff
             try:
                 await self.bot.realms.leave_realm(event.realm_id)
-            except MicrosoftAPIException as e:
+            except elytra.MicrosoftAPIException as e:
                 # might be an invalid id somehow? who knows
                 if e.resp.status == 404:
                     logging.getLogger("realms_bot").warning(

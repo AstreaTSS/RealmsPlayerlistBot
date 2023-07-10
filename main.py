@@ -14,9 +14,11 @@ rpl_config.load()
 import aiohttp
 import aiohttp_retry
 import discord_typings
+import elytra
 import interactions as ipy
 import sentry_sdk
 from cachetools import TTLCache
+from elytra.core import BetterResponse, _dumps_wrapper
 from interactions.ext import prefixed_commands as prefixed
 from interactions.ext.sentry import HookedTask
 from ordered_set import OrderedSet
@@ -27,10 +29,7 @@ import common.help_tools as help_tools
 import common.models as models
 import common.utils as utils
 import db_settings
-from common.classes import BetterResponse, SemaphoreRedis
-from common.microsoft_core import _orjson_dumps_wrapper
-from common.realms_api import RealmsAPI
-from common.xbox_api import ProfileResponse, XboxAPI
+from common.classes import SemaphoreRedis
 
 with contextlib.suppress(ImportError):
     import rook  # type: ignore
@@ -309,22 +308,17 @@ async def start() -> None:
     bot.fully_ready = asyncio.Event()
     bot.pl_sem = asyncio.Semaphore(12)
 
-    bot.xbox = await XboxAPI.from_file(
+    bot.xbox = await elytra.XboxAPI.from_file(
         os.environ["XBOX_CLIENT_ID"],
         os.environ["XBOX_CLIENT_SECRET"],
         os.environ["XAPI_TOKENS_LOCATION"],
     )
-    bot.realms = await RealmsAPI.from_file(
+    bot.realms = await elytra.BedrockRealmsAPI.from_file(
         os.environ["XBOX_CLIENT_ID"],
         os.environ["XBOX_CLIENT_SECRET"],
         os.environ["XAPI_TOKENS_LOCATION"],
     )
-
-    profile = ProfileResponse.from_bytes(
-        await bot.xbox.fetch_profile_by_xuid(bot.xbox.auth_mgr.xsts_token.xuid)
-    )
-    user = profile.profile_users[0]
-    bot.own_gamertag = next(s.value for s in user.settings if s.id == "Gamertag")
+    bot.own_gamertag = bot.xbox.auth_mgr.xsts_token.gamertag
 
     headers = {
         "X-Authorization": os.environ["OPENXBL_KEY"],
@@ -332,17 +326,20 @@ async def start() -> None:
         "Accept-Language": "en-US",
     }
     bot.openxbl_session = aiohttp_retry.RetryClient(
-        headers=headers, response_class=BetterResponse
+        headers=headers,
+        response_class=BetterResponse,
+        json_serialize=_dumps_wrapper,
     )
-    bot.session = aiohttp.ClientSession(json_serialize=_orjson_dumps_wrapper)
+    bot.session = aiohttp.ClientSession(json_serialize=_dumps_wrapper)
 
     ext_list = utils.get_all_extensions(os.environ["DIRECTORY_OF_BOT"])
     for ext in ext_list:
         # skip loading voting ext if token doesn't exist
-        if "voting" in ext and not (
-            os.environ.get("TOP_GG_TOKEN")
-            or os.environ.get("DBL_TOKEN")
-            or os.environ.get("DISCORDSCOM_TOKEN")
+        if (
+            "voting" in ext
+            and not os.environ.get("TOP_GG_TOKEN")
+            and not os.environ.get("DBL_TOKEN")
+            and not os.environ.get("DISCORDSCOM_TOKEN")
         ):
             continue
 

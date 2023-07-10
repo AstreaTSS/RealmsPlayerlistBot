@@ -9,14 +9,13 @@ from collections import defaultdict
 from enum import IntEnum
 
 import aiohttp
+import elytra
 import interactions as ipy
 from msgspec import ValidationError
 
 import common.graph_template as graph_template
 import common.models as models
 import common.utils as utils
-import common.xbox_api as xbox_api
-from common.microsoft_core import MicrosoftAPIException
 
 VALID_TIME_DICTS = typing.Union[
     dict[datetime.datetime, int], dict[datetime.date, int], dict[datetime.time, int]
@@ -262,7 +261,7 @@ def timespan_minutes_per_day_of_the_week(
 
 
 async def xuid_from_gamertag(bot: utils.RealmBotBase, gamertag: str) -> str:
-    maybe_xuid: typing.Union[str, xbox_api.ProfileResponse, None] = await bot.redis.get(
+    maybe_xuid: typing.Union[str, elytra.ProfileResponse, None] = await bot.redis.get(
         f"rpl-{gamertag}"
     )
 
@@ -283,17 +282,16 @@ async def xuid_from_gamertag(bot: utils.RealmBotBase, gamertag: str) -> str:
                 headers=headers,
             ) as r:
                 with contextlib.suppress(ValidationError, aiohttp.ContentTypeError):
-                    maybe_xuid = await xbox_api.ProfileResponse.from_response(r)
+                    maybe_xuid = await elytra.ProfileResponse.from_response(r)
 
         if not maybe_xuid:
             with contextlib.suppress(
                 aiohttp.ClientResponseError,
                 asyncio.TimeoutError,
                 ValidationError,
-                MicrosoftAPIException,
+                elytra.MicrosoftAPIException,
             ):
-                resp_bytes = await bot.xbox.fetch_profile_by_gamertag(gamertag)
-                maybe_xuid = xbox_api.ProfileResponse.from_bytes(resp_bytes)
+                maybe_xuid = await bot.xbox.fetch_profile_by_gamertag(gamertag)
 
     if not maybe_xuid:
         raise ipy.errors.BadArgument(f"`{gamertag}` is not a valid gamertag.")

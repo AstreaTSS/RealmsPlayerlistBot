@@ -4,6 +4,7 @@ import importlib
 import math
 import typing
 
+import elytra
 import interactions as ipy
 import tansy
 
@@ -11,7 +12,6 @@ import common.models as models
 import common.playerlist_events as pl_events
 import common.playerlist_utils as pl_utils
 import common.utils as utils
-from common.microsoft_core import MicrosoftAPIException
 
 
 class Playerlist(utils.Extension):
@@ -58,10 +58,10 @@ class Playerlist(utils.Extension):
             realms = await self.bot.realms.fetch_activities()
             self.forbidden_count = 0
         except Exception as e:
-            if isinstance(e, MicrosoftAPIException) and e.resp.status == 502:
+            if isinstance(e, elytra.MicrosoftAPIException) and e.resp.status == 502:
                 # bad gateway, can't do much about it
                 return
-            if isinstance(e, MicrosoftAPIException) and e.resp.status == 403:
+            if isinstance(e, elytra.MicrosoftAPIException) and e.resp.status == 403:
                 # oh boy, this one's painful
                 self.forbidden_count += 1
                 if self.forbidden_count > 3:

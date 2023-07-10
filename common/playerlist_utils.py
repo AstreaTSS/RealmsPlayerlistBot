@@ -7,6 +7,7 @@ import typing
 import aiohttp
 import aiohttp_retry
 import attrs
+import elytra
 import interactions as ipy
 import orjson
 from msgspec import ValidationError
@@ -15,8 +16,6 @@ from tortoise.exceptions import DoesNotExist
 
 import common.models as models
 import common.utils as utils
-import common.xbox_api as xbox_api
-from common.microsoft_core import MicrosoftAPIException
 
 MINECRAFT_TITLE_IDS = frozenset(
     {
@@ -78,8 +77,8 @@ class GamertagHandler:
     gather_devices_for: set[str] = attrs.field(kw_only=True, factory=set)
 
     index: int = attrs.field(init=False, default=0)
-    responses: list[xbox_api.ProfileResponse | xbox_api.PeopleHubResponse] = (
-        attrs.field(init=False, factory=list)
+    responses: list[elytra.ProfileResponse | elytra.PeopleHubResponse] = attrs.field(
+        init=False, factory=list
     )
     AMOUNT_TO_GET: int = attrs.field(init=False, default=500)
 
@@ -93,11 +92,11 @@ class GamertagHandler:
         # having it
 
         try:
-            people_bytes = await self.bot.xbox.fetch_people_batch(
-                xuid_list, bypass_ratelimit=True
+            people = await self.bot.xbox.fetch_people_batch(
+                xuid_list, dont_handle_ratelimit=True
             )
 
-        except MicrosoftAPIException as e:
+        except elytra.MicrosoftAPIException as e:
             people_json = await e.resp.json(loads=orjson.loads)
 
             if people_json.get("code"):  # usually means ratelimited or invalid xuid
@@ -119,7 +118,7 @@ class GamertagHandler:
             else:
                 raise
 
-        self.responses.append(xbox_api.PeopleHubResponse.from_bytes(people_bytes))
+        self.responses.append(people)
         self.index += self.AMOUNT_TO_GET
 
     async def backup_get_gamertags(self) -> None:
@@ -137,9 +136,7 @@ class GamertagHandler:
                 try:
                     r.raise_for_status()
 
-                    self.responses.append(
-                        await xbox_api.ProfileResponse.from_response(r)
-                    )
+                    self.responses.append(await elytra.ProfileResponse.from_response(r))
                 except (
                     aiohttp.ContentTypeError,
                     aiohttp.ClientResponseError,
@@ -188,7 +185,11 @@ class GamertagHandler:
             async with self.sem:
                 try:
                     await self.get_gamertags(current_xuid_list)
-                except (GamertagOnCooldown, ValidationError, MicrosoftAPIException):
+                except (
+                    GamertagOnCooldown,
+                    ValidationError,
+                    elytra.MicrosoftAPIException,
+                ):
                     # hopefully fixes itself in 15 seconds
                     with contextlib.suppress(asyncio.TimeoutError):
                         await asyncio.wait_for(self.backup_get_gamertags(), timeout=15)
@@ -198,7 +199,7 @@ class GamertagHandler:
 
         try:
             for response in self.responses:
-                if isinstance(response, xbox_api.PeopleHubResponse):
+                if isinstance(response, elytra.PeopleHubResponse):
                     for user in response.people:
                         device = None
                         if (

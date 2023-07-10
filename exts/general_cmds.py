@@ -8,6 +8,7 @@ import typing
 from importlib.metadata import version as _v
 
 import aiohttp
+import elytra
 import interactions as ipy
 import tansy
 from msgspec import ValidationError
@@ -15,8 +16,6 @@ from tortoise.expressions import Q
 
 import common.models as models
 import common.utils as utils
-import common.xbox_api as xbox_api
-from common.microsoft_core import MicrosoftAPIException
 
 IPY_VERSION = _v("discord-py-interactions")
 
@@ -217,7 +216,7 @@ class GeneralCMDS(utils.Extension):
         except ValueError:
             raise ipy.errors.BadArgument(f'"{xuid}" is not a valid XUID.') from None
 
-        maybe_gamertag: typing.Union[str, xbox_api.ProfileResponse, None] = (
+        maybe_gamertag: typing.Union[str, elytra.ProfileResponse, None] = (
             await self.bot.redis.get(str(valid_xuid))
         )
 
@@ -228,24 +227,23 @@ class GeneralCMDS(utils.Extension):
                     timeout=10,
                 ) as r:
                     with contextlib.suppress(ValidationError, aiohttp.ContentTypeError):
-                        maybe_gamertag = await xbox_api.ProfileResponse.from_response(r)
+                        maybe_gamertag = await elytra.ProfileResponse.from_response(r)
 
         if not maybe_gamertag:
             with contextlib.suppress(
                 aiohttp.ClientResponseError,
                 asyncio.TimeoutError,
                 ValidationError,
-                MicrosoftAPIException,
+                elytra.MicrosoftAPIException,
             ):
-                resp_bytes = await self.bot.xbox.fetch_profile_by_xuid(valid_xuid)
-                maybe_gamertag = xbox_api.ProfileResponse.from_bytes(resp_bytes)
+                maybe_gamertag = await self.bot.xbox.fetch_profile_by_xuid(valid_xuid)
 
         if not maybe_gamertag:
             raise ipy.errors.BadArgument(
                 f"Could not find gamertag of XUID `{valid_xuid}`!"
             )
 
-        if isinstance(maybe_gamertag, xbox_api.ProfileResponse):
+        if isinstance(maybe_gamertag, elytra.ProfileResponse):
             maybe_gamertag = next(
                 s.value
                 for s in maybe_gamertag.profile_users[0].settings
@@ -270,5 +268,4 @@ class GeneralCMDS(utils.Extension):
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
-    importlib.reload(xbox_api)
     GeneralCMDS(bot)

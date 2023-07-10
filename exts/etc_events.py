@@ -3,12 +3,12 @@ import contextlib
 import importlib
 import os
 
+import elytra
 import interactions as ipy
 import msgspec
 
 import common.models as models
 import common.utils as utils
-from common.microsoft_core import MicrosoftAPIException
 
 
 class EtcEvents(ipy.Extension):
@@ -43,7 +43,7 @@ class EtcEvents(ipy.Extension):
                 # don't want to keep around entries we no longer need, so delete them
                 await models.PlayerSession.filter(realm_id=config.realm_id).delete()
                 # also attempt to leave the realm cus why not
-                with contextlib.suppress(MicrosoftAPIException):
+                with contextlib.suppress(elytra.MicrosoftAPIException):
                     await self.bot.realms.leave_realm(config.realm_id)
             await config.delete()
 

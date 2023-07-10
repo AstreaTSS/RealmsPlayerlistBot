@@ -3,24 +3,20 @@ import datetime
 import typing
 
 import aiohttp
+import elytra
 import orjson
 from msgspec import ValidationError
 
 import common.models as models
 import common.utils as utils
-from common.microsoft_core import MicrosoftAPIException
-from common.xbox_api import ClubResponse, ClubUserPresence
-
-if typing.TYPE_CHECKING:
-    from common.xbox_api import ClubPresence
 
 
-async def realm_club_bytes(
+async def realm_club_presence(
     bot: utils.RealmBotBase, club_id: str
-) -> typing.Optional[bytes]:
+) -> typing.Optional[elytra.ClubResponse]:
     try:
         return await bot.xbox.fetch_club_presence(club_id)
-    except MicrosoftAPIException as e:
+    except elytra.MicrosoftAPIException as e:
         if e.resp in {400, 403}:
             return None
 
@@ -36,24 +32,23 @@ async def realm_club_bytes(
                 else:
                     await asyncio.sleep(5)
 
-                return await realm_club_bytes(bot, club_id)
+                return await realm_club_presence(bot, club_id)
 
-            return resp_bytes
+            return elytra.ClubResponse.from_bytes(resp_bytes)
         except (aiohttp.ContentTypeError, orjson.JSONDecodeError):
             return None
 
 
 async def realm_club_get(
     bot: utils.RealmBotBase, club_id: str
-) -> list["ClubPresence"] | None:
-    resp_bytes = await realm_club_bytes(bot, club_id)
+) -> list[elytra.ClubPresence] | None:
+    club_resp = await realm_club_presence(bot, club_id)
 
-    if not resp_bytes:
+    if not club_resp:
         return None
 
     try:
-        clubs = ClubResponse.from_bytes(resp_bytes)
-        return clubs.clubs[0].club_presence
+        return club_resp.clubs[0].club_presence
     except (KeyError, TypeError, ValidationError):
         # who knows x2
         return None
@@ -76,8 +71,8 @@ async def get_players_from_club_data(
         last_seen_state = member.last_seen_state
 
         if last_seen_state not in {
-            ClubUserPresence.IN_GAME,
-            ClubUserPresence.NOT_IN_CLUB,
+            elytra.ClubUserPresence.IN_GAME,
+            elytra.ClubUserPresence.NOT_IN_CLUB,
         }:
             # we want to ignore people causally browsing the club itself
             # this isn't perfect, as if they stop viewing the club, they'll be put in
@@ -95,7 +90,7 @@ async def get_players_from_club_data(
         if last_seen <= time_ago:
             break
 
-        online = last_seen_state == ClubUserPresence.IN_GAME
+        online = last_seen_state == elytra.ClubUserPresence.IN_GAME
         player_list.append(
             models.PlayerSession(
                 custom_id=bot.uuid_cache[f"{realm_id}-{member.xuid}"],

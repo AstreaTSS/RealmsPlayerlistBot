@@ -1,5 +1,4 @@
 import asyncio
-import contextlib
 import importlib
 import logging
 import os
@@ -7,20 +6,15 @@ import re
 import typing
 
 import aiohttp
+import elytra
 import interactions as ipy
 import tansy
-from msgspec import ValidationError
 
 import common.classes as cclasses
 import common.clubs_playerlist as clubs_playerlist
 import common.models as models
 import common.playerlist_utils as pl_utils
 import common.utils as utils
-from common.microsoft_core import MicrosoftAPIException
-from common.xbox_api import ClubResponse
-
-if typing.TYPE_CHECKING:
-    from common.realms_api import FullRealm
 
 # regex that takes in:
 # - https://realms.gg/XXXXXXX
@@ -45,7 +39,9 @@ class GuildConfig(utils.Extension):
         self.name = "Server Config"
         self.bot: utils.RealmBotBase = bot
 
-    async def _gather_realm_names(self, specific_realm_id: str) -> "FullRealm | None":
+    async def _gather_realm_names(
+        self, specific_realm_id: str
+    ) -> elytra.FullRealm | None:
         response = await self.bot.realms.fetch_realms()
         names = tuple((str(realm.id), realm.name) for realm in response.servers)
         self.bot.realm_name_cache.update(names)
@@ -83,19 +79,15 @@ class GuildConfig(utils.Extension):
                 config.realm_id
             )
             if not maybe_realm_name and config.club_id:
-                resp_bytes = await clubs_playerlist.realm_club_bytes(
+                club_resp = await clubs_playerlist.realm_club_presence(
                     self.bot, config.club_id
                 )
 
-                if resp_bytes:
-                    with contextlib.suppress(ValidationError):
-                        club = ClubResponse.from_bytes(resp_bytes)
-                        maybe_realm_name = club.clubs[0].profile.name.value
+                if club_resp:
+                    maybe_realm_name = club_resp.clubs[0].profile.name.value
 
-                        if maybe_realm_name:
-                            self.bot.realm_name_cache[config.realm_id] = (
-                                maybe_realm_name
-                            )
+                    if maybe_realm_name:
+                        self.bot.realm_name_cache[config.realm_id] = maybe_realm_name
 
             if not maybe_realm_name:
                 realm = await self._gather_realm_names(config.realm_id)
@@ -244,7 +236,7 @@ class GuildConfig(utils.Extension):
                 )
                 embeds.append(confirm_embed)
                 await ctx.send(embeds=embeds)
-            except MicrosoftAPIException as e:
+            except elytra.MicrosoftAPIException as e:
                 if (
                     isinstance(e.error, aiohttp.ClientResponseError)
                     and e.resp.status == 403
@@ -285,7 +277,7 @@ class GuildConfig(utils.Extension):
             if not await models.GuildConfig.filter(realm_id=realm_id).exists():
                 try:
                     await self.bot.realms.leave_realm(realm_id)
-                except MicrosoftAPIException as e:
+                except elytra.MicrosoftAPIException as e:
                     # might be an invalid id somehow? who knows
                     if e.resp.status == 404:
                         logging.getLogger("realms_bot").warning(
@@ -478,7 +470,7 @@ class GuildConfig(utils.Extension):
 
         if role:
             if isinstance(role, str):  # ???
-                role = await ctx.guild.fetch_role(role)
+                role: ipy.Role = await ctx.guild.fetch_role(role)
 
             if (
                 not role.mentionable
