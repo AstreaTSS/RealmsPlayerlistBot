@@ -46,7 +46,7 @@ class Voting(ipy.Extension):
                     headers={"Authorization": os.environ["DISCORDSCOM_TOKEN"]},
                     data_url="/bots/api/bot/{bot_id}",
                     data_callback=lambda guild_count: {"server_count": guild_count},
-                    vote_url="https://discords.com/bots/bot/{bot_id}/vote",
+                    vote_url="https://discords.com/bots/bot/{bot_id}",
                 ),
             )
 
