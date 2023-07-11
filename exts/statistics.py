@@ -397,10 +397,8 @@ class Statistics(utils.Extension):
             ctx,
             now,
             summarize_by_string,
-            (
-                "Playtime of various players over the past {days_humanized} by"
-                " {summarize_by}"
-            ),
+            "Playtime of various players over the past {days_humanized} by"
+            " {summarize_by}",
         )
         await self.handle_multi_players(ctx, returned_data, now, xuid_list, gamertags)
 

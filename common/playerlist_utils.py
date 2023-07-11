@@ -229,11 +229,9 @@ class GamertagHandler:
                                 device = maybe_match.device
                                 await utils.msg_to_owner(
                                     self.bot,
-                                    (
-                                        f"Possible device: {device} with title ID"
-                                        f" {maybe_match.title_id} and presence text"
-                                        f" {maybe_match.presence_text}"
-                                    ),
+                                    f"Possible device: {device} with title ID"
+                                    f" {maybe_match.title_id} and presence text"
+                                    f" {maybe_match.presence_text}",
                                 )
 
                         dict_gamertags = self._handle_new_gamertag(
