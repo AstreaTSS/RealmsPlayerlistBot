@@ -67,10 +67,8 @@ class Playerlist(utils.Extension):
                 if self.forbidden_count > 3:
                     await utils.msg_to_owner(
                         self.bot,
-                        (
-                            "Got forbidden 3+ times in a row. High chance account is"
-                            " banned - please manually check to verify this."
-                        ),
+                        "Got forbidden 3+ times in a row. High chance account is"
+                        " banned - please manually check to verify this.",
                     )
             raise
 
@@ -227,10 +225,8 @@ class Playerlist(utils.Extension):
         self,
         ctx: utils.RealmContext | utils.RealmPrefixedContext,
         hours_ago: int = tansy.Option(
-            (
-                "How far back the playerlist should go (in hours). Defaults to 12"
-                " hours. Max of 24 hours."
-            ),
+            "How far back the playerlist should go (in hours). Defaults to 12"
+            " hours. Max of 24 hours.",
             min_value=1,
             max_value=24,
             default=12,

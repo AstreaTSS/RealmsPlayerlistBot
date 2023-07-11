@@ -167,10 +167,8 @@ class GuildConfig(utils.Extension):
             "The Realm code or link.", name="realm_code", default=None
         ),
         unlink: bool = tansy.Option(
-            (
-                "Should the Realm be unlinked from this server? Do not set this if you"
-                " are linking your Realm."
-            ),
+            "Should the Realm be unlinked from this server? Do not set this if you"
+            " are linking your Realm.",
             default=False,
         ),
     ) -> None:
