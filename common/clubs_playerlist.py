@@ -35,7 +35,7 @@ async def realm_club_presence(
                 return await realm_club_presence(bot, club_id)
 
             return elytra.ClubResponse.from_bytes(resp_bytes)
-        except (aiohttp.ContentTypeError, orjson.JSONDecodeError):
+        except (aiohttp.ContentTypeError, orjson.JSONDecodeError, ValidationError):
             return None
 
 
