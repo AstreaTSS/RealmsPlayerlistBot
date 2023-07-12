@@ -16,7 +16,11 @@ UPSELLS = [
         " for players? Check out Playerlist Premium: /premium info"
     ),
     (
-        "Want more options for graphs? Or do you want a constantly updating live online"
+        "If you like the bot, you can vote for it via /vote! Voting helps the bot grow"
+        " and get more features."
+    ),
+    (
+        "Want more options for graphs? Do you want a constantly updating live online"
         " list? Check out Playerlist Premium: /premium info"
     ),
     (
