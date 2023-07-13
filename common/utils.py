@@ -172,7 +172,12 @@ def na_friendly_str(obj: typing.Any) -> str:
 
 
 def error_embed_generate(error_msg: str) -> ipy.Embed:
-    return ipy.Embed(color=ipy.MaterialColors.RED, description=error_msg)
+    return ipy.Embed(
+        title="Error",
+        description=error_msg,
+        color=ipy.MaterialColors.RED,
+        timestamp=ipy.Timestamp.utcnow(),
+    )
 
 
 class CustomCheckFailure(ipy.errors.BadArgument):

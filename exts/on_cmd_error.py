@@ -12,9 +12,6 @@ class OnCMDError(ipy.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
 
-    def error_embed_generate(self, error_msg: str) -> ipy.Embed:
-        return ipy.Embed(color=ipy.MaterialColors.RED, description=error_msg)
-
     @ipy.listen(disable_default_listeners=True)
     async def on_command_error(
         self,
@@ -28,18 +25,18 @@ class OnCMDError(ipy.Extension):
                 seconds=event.error.cooldown.get_cooldown_time()
             )
             await event.ctx.send(
-                embeds=self.error_embed_generate(
+                embeds=utils.error_embed_generate(
                     "You're doing that command too fast! "
                     + "Try again in"
-                    f" `{humanize.precisedelta(delta_wait, format='%0.0f')}`."
+                    f" `{humanize.precisedelta(delta_wait, format='%0.1f')}`."
                 )
             )
         elif isinstance(event.error, utils.CustomCheckFailure | ipy.errors.BadArgument):
-            await event.ctx.send(embeds=self.error_embed_generate(str(event.error)))
+            await event.ctx.send(embeds=utils.error_embed_generate(str(event.error)))
         elif isinstance(event.error, ipy.errors.CommandCheckFailure):
             if event.ctx.guild:
                 await event.ctx.send(
-                    embeds=self.error_embed_generate(
+                    embeds=utils.error_embed_generate(
                         "You do not have the proper permissions to use that command."
                     )
                 )
