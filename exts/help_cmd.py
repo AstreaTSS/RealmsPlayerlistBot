@@ -26,7 +26,7 @@ class HelpCMD(utils.Extension):
             return False
 
     async def _custom_can_run(
-        self, ctx: ipy.BaseContext, cmd: help_tools.MiniCommand
+        self, ctx: ipy.BaseInteractionContext, cmd: help_tools.MiniCommand
     ) -> bool:
         """
         Determines if this command can be run, but ignores cooldowns and concurrency.

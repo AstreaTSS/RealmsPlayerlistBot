@@ -13,9 +13,6 @@ from interactions.models.discord.emoji import process_emoji
 
 import common.utils as utils
 
-if typing.TYPE_CHECKING:
-    from common.classes import PatchedMember
-
 # i use spaces, so...
 DOUBLE_TAB = re.compile(r" {8}")
 
@@ -251,12 +248,10 @@ class PermissionsResolver:
     def has_permission(
         self,
         channel: ipy.GuildChannel,
-        author: "PatchedMember",
+        author: ipy.Member,
+        author_permissions: ipy.Permissions,
     ) -> bool:
-        if (
-            author.permissions is not None
-            and ipy.Permissions.ADMINISTRATOR in author.permissions
-        ):
+        if ipy.Permissions.ADMINISTRATOR in author_permissions:
             return True
 
         # channel stuff is checked first
@@ -298,15 +293,15 @@ class PermissionsResolver:
 
         return (
             all(
-                permission in author.permissions
+                permission in author_permissions
                 for permission in self.default_member_permissions
             )
-            if self.default_member_permissions and author.permissions is not None
+            if self.default_member_permissions
             else True
         )
 
-    def has_permission_ctx(self, ctx: ipy.BaseContext) -> bool:
-        return self.has_permission(ctx.channel, ctx.author)  # type: ignore
+    def has_permission_ctx(self, ctx: ipy.BaseInteractionContext) -> bool:
+        return self.has_permission(ctx.channel, ctx.author, ctx.author_permissions)  # type: ignore
 
 
 class GuildApplicationCommandPermissionData(typing.TypedDict):
