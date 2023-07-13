@@ -393,7 +393,7 @@ class Playerlist(utils.Extension):
             # we also make sure we don't get ratelimited hard
             await asyncio.sleep(0.2)
 
-    @ipy.slash_command(
+    @tansy.slash_command(
         "online",
         description="Allows you to see if anyone is online on the Realm right now.",
         dm_permission=False,
