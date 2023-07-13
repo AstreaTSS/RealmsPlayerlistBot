@@ -403,9 +403,9 @@ class Playerlist(utils.Extension):
     async def online(
         self,
         ctx: utils.RealmContext,
-        fetch_devices: typing.Optional[bool] = tansy.Option(
+        fetch_devices: bool = tansy.Option(
             "Should devices be fetched and displayed? Requires voting or Premium.",
-            default=None,
+            default=True,
         ),
     ) -> None:
         """
@@ -421,7 +421,7 @@ class Playerlist(utils.Extension):
         # okay, this is going to get complicated
         bypass_cache = False
 
-        if fetch_devices is not None:
+        if fetch_devices:
             if (
                 not config.valid_premium
                 and os.environ.get("TOP_GG_TOKEN")
@@ -434,13 +434,13 @@ class Playerlist(utils.Extension):
                     f" Premium]({os.environ['PREMIUM_INFO_LINK']}). Voting lasts for 12"
                     " hours."
                 )
-            bypass_cache = True
-        else:
-            if config.fetch_devices:
-                if not config.valid_premium:
-                    await pl_utils.invalidate_premium(self.bot, config)
-                else:
-                    bypass_cache = True
+            else:
+                bypass_cache = True
+        elif config.fetch_devices:
+            if config.valid_premium:
+                bypass_cache = True
+            else:
+                await pl_utils.invalidate_premium(self.bot, config)
 
         playerlist = await pl_utils.fill_in_gamertags_for_sessions(
             self.bot,
@@ -448,19 +448,22 @@ class Playerlist(utils.Extension):
             bypass_cache=bypass_cache,
         )
 
-        if online_list := sorted(
-            (p.display for p in playerlist if p.online), key=lambda g: g.lower()
-        ):
-            embed = ipy.Embed(
-                color=self.bot.color,
-                title=f"{len(online_list)}/10 people online",
-                description="\n".join(online_list),
-                footer=ipy.EmbedFooter(text="As of"),
-                timestamp=ipy.Timestamp.fromdatetime(self.previous_now),
+        if not (
+            online_list := sorted(
+                (p.display for p in playerlist if p.online),
+                key=lambda g: g.lower(),
             )
-            await ctx.send(embed=embed)
-        else:
+        ):
             raise utils.CustomCheckFailure("No one is on the Realm right now.")
+
+        embed = ipy.Embed(
+            color=self.bot.color,
+            title=f"{len(online_list)}/10 people online",
+            description="\n".join(online_list),
+            footer=ipy.EmbedFooter(text="As of"),
+            timestamp=ipy.Timestamp.fromdatetime(self.previous_now),
+        )
+        await ctx.send(embed=embed)
 
 
 def setup(bot: utils.RealmBotBase) -> None:
