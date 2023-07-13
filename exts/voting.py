@@ -97,7 +97,14 @@ class Voting(ipy.Extension):
             f"**{handler.name}** - {handler.vote_url.format(bot_id=self.bot.user.id)}"
             for handler in self.handlers
         ]
-        await ctx.send("\n".join(website_votes), suppress_embeds=True)
+        await ctx.send(
+            embeds=ipy.Embed(
+                title="Vote for the bot",
+                description="\n".join(website_votes),
+                color=self.bot.color,
+                timestamp=ctx.id.created_at,
+            )
+        )
 
 
 def setup(bot: utils.RealmBotBase) -> None:
