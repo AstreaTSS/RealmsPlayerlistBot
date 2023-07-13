@@ -4,7 +4,6 @@ import typing
 
 import humanize
 import interactions as ipy
-import rapidfuzz
 import tansy
 from interactions.models.internal.application_commands import auto_defer
 from tortoise.expressions import Q
@@ -150,7 +149,11 @@ class Statistics(utils.Extension):
     async def graph_realm(
         self,
         ctx: utils.RealmContext,
-        period: str = tansy.Option("The period to graph by.", autocomplete=True),
+        period: str = tansy.Option(
+            "The period to graph by. Periods larger than 7 days requires a vote or"
+            " Premium.",
+            choices=stats_utils.GATED_PERIOD_TO_GRAPH,
+        ),
     ) -> None:
         await self.make_unsummary_single_graph(
             ctx, period, "Playtime on the Realm over the last {days_humanized}"
@@ -167,7 +170,11 @@ class Statistics(utils.Extension):
     async def graph_realm_summary(
         self,
         ctx: utils.RealmContext,
-        summarize_by: str = tansy.Option("What to summarize by.", autocomplete=True),
+        summarize_by: str = tansy.Option(
+            "What to summarize by. Periods larger than 7 days requires a vote or"
+            " Premium.",
+            choices=stats_utils.GATED_SUMMARIZE_BY,
+        ),
     ) -> None:
         await self.make_summary_single_graph(
             ctx,
@@ -187,7 +194,11 @@ class Statistics(utils.Extension):
         self,
         ctx: utils.RealmContext,
         gamertag: str = tansy.Option("The gamertag of the user to graph."),
-        period: str = tansy.Option("The period to graph by.", autocomplete=True),
+        period: str = tansy.Option(
+            "The period to graph by. Periods larger than 7 days requires a vote or"
+            " Premium.",
+            choices=stats_utils.GATED_PERIOD_TO_GRAPH,
+        ),
     ) -> None:
         xuid = await stats_utils.xuid_from_gamertag(self.bot, gamertag)
         await self.make_unsummary_single_graph(
@@ -211,7 +222,11 @@ class Statistics(utils.Extension):
         self,
         ctx: utils.RealmContext,
         gamertag: str = tansy.Option("The gamertag of the user to graph."),
-        summarize_by: str = tansy.Option("What to summarize by.", autocomplete=True),
+        summarize_by: str = tansy.Option(
+            "What to summarize by. Periods larger than 7 days requires a vote or"
+            " Premium.",
+            choices=stats_utils.GATED_SUMMARIZE_BY,
+        ),
     ) -> None:
         xuid = await stats_utils.xuid_from_gamertag(self.bot, gamertag)
         await self.make_summary_single_graph(
@@ -235,11 +250,17 @@ class Statistics(utils.Extension):
     async def graph_multi_player(
         self,
         ctx: utils.RealmContext,
-        period: str = tansy.Option("The period to graph by.", autocomplete=True),
+        period: str = tansy.Option(
+            "The period to graph by. Periods larger than 7 days requires a vote or"
+            " Premium.",
+            autocomplete=True,
+        ),
     ) -> None:
         config = await ctx.fetch_config()
 
-        stats_utils.period_parse(config, period)  # verification check
+        await stats_utils.period_parse(
+            self.bot, ctx.author_id, config, period
+        )  # verification check
 
         modal = ipy.Modal(
             ipy.InputText(
@@ -269,11 +290,17 @@ class Statistics(utils.Extension):
     async def graph_multi_player_summary(
         self,
         ctx: utils.RealmContext,
-        summarize_by: str = tansy.Option("What to summarize by.", autocomplete=True),
+        summarize_by: str = tansy.Option(
+            "What to summarize by. Periods larger than 7 days requires a vote or"
+            " Premium.",
+            autocomplete=True,
+        ),
     ) -> None:
         config = await ctx.fetch_config()
 
-        stats_utils.summary_parse(config, summarize_by)  # verification check
+        await stats_utils.summary_parse(
+            self.bot, ctx.author_id, config, summarize_by
+        )  # verification check
 
         modal = ipy.Modal(
             ipy.InputText(
@@ -401,72 +428,6 @@ class Statistics(utils.Extension):
             " {summarize_by}",
         )
         await self.handle_multi_players(ctx, returned_data, now, xuid_list, gamertags)
-
-    @staticmethod
-    def _filter_for_fuzzy(period_summary: str | dict[str, typing.Any]) -> str:
-        if isinstance(period_summary, str):
-            return period_summary.lower()
-        return period_summary["name"].lower()
-
-    @graph_realm.autocomplete("period")
-    @graph_player.autocomplete("period")
-    @graph_multi_player.autocomplete("period")
-    async def period_autocomplete(
-        self,
-        ctx: utils.RealmAutocompleteContext,
-    ) -> None:
-        period = ctx.kwargs.get("period")
-
-        config = await ctx.fetch_config()
-        periods = (
-            stats_utils.PREMIUM_PERIOD_TO_GRAPH
-            if config.valid_premium
-            else stats_utils.PERIOD_TO_GRAPH
-        )
-        periods_dict = [{"name": str(p.name), "value": p.value} for p in periods]
-
-        if not period:
-            await ctx.send(periods_dict)
-            return
-
-        filtered_periods = fuzzy.extract_from_list(
-            period.lower(),
-            periods_dict,
-            (self._filter_for_fuzzy,),
-            score_cutoff=80,
-            scorers=(rapidfuzz.fuzz.WRatio,),
-        )
-        await ctx.send(p[0] for p in filtered_periods)
-
-    @graph_realm_summary.autocomplete("summarize_by")
-    @graph_player_summary.autocomplete("summarize_by")
-    @graph_multi_player_summary.autocomplete("summarize_by")
-    async def summary_autocomplete(
-        self,
-        ctx: utils.RealmAutocompleteContext,
-    ) -> None:
-        summarize_by = ctx.kwargs.get("summarize_by")
-
-        config = await ctx.fetch_config()
-        summarize_bys = (
-            stats_utils.PREMIUM_SUMMARIZE_BY
-            if config.valid_premium
-            else stats_utils.SUMMARIZE_BY
-        )
-        summary_dict = [{"name": str(s.name), "value": s.value} for s in summarize_bys]
-
-        if not summarize_by:
-            await ctx.send(summary_dict)
-            return
-
-        filtered_summaries = fuzzy.extract_from_list(
-            summarize_by.lower(),
-            summary_dict,
-            (self._filter_for_fuzzy,),
-            score_cutoff=80,
-            scorers=(rapidfuzz.fuzz.WRatio,),
-        )
-        await ctx.send(s[0] for s in filtered_summaries)
 
     @tansy.slash_command(
         name="get-player-log",

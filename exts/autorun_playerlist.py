@@ -20,8 +20,8 @@ UPSELLS = [
         " and get more features."
     ),
     (
-        "Want more options for graphs? Do you want a constantly updating live online"
-        " list? Check out Playerlist Premium: /premium info"
+        "Do you want a constantly updating live online list? Check out Playerlist"
+        " Premium: /premium info"
     ),
     (
         "If you like the bot, you can vote for it via /vote! Voting helps the bot grow"

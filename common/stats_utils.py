@@ -43,24 +43,24 @@ PERIOD_TO_GRAPH = [
     ipy.SlashCommandChoice("One day, per hour", "1pH"),
     ipy.SlashCommandChoice("1 week, per day", "7pD"),
 ]
-PREMIUM_PERIOD_TO_GRAPH = PERIOD_TO_GRAPH + [
+GATED_PERIOD_TO_GRAPH = PERIOD_TO_GRAPH + [
     ipy.SlashCommandChoice("2 weeks, per day", "14pD"),
     ipy.SlashCommandChoice("30 days, per day", "30pD"),
 ]
 PERIODS = frozenset({p.value for p in PERIOD_TO_GRAPH})
-PREMIUM_PERIODS = frozenset({p.value for p in PREMIUM_PERIOD_TO_GRAPH})
+GATED_PERIODS = frozenset({p.value for p in GATED_PERIOD_TO_GRAPH})
 
 SUMMARIZE_BY = [
     ipy.SlashCommandChoice("1 week, by hour", "7bH"),
 ]
-PREMIUM_SUMMARIZE_BY = SUMMARIZE_BY + [
+GATED_SUMMARIZE_BY = SUMMARIZE_BY + [
     ipy.SlashCommandChoice("2 weeks, by hour", "14bH"),
     ipy.SlashCommandChoice("30 days, by hour", "30bH"),
     ipy.SlashCommandChoice("2 weeks, by day of the week", "14bD"),
     ipy.SlashCommandChoice("30 days, by day of the week", "30bD"),
 ]
 SUMMARIES = frozenset({s.value for s in SUMMARIZE_BY})
-PREMIUM_SUMMARIES = frozenset({s.value for s in PREMIUM_SUMMARIZE_BY})
+GATED_SUMMARIES = frozenset({s.value for s in GATED_SUMMARIZE_BY})
 
 DAY_HUMANIZED = {
     1: "24 hours",
@@ -345,10 +345,28 @@ async def gather_datetimes(
     return datetimes_to_use
 
 
-def period_parse(config: models.GuildConfig, period: str) -> tuple[int, str]:
-    periods = PREMIUM_PERIODS if config.valid_premium else PERIODS
-    if period not in periods:
-        raise ipy.errors.BadArgument("Invalid period given.")
+async def period_parse(
+    bot: utils.RealmBotBase,
+    user_id: ipy.Snowflake_Type,
+    config: models.GuildConfig,
+    period: str,
+) -> tuple[int, str]:
+    if period not in PERIODS:
+        if period in GATED_PERIODS:
+            if (
+                os.environ.get("TOP_GG_TOKEN")
+                and not config.valid_premium
+                and await bot.redis.get(f"rpl-voted-{user_id}") != "1"
+            ):
+                raise utils.CustomCheckFailure(
+                    "To use periods longer than 1 week, you must vote for the bot [on"
+                    f" its top.gg page](https://top.gg/bot/{bot.user.id}/vote) or"
+                    " [purchase Playerlist"
+                    f" Premium]({os.environ['PREMIUM_INFO_LINK']}). Voting lasts for 12"
+                    " hours."
+                )
+        else:
+            raise ipy.errors.BadArgument("Invalid period given.")
 
     period_split = period.split("p")
     if len(period_split) != 2:
@@ -362,10 +380,28 @@ def period_parse(config: models.GuildConfig, period: str) -> tuple[int, str]:
     return num_days, period_split[1]
 
 
-def summary_parse(config: models.GuildConfig, summarize_by: str) -> tuple[int, str]:
-    summaries = PREMIUM_SUMMARIES if config.valid_premium else SUMMARIES
-    if summarize_by not in summaries:
-        raise ipy.errors.BadArgument("Invalid summary given.")
+async def summary_parse(
+    bot: utils.RealmBotBase,
+    user_id: ipy.Snowflake_Type,
+    config: models.GuildConfig,
+    summarize_by: str,
+) -> tuple[int, str]:
+    if summarize_by not in SUMMARIES:
+        if summarize_by in GATED_SUMMARIES:
+            if (
+                os.environ.get("TOP_GG_TOKEN")
+                and not config.valid_premium
+                and await bot.redis.get(f"rpl-voted-{user_id}") != "1"
+            ):
+                raise utils.CustomCheckFailure(
+                    "To use periods longer than 1 week, you must vote for the bot [on"
+                    f" its top.gg page](https://top.gg/bot/{bot.user.id}/vote) or"
+                    " [purchase Playerlist"
+                    f" Premium]({os.environ['PREMIUM_INFO_LINK']}). Voting lasts for 12"
+                    " hours."
+                )
+        else:
+            raise ipy.errors.BadArgument("Invalid summary given.")
 
     summary_split = summarize_by.split("b")
     if len(summary_split) != 2:
@@ -407,8 +443,7 @@ async def process_unsummary(
     config = await ctx.fetch_config()
     template_kwargs = {"max_value": None}
 
-    num_days, actual_period = period_parse(config, period)
-
+    num_days, actual_period = await period_parse(ctx.bot, ctx.author_id, config, period)
     min_datetime = (
         now - datetime.timedelta(days=num_days) + datetime.timedelta(minutes=1)
     )
@@ -447,7 +482,9 @@ async def process_summary(
 ) -> ProcessSummaryReturn:
     config = await ctx.fetch_config()
 
-    num_days, actual_summarize_by = summary_parse(config, summarize_by)
+    num_days, actual_summarize_by = await summary_parse(
+        ctx.bot, ctx.author_id, config, summarize_by
+    )
     min_datetime = (
         now - datetime.timedelta(days=num_days) + datetime.timedelta(minutes=1)
     )
