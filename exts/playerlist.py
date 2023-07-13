@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import importlib
 import math
+import os
 import typing
 
 import elytra
@@ -399,7 +400,14 @@ class Playerlist(utils.Extension):
     )
     @ipy.cooldown(ipy.Buckets.GUILD, 1, 10)
     @ipy.check(pl_utils.has_linked_realm)
-    async def online(self, ctx: utils.RealmContext) -> None:
+    async def online(
+        self,
+        ctx: utils.RealmContext,
+        fetch_devices: typing.Optional[bool] = tansy.Option(
+            "Should devices be fetched and displayed? Requires voting or Premium.",
+            default=None,
+        ),
+    ) -> None:
         """
         Allows you to see if anyone is online on the Realm right now.
         Has a cooldown of 10 seconds.
@@ -410,12 +418,29 @@ class Playerlist(utils.Extension):
             realm_id=config.realm_id, online=True
         )
 
+        # okay, this is going to get complicated
         bypass_cache = False
-        if config.fetch_devices:
-            if not config.valid_premium:
-                await pl_utils.invalidate_premium(self.bot, config)
-            else:
-                bypass_cache = True
+
+        if fetch_devices is not None:
+            if (
+                not config.valid_premium
+                and os.environ.get("TOP_GG_TOKEN")
+                and await self.bot.redis.get(f"rpl-voted-{ctx.author_id}") != "1"
+            ):
+                raise utils.CustomCheckFailure(
+                    "To fetch devices, you must vote for the bot [on"
+                    f" its top.gg page](https://top.gg/bot/{self.bot.user.id}/vote) or"
+                    " [purchase Playerlist"
+                    f" Premium]({os.environ['PREMIUM_INFO_LINK']}). Voting lasts for 12"
+                    " hours."
+                )
+            bypass_cache = True
+        else:
+            if config.fetch_devices:
+                if not config.valid_premium:
+                    await pl_utils.invalidate_premium(self.bot, config)
+                else:
+                    bypass_cache = True
 
         playerlist = await pl_utils.fill_in_gamertags_for_sessions(
             self.bot,

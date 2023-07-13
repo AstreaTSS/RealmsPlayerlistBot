@@ -3,7 +3,6 @@ import contextlib
 import datetime
 import io
 import os
-import random
 import typing
 from collections import defaultdict
 from enum import IntEnum
@@ -660,7 +659,7 @@ async def send_graph(
     ] = None,
     earliest_datetime: typing.Optional[datetime.datetime] = None,
 ) -> None:
-    config = await ctx.fetch_config()
+    await ctx.fetch_config()
 
     kwargs: dict[str, typing.Any] = {}
 
@@ -731,12 +730,6 @@ async def send_graph(
             timestamp=now,  # type: ignore
         )
         embed.set_image(graph if isinstance(graph, str) else "attachment://graph.png")
-
-        if not config.valid_premium and random.randint(1, 10) == 1:  # noqa: S311
-            embed.set_footer(
-                "Premium users have more options and can go back to 30 days prior."
-                " Check it out through /premium info!"
-            )
 
         embeds.append(embed)
         kwargs["embeds"] = embeds

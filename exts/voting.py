@@ -34,7 +34,7 @@ class Voting(ipy.Extension):
                     headers={"Authorization": os.environ["TOP_GG_TOKEN"]},
                     data_url="/bots/{bot_id}/stats",
                     data_callback=lambda guild_count: {"server_count": guild_count},
-                    vote_url="https://top.gg/bot/{bot_id}/vote",
+                    vote_url="https://top.gg/bot/{bot_id}/vote **(prefered)**",
                 )
             )
 
@@ -94,10 +94,10 @@ class Voting(ipy.Extension):
     )
     async def vote(self, ctx: utils.RealmContext) -> None:
         website_votes: list[str] = [
-            f"**{handler.name}** - <{handler.vote_url.format(bot_id=self.bot.user.id)}>"
+            f"**{handler.name}** - {handler.vote_url.format(bot_id=self.bot.user.id)}"
             for handler in self.handlers
         ]
-        await ctx.send("\n".join(website_votes))
+        await ctx.send("\n".join(website_votes), suppress_embeds=True)
 
 
 def setup(bot: utils.RealmBotBase) -> None:
