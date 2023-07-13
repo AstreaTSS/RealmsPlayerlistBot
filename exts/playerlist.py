@@ -405,7 +405,7 @@ class Playerlist(utils.Extension):
         ctx: utils.RealmContext,
         fetch_devices: bool = tansy.Option(
             "Should devices be fetched and displayed? Requires voting or Premium.",
-            default=True,
+            default=False,
         ),
     ) -> None:
         """
