@@ -659,8 +659,6 @@ async def send_graph(
     ] = None,
     earliest_datetime: typing.Optional[datetime.datetime] = None,
 ) -> None:
-    await ctx.fetch_config()
-
     kwargs: dict[str, typing.Any] = {}
 
     try:
