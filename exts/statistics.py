@@ -253,7 +253,7 @@ class Statistics(utils.Extension):
         period: str = tansy.Option(
             "The period to graph by. Periods larger than 7 days requires a vote or"
             " Premium.",
-            autocomplete=True,
+            choices=stats_utils.GATED_PERIOD_TO_GRAPH,
         ),
     ) -> None:
         config = await ctx.fetch_config()
@@ -293,7 +293,7 @@ class Statistics(utils.Extension):
         summarize_by: str = tansy.Option(
             "What to summarize by. Periods larger than 7 days requires a vote or"
             " Premium.",
-            autocomplete=True,
+            choices=stats_utils.GATED_SUMMARIZE_BY,
         ),
     ) -> None:
         config = await ctx.fetch_config()
