@@ -17,18 +17,6 @@ from tortoise.exceptions import DoesNotExist
 import common.models as models
 import common.utils as utils
 
-MINECRAFT_TITLE_IDS = frozenset(
-    {
-        "1828326430",
-        "2047319603",
-        "2044456598",
-        "896928775",
-        "1739947436",
-        "1810924247",
-        "1944307183",
-    }
-)
-
 
 def _convert_fields(value: tuple[str, ...] | None) -> tuple[str, ...]:
     return ("online", "last_seen") + value if value else ("online", "last_seen")
@@ -205,34 +193,17 @@ class GamertagHandler:
                         if (
                             user.xuid in self.gather_devices_for
                             and user.presence_details
+                        ) and (
+                            a_match := next(
+                                (
+                                    p
+                                    for p in user.presence_details
+                                    if (p.is_primary or p.state == "Active")
+                                ),
+                                None,
+                            )
                         ):
-                            if a_match := next(
-                                (
-                                    p
-                                    for p in user.presence_details
-                                    if p.title_id in MINECRAFT_TITLE_IDS
-                                    and (p.is_primary or p.state == "Active")
-                                ),
-                                None,
-                            ):
-                                device = a_match.device
-
-                            elif maybe_match := next(
-                                (
-                                    p
-                                    for p in user.presence_details
-                                    if "minecraft for" in p.presence_text.lower()
-                                    and (p.is_primary or p.state == "Active")
-                                ),
-                                None,
-                            ):
-                                device = maybe_match.device
-                                await utils.msg_to_owner(
-                                    self.bot,
-                                    f"Possible device: {device} with title ID"
-                                    f" {maybe_match.title_id} and presence text"
-                                    f" {maybe_match.presence_text}",
-                                )
+                            device = a_match.device
 
                         dict_gamertags = self._handle_new_gamertag(
                             pipe,
