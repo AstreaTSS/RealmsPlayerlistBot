@@ -211,7 +211,7 @@ class GamertagHandler:
                                     p
                                     for p in user.presence_details
                                     if p.title_id in MINECRAFT_TITLE_IDS
-                                    and p.is_primary
+                                    and (p.is_primary or p.state == "Active")
                                 ),
                                 None,
                             ):
@@ -222,7 +222,7 @@ class GamertagHandler:
                                     p
                                     for p in user.presence_details
                                     if "minecraft for" in p.presence_text.lower()
-                                    and p.is_primary
+                                    and (p.is_primary or p.state == "Active")
                                 ),
                                 None,
                             ):
