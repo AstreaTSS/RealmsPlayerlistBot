@@ -4,6 +4,7 @@ import importlib
 
 import interactions as ipy
 from dateutil.relativedelta import relativedelta
+from tortoise.connection import connections
 
 import common.classes as cclasses
 import common.models as models
@@ -72,7 +73,9 @@ class AutoRunPlayerlist(utils.Extension):
             if not isinstance(e, asyncio.CancelledError):
                 await utils.error_handle(e)
 
-    @ipy.Task.create(ipy.TimeTrigger())
+    @ipy.Task.create(
+        ipy.OrTrigger(ipy.TimeTrigger(utc=True), ipy.TimeTrigger(hour=12, utc=True))
+    )
     async def player_session_delete(self) -> None:
         now = datetime.datetime.now(tz=datetime.UTC)
         time_back = now - datetime.timedelta(days=31)
@@ -80,6 +83,11 @@ class AutoRunPlayerlist(utils.Extension):
             online=False,
             last_seen__lt=time_back,
         ).delete()
+
+        # there's likely a lot of index reshuffling, dont trust db to do this automatically
+        # (though it should anyhow)
+        conn = connections.get("default")
+        await conn.execute_query("VACUUM")
 
     async def playerlist_loop(
         self,
