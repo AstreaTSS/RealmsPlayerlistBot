@@ -325,6 +325,10 @@ async def eventually_invalidate(
             str(int_num_times),
             ex=limit * 86400,  # limit times day
         )
+        logging.getLogger("realms_bot").info(
+            f"Increased invalid-playerlist for guild {guild_config.guild_id} to"
+            f" {int_num_times}."
+        )
 
 
 async def eventually_invalidate_live_online(

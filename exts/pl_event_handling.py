@@ -276,6 +276,10 @@ class PlayerlistEventHandling(ipy.Extension):
                 # could just be it's offline or something
                 continue
 
+            logging.getLogger("realms_bot").info(
+                f"Warning {config.guild_id} for missing Realm."
+            )
+
             await pl_utils.eventually_invalidate(self.bot, config, limit=7)
 
             try:

@@ -40,7 +40,7 @@ with contextlib.suppress(ImportError):
         )
 
 logger = logging.getLogger("realms_bot")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(
     filename=os.environ["LOG_FILE_PATH"], encoding="utf-8", mode="a"
 )
@@ -50,7 +50,7 @@ handler.setFormatter(
 logger.addHandler(handler)
 
 ipy_logger = logging.getLogger("interactions")
-ipy_logger.setLevel(logging.INFO)
+ipy_logger.setLevel(logging.DEBUG)
 ipy_logger.addHandler(handler)
 
 
