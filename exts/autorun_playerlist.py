@@ -94,6 +94,22 @@ class AutoRunPlayerlist(utils.Extension):
         )
         to_run = []
 
+        try:
+            # hack to fill in cache for gamertags ahead of time
+            now = ipy.Timestamp.utcnow()
+            one_hour_ago = now - datetime.timedelta(hours=1, minutes=1)
+            player_sessions: list[
+                models.PlayerSession
+            ] = await models.PlayerSession.raw(
+                f"SELECT DISTINCT ON (xuid) * FROM {models.PlayerSession.Meta.table} "  # noqa
+                f"WHERE (online=true OR last_seen>='{one_hour_ago.isoformat()}') ORDER"
+                " BY xuid"
+            )  # type: ignore
+            await pl_utils.fill_in_gamertags_for_sessions(self.bot, player_sessions)
+        except Exception as e:
+            # don't break, just continue onwards
+            await utils.error_handle(e)
+
         async for guild_config in models.GuildConfig.filter(
             guild_id__in=list(self.bot.user._guild_ids),
             realm_id__not_isnull=True,
