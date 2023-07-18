@@ -366,7 +366,8 @@ class Playerlist(utils.Extension):
                     )
                 )
 
-            offline_embeds[0].title = f"People on in the last {hours_ago} hour(s)"
+            hour_text = "hour" if hours_ago == 1 else "hours"
+            offline_embeds[0].title = f"People on in the last {hours_ago} {hour_text}"
             embeds.extend(offline_embeds)
 
         if upsell and not config.valid_premium:
