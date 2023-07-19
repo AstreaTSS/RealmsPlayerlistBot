@@ -256,6 +256,9 @@ class PlayerlistEventHandling(ipy.Extension):
                         config.guild_id
                     )
 
+                if config.realm_id:
+                    self.bot.offline_realms.discard(int(config.realm_id))
+
                 config.realm_id = None
                 config.club_id = None
                 config.live_playerlist = False
@@ -280,35 +283,32 @@ class PlayerlistEventHandling(ipy.Extension):
                 f"Warning {config.guild_id} for missing Realm."
             )
 
+            playerlist_chan = config.playerlist_chan
+
             await pl_utils.eventually_invalidate(self.bot, config, limit=7)
 
-            try:
-                chan = await pl_utils.fetch_playerlist_channel(self.bot, guild, config)
-            except ValueError:
+            chan = await self.bot.fetch_channel(playerlist_chan)
+            if not chan:
                 continue
 
             with contextlib.suppress(ipy.errors.HTTPException):
-                embed = ipy.Embed(
-                    title="Warning",
-                    description=(
-                        "I have been unable to get any information about your Realm"
-                        " for the last 24 hours. This could be because the Realm has"
-                        " been turned off or because it's inactive, but if it hasn't,"
-                        " make sure you haven't banned or kick"
-                        f" `{self.bot.own_gamertag}`. If you have, please unban the"
-                        " account if needed and run"
-                        f" {self.bot.mention_cmd('config link-realm')} again to"
-                        " fix it.\n\nAlternatively, if you want to disable the"
-                        " autorunner entirely, you can use"
-                        f" {self.bot.mention_cmd('config playerlist-channel')} to"
-                        " do so."
-                    ),
-                    color=ipy.RoleColors.YELLOW,
+                content = (
+                    "I have been unable to get any information about your Realm for"
+                    " the last 24 hours. This could be because the Realm has been"
+                    " turned off or because it's inactive, but if it hasn't, make sure"
+                    f" you haven't banned or kick `{self.bot.own_gamertag}`. If you"
+                    " have, please unban the account if needed and run"
+                    f" {self.bot.mention_cmd('config link-realm')} again to fix"
+                    " it.\n\nAlternatively, if you want to disable the autorunner"
+                    " entirely, you can use"
+                    f" {self.bot.mention_cmd('config playerlist-channel')} to do so."
                 )
-                await chan.send(embeds=embed)
+                await chan.send(content=content)
 
         if all(no_playerlist_chan) or not no_playerlist_chan:
+            self.bot.live_playerlist_store.pop(event.realm_id, None)
             self.bot.fetch_devices_for.discard(event.realm_id)
+            self.bot.offline_realms.discard(int(event.realm_id))
 
             # we don't want to stop the whole thing, but as of right now i would
             # like to know what happens with invalid stuff
