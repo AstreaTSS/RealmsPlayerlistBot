@@ -293,7 +293,8 @@ async def eventually_invalidate(
         old_live_playerlist = guild_config.live_playerlist
         guild_config.live_playerlist = False
         await guild_config.save()
-        await bot.redis.delete(f"invalid-playerlist{limit}-{guild_config.guild_id}")
+        await bot.redis.delete(f"invalid-playerlist3-{guild_config.guild_id}")
+        await bot.redis.delete(f"invalid-playerlist7-{guild_config.guild_id}")
 
         logging.getLogger("realms_bot").info(
             f"Unlinked guild {guild_config.guild_id} with {limit} invalidations."
