@@ -359,6 +359,10 @@ async def fetch_playerlist_channel(
     except TypeError:  # playerlist chan is none, do nothing
         raise ValueError() from None
 
+    if chan.type == ipy.MISSING:
+        await eventually_invalidate(bot, config)
+        raise ValueError() from None
+
     return chan
 
 
