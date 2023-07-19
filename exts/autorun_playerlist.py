@@ -132,9 +132,7 @@ class AutoRunPlayerlist(utils.Extension):
             return
 
         try:
-            chan = await pl_utils.fetch_playerlist_channel(
-                self.bot, guild, guild_config
-            )
+            chan = await pl_utils.fetch_playerlist_channel(self.bot, guild_config)
         except ValueError:
             return
 

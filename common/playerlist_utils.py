@@ -348,21 +348,16 @@ async def eventually_invalidate_live_online(
 
 
 async def fetch_playerlist_channel(
-    bot: utils.RealmBotBase, guild: ipy.Guild, config: models.GuildConfig
+    bot: utils.RealmBotBase, config: models.GuildConfig
 ) -> utils.GuildMessageable:
     try:
-        chan = await guild.fetch_channel(config.playerlist_chan)  # type: ignore
+        chan = await bot.cache.fetch_channel(config.playerlist_chan)
     except ipy.errors.HTTPException as e:
         if e.status < 500:  # over 500 is a discord fault
             await eventually_invalidate(bot, config)
         raise ValueError() from None
     except TypeError:  # playerlist chan is none, do nothing
         raise ValueError() from None
-    else:
-        if not chan:
-            # invalid channel
-            await eventually_invalidate(bot, config)
-            raise ValueError()
 
     return chan
 

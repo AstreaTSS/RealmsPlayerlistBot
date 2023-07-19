@@ -137,7 +137,7 @@ class PlayerlistEventHandling(ipy.Extension):
                 )
 
             try:
-                chan = await pl_utils.fetch_playerlist_channel(self.bot, guild, config)
+                chan = await pl_utils.fetch_playerlist_channel(self.bot, config)
                 await chan.send(embeds=embed)
             except ValueError:
                 continue
@@ -231,7 +231,7 @@ class PlayerlistEventHandling(ipy.Extension):
             )
 
             try:
-                chan = await pl_utils.fetch_playerlist_channel(self.bot, guild, config)
+                chan = await pl_utils.fetch_playerlist_channel(self.bot, config)
                 await chan.send(
                     role_mention,
                     embeds=embed,
