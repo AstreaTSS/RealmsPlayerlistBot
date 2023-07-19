@@ -163,9 +163,10 @@ class AutoRunPlayerlist(utils.Extension):
                 autorunner=True,
                 upsell=upsell,
             )
-        except ipy.errors.HTTPException:
-            # likely a can't send in channel, eventually invalidate and move on
-            await pl_utils.eventually_invalidate(self.bot, guild_config)
+        except ipy.errors.HTTPException as e:
+            if e.status < 500:
+                # likely a can't send in channel, eventually invalidate and move on
+                await pl_utils.eventually_invalidate(self.bot, guild_config)
 
 
 def setup(bot: utils.RealmBotBase) -> None:
