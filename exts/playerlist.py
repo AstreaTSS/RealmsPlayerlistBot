@@ -200,12 +200,10 @@ class Playerlist(utils.Extension):
 
             results: list[int] = await pipe.execute()
 
-            for realm_id, value in zip(self.bot.offline_realms, results, strict=True):
-                if value >= 1440:
-                    self.bot.dispatch(pl_events.WarnMissingPlayerlist(str(realm_id)))
-                    pipe.delete(f"missing-realm-{realm_id}")
-
-            await pipe.execute()
+        for realm_id, value in zip(self.bot.offline_realms, results, strict=True):
+            if value >= 1440:
+                self.bot.dispatch(pl_events.WarnMissingPlayerlist(str(realm_id)))
+                self.bot.dropped_offline_realms.add(realm_id)
 
         if self.bot.dropped_offline_realms:
             await self.bot.redis.delete(
