@@ -136,6 +136,10 @@ class AutoRunPlayerlist(utils.Extension):
         except ValueError:
             return
 
+        if not hasattr(chan, "_guild_id"):
+            await pl_utils.eventually_invalidate(self.bot, guild_config)
+            return
+
         # make a fake context to make things easier
         a_ctx = utils.RealmPrefixedContext(client=self.bot)
         a_ctx.author_id = self.bot.user.id
