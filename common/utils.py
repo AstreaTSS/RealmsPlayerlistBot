@@ -323,7 +323,3 @@ class Extension(ipy.Extension):
         new_cls = super().__new__(cls, bot, *args, **kwargs)
         new_cls.add_ext_check(_global_checks)  # type: ignore
         return new_cls
-
-
-class GuildMessageable(ipy.GuildChannel, ipy.MessageableMixin):
-    pass

@@ -288,7 +288,7 @@ class PlayerlistEventHandling(ipy.Extension):
             await pl_utils.eventually_invalidate(self.bot, config, limit=7)
 
             chan = await self.bot.fetch_channel(playerlist_chan)
-            if not chan:
+            if not chan or not isinstance(chan, ipy.MessageableMixin):
                 continue
 
             with contextlib.suppress(ipy.errors.HTTPException):

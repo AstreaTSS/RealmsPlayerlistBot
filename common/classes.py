@@ -4,10 +4,8 @@ import typing
 import interactions as ipy
 import redis.asyncio as aioredis
 
-import common.utils as utils
 
-
-def valid_channel_check(channel: ipy.GuildChannel) -> utils.GuildMessageable:
+def valid_channel_check(channel: ipy.GuildChannel) -> ipy.GuildText:
     if not isinstance(channel, ipy.MessageableMixin):
         raise ipy.errors.BadArgument(f"Cannot send messages in {channel.name}.")
 
@@ -33,7 +31,7 @@ def valid_channel_check(channel: ipy.GuildChannel) -> utils.GuildMessageable:
 class ValidChannelConverter(ipy.Converter):
     async def convert(
         self, ctx: ipy.InteractionContext, argument: ipy.GuildText
-    ) -> utils.GuildMessageable:
+    ) -> ipy.GuildText:
         return valid_channel_check(argument)
 
 

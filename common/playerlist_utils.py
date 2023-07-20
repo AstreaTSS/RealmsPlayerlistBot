@@ -349,7 +349,7 @@ async def eventually_invalidate_live_online(
 
 async def fetch_playerlist_channel(
     bot: utils.RealmBotBase, config: models.GuildConfig
-) -> utils.GuildMessageable:
+) -> ipy.GuildText:
     try:
         chan = await bot.cache.fetch_channel(config.playerlist_chan)
     except ipy.errors.HTTPException as e:
@@ -360,6 +360,10 @@ async def fetch_playerlist_channel(
         raise ValueError() from None
 
     if chan.type == ipy.MISSING:
+        await eventually_invalidate(bot, config)
+        raise ValueError() from None
+
+    if not isinstance(chan, ipy.MessageableMixin):
         await eventually_invalidate(bot, config)
         raise ValueError() from None
 
