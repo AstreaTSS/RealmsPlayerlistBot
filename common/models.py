@@ -108,7 +108,7 @@ class PlayerSession(Model):
 
     @property
     def base_display(self) -> str:
-        display = "`Unknown User`"
+        display = "Unknown User"
         if self.gamertag:
             display = f"`{self.gamertag}`"
         elif self.xuid:
