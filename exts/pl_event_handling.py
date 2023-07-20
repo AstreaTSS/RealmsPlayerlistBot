@@ -291,9 +291,6 @@ class PlayerlistEventHandling(ipy.Extension):
             if not chan:
                 continue
 
-            if chan.type is ipy.MISSING or not isinstance(chan, utils.GuildMessageable):
-                continue
-
             with contextlib.suppress(ipy.errors.HTTPException):
                 content = (
                     "I have been unable to get any information about your Realm for"

@@ -363,10 +363,6 @@ async def fetch_playerlist_channel(
         await eventually_invalidate(bot, config)
         raise ValueError() from None
 
-    if not isinstance(chan, utils.GuildMessageable):
-        await eventually_invalidate(bot, config)
-        raise ValueError() from None
-
     return chan
 
 
