@@ -283,10 +283,7 @@ class Playerlist(utils.Extension):
 
             raise utils.CustomCheckFailure(
                 "No one seems to have been on the Realm for the last"
-                f" {hours_ago} {hour_text}. Make sure you haven't changed Realms or"
-                f" kicked the bot's account, `{self.bot.own_gamertag}` - try relinking"
-                f" the Realm via {self.bot.mention_cmd('config link-realm')} if that"
-                " happens."
+                f" {hours_ago} {hour_text}."
             )
 
         bypass_cache_for: typing.Optional[set[str]] = None
@@ -311,14 +308,6 @@ class Playerlist(utils.Extension):
                 reverse=True,
             )
         ]
-
-        if not player_list:
-            if autorunner:
-                return
-
-            raise utils.CustomCheckFailure(
-                f"No one has been on the Realm for the last {hours_ago} {hour_text}."
-            )
 
         embeds: list[ipy.Embed] = []
         timestamp = ipy.Timestamp.fromdatetime(self.previous_now)
