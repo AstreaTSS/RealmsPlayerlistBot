@@ -290,7 +290,7 @@ async def eventually_invalidate(
 
     debug_logger.debug(
         f"Increased invalid-playerlist for guild {guild_config.guild_id} to"
-        f" {num_times}."
+        f" {num_times}/{limit}."
     )
 
     await bot.redis.expire(f"invalid-playerlist{limit}-{guild_config.guild_id}", 172000)
