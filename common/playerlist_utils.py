@@ -287,14 +287,13 @@ async def eventually_invalidate(
     num_times = await bot.redis.incr(
         f"invalid-playerlist{limit}-{guild_config.guild_id}"
     )
-    await bot.redis.expire(
-        f"invalid-playerlist{limit}-{guild_config.guild_id}", limit * 86400, nx=True
-    )
 
     debug_logger.debug(
         f"Increased invalid-playerlist for guild {guild_config.guild_id} to"
         f" {num_times}."
     )
+
+    await bot.redis.expire(f"invalid-playerlist{limit}-{guild_config.guild_id}", 90000)
 
     if num_times >= limit:
         debug_logger.debug(
@@ -342,9 +341,7 @@ async def eventually_invalidate_live_online(
         return
 
     num_times = await bot.redis.incr(f"invalid-liveonline-{guild_config.guild_id}")
-    await bot.redis.expire(
-        f"invalid-liveonline-{guild_config.guild_id}", 86400, nx=True
-    )
+    await bot.redis.expire(f"invalid-liveonline-{guild_config.guild_id}", 86400)
 
     if num_times >= 3:
         guild_config.live_online_channel = None
