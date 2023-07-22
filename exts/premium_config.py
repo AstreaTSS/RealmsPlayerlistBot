@@ -143,8 +143,10 @@ class PremiumHandling(ipy.Extension):
         uses_str = "uses" if remaining_uses != 1 else "use"
 
         await ctx.send(
-            "Code redeemed for this server!\nThis code has"
-            f" {remaining_uses} {uses_str} remaining."
+            embeds=utils.make_embed(
+                "Code redeemed for this server!\nThis code has"
+                f" {remaining_uses} {uses_str} remaining."
+            )
         )
 
     @premium.subcommand(
@@ -176,7 +178,9 @@ class PremiumHandling(ipy.Extension):
         config.live_playerlist = toggle
         await config.save()
         await ctx.send(
-            f"Turned {utils.toggle_friendly_str(toggle)} the live playerlist!"
+            embeds=utils.make_embed(
+                f"Turned {utils.toggle_friendly_str(toggle)} the live playerlist."
+            )
         )
 
     @premium.subcommand(
@@ -259,7 +263,7 @@ class PremiumHandling(ipy.Extension):
         await self.bot.redis.hset(config.live_online_channel, "xuids", xuids)
         await self.bot.redis.hset(config.live_online_channel, "gamertags", online_str)
 
-        await ctx.send("Done!", ephemeral=True)
+        await ctx.send(embeds=utils.make_embed("Done!"), ephemeral=True)
 
     @staticmethod
     def button_check(author_id: int) -> typing.Callable[..., bool]:
@@ -334,18 +338,20 @@ class PremiumHandling(ipy.Extension):
             except asyncio.TimeoutError:
                 result = "Timed out."
             finally:
+                embed = utils.make_embed(result)
                 if event:
                     await event.ctx.send(
-                        result,
+                        embeds=embed,
                         ephemeral=True,
-                        allowed_mentions=ipy.AllowedMentions.none(),
                     )
-                await ctx.edit(msg, content=result, embeds=[], embed=[], components=[])  # type: ignore
+                await ctx.edit(msg, embeds=embed, components=[])  # type: ignore
         else:
             config.fetch_devices = False
             await config.save()
 
-            await ctx.send("Turned off fetching and displaying devices.")
+            await ctx.send(
+                embeds=utils.make_embed("Turned off fetching and displaying devices.")
+            )
 
             if not await models.GuildConfig.filter(
                 realm_id=config.realm_id, fetch_devices=True
@@ -359,7 +365,17 @@ class PremiumHandling(ipy.Extension):
         ),
     )
     async def premium_info(self, ctx: utils.RealmContext) -> None:
-        await ctx.send(os.environ["PREMIUM_INFO_LINK"])
+        embed = utils.make_embed(
+            "To learn about Realms Playerlist Premium, what it has, and how to get it,"
+            " check out the link below.",
+            title="Premium Info",
+        )
+        button = ipy.Button(
+            style=ipy.ButtonStyle.URL,
+            label="Premium Info",
+            url=os.environ["PREMIUM_INFO_LINK"],
+        )
+        await ctx.send(embeds=embed, components=button)
 
 
 def setup(bot: utils.RealmBotBase) -> None:

@@ -261,7 +261,7 @@ class GuildConfig(utils.Extension):
 
             await config.save()
 
-            await ctx.send("Unlinked Realm.")
+            await ctx.send(embeds=utils.make_embed("Unlinked the Realm."))
 
             self.bot.live_playerlist_store[realm_id].discard(config.guild_id)
             await self.bot.redis.delete(
@@ -325,7 +325,11 @@ class GuildConfig(utils.Extension):
                 f"invalid-playerlist7-{config.guild_id}",
             )
 
-            await ctx.send(f"Set the playerlist channel to {channel.mention}.")
+            await ctx.send(
+                embeds=utils.make_embed(
+                    f"Set the playerlist channel to {channel.mention}."
+                )
+            )
         else:
             if not config.playerlist_chan:
                 raise utils.CustomCheckFailure(
@@ -342,7 +346,7 @@ class GuildConfig(utils.Extension):
             if config.realm_id:
                 self.bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
 
-            await ctx.send("Unset the playerlist channel.")
+            await ctx.send(embeds=utils.make_embed("Unset the playerlist channel."))
 
     @staticmethod
     def button_check(author_id: int) -> typing.Callable[..., bool]:
@@ -423,19 +427,19 @@ class GuildConfig(utils.Extension):
             except asyncio.TimeoutError:
                 result = "Timed out."
             finally:
+                embed = utils.make_embed(result)
                 if event:
                     await event.ctx.send(
-                        result,
+                        embeds=embed,
                         ephemeral=True,
-                        allowed_mentions=ipy.AllowedMentions.none(),
                     )
-                await ctx.edit(msg, content=result, embeds=[], embed=[], components=[])  # type: ignore
+                await ctx.edit(msg, embeds=embed, components=[])  # type: ignore
 
         else:
             config.warning_notifications = True
             await config.save()
 
-            await ctx.send("Enabled the warnings.")
+            await ctx.send(embeds=utils.make_embed("Enabled the warnings."))
 
     @config.subcommand(
         sub_cmd_name="realm-offline-role",
@@ -533,13 +537,13 @@ class GuildConfig(utils.Extension):
             except asyncio.TimeoutError:
                 result = "Timed out."
             finally:
+                embed = utils.make_embed(result)
                 if event:
                     await event.ctx.send(
-                        result,
+                        embeds=embed,
                         ephemeral=True,
-                        allowed_mentions=ipy.AllowedMentions.none(),
                     )
-                await ctx.edit(msg, content=result, embeds=[], embed=[], components=[])  # type: ignore
+                await ctx.edit(msg, embeds=embed, components=[])  # type: ignore
         else:
             if not config.realm_offline_role:
                 raise utils.CustomCheckFailure(
@@ -548,7 +552,7 @@ class GuildConfig(utils.Extension):
 
             config.realm_offline_role = None
             await config.save()
-            await ctx.send("Unset the Realm offline ping role.")
+            await ctx.send(embeds=utils.make_embed("Unset the Realm offline ping."))
 
     @config.subcommand(
         sub_cmd_name="help",
@@ -558,7 +562,16 @@ class GuildConfig(utils.Extension):
         self,
         ctx: utils.RealmContext,
     ) -> None:
-        await ctx.send(os.environ["SETUP_LINK"])
+        embed = utils.make_embed(
+            "To set up this bot, follow the Server Setup Guide below.",
+            title="Setup Bot",
+        )
+        button = ipy.Button(
+            style=ipy.ButtonStyle.LINK,
+            label="Server Setup Guide",
+            url=os.environ["SETUP_LINK"],
+        )
+        await ctx.send(embeds=embed, components=button)
 
 
 def setup(bot: utils.RealmBotBase) -> None:

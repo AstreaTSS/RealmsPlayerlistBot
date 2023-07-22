@@ -25,6 +25,8 @@ class GeneralCMDS(utils.Extension):
         self.name = "General"
         self.bot: utils.RealmBotBase = bot
 
+        self.invite_link = f"https://discord.com/api/oauth2/authorize?client_id={self.bot.user.id}&permissions=309238025280&scope=applications.commands%20bot"
+
     def _get_commit_hash(self) -> str:
         return (
             subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
@@ -71,20 +73,48 @@ class GeneralCMDS(utils.Extension):
             f" Ping: `{rtt_ping}` ms"
         )
 
-        await ctx.edit(message=mes, embed=embed)
+        await ctx.edit(mes, embed=embed)
 
     @ipy.slash_command(
         name="invite",
-        description="Sends instructions on how to invite the bot.",
+        description="Sends instructions on how to set up and invite the bot.",
     )
     async def invite(self, ctx: utils.RealmContext) -> None:
-        await ctx.send(os.environ["SETUP_LINK"])
+        embed = utils.make_embed(
+            "If you want to invite me to your server, it's a good idea to use the"
+            " Server Setup Guide. However, if you know what you're doing, you can"
+            " use the Invite Link instead.",
+            title="Invite Bot",
+        )
+        components = [
+            ipy.Button(
+                style=ipy.ButtonStyle.URL,
+                label="Server Setup Guide",
+                url=os.environ["SETUP_LINK"],
+            ),
+            ipy.Button(
+                style=ipy.ButtonStyle.URL,
+                label="Invite Link",
+                url=self.invite_link,
+            ),
+        ]
+        await ctx.send(embeds=embed, components=components)
 
     @ipy.slash_command(
         "support", description="Gives an invite link to the support server."
     )
     async def support(self, ctx: ipy.InteractionContext) -> None:
-        await ctx.send("Support server:\nhttps://discord.gg/NSdetwGjpK")
+        embed = utils.make_embed(
+            "If you need help with the bot, or just want to hang out, join the"
+            " support server!",
+            title="Support Server",
+        )
+        button = ipy.Button(
+            style=ipy.ButtonStyle.URL,
+            label="Join Support Server",
+            url="https://discord.gg/NSdetwGjpK",
+        )
+        await ctx.send(embeds=embed, components=button)
 
     @ipy.slash_command("about", description="Gives information about the bot.")
     async def about(self, ctx: ipy.InteractionContext) -> None:
@@ -263,7 +293,11 @@ class GeneralCMDS(utils.Extension):
                 )
                 await pipe.execute()
 
-        await ctx.send(f"`{valid_xuid}`'s gamertag: `{maybe_gamertag}`.")
+        embed = utils.make_embed(
+            f"`{valid_xuid}`'s gamertag: `{maybe_gamertag}`.",
+            title="Gamertag from XUID",
+        )
+        await ctx.send(embed=embed)
 
 
 def setup(bot: utils.RealmBotBase) -> None:

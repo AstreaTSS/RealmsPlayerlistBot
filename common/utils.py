@@ -171,6 +171,18 @@ def na_friendly_str(obj: typing.Any) -> str:
     return str(obj) if obj else "N/A"
 
 
+_bot_color = ipy.Color(int(os.environ["BOT_COLOR"]))
+
+
+def make_embed(description: str, *, title: str | None = None) -> ipy.Embed:
+    return ipy.Embed(
+        title=title,
+        description=description,
+        color=_bot_color,
+        timestamp=ipy.Timestamp.utcnow(),
+    )
+
+
 def error_embed_generate(error_msg: str) -> ipy.Embed:
     return ipy.Embed(
         title="Error",
