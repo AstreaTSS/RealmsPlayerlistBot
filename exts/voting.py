@@ -15,14 +15,16 @@ class VoteHandler:
     base_url: str = attrs.field()
     headers: dict[str, str] = attrs.field()
     data_url: str = attrs.field()
-    data_callback: typing.Callable[[int], dict[str, typing.Any]] = attrs.field()
-    vote_url: str = attrs.field()
+    data_callback: typing.Callable[[int, int], dict[str, typing.Any]] = attrs.field()
+    vote_url: typing.Optional[str] = attrs.field()
 
 
 class Voting(ipy.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.name = "Voting"
+
+        self.shard_count = len(bot.shards)
 
         self.handlers: list[VoteHandler] = []
 
@@ -33,7 +35,10 @@ class Voting(ipy.Extension):
                     base_url="https://top.gg/api",
                     headers={"Authorization": os.environ["TOP_GG_TOKEN"]},
                     data_url="/bots/{bot_id}/stats",
-                    data_callback=lambda guild_count: {"server_count": guild_count},
+                    data_callback=lambda guild_count, shard_count: {
+                        "server_count": guild_count,
+                        "shard_count": shard_count,
+                    },
                     vote_url="https://top.gg/bot/{bot_id}/vote **(prefered)**",
                 )
             )
@@ -42,10 +47,10 @@ class Voting(ipy.Extension):
             self.handlers.append(
                 VoteHandler(
                     name="Discords.com",
-                    base_url="https://discords.com",
+                    base_url="https://discords.com/bots/api",
                     headers={"Authorization": os.environ["DISCORDSCOM_TOKEN"]},
-                    data_url="/bots/api/bot/{bot_id}",
-                    data_callback=lambda guild_count: {"server_count": guild_count},
+                    data_url="bot/{bot_id}",
+                    data_callback=lambda guild_count, _: {"server_count": guild_count},
                     vote_url="https://discords.com/bots/bot/{bot_id}",
                 ),
             )
@@ -57,10 +62,25 @@ class Voting(ipy.Extension):
                     base_url="https://discordbotlist.com/api/v1",
                     headers={"Authorization": os.environ["DBL_TOKEN"]},
                     data_url="/bots/{bot_id}/stats",
-                    data_callback=lambda guild_count: {"guilds": guild_count},
+                    data_callback=lambda guild_count, _: {"guilds": guild_count},
                     vote_url=(
                         "https://discordbotlist.com/bots/realms-playerlist-bot/upvote"
                     ),
+                )
+            )
+
+        if os.environ.get("DISCORD_BOTS_TOKEN"):
+            self.handlers.append(
+                VoteHandler(
+                    name="Discord Bots",
+                    base_url="https://discord.bots.gg/api/v1",
+                    headers={"Authorization": os.environ["DISCORD_BOTS_TOKEN"]},
+                    data_url="/bots/{bot_id}/stats",
+                    data_callback=lambda guild_count, shard_count: {
+                        "guildCount": guild_count,
+                        "shardCount": shard_count,
+                    },
+                    vote_url=(None),
                 )
             )
 
@@ -80,7 +100,7 @@ class Voting(ipy.Extension):
         for handler in self.handlers:
             async with self.bot.session.post(
                 f"{handler.base_url}{handler.data_url.format(bot_id=self.bot.user.id)}",
-                json=handler.data_callback(server_count),
+                json=handler.data_callback(server_count, self.shard_count),
                 headers=handler.headers,
             ) as r:
                 try:
@@ -96,6 +116,7 @@ class Voting(ipy.Extension):
         website_votes: list[str] = [
             f"**{handler.name}** - {handler.vote_url.format(bot_id=self.bot.user.id)}"
             for handler in self.handlers
+            if handler.vote_url
         ]
         await ctx.send(
             embeds=ipy.Embed(
