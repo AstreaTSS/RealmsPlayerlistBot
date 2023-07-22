@@ -49,7 +49,7 @@ class Voting(ipy.Extension):
                     name="Discords.com",
                     base_url="https://discords.com/bots/api",
                     headers={"Authorization": os.environ["DISCORDSCOM_TOKEN"]},
-                    data_url="bot/{bot_id}",
+                    data_url="/bot/{bot_id}",
                     data_callback=lambda guild_count, _: {"server_count": guild_count},
                     vote_url="https://discords.com/bots/bot/{bot_id}",
                 ),
@@ -74,7 +74,10 @@ class Voting(ipy.Extension):
                 VoteHandler(
                     name="Discord Bots",
                     base_url="https://discord.bots.gg/api/v1",
-                    headers={"Authorization": os.environ["DISCORD_BOTS_TOKEN"]},
+                    headers={
+                        "Authorization": os.environ["DISCORD_BOTS_TOKEN"],
+                        "Content-Type": "application/json",
+                    },
                     data_url="/bots/{bot_id}/stats",
                     data_callback=lambda guild_count, shard_count: {
                         "guildCount": guild_count,
