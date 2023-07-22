@@ -58,6 +58,9 @@ debug_logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(
     filename=f"{os.environ['DIRECTORY_OF_BOT']}/debug.log", encoding="utf-8", mode="a"
 )
+handler.setFormatter(
+    logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
+)
 debug_logger.addHandler(handler)
 
 
