@@ -180,77 +180,10 @@ class GuildConfig(utils.Extension):
 
         config = await ctx.fetch_config()
 
-        if _realm_code:
-            realm_code_matches = REALMS_LINK_REGEX.fullmatch(_realm_code)
+        if unlink and not config.realm_id:
+            raise utils.CustomCheckFailure("There's no Realm to unlink!")
 
-            if not realm_code_matches:
-                raise ipy.errors.BadArgument("Invalid Realm code!")
-
-            realm_code = realm_code_matches[1]
-
-            try:
-                realm = await ctx.bot.realms.join_realm_from_code(realm_code)
-
-                config.realm_id = str(realm.id)
-                self.bot.realm_name_cache[config.realm_id] = realm.name
-
-                embeds: list[ipy.Embed] = []
-
-                if (
-                    realm.club_id
-                    and not await models.PlayerSession.filter(
-                        realm_id=realm.id
-                    ).exists()
-                ):
-                    config.club_id = str(realm.club_id)
-                    await clubs_playerlist.fill_in_data_from_clubs(
-                        self.bot, config.realm_id, config.club_id
-                    )
-                else:
-                    warning_embed = ipy.Embed(
-                        title="Warning",
-                        description=(
-                            "I was unable to backfill player data for this Realm. If"
-                            f" you use {self.bot.mention_cmd('playerlist')}, it may"
-                            " show imcomplete player data. This should resolve itself"
-                            " in about 24 hours."
-                        ),
-                        color=ipy.RoleColors.YELLOW,
-                    )
-                    embeds.append(warning_embed)
-
-                await config.save()
-
-                confirm_embed = ipy.Embed(
-                    title="Linked!",
-                    description=(
-                        "Linked this server to the Realm:"
-                        f" `{realm.name}`\n\n**IMPORTANT NOTE:** There will now be an"
-                        f" account called `{self.bot.own_gamertag}` on your Realm's"
-                        " player roster (and even the playerlist). *Do not ban or kick"
-                        " them.* The bot will not work with your Realm if you do so."
-                    ),
-                    color=ipy.RoleColors.GREEN,
-                )
-                embeds.append(confirm_embed)
-                await ctx.send(embeds=embeds)
-            except elytra.MicrosoftAPIException as e:
-                if (
-                    isinstance(e.error, aiohttp.ClientResponseError)
-                    and e.resp.status == 403
-                ):
-                    raise ipy.errors.BadArgument(
-                        "I could not join this Realm. Please make sure the Realm code"
-                        " is spelled correctly, and that the code is valid. Also make"
-                        " sure that you have not banned or kicked"
-                        f" `{self.bot.own_gamertag}` from the Realm."
-                    ) from None
-                else:
-                    raise
-        else:
-            if not config.realm_id:
-                raise utils.CustomCheckFailure("There's no Realm to unlink!")
-
+        if config.realm_id:
             realm_id = config.realm_id
 
             config.realm_id = None
@@ -260,8 +193,6 @@ class GuildConfig(utils.Extension):
             config.live_online_channel = None
 
             await config.save()
-
-            await ctx.send(embeds=utils.make_embed("Unlinked the Realm."))
 
             self.bot.live_playerlist_store[realm_id].discard(config.guild_id)
             await self.bot.redis.delete(
@@ -291,6 +222,81 @@ class GuildConfig(utils.Extension):
                 await self.bot.redis.delete(
                     f"missing-realm-{realm_id}", f"invalid-realmoffline-{realm_id}"
                 )
+
+            if unlink:
+                await ctx.send(embeds=utils.make_embed("Unlinked the Realm."))
+                return
+
+        if not _realm_code:
+            raise utils.CustomCheckFailure(
+                "This should never happen. If it does, join the support server and"
+                " report this."
+            )
+
+        realm_code_matches = REALMS_LINK_REGEX.fullmatch(_realm_code)
+
+        if not realm_code_matches:
+            raise ipy.errors.BadArgument("Invalid Realm code!")
+
+        realm_code = realm_code_matches[1]
+
+        try:
+            realm = await ctx.bot.realms.join_realm_from_code(realm_code)
+
+            config.realm_id = str(realm.id)
+            self.bot.realm_name_cache[config.realm_id] = realm.name
+
+            embeds: list[ipy.Embed] = []
+
+            if (
+                realm.club_id
+                and not await models.PlayerSession.filter(realm_id=realm.id).exists()
+            ):
+                config.club_id = str(realm.club_id)
+                await clubs_playerlist.fill_in_data_from_clubs(
+                    self.bot, config.realm_id, config.club_id
+                )
+            else:
+                warning_embed = ipy.Embed(
+                    title="Warning",
+                    description=(
+                        "I was unable to backfill player data for this Realm. If"
+                        f" you use {self.bot.mention_cmd('playerlist')}, it may"
+                        " show imcomplete player data. This should resolve itself"
+                        " in about 24 hours."
+                    ),
+                    color=ipy.RoleColors.YELLOW,
+                )
+                embeds.append(warning_embed)
+
+            await config.save()
+
+            confirm_embed = ipy.Embed(
+                title="Linked!",
+                description=(
+                    "Linked this server to the Realm:"
+                    f" `{realm.name}`\n\n**IMPORTANT NOTE:** There will now be an"
+                    f" account called `{self.bot.own_gamertag}` on your Realm's"
+                    " player roster (and even the playerlist). *Do not ban or kick"
+                    " them.* The bot will not work with your Realm if you do so."
+                ),
+                color=ipy.RoleColors.GREEN,
+            )
+            embeds.append(confirm_embed)
+            await ctx.send(embeds=embeds)
+        except elytra.MicrosoftAPIException as e:
+            if (
+                isinstance(e.error, aiohttp.ClientResponseError)
+                and e.resp.status == 403
+            ):
+                raise ipy.errors.BadArgument(
+                    "I could not join this Realm. Please make sure the Realm code"
+                    " is spelled correctly, and that the code is valid. Also make"
+                    " sure that you have not banned or kicked"
+                    f" `{self.bot.own_gamertag}` from the Realm."
+                ) from None
+            else:
+                raise
 
     @config.subcommand(
         sub_cmd_name="playerlist-channel",
