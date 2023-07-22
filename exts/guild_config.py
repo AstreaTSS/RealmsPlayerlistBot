@@ -264,8 +264,10 @@ class GuildConfig(utils.Extension):
             await ctx.send("Unlinked Realm.")
 
             self.bot.live_playerlist_store[realm_id].discard(config.guild_id)
-            await self.bot.redis.delete(f"invalid-playerlist3-{config.guild_id}")
-            await self.bot.redis.delete(f"invalid-playerlist7-{config.guild_id}")
+            await self.bot.redis.delete(
+                f"invalid-playerlist3-{config.guild_id}",
+                f"invalid-playerlist7-{config.guild_id}",
+            )
 
             if not await models.GuildConfig.filter(
                 realm_id=realm_id, fetch_devices=True
@@ -286,8 +288,9 @@ class GuildConfig(utils.Extension):
 
                 self.bot.offline_realms.discard(int(realm_id))
                 self.bot.dropped_offline_realms.discard(int(realm_id))
-                await self.bot.redis.delete(f"missing-realm-{realm_id}")
-                await self.bot.redis.delete(f"invalid-realmoffline-{realm_id}")
+                await self.bot.redis.delete(
+                    f"missing-realm-{realm_id}", f"invalid-realmoffline-{realm_id}"
+                )
 
     @config.subcommand(
         sub_cmd_name="playerlist-channel",

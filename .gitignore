@@ -122,6 +122,7 @@ dmypy.json
 # End of https://www.gitignore.io/api/python,visualstudiocode
 
 discord.log
+debug.log
 .env
 env/
 config.toml

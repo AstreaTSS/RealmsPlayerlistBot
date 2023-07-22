@@ -53,6 +53,13 @@ ipy_logger = logging.getLogger("interactions")
 ipy_logger.setLevel(logging.DEBUG)
 ipy_logger.addHandler(handler)
 
+debug_logger = logging.getLogger("realms_bot_debug")
+debug_logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler(
+    filename=f"{os.environ['DIRECTORY_OF_BOT']}/debug.log", encoding="utf-8", mode="a"
+)
+debug_logger.addHandler(handler)
+
 
 def default_sentry_filter(
     event: dict[str, typing.Any], hint: dict[str, typing.Any]

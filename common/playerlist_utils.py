@@ -17,6 +17,8 @@ from tortoise.exceptions import DoesNotExist
 import common.models as models
 import common.utils as utils
 
+debug_logger = logging.getLogger("realms_bot_debug")
+
 
 def _convert_fields(value: tuple[str, ...] | None) -> tuple[str, ...]:
     return ("online", "last_seen") + value if value else ("online", "last_seen")
@@ -280,24 +282,34 @@ async def eventually_invalidate(
         return
 
     # the idea here is to invalidate autorunners that simply can't be run
-    # there's a bit of generousity here, as the code gives a total of 3 tries
+    # there's a bit of generousity here, as the code gives a total of limit tries
     # before actually doing it
-    num_times = (
-        await bot.redis.get(f"invalid-playerlist{limit}-{guild_config.guild_id}") or "0"
+    num_times = await bot.redis.incr(
+        f"invalid-playerlist{limit}-{guild_config.guild_id}"
     )
-    int_num_times = int(num_times) + 1
+    await bot.redis.expire(
+        f"invalid-playerlist{limit}-{guild_config.guild_id}", limit * 86400, nx=True
+    )
 
-    if int_num_times >= limit:
+    debug_logger.debug(
+        f"Increased invalid-playerlist for guild {guild_config.guild_id} to"
+        f" {num_times}."
+    )
+
+    if num_times >= limit:
+        debug_logger.debug(
+            f"Unlinking guild {guild_config.guild_id} with"
+            f" {num_times}/{limit} invalidations."
+        )
+
         old_playerlist_chan = guild_config.playerlist_chan
         guild_config.playerlist_chan = None
         old_live_playerlist = guild_config.live_playerlist
         guild_config.live_playerlist = False
         await guild_config.save()
-        await bot.redis.delete(f"invalid-playerlist3-{guild_config.guild_id}")
-        await bot.redis.delete(f"invalid-playerlist7-{guild_config.guild_id}")
-
-        logging.getLogger("realms_bot").info(
-            f"Unlinked guild {guild_config.guild_id} with {limit} invalidations."
+        await bot.redis.delete(
+            f"invalid-playerlist3-{guild_config.guild_id}",
+            f"invalid-playerlist7-{guild_config.guild_id}",
         )
 
         if guild_config.realm_id and old_live_playerlist:
@@ -320,16 +332,6 @@ async def eventually_invalidate(
                 )
 
                 await chan.send(msg)
-    else:
-        await bot.redis.set(
-            f"invalid-playerlist{limit}-{guild_config.guild_id}",
-            str(int_num_times),
-            ex=limit * 86400,  # limit times day
-        )
-        logging.getLogger("realms_bot").info(
-            f"Increased invalid-playerlist for guild {guild_config.guild_id} to"
-            f" {int_num_times}."
-        )
 
 
 async def eventually_invalidate_live_online(
@@ -340,6 +342,9 @@ async def eventually_invalidate_live_online(
         return
 
     num_times = await bot.redis.incr(f"invalid-liveonline-{guild_config.guild_id}")
+    await bot.redis.expire(
+        f"invalid-liveonline-{guild_config.guild_id}", 86400, nx=True
+    )
 
     if num_times >= 3:
         guild_config.live_online_channel = None
