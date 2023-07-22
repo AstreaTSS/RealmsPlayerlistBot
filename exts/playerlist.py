@@ -259,6 +259,8 @@ class Playerlist(utils.Extension):
         time_delta = datetime.timedelta(hours=hours_ago, minutes=1)
         time_ago = now - time_delta
 
+        hour_text = "hour" if hours_ago == 1 else "hours"
+
         # select all values from the player session table where realm id is
         # the realm id in the guild config, and (online is true or
         # the last seen date for the entry is greater than or equal to how
@@ -281,9 +283,9 @@ class Playerlist(utils.Extension):
 
             raise utils.CustomCheckFailure(
                 "No one seems to have been on the Realm for the last"
-                f" {hours_ago} hour(s). Make sure you haven't changed Realms or kicked"
-                f" the bot's account, `{self.bot.own_gamertag}` - try relinking the"
-                f" Realm via {self.bot.mention_cmd('config link-realm')} if that"
+                f" {hours_ago} {hour_text}. Make sure you haven't changed Realms or"
+                f" kicked the bot's account, `{self.bot.own_gamertag}` - try relinking"
+                f" the Realm via {self.bot.mention_cmd('config link-realm')} if that"
                 " happens."
             )
 
@@ -315,7 +317,7 @@ class Playerlist(utils.Extension):
                 return
 
             raise utils.CustomCheckFailure(
-                f"No one has been on the Realm for the last {hours_ago} hour(s)."
+                f"No one has been on the Realm for the last {hours_ago} {hour_text}."
             )
 
         embeds: list[ipy.Embed] = []
@@ -364,7 +366,6 @@ class Playerlist(utils.Extension):
                     )
                 )
 
-            hour_text = "hour" if hours_ago == 1 else "hours"
             offline_embeds[0].title = f"People on in the last {hours_ago} {hour_text}"
             embeds.extend(offline_embeds)
 

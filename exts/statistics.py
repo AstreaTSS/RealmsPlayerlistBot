@@ -504,8 +504,10 @@ class Statistics(utils.Extension):
             )
 
         natural_playtime = humanize.naturaldelta(total_playtime)
+        days_text = "day" if days_ago == 1 else "days"
 
         chunks = [sessions_str[x : x + 6] for x in range(0, len(sessions_str), 6)]
+
         # session number = (chunk index * 6) + (session-in-chunk index + 1) - () are added for clarity
         # why? well, say we're on the 3rd session chunk, and at the 5th entry for that chunk
         # the 3rd session chunk naturally means we have gone through (3 * 6) = 18 sessions beforehand,
@@ -515,7 +517,7 @@ class Statistics(utils.Extension):
         # don't index at 0
         embeds = [
             ipy.Embed(
-                title=f"Log for {gamertag} for the past {days_ago} days(s)",
+                title=f"Log for {gamertag} for the past {days_ago} {days_text}",
                 description=f"Total playtime over this period: {natural_playtime}",
                 fields=[  # type: ignore
                     ipy.EmbedField(
