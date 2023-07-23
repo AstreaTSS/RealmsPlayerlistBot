@@ -27,6 +27,12 @@ class GeneralCMDS(utils.Extension):
 
         self.invite_link = f"https://discord.com/api/oauth2/authorize?client_id={self.bot.user.id}&permissions=309238025280&scope=applications.commands%20bot"
 
+    async def async_start(self) -> None:
+        # the first and only time this is useful to me!
+        # basically, before the bot is ready, the bot's user is None
+        # so this ensures the invite link is filled in when that condition happens
+        self.invite_link = f"https://discord.com/api/oauth2/authorize?client_id={self.bot.user.id}&permissions=309238025280&scope=applications.commands%20bot"
+
     def _get_commit_hash(self) -> str:
         return (
             subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
