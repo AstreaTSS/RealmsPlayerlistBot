@@ -5,7 +5,6 @@ import os
 import subprocess
 import time
 import typing
-from importlib.metadata import version as _v
 
 import aiohttp
 import elytra
@@ -16,8 +15,6 @@ from tortoise.expressions import Q
 
 import common.models as models
 import common.utils as utils
-
-IPY_VERSION = _v("discord-py-interactions")
 
 
 class GeneralCMDS(utils.Extension):
@@ -178,7 +175,7 @@ class GeneralCMDS(utils.Extension):
                     ),
                     (
                         "Interactions.py Version:"
-                        f" [{IPY_VERSION}](https://github.com/interactions-py/interactions.py/tree/{IPY_VERSION})"
+                        f" [{ipy.__version__}](https://github.com/interactions-py/interactions.py/tree/{ipy.__version__})"
                     ),
                     "Made By: [AstreaTSS](https://github.com/AstreaTSS)",
                 )
