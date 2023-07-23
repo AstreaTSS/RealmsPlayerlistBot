@@ -25,12 +25,11 @@ class GeneralCMDS(utils.Extension):
         self.name = "General"
         self.bot: utils.RealmBotBase = bot
 
-        self.invite_link = f"https://discord.com/api/oauth2/authorize?client_id={self.bot.user.id}&permissions=309238025280&scope=applications.commands%20bot"
+        self.invite_link = ""
+        self.bot.create_task(self.async_wait())
 
-    async def async_start(self) -> None:
-        # the first and only time this is useful to me!
-        # basically, before the bot is ready, the bot's user is None
-        # so this ensures the invite link is filled in when that condition happens
+    async def async_wait(self) -> None:
+        await self.bot.wait_until_ready()
         self.invite_link = f"https://discord.com/api/oauth2/authorize?client_id={self.bot.user.id}&permissions=309238025280&scope=applications.commands%20bot"
 
     def _get_commit_hash(self) -> str:
