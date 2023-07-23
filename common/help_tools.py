@@ -53,8 +53,7 @@ async def callback(ctx: ipy.ComponentContext) -> None:
         (
             "[argument]",
             (
-                "This means the argument is __**optional**__.\n\nNow that you know the"
-                " basics, it should be noted that...\n__**You do not type in the"
+                "This means the argument is __**optional**__.\n\n__**Do not type in the"
                 " brackets!**__"
             ),
         ),

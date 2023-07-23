@@ -68,25 +68,21 @@ class HelpCMD(utils.Extension):
         cmds = help_tools.get_mini_commands_for_scope(self.bot, int(ctx.guild_id))
 
         runnable_cmds = [v for v in cmds.values() if await self._custom_can_run(ctx, v)]
-        valid_exts = {c.extension.name for c in runnable_cmds if c.extension}
-        sorted_exts = {e.lower(): e for e in sorted(valid_exts)}
         resolved_names = {
             c.resolved_name.lower(): c.resolved_name
             for c in sorted(runnable_cmds, key=lambda c: c.resolved_name)
         }
 
-        combined = sorted_exts | resolved_names
-
         if not argument:
-            return tuple(combined.values())[:25]
+            return tuple(resolved_names.values())[:25]
 
         queried_cmds: list[list[str]] = fuzzy.extract_from_list(
             argument=argument.lower(),
-            list_of_items=tuple(combined.keys()),
+            list_of_items=tuple(resolved_names.keys()),
             processors=[lambda x: x.lower()],
             score_cutoff=0.7,
         )
-        return tuple(combined[c[0]] for c in queried_cmds)[:25]
+        return tuple(resolved_names[c[0]] for c in queried_cmds)[:25]
 
     async def get_multi_command_embeds(
         self,
@@ -106,15 +102,6 @@ class HelpCMD(utils.Extension):
 
         for index, chunk in enumerate(chunks):
             embed = ipy.Embed(description=description, color=ctx.bot.color)
-
-            embed.add_field(
-                name="Support",
-                value=(
-                    "For more help, join the official support server:"
-                    " https://discord.gg/NSdetwGjpK"
-                ),
-                inline=False,
-            )
             embed.set_footer(text='Use "/help command" for more info on a command.')
 
             embed.title = f"{name} - Page {index + 1}" if multiple_embeds else name
@@ -185,19 +172,18 @@ class HelpCMD(utils.Extension):
 
     @tansy.slash_command(
         name="help",
-        description="Shows help about the bot, a command, or a category.",
+        description="Shows help about the bot or a command.",
         dm_permission=False,
     )
     async def help_cmd(
         self,
         ctx: utils.RealmContext,
         query: typing.Optional[str] = tansy.Option(
-            "The query to search for. Can be a command or a category.",
+            "The command to search for.",
             autocomplete=True,
             default=None,
         ),
     ) -> None:
-        """Shows help about the bot, a command, or a category."""
         embeds: list[ipy.Embed] = []
 
         if not self.bot.slash_perms_cache[int(ctx.guild_id)]:
@@ -212,20 +198,7 @@ class HelpCMD(utils.Extension):
         ):
             embeds = await self.get_command_embeds(ctx, command)
         else:
-            ext: typing.Optional[ipy.Extension] = next(
-                (s for s in self.bot.ext.values() if s.name.lower() == query.lower()),
-                None,
-            )
-            if not ext:
-                raise ipy.errors.BadArgument(
-                    f"No valid command called `{query}` found."
-                )
-
-            embeds = await self.get_ext_cmd_embeds(ctx, cmds, ext)
-            if not embeds:
-                raise ipy.errors.BadArgument(
-                    f"There are no valid commands for `{ext.name}`."
-                )
+            raise ipy.errors.BadArgument(f"No valid command called `{query}` found.")
 
         if not embeds:
             raise ipy.errors.BadArgument(f"No valid command called `{query}` found.")
