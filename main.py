@@ -40,7 +40,7 @@ with contextlib.suppress(ImportError):
         )
 
 logger = logging.getLogger("realms_bot")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 handler = logging.FileHandler(
     filename=os.environ["LOG_FILE_PATH"], encoding="utf-8", mode="a"
 )
@@ -50,18 +50,8 @@ handler.setFormatter(
 logger.addHandler(handler)
 
 ipy_logger = logging.getLogger("interactions")
-ipy_logger.setLevel(logging.DEBUG)
+ipy_logger.setLevel(logging.INFO)
 ipy_logger.addHandler(handler)
-
-debug_logger = logging.getLogger("realms_bot_debug")
-debug_logger.setLevel(logging.DEBUG)
-handler = logging.FileHandler(
-    filename=f"{os.environ['DIRECTORY_OF_BOT']}/debug.log", encoding="utf-8", mode="a"
-)
-handler.setFormatter(
-    logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
-)
-debug_logger.addHandler(handler)
 
 
 def default_sentry_filter(

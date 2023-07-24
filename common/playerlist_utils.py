@@ -17,7 +17,7 @@ from tortoise.exceptions import DoesNotExist
 import common.models as models
 import common.utils as utils
 
-debug_logger = logging.getLogger("realms_bot_debug")
+logger = logging.getLogger("realms_bot")
 
 
 def _convert_fields(value: tuple[str, ...] | None) -> tuple[str, ...]:
@@ -134,7 +134,7 @@ class GamertagHandler:
                 ):
                     # can happen, if not rare
                     text = await r.text()
-                    logging.getLogger("realms_bot").info(
+                    logger.info(
                         f"Failed to get gamertag of user `{xuid}`.\nResponse code:"
                         f" {r.status}\nText: {text}"
                     )
@@ -288,7 +288,7 @@ async def eventually_invalidate(
         f"invalid-playerlist{limit}-{guild_config.guild_id}"
     )
 
-    debug_logger.debug(
+    logger.info(
         f"Increased invalid-playerlist for guild {guild_config.guild_id} to"
         f" {num_times}/{limit}."
     )
@@ -296,7 +296,7 @@ async def eventually_invalidate(
     await bot.redis.expire(f"invalid-playerlist{limit}-{guild_config.guild_id}", 172000)
 
     if num_times >= limit:
-        debug_logger.debug(
+        logger.info(
             f"Unlinking guild {guild_config.guild_id} with"
             f" {num_times}/{limit} invalidations."
         )

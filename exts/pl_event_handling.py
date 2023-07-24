@@ -12,6 +12,8 @@ import common.playerlist_events as pl_events
 import common.playerlist_utils as pl_utils
 import common.utils as utils
 
+logger = logging.getLogger("realms_bot")
+
 
 class PlayerlistEventHandling(ipy.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
@@ -279,9 +281,7 @@ class PlayerlistEventHandling(ipy.Extension):
                 # could just be it's offline or something
                 continue
 
-            logging.getLogger("realms_bot").info(
-                f"Warning {config.guild_id} for missing Realm."
-            )
+            logger.info(f"Warning {config.guild_id} for missing Realm.")
 
             playerlist_chan = config.playerlist_chan
 
@@ -317,9 +317,7 @@ class PlayerlistEventHandling(ipy.Extension):
             except elytra.MicrosoftAPIException as e:
                 # might be an invalid id somehow? who knows
                 if e.resp.status == 404:
-                    logging.getLogger("realms_bot").warning(
-                        f"Could not leave Realm with ID {event.realm_id}."
-                    )
+                    logger.warning(f"Could not leave Realm with ID {event.realm_id}.")
                 else:
                     raise
 

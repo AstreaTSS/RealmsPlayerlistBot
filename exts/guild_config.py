@@ -34,6 +34,9 @@ REALMS_LINK_REGEX = re.compile(
 FORMAT_CODE_REGEX = re.compile(r"§\S")
 
 
+logger = logging.getLogger("realms_bot")
+
+
 class GuildConfig(utils.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.name = "Server Config"
@@ -211,9 +214,7 @@ class GuildConfig(utils.Extension):
                 except elytra.MicrosoftAPIException as e:
                     # might be an invalid id somehow? who knows
                     if e.resp.status == 404:
-                        logging.getLogger("realms_bot").warning(
-                            f"Could not leave Realm with ID {realm_id}."
-                        )
+                        logger.warning(f"Could not leave Realm with ID {realm_id}.")
                     else:
                         raise
 
