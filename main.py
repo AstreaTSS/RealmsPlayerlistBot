@@ -11,6 +11,20 @@ import rpl_config
 
 rpl_config.load()
 
+logger = logging.getLogger("realms_bot")
+logger.setLevel(logging.INFO)
+handler = logging.FileHandler(
+    filename=os.environ["LOG_FILE_PATH"], encoding="utf-8", mode="a"
+)
+handler.setFormatter(
+    logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
+)
+logger.addHandler(handler)
+
+ipy_logger = logging.getLogger("interactions")
+ipy_logger.setLevel(logging.INFO)
+ipy_logger.addHandler(handler)
+
 import aiohttp
 import aiohttp_retry
 import discord_typings
@@ -38,20 +52,6 @@ with contextlib.suppress(ImportError):
         rook.start(
             token=os.environ["ROOK_TOKEN"], labels={"env": os.environ["ROOK_ENV"]}
         )
-
-logger = logging.getLogger("realms_bot")
-logger.setLevel(logging.INFO)
-handler = logging.FileHandler(
-    filename=os.environ["LOG_FILE_PATH"], encoding="utf-8", mode="a"
-)
-handler.setFormatter(
-    logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
-)
-logger.addHandler(handler)
-
-ipy_logger = logging.getLogger("interactions")
-ipy_logger.setLevel(logging.INFO)
-ipy_logger.addHandler(handler)
 
 
 def default_sentry_filter(

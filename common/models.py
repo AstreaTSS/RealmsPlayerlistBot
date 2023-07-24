@@ -1,3 +1,4 @@
+import logging
 import os
 import typing
 from datetime import UTC, datetime
@@ -6,6 +7,8 @@ from uuid import UUID
 
 from tortoise import fields
 from tortoise.models import Model
+
+logger = logging.getLogger("realms_bot")
 
 
 class GuildConfig(Model):
@@ -45,6 +48,7 @@ EMOJI_DEVICE_NAMES = {
     "Android": "android",
     "iOS": "ios",
     "WindowsOneCore": "windows",
+    "Win32": "windows",
     "XboxOne": "xbox_one",
     "Scarlett": "xbox_series",
     "Nintendo": "switch",
@@ -81,7 +85,7 @@ class PlayerSession(Model):
                 base_emoji_id = os.environ["ANDROID_EMOJI_ID"]
             case "iOS":
                 base_emoji_id = os.environ["IOS_EMOJI_ID"]
-            case "WindowsOneCore":
+            case "WindowsOneCore" | "Win32":
                 base_emoji_id = os.environ["WINDOWS_EMOJI_ID"]
             case "XboxOne":
                 base_emoji_id = os.environ["XBOX_ONE_EMOJI_ID"]
@@ -92,6 +96,7 @@ class PlayerSession(Model):
             case "PlayStation":
                 base_emoji_id = os.environ["PLAYSTATION_EMOJI_ID"]
             case _:
+                logger.info(f"Unknown device: {self.device}")
                 base_emoji_id = os.environ["UNKNOWN_DEVICE_EMOJI_ID"]
 
         return (
