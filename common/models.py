@@ -51,6 +51,7 @@ EMOJI_DEVICE_NAMES = {
     "Win32": "windows",
     "XboxOne": "xbox_one",
     "Scarlett": "xbox_series",
+    "Xbox360": "xbox_360",  # what?
     "Nintendo": "switch",
     "PlayStation": "playstation",
 }
@@ -87,7 +88,7 @@ class PlayerSession(Model):
                 base_emoji_id = os.environ["IOS_EMOJI_ID"]
             case "WindowsOneCore" | "Win32":
                 base_emoji_id = os.environ["WINDOWS_EMOJI_ID"]
-            case "XboxOne":
+            case "XboxOne" | "Xbox360":
                 base_emoji_id = os.environ["XBOX_ONE_EMOJI_ID"]
             case "Scarlett":
                 base_emoji_id = os.environ["XBOX_SERIES_EMOJI_ID"]
