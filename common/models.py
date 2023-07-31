@@ -35,13 +35,7 @@ class GuildConfig(Model):
 
     @cached_property
     def valid_premium(self) -> bool:
-        return bool(
-            self.premium_code
-            and (
-                not self.premium_code.expires_at
-                or self.premium_code.expires_at > datetime.now(UTC)
-            )
-        )
+        return bool(self.premium_code and self.premium_code.valid_code)
 
 
 EMOJI_DEVICE_NAMES = {
@@ -151,3 +145,7 @@ class PremiumCode(Model):
     expires_at: typing.Optional[datetime] = fields.DatetimeField(null=True)
 
     guilds: fields.ReverseRelation["GuildConfig"]
+
+    @property
+    def valid_code(self) -> bool:
+        return not self.expires_at or self.expires_at > datetime.now(UTC)

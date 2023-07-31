@@ -120,6 +120,12 @@ class PremiumHandling(ipy.Extension):
                 " that you typed it in correctly?"
             )
 
+        if not code_obj.valid_code:
+            raise ipy.errors.BadArgument(
+                f'Invalid code: "{code}". Are you sure this is the correct code and'
+                " that you typed it in correctly?"
+            )
+
         if code_obj.user_id and ctx.author.id != code_obj.user_id:
             raise ipy.errors.BadArgument(
                 f'Invalid code: "{code}". Are you sure this is the correct code and'
