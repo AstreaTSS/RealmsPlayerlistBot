@@ -211,6 +211,8 @@ intents = ipy.Intents.new(
 mentions = ipy.AllowedMentions.all()
 
 bot = RealmsPlayerlistBot(
+    activity=ipy.Activity.create("Loading...", type=ipy.ActivityType.WATCHING),
+    status=ipy.Status.IDLE,
     sync_interactions=False,  # big bots really shouldn't have this on
     sync_ext=False,
     allowed_mentions=mentions,
