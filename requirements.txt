@@ -16,5 +16,5 @@ pycryptodome==3.18.0
 ordered-set==4.1.0
 cachetools==5.3.1
 msgspec==0.17.0
-elytra-ms==0.0.3
+elytra-ms==0.1.1
 uvloop==0.17.0; platform_system == "Linux"

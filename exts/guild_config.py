@@ -9,9 +9,11 @@ import aiohttp
 import elytra
 import interactions as ipy
 import tansy
+from interactions.models.internal.application_commands import auto_defer
 
 import common.classes as cclasses
 import common.clubs_playerlist as clubs_playerlist
+import common.device_code as device_code
 import common.models as models
 import common.playerlist_utils as pl_utils
 import common.utils as utils
@@ -156,6 +158,93 @@ class GuildConfig(utils.Extension):
 
         await ctx.send(embeds=embeds)
 
+    async def add_realm(
+        self, ctx: utils.RealmContext, realm: elytra.FullRealm
+    ) -> list[ipy.Embed]:
+        config = await ctx.fetch_config()
+
+        config.realm_id = str(realm.id)
+        self.bot.realm_name_cache[config.realm_id] = realm.name
+
+        embeds: list[ipy.Embed] = []
+
+        if (
+            realm.club_id
+            and not await models.PlayerSession.filter(realm_id=realm.id).exists()
+        ):
+            config.club_id = str(realm.club_id)
+            await clubs_playerlist.fill_in_data_from_clubs(
+                self.bot, config.realm_id, config.club_id
+            )
+        else:
+            warning_embed = ipy.Embed(
+                title="Warning",
+                description=(
+                    "I was unable to backfill player data for this Realm. If"
+                    f" you use {self.bot.mention_cmd('playerlist')}, it may"
+                    " show imcomplete player data. This should resolve itself"
+                    " in about 24 hours."
+                ),
+                color=ipy.RoleColors.YELLOW,
+            )
+            embeds.append(warning_embed)
+
+        await config.save()
+
+        confirm_embed = ipy.Embed(
+            title="Linked!",
+            description=(
+                "Linked this server to the Realm:"
+                f" `{realm.name}`\n\n**IMPORTANT NOTE:** There will now be an"
+                f" account called `{self.bot.own_gamertag}` on your Realm's"
+                " player roster (and even the playerlist). *Do not ban or kick"
+                " them.* The bot will not work with your Realm if you do so."
+            ),
+            color=ipy.RoleColors.GREEN,
+        )
+        embeds.append(confirm_embed)
+        return embeds
+
+    async def remove_realm(self, ctx: utils.RealmContext) -> None:
+        config = await ctx.fetch_config()
+
+        realm_id = config.realm_id
+
+        config.realm_id = None
+        config.club_id = None
+        config.live_playerlist = False
+        config.fetch_devices = False
+        config.live_online_channel = None
+
+        await config.save()
+
+        self.bot.live_playerlist_store[realm_id].discard(config.guild_id)
+        await self.bot.redis.delete(
+            f"invalid-playerlist3-{config.guild_id}",
+            f"invalid-playerlist7-{config.guild_id}",
+        )
+
+        if not await models.GuildConfig.filter(
+            realm_id=realm_id, fetch_devices=True
+        ).exists():
+            self.bot.fetch_devices_for.discard(realm_id)
+
+        if not await models.GuildConfig.filter(realm_id=realm_id).exists():
+            try:
+                await self.bot.realms.leave_realm(realm_id)
+            except elytra.MicrosoftAPIException as e:
+                # might be an invalid id somehow? who knows
+                if e.resp.status == 404:
+                    logger.warning(f"Could not leave Realm with ID {realm_id}.")
+                else:
+                    raise
+
+            self.bot.offline_realms.discard(int(realm_id))
+            self.bot.dropped_offline_realms.discard(int(realm_id))
+            await self.bot.redis.delete(
+                f"missing-realm-{realm_id}", f"invalid-realmoffline-{realm_id}"
+            )
+
     @config.subcommand(
         sub_cmd_name="link-realm",
         sub_cmd_description=(
@@ -187,42 +276,7 @@ class GuildConfig(utils.Extension):
             raise utils.CustomCheckFailure("There's no Realm to unlink!")
 
         if config.realm_id:
-            realm_id = config.realm_id
-
-            config.realm_id = None
-            config.club_id = None
-            config.live_playerlist = False
-            config.fetch_devices = False
-            config.live_online_channel = None
-
-            await config.save()
-
-            self.bot.live_playerlist_store[realm_id].discard(config.guild_id)
-            await self.bot.redis.delete(
-                f"invalid-playerlist3-{config.guild_id}",
-                f"invalid-playerlist7-{config.guild_id}",
-            )
-
-            if not await models.GuildConfig.filter(
-                realm_id=realm_id, fetch_devices=True
-            ).exists():
-                self.bot.fetch_devices_for.discard(realm_id)
-
-            if not await models.GuildConfig.filter(realm_id=realm_id).exists():
-                try:
-                    await self.bot.realms.leave_realm(realm_id)
-                except elytra.MicrosoftAPIException as e:
-                    # might be an invalid id somehow? who knows
-                    if e.resp.status == 404:
-                        logger.warning(f"Could not leave Realm with ID {realm_id}.")
-                    else:
-                        raise
-
-                self.bot.offline_realms.discard(int(realm_id))
-                self.bot.dropped_offline_realms.discard(int(realm_id))
-                await self.bot.redis.delete(
-                    f"missing-realm-{realm_id}", f"invalid-realmoffline-{realm_id}"
-                )
+            await self.remove_realm(ctx)
 
             if unlink:
                 await ctx.send(embeds=utils.make_embed("Unlinked the Realm."))
@@ -243,47 +297,7 @@ class GuildConfig(utils.Extension):
 
         try:
             realm = await ctx.bot.realms.join_realm_from_code(realm_code)
-
-            config.realm_id = str(realm.id)
-            self.bot.realm_name_cache[config.realm_id] = realm.name
-
-            embeds: list[ipy.Embed] = []
-
-            if (
-                realm.club_id
-                and not await models.PlayerSession.filter(realm_id=realm.id).exists()
-            ):
-                config.club_id = str(realm.club_id)
-                await clubs_playerlist.fill_in_data_from_clubs(
-                    self.bot, config.realm_id, config.club_id
-                )
-            else:
-                warning_embed = ipy.Embed(
-                    title="Warning",
-                    description=(
-                        "I was unable to backfill player data for this Realm. If"
-                        f" you use {self.bot.mention_cmd('playerlist')}, it may"
-                        " show imcomplete player data. This should resolve itself"
-                        " in about 24 hours."
-                    ),
-                    color=ipy.RoleColors.YELLOW,
-                )
-                embeds.append(warning_embed)
-
-            await config.save()
-
-            confirm_embed = ipy.Embed(
-                title="Linked!",
-                description=(
-                    "Linked this server to the Realm:"
-                    f" `{realm.name}`\n\n**IMPORTANT NOTE:** There will now be an"
-                    f" account called `{self.bot.own_gamertag}` on your Realm's"
-                    " player roster (and even the playerlist). *Do not ban or kick"
-                    " them.* The bot will not work with your Realm if you do so."
-                ),
-                color=ipy.RoleColors.GREEN,
-            )
-            embeds.append(confirm_embed)
+            embeds = await self.add_realm(ctx, realm)
             await ctx.send(embeds=embeds)
         except elytra.MicrosoftAPIException as e:
             if (
@@ -298,6 +312,77 @@ class GuildConfig(utils.Extension):
                 ) from None
             else:
                 raise
+
+    @config.subcommand(
+        sub_cmd_name="alternate-link",
+        sub_cmd_description=(
+            "An alternate way to link a Realm to this server. Requires being the Realm"
+            " owner."
+        ),
+    )
+    @auto_defer(enabled=True, ephemeral=True)
+    async def alternate_link(self, ctx: utils.RealmContext) -> None:
+        config = await ctx.fetch_config()
+
+        if config.realm_id:
+            await self.remove_realm(ctx)
+
+        embed = ipy.Embed(
+            title="Warning",
+            description=(
+                "**This method requires signing into and giving brief access to your"
+                " Microsoft/Xbox account.**\nThe bot will only use this to get your"
+                " Realms and add the bot's account to said Realm - the bot will not"
+                " store your credientials. However, you may feel uncomfortable with"
+                f" this. If so, you can use {self.link_realm.mention()} to link your"
+                " Realm, though that requires a Realm code (even temporarily).\n\n**If"
+                " you wish to continue, click the accept button below.** You have two"
+                " minutes to do so."
+            ),
+            timestamp=ipy.Timestamp.utcnow(),
+            color=ipy.RoleColors.YELLOW,
+        )
+
+        success = False
+        result = ""
+        event = None
+
+        components = [
+            ipy.Button(style=ipy.ButtonStyle.GREEN, label="Accept", emoji="✅"),
+            ipy.Button(style=ipy.ButtonStyle.RED, label="Decline", emoji="✖️"),
+        ]
+        msg = await ctx.send(embed=embed, components=components)
+
+        try:
+            event = await self.bot.wait_for_component(
+                msg, components, self.button_check(ctx.author.id), timeout=120
+            )
+
+            if event.ctx.custom_id == components[1].custom_id:
+                result = "Declined linking the Realm through this method."
+            else:
+                result = "Loading..."
+                success = True
+        except asyncio.TimeoutError:
+            result = "Timed out."
+        finally:
+            embed = utils.make_embed(result)
+            await ctx.edit(msg, embeds=embed, components=[])
+
+        if not success:
+            return
+
+        try:
+            oauth = await device_code.handle_flow(ctx, msg)
+            realm = await device_code.handle_realms(ctx, msg, oauth)
+        except ipy.errors.HTTPException as e:
+            if e.status == 404:
+                # probably just cant edit embed because it was dismissed
+                return
+            raise
+
+        embeds = await self.add_realm(ctx, realm)
+        await ctx.edit(msg, embeds=embeds, components=[])
 
     @config.subcommand(
         sub_cmd_name="playerlist-channel",
@@ -583,6 +668,7 @@ class GuildConfig(utils.Extension):
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
+    importlib.reload(device_code)
     importlib.reload(clubs_playerlist)
     importlib.reload(cclasses)
     GuildConfig(bot)
