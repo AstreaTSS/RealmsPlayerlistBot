@@ -324,9 +324,6 @@ class GuildConfig(utils.Extension):
     async def alternate_link(self, ctx: utils.RealmContext) -> None:
         config = await ctx.fetch_config()
 
-        if config.realm_id:
-            await self.remove_realm(ctx)
-
         embed = ipy.Embed(
             title="Warning",
             description=(
@@ -380,6 +377,9 @@ class GuildConfig(utils.Extension):
                 # probably just cant edit embed because it was dismissed
                 return
             raise
+
+        if config.realm_id:
+            await self.remove_realm(ctx)
 
         embeds = await self.add_realm(ctx, realm)
         await ctx.edit(msg, embeds=embeds, components=[])
