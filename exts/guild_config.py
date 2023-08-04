@@ -316,8 +316,8 @@ class GuildConfig(utils.Extension):
     @config.subcommand(
         sub_cmd_name="alternate-link",
         sub_cmd_description=(
-            "An alternate way to link a Realm to this server. Requires being the Realm"
-            " owner."
+            "(BETA) An alternate way to link a Realm to this server. Requires being the"
+            " Realm owner."
         ),
     )
     @auto_defer(enabled=True, ephemeral=True)
