@@ -35,31 +35,38 @@ async def handle_flow(
         components=[],
     )
 
-    async with asyncio.timeout(300):
-        while True:
-            await asyncio.sleep(init_data["interval"])
+    try:
+        async with asyncio.timeout(300):
+            while True:
+                await asyncio.sleep(init_data["interval"])
 
-            async with ctx.bot.session.post(
-                "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
-                data={
-                    "client_id": os.environ["XBOX_CLIENT_ID"],
-                    "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
-                    "device_code": init_data["device_code"],
-                },
-            ) as resp:
-                resp_json = await resp.json()
-                if error := resp_json.get("error"):
-                    if error in {
-                        "authorization_declined",
-                        "expired_token",
-                        "bad_verification_code",
-                    }:
+                async with ctx.bot.session.post(
+                    "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
+                    data={
+                        "client_id": os.environ["XBOX_CLIENT_ID"],
+                        "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                        "device_code": init_data["device_code"],
+                    },
+                ) as resp:
+                    resp_json = await resp.json()
+                    if error := resp_json.get("error"):
+                        if error in {
+                            "authorization_declined",
+                            "expired_token",
+                            "bad_verification_code",
+                        }:
+                            break
+                    else:
+                        resp_json.pop("ext_expires_in", None)
+                        resp_json["user_id"] = ""
+
+                        if not resp_json.get("refresh_token"):
+                            resp_json["refresh_token"] = ""
+
+                        success_response = elytra.OAuth2TokenResponse(**resp_json)
                         break
-                else:
-                    resp_json.pop("ext_expires_in", None)
-                    resp_json["user_id"] = ""
-                    success_response = elytra.OAuth2TokenResponse(**resp_json)
-                    break
+    except asyncio.TimeoutError:
+        raise utils.CustomCheckFailure("Authentication timed out.") from None
 
     if success_response is None:
         raise utils.CustomCheckFailure("Authentication failed or was cancelled.")
