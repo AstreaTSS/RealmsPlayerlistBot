@@ -275,12 +275,10 @@ class GuildConfig(utils.Extension):
         if unlink and not config.realm_id:
             raise utils.CustomCheckFailure("There's no Realm to unlink!")
 
-        if config.realm_id:
+        if unlink:
             await self.remove_realm(ctx)
-
-            if unlink:
-                await ctx.send(embeds=utils.make_embed("Unlinked the Realm."))
-                return
+            await ctx.send(embeds=utils.make_embed("Unlinked the Realm."))
+            return
 
         if not _realm_code:
             raise utils.CustomCheckFailure(
@@ -297,6 +295,10 @@ class GuildConfig(utils.Extension):
 
         try:
             realm = await ctx.bot.realms.join_realm_from_code(realm_code)
+
+            if config.realm_id:
+                await self.remove_realm(ctx)
+
             embeds = await self.add_realm(ctx, realm)
             await ctx.send(embeds=embeds)
         except elytra.MicrosoftAPIException as e:
