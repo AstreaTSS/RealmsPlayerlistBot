@@ -166,6 +166,13 @@ class GuildConfig(utils.Extension):
         config.realm_id = str(realm.id)
         self.bot.realm_name_cache[config.realm_id] = realm.name
 
+        # you may think this is weird, but if a realm is actually offline when it's
+        # linked, the bot has no way of ever figuring that out, and so the bot will
+        # never warn about the realm at all
+        # if it is online though, it'll quickly be removed from the set, so this works
+        # out well enough
+        self.bot.offline_realms.add(realm.id)
+
         embeds: list[ipy.Embed] = []
 
         if (

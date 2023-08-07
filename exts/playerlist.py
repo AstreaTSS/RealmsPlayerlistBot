@@ -194,13 +194,15 @@ class Playerlist(utils.Extension):
         # try to warn the user about the realm not being there
         # ideally, this should run every minute
 
+        offline_realms = self.bot.offline_realms.copy()
+
         async with self.bot.redis.pipeline() as pipe:
-            for realm_id in self.bot.offline_realms:
+            for realm_id in offline_realms:
                 pipe.incr(f"missing-realm-{realm_id}", 1)
 
             results: list[int] = await pipe.execute()
 
-        for realm_id, value in zip(self.bot.offline_realms, results, strict=True):
+        for realm_id, value in zip(offline_realms, results, strict=True):
             if value >= 1440:
                 self.bot.dispatch(pl_events.WarnMissingPlayerlist(str(realm_id)))
                 self.bot.dropped_offline_realms.add(realm_id)
