@@ -296,7 +296,7 @@ class GuildConfig(utils.Extension):
         try:
             realm = await ctx.bot.realms.join_realm_from_code(realm_code)
 
-            if config.realm_id:
+            if config.realm_id != str(realm.id):
                 await self.remove_realm(ctx)
 
             embeds = await self.add_realm(ctx, realm)
@@ -380,7 +380,7 @@ class GuildConfig(utils.Extension):
                 return
             raise
 
-        if config.realm_id:
+        if config.realm_id != str(realm.id):
             await self.remove_realm(ctx)
 
         embeds = await self.add_realm(ctx, realm)
