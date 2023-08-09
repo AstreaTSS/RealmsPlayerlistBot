@@ -5,7 +5,6 @@ import typing
 import humanize
 import interactions as ipy
 import tansy
-from interactions.models.internal.application_commands import auto_defer
 from tortoise.expressions import Q
 
 import common.fuzzy as fuzzy
@@ -246,7 +245,7 @@ class Statistics(utils.Extension):
     )
     @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
-    @auto_defer(enabled=False)
+    @ipy.auto_defer(enabled=False)
     async def graph_multi_player(
         self,
         ctx: utils.RealmContext,
@@ -286,7 +285,7 @@ class Statistics(utils.Extension):
     )
     @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
-    @auto_defer(enabled=False)
+    @ipy.auto_defer(enabled=False)
     async def graph_multi_player_summary(
         self,
         ctx: utils.RealmContext,

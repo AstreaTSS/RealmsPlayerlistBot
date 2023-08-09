@@ -6,7 +6,6 @@ import typing
 import interactions as ipy
 import tansy
 from Crypto.Cipher import AES
-from interactions.models.internal.application_commands import auto_defer
 
 import common.models as models
 import common.playerlist_utils as pl_utils
@@ -196,7 +195,7 @@ class PremiumHandling(ipy.Extension):
             " current channel. Premium only."
         ),
     )
-    @auto_defer(ephemeral=True)
+    @ipy.auto_defer(ephemeral=True)
     @premium_check()
     async def send_live_online_list(self, ctx: utils.RealmContext) -> None:
         config = await ctx.fetch_config()

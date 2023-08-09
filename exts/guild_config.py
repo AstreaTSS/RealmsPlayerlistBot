@@ -9,7 +9,6 @@ import aiohttp
 import elytra
 import interactions as ipy
 import tansy
-from interactions.models.internal.application_commands import auto_defer
 
 import common.classes as cclasses
 import common.clubs_playerlist as clubs_playerlist
@@ -329,7 +328,7 @@ class GuildConfig(utils.Extension):
             " Realm owner."
         ),
     )
-    @auto_defer(enabled=True, ephemeral=True)
+    @ipy.auto_defer(enabled=True, ephemeral=True)
     async def alternate_link(self, ctx: utils.RealmContext) -> None:
         config = await ctx.fetch_config()
 

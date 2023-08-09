@@ -232,34 +232,23 @@ class RealmContextMixin:
         return config
 
 
-class ChannelMixin:
-    @classmethod
-    def from_dict(cls, client: ipy.Client, payload: dict) -> typing.Self:
-        instance = super().from_dict(client, payload)  # type: ignore
-
-        if channel := payload.get("channel"):
-            client.cache.place_channel_data(channel)
-
-        return instance
-
-
-class RealmInteractionContext(RealmContextMixin, ChannelMixin, ipy.InteractionContext):
+class RealmInteractionContext(RealmContextMixin, ipy.InteractionContext):
     pass
 
 
-class RealmContext(RealmContextMixin, ChannelMixin, ipy.SlashContext):
+class RealmContext(RealmContextMixin, ipy.SlashContext):
     pass
 
 
-class RealmComponentContext(RealmContextMixin, ChannelMixin, ipy.ComponentContext):
+class RealmComponentContext(RealmContextMixin, ipy.ComponentContext):
     pass
 
 
-class RealmContextMenuContext(RealmContextMixin, ChannelMixin, ipy.ContextMenuContext):
+class RealmContextMenuContext(RealmContextMixin, ipy.ContextMenuContext):
     pass
 
 
-class RealmModalContext(RealmContextMixin, ChannelMixin, ipy.ModalContext):
+class RealmModalContext(RealmContextMixin, ipy.ModalContext):
     pass
 
 
@@ -267,9 +256,7 @@ class RealmPrefixedContext(RealmContextMixin, prefixed.PrefixedContext):
     pass
 
 
-class RealmAutocompleteContext(
-    RealmContextMixin, ChannelMixin, ipy.AutocompleteContext
-):
+class RealmAutocompleteContext(RealmContextMixin, ipy.AutocompleteContext):
     pass
 
 

@@ -186,13 +186,6 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
             command.checks.append(basic_guild_check)
         return result
 
-    @property
-    def start_time(self) -> datetime.datetime:
-        try:
-            return self._connection_states[0].start_time  # type: ignore
-        except IndexError:
-            return ipy.MISSING  # type: ignore
-
     async def stop(self) -> None:
         await bot.openxbl_session.close()
         await bot.session.close()

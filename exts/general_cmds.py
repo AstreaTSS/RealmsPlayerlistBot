@@ -65,7 +65,7 @@ class GeneralCMDS(utils.Extension):
             " ms\nCalculating RTT..."
         )
 
-        mes = await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
 
         end_time = time.perf_counter()
         # not really rtt ping but shh
@@ -75,7 +75,7 @@ class GeneralCMDS(utils.Extension):
             f" Ping: `{rtt_ping}` ms"
         )
 
-        await ctx.edit(mes, embed=embed)
+        await ctx.edit(embed=embed)
 
     @ipy.slash_command(
         name="invite",
