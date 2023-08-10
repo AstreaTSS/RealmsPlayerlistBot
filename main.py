@@ -39,6 +39,7 @@ from ordered_set import OrderedSet
 from tortoise import Tortoise
 from tortoise.expressions import Q
 
+import common.classes as cclasses
 import common.help_tools as help_tools
 import common.models as models
 import common.utils as utils
@@ -204,7 +205,9 @@ intents = ipy.Intents.new(
 mentions = ipy.AllowedMentions.all()
 
 bot = RealmsPlayerlistBot(
-    activity=ipy.Activity.create("Loading...", type=ipy.ActivityType.WATCHING),
+    activity=cclasses.PatchedStatus(
+        name="Status", type=ipy.ActivityType.CUSTOM, state="Loading..."
+    ),
     status=ipy.Status.IDLE,
     sync_interactions=False,  # big bots really shouldn't have this on
     sync_ext=False,

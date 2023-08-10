@@ -47,3 +47,10 @@ class SemaphoreRedis(aioredis.Redis):
     ) -> typing.Any:
         async with self.semaphore:
             return await super().execute_command(*args, **options)
+
+
+class PatchedStatus(ipy.Activity):
+    def to_dict(self) -> dict:
+        return ipy.utils.dict_filter_none(
+            {"name": self.name, "type": self.type, "state": self.state, "url": self.url}
+        )
