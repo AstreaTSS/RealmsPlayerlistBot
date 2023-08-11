@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import logging
 import os
 
 import elytra
@@ -7,6 +8,8 @@ import interactions as ipy
 import orjson
 
 import common.utils as utils
+
+logger = logging.getLogger("realms_bot")
 
 
 async def handle_flow(
@@ -57,13 +60,9 @@ async def handle_flow(
                         }:
                             break
                     else:
-                        resp_json.pop("ext_expires_in", None)
-                        resp_json["user_id"] = ""
-
-                        if not resp_json.get("refresh_token"):
-                            resp_json["refresh_token"] = ""
-
-                        success_response = elytra.OAuth2TokenResponse(**resp_json)
+                        success_response = elytra.OAuth2TokenResponse.from_data(
+                            resp_json
+                        )
                         break
     except asyncio.TimeoutError:
         raise utils.CustomCheckFailure("Authentication timed out.") from None
@@ -83,7 +82,7 @@ async def handle_realms(
         os.environ["XBOX_CLIENT_ID"], os.environ["XBOX_CLIENT_SECRET"], oauth
     )
     user_xuid = user_xbox.auth_mgr.xsts_token.xuid  # yes, that's all i need
-    await user_xbox.close()
+    my_xuid = ctx.bot.xbox.auth_mgr.xsts_token.xuid
 
     user_realms = await elytra.BedrockRealmsAPI.from_oauth(
         os.environ["XBOX_CLIENT_ID"], os.environ["XBOX_CLIENT_SECRET"], oauth
@@ -119,7 +118,13 @@ async def handle_realms(
             event = await ctx.bot.wait_for_component(msg, select_realm, timeout=300)
             await event.ctx.defer(edit_origin=True)
             await ctx.edit(
-                msg, embeds=utils.make_embed("Adding bot to Realm..."), components=[]
+                msg,
+                embeds=utils.make_embed(
+                    "Adding bot to Realm...\n*You may see the bot adding you as a"
+                    " friend. This is part of the process - it'll unfriend you soon"
+                    " after.*"
+                ),
+                components=[],
             )
         except asyncio.TimeoutError:
             await ctx.edit(msg, components=[])
@@ -132,7 +137,16 @@ async def handle_realms(
                 "The Realm you selected no longer exists. Please try again."
             )
 
-        await user_realms.invite_player(realm_id, ctx.bot.xbox.auth_mgr.xsts_token.xuid)
+        # work around potential mojang protections against inviting users to realms
+        # note: not a bypass, the user has given permission to do this with oauth
+        try:
+            await user_xbox.add_friend(xuid=my_xuid)
+            await ctx.bot.xbox.add_friend(xuid=user_xuid)
+        except elytra.MicrosoftAPIException as e:
+            # not too important, but we'll log it
+            logger.warning(f"Failed to add {user_xuid} as friend.", exc_info=e)
+
+        await user_realms.invite_player(realm_id, my_xuid)
         await asyncio.sleep(5)
 
         block_off_time = int(
@@ -159,6 +173,14 @@ async def handle_realms(
             )
 
         await ctx.bot.realms.accept_invite(invite.invitation_id)
+
+        try:
+            await user_xbox.remove_friend(xuid=my_xuid)
+            await ctx.bot.xbox.remove_friend(xuid=user_xuid)
+        except elytra.MicrosoftAPIException as e:
+            logger.warning(f"Failed to remove {user_xuid} as friend.", exc_info=e)
+
         return associated_realm
     finally:
+        await user_xbox.close()
         await user_realms.close()
