@@ -21,7 +21,7 @@
 It's:
 - 🚀 **Fast:** Under the right (and typical) circumstances, it can generate a list of ~300 players in under *4 seconds,* 3-3.5 of which is only due to Discord's rate limits.
 - 📊 **Informative:** The main feature of the bot, the playerlist, can give a detailed log of players on a Realm at a moment's notice. You can also get a breakdown for an individual player to analyze as you wish.
-- 👌 **Easy to Use**: Simply add the bot, link your Realm, and you already have join/leave tracking enabled - no need to use your Xbox account for the bot's functions. Take a look at the [Server Setup Guide](https://rpl.astrea.cc/wiki/server_setup.html) for more information.
+- 👌 **Easy to Use**: Simply add the bot, link your Realm, and you already have join/leave tracking enabled - no need to use your Xbox account for the bot's features. Take a look at the [Server Setup Guide](https://rpl.astrea.cc/wiki/server_setup.html) for more information.
 - 🔓 **Open Source**: The code is available to the public and able to be audited and learned from. Dedicated users can even (try to) self-host the bot, if they wish.
 
 <p align="center">
