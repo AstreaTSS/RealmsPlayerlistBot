@@ -81,7 +81,7 @@ async def handle_realms(
     user_xbox = await elytra.XboxAPI.from_oauth(
         os.environ["XBOX_CLIENT_ID"], os.environ["XBOX_CLIENT_SECRET"], oauth
     )
-    user_xuid = user_xbox.auth_mgr.xsts_token.xuid  # yes, that's all i need
+    user_xuid = user_xbox.auth_mgr.xsts_token.xuid
     my_xuid = ctx.bot.xbox.auth_mgr.xsts_token.xuid
 
     user_realms = await elytra.BedrockRealmsAPI.from_oauth(
