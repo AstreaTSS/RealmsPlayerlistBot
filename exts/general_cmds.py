@@ -130,6 +130,10 @@ class GeneralCMDS(utils.Extension):
                 "If you want to use me, go ahead and invite me to your server and take"
                 f" a look at {self.bot.mention_cmd('config help')}!"
             ),
+            (
+                "*The Realms Playerlist Bot is not an official Minecraft product, and"
+                " is not approved by or associated with Mojang or Microsoft.*"
+            ),
         ]
 
         about_embed = ipy.Embed(
