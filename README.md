@@ -27,3 +27,6 @@ It's:
 <p align="center">
   <i>For more information, please <a href="https://rpl.astrea.cc">check the official website.</a></i>
 </p>
+<p align="center">
+  <i>The Realms Playerlist Bot is not an official Minecraft product, and is not approved by or associated with Mojang or Microsoft.</i>
+</p>
