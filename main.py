@@ -30,6 +30,7 @@ import aiohttp_retry
 import discord_typings
 import elytra
 import interactions as ipy
+import redis.asyncio as aioredis
 import sentry_sdk
 from cachetools import TTLCache
 from elytra.core import BetterResponse, _dumps_wrapper
@@ -44,7 +45,6 @@ import common.help_tools as help_tools
 import common.models as models
 import common.utils as utils
 import db_settings
-from common.classes import SemaphoreRedis
 
 with contextlib.suppress(ImportError):
     import rook  # type: ignore
@@ -251,8 +251,9 @@ bot.background_tasks = set()
 
 async def start() -> None:
     await Tortoise.init(db_settings.TORTOISE_ORM)
-    bot.redis = SemaphoreRedis.from_url(
-        os.environ["REDIS_URL"], decode_responses=True, semaphore_value=15
+    bot.redis = aioredis.Redis.from_url(
+        os.environ["REDIS_URL"],
+        decode_responses=True,
     )
 
     # mark players as offline if they were online more than 5 minutes ago

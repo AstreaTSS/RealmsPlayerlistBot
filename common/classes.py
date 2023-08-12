@@ -35,6 +35,7 @@ class ValidChannelConverter(ipy.Converter):
         return valid_channel_check(argument)
 
 
+# left here just in case you want to use it
 class SemaphoreRedis(aioredis.Redis):
     def __init__(self, **kwargs: typing.Any) -> None:
         semaphore_value = kwargs.pop("semaphore_value", 1)
