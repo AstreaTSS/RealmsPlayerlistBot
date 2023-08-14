@@ -158,7 +158,11 @@ class GuildConfig(utils.Extension):
         await ctx.send(embeds=embeds)
 
     async def add_realm(
-        self, ctx: utils.RealmContext, realm: elytra.FullRealm
+        self,
+        ctx: utils.RealmContext,
+        realm: elytra.FullRealm,
+        *,
+        alternative_link: bool = False,
     ) -> list[ipy.Embed]:
         config = await ctx.fetch_config()
 
@@ -208,6 +212,20 @@ class GuildConfig(utils.Extension):
             ),
             color=ipy.RoleColors.GREEN,
         )
+        if alternative_link:
+            if typing.TYPE_CHECKING:
+                assert isinstance(confirm_embed.description, str)
+
+            confirm_embed.description += (
+                "\n\nAs the bot has been linked to your Realm, there is no need to"
+                " continue to have the Microsoft application associated with it linked"
+                " to your account.\nWhile it's not necessary, if you wish to revoke"
+                " its access from your account, you can do so by going to"
+                ' https://account.live.com/consent/Manage, clicking "Edit" on the'
+                ' Realms Playerlist Bot application, and clicking "Remove these'
+                ' permissions".'
+            )
+
         embeds.append(confirm_embed)
         return embeds
 
@@ -389,7 +407,7 @@ class GuildConfig(utils.Extension):
         if config.realm_id != str(realm.id):
             await self.remove_realm(ctx)
 
-        embeds = await self.add_realm(ctx, realm)
+        embeds = await self.add_realm(ctx, realm, alternative_link=True)
         await ctx.edit(msg, embeds=embeds, components=[])
 
     @config.subcommand(
