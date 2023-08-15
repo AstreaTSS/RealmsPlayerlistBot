@@ -181,7 +181,7 @@ class GeneralCMDS(utils.Extension):
                         "Interactions.py Version:"
                         f" [{ipy.__version__}](https://github.com/interactions-py/interactions.py/tree/{ipy.__version__})"
                     ),
-                    "Made By: [AstreaTSS](https://github.com/AstreaTSS)",
+                    "Made By: [AstreaTSS](https://astrea.cc)",
                 )
             ),
             inline=True,
