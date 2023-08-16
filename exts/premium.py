@@ -409,10 +409,8 @@ class PremiumHandling(ipy.Extension):
 
         try:
             await ctx.send(
-                embed=utils.make_embed(
-                    "Done! Please note that this file only contains raw player"
-                    " session data - it's up to you to process this information."
-                ),
+                "Done! Please note that this file only contains raw player"
+                " session data - it's up to you to process this information.",
                 file=csv_file,
             )
         finally:
