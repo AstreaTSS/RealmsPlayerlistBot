@@ -1,5 +1,6 @@
 import asyncio
 import importlib
+import io
 import os
 import typing
 
@@ -18,6 +19,9 @@ CommandT = typing.TypeVar("CommandT", ipy.BaseCommand, ipy.const.AsyncCallable)
 def premium_check() -> typing.Callable[[CommandT], CommandT]:
     async def check(ctx: utils.RealmContext) -> bool:
         config = await ctx.fetch_config()
+
+        if utils.TEST_MODE:
+            return True
 
         if not config.valid_premium:
             raise utils.CustomCheckFailure(
@@ -362,6 +366,56 @@ class PremiumHandling(ipy.Extension):
                 realm_id=config.realm_id, fetch_devices=True
             ).exists():
                 self.bot.fetch_devices_for.discard(config.realm_id)
+
+    @premium.subcommand(
+        sub_cmd_name="export",
+        sub_cmd_description=(
+            "Exports all stored (~30 days) player session data for the linked Realm to"
+            " a CSV."
+        ),
+    )
+    async def export_to_csv(self, ctx: utils.RealmContext) -> None:
+        config = await ctx.fetch_config()
+
+        if not config.realm_id:
+            raise utils.CustomCheckFailure(
+                "You need to link your Realm before running this."
+            )
+
+        csv_entries: list[str] = ["xuid,online,last_seen,joined_at"]
+
+        async for session in models.PlayerSession.filter(
+            realm_id=config.realm_id, joined_at__isnull=False
+        ).order_by("-last_seen"):
+            if typing.TYPE_CHECKING:
+                assert session.joined_at is not None
+
+            csv_entries.append(
+                f"{session.xuid},{session.online},"
+                f"{session.last_seen.isoformat(timespec='seconds')},"
+                f"{session.joined_at.isoformat(timespec='seconds')}"
+            )
+
+        if len(csv_entries) == 1:
+            raise utils.CustomCheckFailure("There is no data to export for this Realm.")
+
+        csv_str = "\n".join(csv_entries)
+        csv_io = io.StringIO(csv_str)
+        csv_file = ipy.File(
+            csv_io,
+            file_name=f"{config.realm_id}-{int(ctx.id.created_at.timestamp())}.csv",
+        )
+
+        try:
+            await ctx.send(
+                embed=utils.make_embed(
+                    "Done! Please note that this file only contains raw player"
+                    " session data - it's up to you to process this information."
+                ),
+                file=csv_file,
+            )
+        finally:
+            csv_io.close()
 
     @premium.subcommand(
         sub_cmd_name="info",
