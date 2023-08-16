@@ -375,6 +375,7 @@ class PremiumHandling(ipy.Extension):
         ),
     )
     @premium_check()
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 60)
     async def export_to_csv(self, ctx: utils.RealmContext) -> None:
         config = await ctx.fetch_config()
 
