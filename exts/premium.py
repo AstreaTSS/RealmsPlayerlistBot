@@ -374,6 +374,7 @@ class PremiumHandling(ipy.Extension):
             " a CSV."
         ),
     )
+    @premium_check()
     async def export_to_csv(self, ctx: utils.RealmContext) -> None:
         config = await ctx.fetch_config()
 
