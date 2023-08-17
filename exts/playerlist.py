@@ -381,9 +381,6 @@ class Playerlist(utils.Extension):
             else:
                 await ctx.send(embeds=embed)
 
-            # we also make sure we don't get ratelimited hard
-            await asyncio.sleep(0.2)
-
     @tansy.slash_command(
         "online",
         description="Allows you to see if anyone is online on the Realm right now.",
