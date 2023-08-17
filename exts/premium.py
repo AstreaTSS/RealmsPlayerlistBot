@@ -135,7 +135,7 @@ class PremiumHandling(ipy.Extension):
                 " that you typed it in correctly?"
             )
 
-        if code_obj.max_uses == code_obj.uses:
+        if code_obj.uses >= code_obj.max_uses:
             raise ipy.errors.BadArgument("This code cannot be redeemed anymore.")
 
         config = await ctx.fetch_config()
