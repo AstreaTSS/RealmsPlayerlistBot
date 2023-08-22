@@ -3,6 +3,7 @@ import contextlib
 import logging
 import os
 import typing
+from collections import defaultdict
 
 import aiohttp
 import aiohttp_retry
@@ -421,3 +422,42 @@ async def fill_in_gamertags_for_sessions(
             session_dict[xuid].device = gamertag_info.device
 
     return list(session_dict.values())
+
+
+async def get_xuid_to_gamertag_map(
+    bot: utils.RealmBotBase,
+    player_sessions: list[models.PlayerSession],
+) -> defaultdict[str, str]:
+    xuid_list = list(dict.fromkeys(session.xuid for session in player_sessions))
+    gamertag_map: defaultdict[str, str] = defaultdict(lambda: "")
+
+    unresolved: list[str] = []
+
+    async with bot.redis.pipeline() as pipeline:
+        for xuid in xuid_list:
+            pipeline.get(xuid)
+
+        gamertag_list: list[str | None] = await pipeline.execute()
+
+    for index, xuid in enumerate(xuid_list):
+        gamertag = gamertag_list[index]
+
+        if not gamertag:
+            unresolved.append(xuid)
+            continue
+
+        gamertag_map[xuid] = gamertag
+
+    if unresolved:
+        gamertag_handler = GamertagHandler(
+            bot,
+            bot.pl_sem,
+            tuple(unresolved),
+            bot.openxbl_session,
+        )
+        gamertag_dict = await gamertag_handler.run()
+
+        for xuid, gamertag_info in gamertag_dict.items():
+            gamertag_map[xuid] = gamertag_info.gamertag
+
+    return gamertag_map

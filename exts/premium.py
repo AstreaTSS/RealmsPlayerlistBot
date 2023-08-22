@@ -384,16 +384,19 @@ class PremiumHandling(ipy.Extension):
                 "You need to link your Realm before running this."
             )
 
-        csv_entries: list[str] = ["xuid,online,last_seen,joined_at"]
+        csv_entries: list[str] = ["xuid,gamertag,online,last_seen,joined_at"]
 
-        async for session in models.PlayerSession.filter(
+        sessions = await models.PlayerSession.filter(
             realm_id=config.realm_id, joined_at__isnull=False
-        ).order_by("-last_seen"):
+        ).order_by("-last_seen")
+        gamertags = await pl_utils.get_xuid_to_gamertag_map(self.bot, sessions)
+
+        for session in sessions:
             if typing.TYPE_CHECKING:
                 assert session.joined_at is not None
 
             csv_entries.append(
-                f"{session.xuid},{session.online},"
+                f"{session.xuid},{gamertags[session.xuid]},{session.online},"
                 f"{session.last_seen.isoformat(timespec='seconds')},"
                 f"{session.joined_at.isoformat(timespec='seconds')}"
             )
