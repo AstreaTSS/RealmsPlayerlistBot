@@ -558,7 +558,7 @@ class Statistics(utils.Extension):
                 self.bot,
                 leaderboard_builder,
                 page_size=1000,
-                timeout=120,
+                timeout=60,
                 default_title=f"Leaderboard for the past {period_str}",
                 default_color=ctx.bot.color,
             )
