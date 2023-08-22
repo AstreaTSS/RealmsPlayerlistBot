@@ -438,7 +438,7 @@ class Statistics(utils.Extension):
         ),
         dm_permission=False,
     )
-    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 15)
     @ipy.check(pl_utils.has_linked_realm)
     async def leaderboard(
         self,
@@ -460,6 +460,7 @@ class Statistics(utils.Extension):
             and not config.valid_premium
             and await self.bot.redis.get(f"rpl-voted-{ctx.author.id}") != "1"
         ):
+            await ctx.command.cooldown.reset(ctx)
             raise utils.CustomCheckFailure(
                 "To use this command, you must vote for the bot [on"
                 f" its Top.gg page](https://top.gg/bot/{self.bot.user.id}/vote) or"
@@ -556,6 +557,7 @@ class Statistics(utils.Extension):
                 page_size=1000,
                 timeout=120,
                 default_title=f"Leaderboard for the past {period_str}",
+                default_color=ctx.bot.color,
             )
             if len(pag.pages) > 25:  # this will be triggered, make no mistake
                 pag.show_select_menu = False

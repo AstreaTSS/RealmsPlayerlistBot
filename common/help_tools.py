@@ -102,6 +102,7 @@ class HelpPaginator(paginators.Paginator):
         page_size: int = 4000,
         timeout: int = 0,
         default_title: str | None = None,
+        default_color: ipy.Color = ipy.BrandColors.BLURPLE,
     ) -> "paginators.Paginator":
         """
         Create a paginator from a list of strings. Useful to maintain formatting.
@@ -114,6 +115,7 @@ class HelpPaginator(paginators.Paginator):
             page_size: The maximum characters for each page
             timeout: A timeout to wait before closing the paginator
             default_title: The title to use for the embeds
+            default_color: The color to use for the embeds
 
         Returns:
             A paginator system
@@ -144,6 +146,7 @@ class HelpPaginator(paginators.Paginator):
             timeout_interval=timeout,
             show_callback_button=False,
             default_title=default_title,
+            default_color=default_color,
         )
 
     def create_components(self, disable: bool = False) -> list[ipy.ActionRow]:
