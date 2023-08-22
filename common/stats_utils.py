@@ -398,7 +398,7 @@ async def period_parse(
             ):
                 raise utils.CustomCheckFailure(
                     "To use periods longer than 1 week, you must vote for the bot [on"
-                    f" its top.gg page](https://top.gg/bot/{bot.user.id}/vote) or"
+                    f" its Top.gg page](https://top.gg/bot/{bot.user.id}/vote) or"
                     " [purchase Playerlist"
                     f" Premium]({os.environ['PREMIUM_INFO_LINK']}). Voting lasts for 12"
                     " hours."
@@ -433,7 +433,7 @@ async def summary_parse(
             ):
                 raise utils.CustomCheckFailure(
                     "To use periods longer than 1 week, you must vote for the bot [on"
-                    f" its top.gg page](https://top.gg/bot/{bot.user.id}/vote) or"
+                    f" its Top.gg page](https://top.gg/bot/{bot.user.id}/vote) or"
                     " [purchase Playerlist"
                     f" Premium]({os.environ['PREMIUM_INFO_LINK']}). Voting lasts for 12"
                     " hours."
