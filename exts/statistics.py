@@ -479,7 +479,7 @@ class Statistics(utils.Extension):
         time_delta = datetime.timedelta(days=period, minutes=1)
         min_datetime = now - time_delta
 
-        datetimes = await stats_utils.gather_datetimes_with_xuids(config, min_datetime)
+        datetimes = await stats_utils.gather_datetimes(config, min_datetime)
 
         earliest_datetime = min(d.joined_at for d in datetimes)
         warn_about_earliest = (

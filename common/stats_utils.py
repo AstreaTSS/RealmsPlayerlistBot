@@ -102,15 +102,21 @@ def get_nearest_day_timestamp(
     return int(d.replace(**kwargs).timestamp())
 
 
+class GatherDatetimesReturn(typing.NamedTuple):
+    xuid: str
+    joined_at: datetime.datetime
+    last_seen: datetime.datetime
+
+
 def get_minutes_per_hour(
-    ranges: typing.Iterable[tuple[datetime.datetime, datetime.datetime]],
+    ranges: typing.Iterable[GatherDatetimesReturn],
     *,
     min_datetime: typing.Optional[datetime.datetime] = None,
     max_datetime: typing.Optional[datetime.datetime] = None,
 ) -> dict[datetime.datetime, int]:
     minutes_per_hour: defaultdict[int, int] = defaultdict(int)
 
-    for start, end in ranges:
+    for _, start, end in ranges:
         end_time = int(end.timestamp())
         current_hour = int(start.timestamp())
 
@@ -157,14 +163,14 @@ def get_minutes_per_hour(
 
 
 def get_minutes_per_day(
-    ranges: typing.Iterable[tuple[datetime.datetime, datetime.datetime]],
+    ranges: typing.Iterable[GatherDatetimesReturn],
     *,
     min_datetime: typing.Optional[datetime.datetime] = None,
     max_datetime: typing.Optional[datetime.datetime] = None,
 ) -> dict[datetime.datetime, int]:
     minutes_per_day: defaultdict[int, int] = defaultdict(int)
 
-    for start, end in ranges:
+    for _, start, end in ranges:
         end_time = int(end.timestamp())
         current_day = int(start.timestamp())
 
@@ -199,13 +205,13 @@ def get_minutes_per_day(
 
 
 def timespan_minutes_per_hour(
-    ranges: typing.Iterable[tuple[datetime.datetime, datetime.datetime]],
+    ranges: typing.Iterable[GatherDatetimesReturn],
     **kwargs: typing.Any,
 ) -> dict[datetime.time, int]:
     # we want the dict to start at 0, so make the dict first
     minutes_per_hour: dict[int, int] = {i: 0 for i in range(24)}
 
-    for start, end in ranges:
+    for _, start, end in ranges:
         end_time = int(end.timestamp())
         current_hour = int(start.timestamp())
 
@@ -230,12 +236,12 @@ def timespan_minutes_per_hour(
 
 
 def timespan_minutes_per_day_of_the_week(
-    ranges: typing.Iterable[tuple[datetime.datetime, datetime.datetime]],
+    ranges: typing.Iterable[GatherDatetimesReturn],
     **kwargs: typing.Any,
 ) -> dict[datetime.date, int]:
     minutes_per_day_of_the_week: dict[int, int] = {i: 0 for i in range(7)}
 
-    for start, end in ranges:
+    for _, start, end in ranges:
         end_time = int(end.timestamp())
         current_day = int(start.timestamp())
 
@@ -319,45 +325,8 @@ async def gather_datetimes(
     *,
     gamertag: typing.Optional[str] = None,
     **filter_kwargs: typing.Any,
-) -> list[tuple[datetime.datetime, datetime.datetime]]:
-    datetimes_to_use: list[tuple[datetime.datetime, datetime.datetime]] = []
-
-    async for entry in models.PlayerSession.filter(
-        realm_id=config.realm_id, joined_at__gte=min_datetime, **filter_kwargs
-    ):
-        if not entry.joined_at or not entry.last_seen:
-            continue
-
-        datetimes_to_use.append((entry.joined_at, entry.last_seen))  # type: ignore
-
-    if not datetimes_to_use:
-        if gamertag:
-            raise utils.CustomCheckFailure(
-                f"There's no data for `{gamertag}` on the linked Realm for this"
-                " timespan."
-            )
-        else:
-            raise utils.CustomCheckFailure(
-                "There's no data for the linked Realm for this timespan."
-            )
-
-    return datetimes_to_use
-
-
-class GatherDatetimesXuidReturn(typing.NamedTuple):
-    xuid: str
-    joined_at: datetime.datetime
-    last_seen: datetime.datetime
-
-
-async def gather_datetimes_with_xuids(
-    config: models.GuildConfig,
-    min_datetime: datetime.datetime,
-    *,
-    gamertag: typing.Optional[str] = None,
-    **filter_kwargs: typing.Any,
-) -> list[GatherDatetimesXuidReturn]:
-    datetimes_to_use: list[GatherDatetimesXuidReturn] = []
+) -> list[GatherDatetimesReturn]:
+    datetimes_to_use: list[GatherDatetimesReturn] = []
 
     async for entry in models.PlayerSession.filter(
         realm_id=config.realm_id, joined_at__gte=min_datetime, **filter_kwargs
@@ -366,7 +335,7 @@ async def gather_datetimes_with_xuids(
             continue
 
         datetimes_to_use.append(
-            GatherDatetimesXuidReturn(entry.xuid, entry.joined_at, entry.last_seen)
+            GatherDatetimesReturn(entry.xuid, entry.joined_at, entry.last_seen)
         )
 
     if not datetimes_to_use:
@@ -558,7 +527,7 @@ async def process_single_graph_data(
     func_to_use: typing.Callable[..., VALID_TIME_DICTS],
     gamertag: typing.Optional[str] = None,
     filter_kwargs: typing.Optional[dict[str, typing.Any]] = None,
-) -> tuple[VALID_TIME_DICTS, list[tuple[datetime.datetime, datetime.datetime]]]:
+) -> tuple[VALID_TIME_DICTS, list[GatherDatetimesReturn]]:
     if filter_kwargs is None:
         filter_kwargs = {}
 
@@ -585,7 +554,7 @@ async def process_multi_graph_data(
     now: datetime.datetime,
     func_to_use: typing.Callable[..., VALID_TIME_DICTS],
 ) -> tuple[dict[str, VALID_TIME_DICTS], datetime.datetime]:
-    xuid_datetime_map: dict[str, list[tuple[datetime.datetime, datetime.datetime]]] = {}
+    xuid_datetime_map: dict[str, list[GatherDatetimesReturn]] = {}
 
     for xuid, gamertag in zip(xuid_list, gamertag_list, strict=True):
         xuid_datetime_map[xuid] = await gather_datetimes(
@@ -593,7 +562,7 @@ async def process_multi_graph_data(
         )
 
     earliest_datetime = min(
-        d[0]
+        d.last_seen
         for d in (
             entry
             for datetime_lists in xuid_datetime_map.values()
@@ -693,9 +662,7 @@ async def send_graph(
     now: datetime.datetime,
     title: str,
     min_datetime: datetime.datetime,
-    datetimes_used: typing.Optional[
-        list[tuple[datetime.datetime, datetime.datetime]]
-    ] = None,
+    datetimes_used: typing.Optional[list[GatherDatetimesReturn]] = None,
     earliest_datetime: typing.Optional[datetime.datetime] = None,
 ) -> None:
     kwargs: dict[str, typing.Any] = {}
@@ -720,7 +687,7 @@ async def send_graph(
             # the earliest datetime we've gathered, that probably means the bot
             # has only recently tracked a realm, and so we want to warn that
             # the data might not be the best
-            earliest_datetime = min(d[0] for d in datetimes_used)  # type: ignore
+            earliest_datetime = min(d.last_seen for d in datetimes_used)  # type: ignore
 
         warn_about_earliest = (
             min_datetime + datetime.timedelta(days=1) < earliest_datetime
