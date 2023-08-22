@@ -438,7 +438,7 @@ class Statistics(utils.Extension):
         start = (start // 60) * 60
         end = (end // 60) * 60
 
-        return end - start
+        return 0 if end <= start else end - start
 
     @tansy.slash_command(
         name="leaderboard",
