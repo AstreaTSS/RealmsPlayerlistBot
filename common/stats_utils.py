@@ -344,6 +344,45 @@ async def gather_datetimes(
     return datetimes_to_use
 
 
+class GatherDatetimesXuidReturn(typing.NamedTuple):
+    xuid: str
+    joined_at: datetime.datetime
+    last_seen: datetime.datetime
+
+
+async def gather_datetimes_with_xuids(
+    config: models.GuildConfig,
+    min_datetime: datetime.datetime,
+    *,
+    gamertag: typing.Optional[str] = None,
+    **filter_kwargs: typing.Any,
+) -> list[GatherDatetimesXuidReturn]:
+    datetimes_to_use: list[GatherDatetimesXuidReturn] = []
+
+    async for entry in models.PlayerSession.filter(
+        realm_id=config.realm_id, joined_at__gte=min_datetime, **filter_kwargs
+    ):
+        if not entry.joined_at or not entry.last_seen:
+            continue
+
+        datetimes_to_use.append(
+            GatherDatetimesXuidReturn(entry.xuid, entry.joined_at, entry.last_seen)
+        )
+
+    if not datetimes_to_use:
+        if gamertag:
+            raise utils.CustomCheckFailure(
+                f"There's no data for `{gamertag}` on the linked Realm for this"
+                " timespan."
+            )
+        else:
+            raise utils.CustomCheckFailure(
+                "There's no data for the linked Realm for this timespan."
+            )
+
+    return datetimes_to_use
+
+
 async def period_parse(
     bot: utils.RealmBotBase,
     user_id: ipy.Snowflake_Type,

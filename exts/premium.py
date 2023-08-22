@@ -389,7 +389,9 @@ class PremiumHandling(ipy.Extension):
         sessions = await models.PlayerSession.filter(
             realm_id=config.realm_id, joined_at__isnull=False
         ).order_by("-last_seen")
-        gamertags = await pl_utils.get_xuid_to_gamertag_map(self.bot, sessions)
+        gamertags = await pl_utils.get_xuid_to_gamertag_map(
+            self.bot, list(dict.fromkeys(session.xuid for session in sessions))
+        )
 
         for session in sessions:
             if typing.TYPE_CHECKING:

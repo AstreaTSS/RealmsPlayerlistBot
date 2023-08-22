@@ -1,6 +1,8 @@
 import datetime
 import importlib
+import os
 import typing
+from collections import Counter
 
 import humanize
 import interactions as ipy
@@ -427,6 +429,144 @@ class Statistics(utils.Extension):
             " {summarize_by}",
         )
         await self.handle_multi_players(ctx, returned_data, now, xuid_list, gamertags)
+
+    @tansy.slash_command(
+        name="leaderboard",
+        description=(
+            "Ranks users based on how many minutes they played on the Realm. Requires"
+            " voting or Premium."
+        ),
+        dm_permission=False,
+    )
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    @ipy.check(pl_utils.has_linked_realm)
+    async def leaderboard(
+        self,
+        ctx: utils.RealmContext,
+        period: int = tansy.Option(
+            "The period to gather data for.",
+            choices=[
+                ipy.SlashCommandChoice("24 hours", 1),
+                ipy.SlashCommandChoice("1 week", 7),
+                ipy.SlashCommandChoice("2 weeks", 14),
+                ipy.SlashCommandChoice("30 days", 30),
+            ],
+        ),
+    ) -> None:
+        config = await ctx.fetch_config()
+
+        if (
+            os.environ.get("TOP_GG_TOKEN")
+            and not config.valid_premium
+            and await self.bot.redis.get(f"rpl-voted-{ctx.author.id}") != "1"
+        ):
+            raise utils.CustomCheckFailure(
+                "To use this command, you must vote for the bot [on"
+                f" its top.gg page](https://top.gg/bot/{self.bot.user.id}/vote) or"
+                " [purchase Playerlist"
+                f" Premium]({os.environ['PREMIUM_INFO_LINK']}). Voting lasts for 12"
+                " hours."
+            )
+
+        if period not in {1, 7, 14, 30}:
+            raise utils.CustomCheckFailure("Invalid period given.")
+
+        # this is genuinely some of the wackest code ive made
+        # you wont like it
+
+        now = ipy.Timestamp.utcnow().replace(second=30)
+        time_delta = datetime.timedelta(days=period, minutes=1)
+        min_datetime = now - time_delta
+
+        datetimes = await stats_utils.gather_datetimes_with_xuids(config, min_datetime)
+
+        earliest_datetime = min(d.joined_at for d in datetimes)
+        warn_about_earliest = (
+            min_datetime + datetime.timedelta(days=1) < earliest_datetime
+        )
+
+        leaderboard_counter: Counter[str] = Counter()
+
+        for datetime_entry in datetimes:
+            leaderboard_counter[datetime_entry.xuid] += int(
+                datetime_entry.last_seen.timestamp()
+                - datetime_entry.joined_at.timestamp()
+            )
+
+        leaderboard_counter = +leaderboard_counter  # filters out 0s somehow?
+
+        leaderboard_counter_sort = leaderboard_counter.most_common()
+        gamertag_map = await pl_utils.get_xuid_to_gamertag_map(
+            self.bot, list(leaderboard_counter)
+        )
+
+        leaderboard_builder: list[str] = []
+
+        for index, (xuid, playtime) in enumerate(leaderboard_counter_sort):
+            if not xuid:  # likely subclient player
+                continue
+
+            if playtime < 30:  # too little, just ignore
+                continue
+
+            precisedelta = humanize.precisedelta(
+                playtime, minimum_unit="minutes", format="%0.0f"
+            )
+
+            if precisedelta.startswith("0"):  # we don't want 0 minute entries
+                continue
+
+            if precisedelta == "1 minutes":  # why humanize
+                precisedelta = "1 minute"
+
+            leaderboard_builder.append(
+                f"**{index+1}\\.** `{gamertag_map[xuid] or xuid}`: {precisedelta}"
+            )
+
+        leaderboard_str = "\n".join(leaderboard_builder)
+
+        # im lazy
+        match period:
+            case 1:
+                period_str = "24 hours"
+            case 7:
+                period_str = "1 week"
+            case 14:
+                period_str = "2 weeks"
+            case _:
+                period_str = f"{period} days"
+
+        if warn_about_earliest:
+            embed = ipy.Embed(
+                title="Warning",
+                description=(
+                    "The bot does not have enough data to properly parse data for the"
+                    " timespan you specified (most likely, you specified a timespan"
+                    " that goes further back than when you first set up the bot with"
+                    " your Realm). This data may be inaccurate."
+                ),
+                color=ipy.RoleColors.YELLOW,
+            )
+            await ctx.send(embed=embed)
+
+        if len(leaderboard_str) > 1000:
+            pag = help_tools.HelpPaginator.create_from_list(
+                self.bot,
+                leaderboard_builder,
+                page_size=1000,
+                timeout=120,
+                default_title=f"Leaderboard for the past {period_str}",
+            )
+            if len(pag.pages) > 25:  # this will be triggered, make no mistake
+                pag.show_select_menu = False
+            await pag.send(ctx)
+        else:
+            await ctx.send(
+                embed=utils.make_embed(
+                    leaderboard_str,
+                    title=f"Leaderboard for the past {period_str}",
+                )
+            )
 
     @tansy.slash_command(
         name="get-player-log",

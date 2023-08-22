@@ -426,9 +426,8 @@ async def fill_in_gamertags_for_sessions(
 
 async def get_xuid_to_gamertag_map(
     bot: utils.RealmBotBase,
-    player_sessions: list[models.PlayerSession],
+    xuid_list: list[str],
 ) -> defaultdict[str, str]:
-    xuid_list = list(dict.fromkeys(session.xuid for session in player_sessions))
     gamertag_map: defaultdict[str, str] = defaultdict(lambda: "")
 
     unresolved: list[str] = []

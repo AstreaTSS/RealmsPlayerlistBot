@@ -92,6 +92,60 @@ class HelpPaginator(paginators.Paginator):
         default=None, init=False, repr=False
     )
 
+    @classmethod
+    def create_from_list(
+        cls,
+        client: "ipy.Client",
+        content: list[str],
+        prefix: str = "",
+        suffix: str = "",
+        page_size: int = 4000,
+        timeout: int = 0,
+        default_title: str | None = None,
+    ) -> "paginators.Paginator":
+        """
+        Create a paginator from a list of strings. Useful to maintain formatting.
+
+        Args:
+            client: A reference to the client
+            content: The content to paginate
+            prefix: The prefix for each page to use
+            suffix: The suffix for each page to use
+            page_size: The maximum characters for each page
+            timeout: A timeout to wait before closing the paginator
+            default_title: The title to use for the embeds
+
+        Returns:
+            A paginator system
+        """
+        pages = []
+        page_length = 0
+        page = ""
+        for entry in content:
+            if len(page) + len(f"\n{entry}") <= page_size:
+                page += f"{entry}\n"
+            else:
+                pages.append(
+                    paginators.Page(
+                        page, f"Page {page_length + 1}", prefix=prefix, suffix=suffix
+                    )
+                )
+                page_length += 1
+                page = ""
+        if page != "":
+            pages.append(
+                paginators.Page(
+                    page, f"Page {page_length + 1}", prefix=prefix, suffix=suffix
+                )
+            )
+        return cls(
+            client,
+            pages=pages,
+            timeout_interval=timeout,
+            show_callback_button=False,
+            default_title=default_title,
+        )
+
     def create_components(self, disable: bool = False) -> list[ipy.ActionRow]:
         rows = super().create_components()
 
@@ -125,7 +179,7 @@ class HelpPaginator(paginators.Paginator):
 
         if isinstance(page, paginators.Page):
             page = page.to_embed()
-            if not page.title and self.default_title:
+            if self.default_title:
                 page.title = self.default_title
         if not (page.author and page.author.name):
             page.set_author(name=f"Page {self.page_index+1}/{len(self.pages)}")
