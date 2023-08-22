@@ -430,6 +430,16 @@ class Statistics(utils.Extension):
         )
         await self.handle_multi_players(ctx, returned_data, now, xuid_list, gamertags)
 
+    @staticmethod
+    def process_timespan(datetime_entry: stats_utils.GatherDatetimesReturn) -> int:
+        start = int(datetime_entry.joined_at.timestamp())
+        end = int(datetime_entry.last_seen.timestamp())
+
+        start = (start // 60) * 60
+        end = (end // 60) * 60
+
+        return end - start
+
     @tansy.slash_command(
         name="leaderboard",
         description=(
@@ -489,9 +499,8 @@ class Statistics(utils.Extension):
         leaderboard_counter: Counter[str] = Counter()
 
         for datetime_entry in datetimes:
-            leaderboard_counter[datetime_entry.xuid] += int(
-                datetime_entry.last_seen.timestamp()
-                - datetime_entry.joined_at.timestamp()
+            leaderboard_counter[datetime_entry.xuid] += self.process_timespan(
+                datetime_entry
             )
 
         leaderboard_counter = +leaderboard_counter  # filters out 0s somehow?
@@ -507,15 +516,9 @@ class Statistics(utils.Extension):
             if not xuid:  # likely subclient player
                 continue
 
-            if playtime < 30:  # too little, just ignore
-                continue
-
             precisedelta = humanize.precisedelta(
                 playtime, minimum_unit="minutes", format="%0.0f"
             )
-
-            if precisedelta.startswith("0"):  # we don't want 0 minute entries
-                continue
 
             if precisedelta == "1 minutes":  # why humanize
                 precisedelta = "1 minute"
