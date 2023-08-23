@@ -21,7 +21,7 @@ SENTRY_ENABLED = bool(os.environ.get("SENTRY_DSN", False))  # type: ignore
 
 DEV_GUILD_ID = int(os.environ.get("DEV_GUILD_ID", "0"))
 
-EXPIRE_GAMERTAGS_AT = int(datetime.timedelta(days=14).total_seconds())
+EXPIRE_GAMERTAGS_AT = int(datetime.timedelta(days=7).total_seconds())
 
 
 async def sleep_until(dt: datetime.datetime) -> None:
