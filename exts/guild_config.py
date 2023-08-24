@@ -70,7 +70,7 @@ class GuildConfig(utils.Extension):
         config = await ctx.fetch_config()
 
         embed = ipy.Embed(
-            color=self.bot.color, title=f"Server Config for {ctx.guild.name}:"
+            color=self.bot.color, title=f"Server Config:"
         )
         playerlist_channel = (
             f"<#{config.playerlist_chan}>" if config.playerlist_chan else "N/A"
