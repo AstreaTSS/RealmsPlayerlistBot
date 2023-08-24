@@ -12,7 +12,7 @@ import rpl_config
 rpl_config.load()
 
 logger = logging.getLogger("realms_bot")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(
     filename=os.environ["LOG_FILE_PATH"], encoding="utf-8", mode="a"
 )
@@ -22,7 +22,7 @@ handler.setFormatter(
 logger.addHandler(handler)
 
 ipy_logger = logging.getLogger("interactions")
-ipy_logger.setLevel(logging.INFO)
+ipy_logger.setLevel(logging.DEBUG)
 ipy_logger.addHandler(handler)
 
 import aiohttp
@@ -167,6 +167,13 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     # guild related stuff so that no caching of guilds is even attempted
     # this code is cursed, im aware
 
+    @ipy.listen()
+    async def _on_websocket_ready(self, event: ipy.events.RawGatewayEvent) -> None:
+        connection_data = event.data
+        expected_guilds = {int(guild["id"]) for guild in connection_data["guilds"]}
+        self.unavailable_guilds |= expected_guilds
+        await super()._on_websocket_ready(self, event)
+
     @property
     def guild_count(self) -> int:
         return len(self.user._guild_ids or ())
@@ -175,6 +182,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     async def _on_raw_guild_create(self, event: "ipy.events.RawGatewayEvent") -> None:
         guild_id: int = int(event.data["id"])
         new_guild = guild_id not in self.user._guild_ids
+        self.unavailable_guilds.discard(guild_id)
 
         if new_guild:
             self.user._guild_ids.add(guild_id)
@@ -193,6 +201,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         guild_id: int = int(event.data["id"])
 
         if event.data.get("unavailable", False):
+            self.unavailable_guilds.add(guild_id)
             self.dispatch(ipy.events.GuildUnavailable(guild_id))
         else:
             self.user._guild_ids.discard(guild_id)
@@ -284,6 +293,7 @@ bot = RealmsPlayerlistBot(
 )
 prefixed.setup(bot, prefixed_context=utils.RealmPrefixedContext)
 bot.guild_event_timeout = -1
+bot.unavailable_guilds = set()
 bot.init_load = True
 bot.bot_owner = None  # type: ignore
 bot.color = ipy.Color(int(os.environ["BOT_COLOR"]))  # b05bff, aka 11557887
@@ -296,6 +306,9 @@ bot.offline_realms = OrderedSet()  # type: ignore
 bot.dropped_offline_realms = set()
 bot.fetch_devices_for = set()
 bot.background_tasks = set()
+
+# oops, ipy made a mistake
+bot.http.proxy = None
 
 
 async def start() -> None:

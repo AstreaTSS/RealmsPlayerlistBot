@@ -271,6 +271,7 @@ if typing.TYPE_CHECKING:
     class RealmBotBase(ipy.AutoShardedClient):
         prefixed: prefixed.PrefixedManager
 
+        unavailable_guilds: set[int]
         bot_owner: ipy.User
         color: ipy.Color
         init_load: bool

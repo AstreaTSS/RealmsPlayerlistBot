@@ -126,6 +126,9 @@ class AutoRunPlayerlist(utils.Extension):
         guild_config: models.GuildConfig,
         upsell: str | None,
     ) -> None:
+        if guild_config.guild_id in self.bot.unavailable_guilds:
+            return
+
         try:
             chan = await pl_utils.fetch_playerlist_channel(self.bot, guild_config)
         except ValueError:
