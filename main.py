@@ -198,6 +198,18 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
             self.user._guild_ids.discard(guild_id)
             self.dispatch(ipy.events.GuildLeft(guild_id, None))  # type: ignore
 
+    @Processor.define()
+    async def _on_raw_message_create(self, event: "ipy.events.RawGatewayEvent") -> None:
+        # needs to be custom defined otherwise it will try to cache the guild
+        msg = self.cache.place_message_data(event.data)
+        if not msg._guild_id and event.data.get("guild_id"):
+            msg._guild_id = event.data["guild_id"]
+
+        if not msg.channel:
+            await self.cache.fetch_channel(ipy.to_snowflake(msg._channel_id))
+
+        self.dispatch(ipy.events.MessageCreate(msg))
+
     def mention_cmd(self, name: str, scope: int = 0) -> str:
         return self.interactions_by_scope[scope][name].mention(scope)
 
