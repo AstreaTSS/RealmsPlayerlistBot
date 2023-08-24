@@ -8,7 +8,6 @@ import platform
 import textwrap
 import traceback
 import typing
-import unicodedata
 
 import aiohttp
 import interactions as ipy
@@ -32,35 +31,6 @@ class OwnerCMDs(utils.Extension):
         self.set_extension_error(self.ext_error)
         self.add_ext_check(ipy.is_owner())
 
-    def _ascii_name(self, name: str) -> str:
-        # source - https://github.com/daveoncode/python-string-utils/blob/78929d/string_utils/manipulation.py#L433
-        return (
-            unicodedata.normalize("NFKD", name.lower())
-            .encode("ascii", "ignore")
-            .decode("utf-8")
-        )
-
-    def _limit_to_25(self, mapping: list[dict[str, str]]) -> list[dict[str, str]]:
-        return mapping[:25]
-
-    async def _autocomplete_guilds(
-        self, ctx: ipy.AutocompleteContext, argument: str
-    ) -> None:
-        guild_mapping = [
-            {"name": guild.name, "value": str(guild.id)} for guild in ctx.bot.guilds
-        ]
-
-        if not argument:
-            await ctx.send(self._limit_to_25(guild_mapping))
-            return
-
-        near_guilds = [
-            {"name": guild_dict["name"], "value": guild_dict["value"]}
-            for guild_dict in guild_mapping
-            if argument.lower() in self._ascii_name(guild_dict["name"])
-        ]
-        await ctx.send(self._limit_to_25(near_guilds))
-
     @tansy.slash_command(
         name="view-guild",
         description="Displays a guild's config. Can only be used by the bot's owner.",
@@ -70,15 +40,22 @@ class OwnerCMDs(utils.Extension):
     async def view_guild(
         self,
         ctx: utils.RealmContext,
-        guild: str = tansy.Option("The guild to view.", autocomplete=True),
+        guild_id: str = tansy.Option("The guild to view."),
     ) -> None:
-        config = await GuildConfig.get(guild_id=int(guild)).prefetch_related(
+        config = await GuildConfig.get(guild_id=int(guild_id)).prefetch_related(
             "premium_code"
         )
-        actual_guild: ipy.Guild = ctx.bot.get_guild(int(guild))
+
+        guild_name = guild_id
+
+        if guild := ctx.bot.get_guild(guild_id):
+            guild_name = guild.name
+        else:
+            guild_data = await self.bot.http.get_guild(guild_id)
+            guild_name = guild_data["name"]
 
         embed = ipy.Embed(
-            color=self.bot.color, title=f"Server Config for {actual_guild.name}:"
+            color=self.bot.color, title=f"Server Config for {guild_name}:"
         )
         playerlist_channel = utils.na_friendly_str(config.playerlist_chan)
 
@@ -107,13 +84,6 @@ class OwnerCMDs(utils.Extension):
         )
 
         await ctx.send(embeds=[embed])
-
-    @view_guild.autocomplete("guild")
-    async def view_get_guild(
-        self,
-        ctx: ipy.AutocompleteContext,
-    ) -> None:
-        await self._autocomplete_guilds(ctx, ctx.kwargs.get("guild"))
 
     @tansy.slash_command(
         name="add-guild",
@@ -162,52 +132,7 @@ class OwnerCMDs(utils.Extension):
     async def edit_guild(
         self,
         ctx: utils.RealmContext,
-        guild: str = tansy.Option("The guild to edit.", autocomplete=True),
-        club_id: typing.Optional[str] = tansy.Option(
-            "The club ID for the Realm.", default=None
-        ),
-        realm_id: typing.Optional[str] = tansy.Option(
-            "The Realm ID for the Realm.", default=None
-        ),
-        playerlist_chan: typing.Optional[str] = tansy.Option(
-            "The playerlist channel ID for this guild.", default=None
-        ),
-    ) -> None:
-        guild_config = await GuildConfig.get(guild_id=int(guild))
-
-        if realm_id:
-            guild_config.realm_id = realm_id if realm_id != "None" else None
-        if club_id:
-            guild_config.club_id = club_id if club_id != "None" else None
-            if club_id != "None" and guild_config.realm_id:
-                await fill_in_data_from_clubs(self.bot, guild_config.realm_id, club_id)
-        if playerlist_chan:
-            guild_config.playerlist_chan = (
-                int(playerlist_chan) if playerlist_chan != "None" else None
-            )
-
-        await guild_config.save()
-        await ctx.send("Done!")
-
-    @edit_guild.autocomplete("guild")
-    async def edit_get_guild(
-        self,
-        ctx: ipy.AutocompleteContext,
-    ) -> None:
-        await self._autocomplete_guilds(ctx, ctx.kwargs.get("guild"))
-
-    @tansy.slash_command(
-        name="edit-guild-via-id",
-        description=(
-            "Edits a guild in the bot's configs. Can only be used by the bot's owner."
-        ),
-        scopes=[DEV_GUILD_ID],
-        default_member_permissions=ipy.Permissions.ADMINISTRATOR,
-    )
-    async def edit_guild_via_id(
-        self,
-        ctx: utils.RealmContext,
-        guild_id: str = tansy.Option("The guild ID for the guild to edit."),
+        guild_id: str = tansy.Option("The guild to edit."),
         club_id: typing.Optional[str] = tansy.Option(
             "The club ID for the Realm.", default=None
         ),
@@ -273,7 +198,7 @@ class OwnerCMDs(utils.Extension):
 
         e.add_field("Loaded Extensions", ", ".join(self.bot.ext))
 
-        e.add_field("Guilds", str(len(self.bot.guilds)))
+        e.add_field("Guilds", str(self.bot.guild_count))
 
         await ctx.reply(embeds=[e])
 
@@ -343,8 +268,6 @@ class OwnerCMDs(utils.Extension):
             "ctx": ctx,
             "channel": ctx.channel,
             "author": ctx.author,
-            "server": ctx.guild,
-            "guild": ctx.guild,
             "message": ctx.message,
         } | globals()
 

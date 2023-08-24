@@ -9,6 +9,7 @@ import elytra
 import interactions as ipy
 import tansy
 
+import common.classes as cclasses
 import common.models as models
 import common.playerlist_events as pl_events
 import common.playerlist_utils as pl_utils
@@ -221,7 +222,7 @@ class Playerlist(utils.Extension):
         dm_permission=False,
     )
     @ipy.check(pl_utils.has_linked_realm)
-    @ipy.cooldown(ipy.Buckets.GUILD, 1, 60)
+    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 60)
     async def playerlist(
         self,
         ctx: utils.RealmContext | utils.RealmPrefixedContext,
@@ -386,7 +387,7 @@ class Playerlist(utils.Extension):
         description="Allows you to see if anyone is online on the Realm right now.",
         dm_permission=False,
     )
-    @ipy.cooldown(ipy.Buckets.GUILD, 1, 10)
+    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 10)
     @ipy.check(pl_utils.has_linked_realm)
     async def online(
         self,
@@ -456,6 +457,7 @@ class Playerlist(utils.Extension):
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
+    importlib.reload(cclasses)
     importlib.reload(pl_events)
     importlib.reload(pl_utils)
     Playerlist(bot)

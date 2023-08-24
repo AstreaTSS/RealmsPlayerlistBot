@@ -104,7 +104,7 @@ class Voting(ipy.Extension):
 
     @ipy.Task.create(ipy.IntervalTrigger(minutes=30))
     async def autopost_guild_count(self) -> None:
-        server_count = len(self.bot.guilds)
+        server_count = self.bot.guild_count
 
         for handler in self.handlers:
             async with self.bot.session.post(

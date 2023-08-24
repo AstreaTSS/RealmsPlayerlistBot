@@ -9,6 +9,7 @@ import interactions as ipy
 import tansy
 from tortoise.expressions import Q
 
+import common.classes as cclasses
 import common.fuzzy as fuzzy
 import common.graph_template as graph_template
 import common.help_tools as help_tools
@@ -145,7 +146,7 @@ class Statistics(utils.Extension):
             " graph."
         ),
     )
-    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
     async def graph_realm(
         self,
@@ -166,7 +167,7 @@ class Statistics(utils.Extension):
             "Summarizes the Realm over a specified period, by a specified interval."
         ),
     )
-    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
     async def graph_realm_summary(
         self,
@@ -189,7 +190,7 @@ class Statistics(utils.Extension):
             "Produces a graph of a player's playtime over a specifed period as a graph."
         ),
     )
-    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
     async def graph_player(
         self,
@@ -217,7 +218,7 @@ class Statistics(utils.Extension):
             "Summarizes a player over a specified period, by a specified interval."
         ),
     )
-    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
     async def graph_player_summary(
         self,
@@ -245,7 +246,7 @@ class Statistics(utils.Extension):
             "Produces a graph of multiple players' playtime over a specifed period."
         ),
     )
-    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
     @ipy.auto_defer(enabled=False)
     async def graph_multi_player(
@@ -285,7 +286,7 @@ class Statistics(utils.Extension):
             " specified interval."
         ),
     )
-    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
     @ipy.auto_defer(enabled=False)
     async def graph_multi_player_summary(
@@ -448,7 +449,7 @@ class Statistics(utils.Extension):
         ),
         dm_permission=False,
     )
-    @ipy.cooldown(ipy.Buckets.GUILD, 1, 15)
+    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 15)
     @ipy.check(pl_utils.has_linked_realm)
     async def leaderboard(
         self,
@@ -579,7 +580,7 @@ class Statistics(utils.Extension):
         default_member_permissions=ipy.Permissions.MANAGE_GUILD,
         dm_permission=False,
     )
-    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
     async def get_player_log(
         self,
@@ -691,6 +692,7 @@ class Statistics(utils.Extension):
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
+    importlib.reload(cclasses)
     importlib.reload(fuzzy)
     importlib.reload(stats_utils)
     importlib.reload(graph_template)

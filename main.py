@@ -34,6 +34,7 @@ import redis.asyncio as aioredis
 import sentry_sdk
 from cachetools import TTLCache
 from elytra.core import BetterResponse, _dumps_wrapper
+from interactions.api.events.processors import Processor
 from interactions.ext import prefixed_commands as prefixed
 from interactions.ext.sentry import HookedTask
 from ordered_set import OrderedSet
@@ -163,6 +164,40 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     async def on_error(self, event: ipy.events.Error) -> None:
         await utils.error_handle(event.error)
 
+    # guild related stuff so that no caching of guilds is even attempted
+    # this code is cursed, im aware
+
+    @property
+    def guild_count(self) -> int:
+        return len(self.user._guild_ids or ())
+
+    @Processor.define()
+    async def _on_raw_guild_create(self, event: "ipy.events.RawGatewayEvent") -> None:
+        guild_id: int = int(event.data["id"])
+        new_guild = guild_id not in self.user._guild_ids
+
+        if new_guild:
+            self.user._guild_ids.add(guild_id)
+            self.dispatch(ipy.events.GuildJoin(guild_id))
+        else:
+            self.dispatch(ipy.events.GuildAvailable(guild_id))
+
+    @Processor.define()
+    async def _on_raw_guild_update(self, event: "ipy.events.RawGatewayEvent") -> None:
+        # yes, this is funny, but we never use guild updates and it would only add
+        # to our cache
+        return
+
+    @Processor.define()
+    async def _on_raw_guild_delete(self, event: "ipy.events.RawGatewayEvent") -> None:
+        guild_id: int = int(event.data["id"])
+
+        if event.data.get("unavailable", False):
+            self.dispatch(ipy.events.GuildUnavailable(guild_id))
+        else:
+            self.user._guild_ids.discard(guild_id)
+            self.dispatch(ipy.events.GuildLeft(guild_id, None))  # type: ignore
+
     def mention_cmd(self, name: str, scope: int = 0) -> str:
         return self.interactions_by_scope[scope][name].mention(scope)
 
@@ -231,10 +266,12 @@ bot = RealmsPlayerlistBot(
     # do not need at all
     voice_state_cache=ipy.utils.NullCache(),
     user_guilds=ipy.utils.NullCache(),
+    guild_cache=ipy.utils.NullCache(),
     dm_channels=ipy.utils.NullCache(),
     logger=logger,
 )
 prefixed.setup(bot, prefixed_context=utils.RealmPrefixedContext)
+bot.guild_event_timeout = -1
 bot.init_load = True
 bot.bot_owner = None  # type: ignore
 bot.color = ipy.Color(int(os.environ["BOT_COLOR"]))  # b05bff, aka 11557887

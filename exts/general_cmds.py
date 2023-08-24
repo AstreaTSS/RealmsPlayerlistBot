@@ -13,6 +13,7 @@ import tansy
 from msgspec import ValidationError
 from tortoise.expressions import Q
 
+import common.classes as cclasses
 import common.models as models
 import common.utils as utils
 
@@ -143,7 +144,7 @@ class GeneralCMDS(utils.Extension):
         )
         about_embed.set_thumbnail(
             ctx.bot.user.display_avatar.url
-            if ctx.guild
+            if ctx.guild_id
             else self.bot.user.display_avatar.url
         )
 
@@ -166,7 +167,7 @@ class GeneralCMDS(utils.Extension):
             name="Stats",
             value="\n".join(
                 (
-                    f"Servers: {len(self.bot.guilds)} ({shards_str})",
+                    f"Servers: {self.bot.guild_count} ({shards_str})",
                     f"Premium Servers: {premium_count}",
                     f"Commands: {command_num} ",
                     (
@@ -224,7 +225,7 @@ class GeneralCMDS(utils.Extension):
         description="Gets the gamertag for a specified XUID.",
         dm_permission=False,
     )
-    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
     async def gamertag_from_xuid(
         self,
         ctx: utils.RealmContext,
@@ -308,4 +309,5 @@ class GeneralCMDS(utils.Extension):
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
+    importlib.reload(cclasses)
     GeneralCMDS(bot)

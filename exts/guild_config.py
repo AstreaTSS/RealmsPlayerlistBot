@@ -593,7 +593,7 @@ class GuildConfig(utils.Extension):
 
         if role:
             if isinstance(role, str):  # ???
-                role: ipy.Role = await ctx.guild.fetch_role(role)
+                role: ipy.Role = await self.bot.cache.fetch_role(ctx.guild_id, role)
 
             if (
                 not role.mentionable

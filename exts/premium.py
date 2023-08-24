@@ -8,6 +8,7 @@ import interactions as ipy
 import tansy
 from Crypto.Cipher import AES
 
+import common.classes as cclasses
 import common.models as models
 import common.playerlist_utils as pl_utils
 import common.premium_code as premium_code
@@ -375,7 +376,7 @@ class PremiumHandling(ipy.Extension):
         ),
     )
     @premium_check()
-    @ipy.cooldown(ipy.Buckets.GUILD, 1, 60)
+    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 60)
     async def export_to_csv(self, ctx: utils.RealmContext) -> None:
         config = await ctx.fetch_config()
 
@@ -444,6 +445,7 @@ class PremiumHandling(ipy.Extension):
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
+    importlib.reload(cclasses)
     importlib.reload(pl_utils)
     importlib.reload(premium_code)
     PremiumHandling(bot)

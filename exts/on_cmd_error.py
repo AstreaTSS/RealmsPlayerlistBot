@@ -44,7 +44,7 @@ class OnCMDError(ipy.Extension):
         elif isinstance(event.error, utils.CustomCheckFailure | ipy.errors.BadArgument):
             await self.handle_send(event.ctx, str(event.error))
         elif isinstance(event.error, ipy.errors.CommandCheckFailure):
-            if event.ctx.guild:
+            if event.ctx.guild_id:
                 await self.handle_send(
                     event.ctx,
                     "You do not have the proper permissions to use that command.",

@@ -200,14 +200,11 @@ class CustomCheckFailure(ipy.errors.BadArgument):
 
 class RealmContextMixin:
     guild_config: typing.Optional[GuildConfig]
+    guild_id = ipy.Snowflake
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         self.guild_config = None
         super().__init__(*args, **kwargs)
-
-    @property
-    def guild(self) -> ipy.Guild:
-        return self.client.cache.get_guild(self.guild_id)  # type: ignore
 
     @property
     def bot(self) -> "RealmBotBase":
@@ -221,12 +218,15 @@ class RealmContextMixin:
         Returns:
             GuildConfig: The guild config.
         """
+        if not self.guild_id:
+            raise ValueError("No guild ID set.")
+
         if self.guild_config:
             return self.guild_config
 
-        config = await GuildConfig.get_or_none(guild_id=self.guild.id).prefetch_related(
+        config = await GuildConfig.get_or_none(guild_id=self.guild_id).prefetch_related(
             "premium_code"
-        ) or await GuildConfig.create(guild_id=self.guild.id)
+        ) or await GuildConfig.create(guild_id=self.guild_id)
 
         self.guild_config = config
         return config
@@ -294,6 +294,10 @@ if typing.TYPE_CHECKING:
         offline_realms: OrderedSet[int]
         dropped_offline_realms: set[int]
         fetch_devices_for: set[str]
+
+        @property
+        def guild_count(self) -> int:
+            ...
 
         def mention_cmd(self, name: str, scope: int = 0) -> str:
             ...
