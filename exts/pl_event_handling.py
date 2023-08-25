@@ -121,9 +121,7 @@ class PlayerlistEventHandling(ipy.Extension):
                 await config.save()
                 continue
 
-            guild = self.bot.get_guild(guild_id)
-            if not guild:
-                # could just be it's offline or something
+            if guild_id in self.bot.unavailable_guilds:
                 continue
 
             if config.live_online_channel:
@@ -216,8 +214,7 @@ class PlayerlistEventHandling(ipy.Extension):
             if not config.playerlist_chan or not config.realm_offline_role:
                 continue
 
-            guild = self.bot.get_guild(config.guild_id)
-            if not guild:
+            if config.guild_id in self.bot.unavailable_guilds:
                 continue
 
             role_mention = f"<@&{config.realm_offline_role}>"
@@ -276,9 +273,7 @@ class PlayerlistEventHandling(ipy.Extension):
             if not config.warning_notifications:
                 continue
 
-            guild = self.bot.get_guild(config.guild_id)
-            if not guild:
-                # could just be it's offline or something
+            if config.guild_id in self.bot.unavailable_guilds:
                 continue
 
             logger.info(f"Warning {config.guild_id} for missing Realm.")

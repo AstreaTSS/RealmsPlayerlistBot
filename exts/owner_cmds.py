@@ -48,11 +48,8 @@ class OwnerCMDs(utils.Extension):
 
         guild_name = guild_id
 
-        if guild := ctx.bot.get_guild(guild_id):
-            guild_name = guild.name
-        else:
-            guild_data = await self.bot.http.get_guild(guild_id)
-            guild_name = guild_data["name"]
+        guild_data = await self.bot.http.get_guild(guild_id)
+        guild_name = guild_data["name"]
 
         embed = ipy.Embed(
             color=self.bot.color, title=f"Server Config for {guild_name}:"
