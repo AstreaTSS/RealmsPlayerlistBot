@@ -200,7 +200,7 @@ class CustomCheckFailure(ipy.errors.BadArgument):
 
 class RealmContextMixin:
     guild_config: typing.Optional[GuildConfig]
-    guild_id = ipy.Snowflake
+    guild_id: ipy.Snowflake
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         self.guild_config = None
