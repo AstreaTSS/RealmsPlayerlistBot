@@ -219,6 +219,28 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
         self.dispatch(ipy.events.MessageCreate(msg))
 
+    @Processor.define()
+    async def _on_raw_guild_role_create(
+        self, event: "ipy.events.RawGatewayEvent"
+    ) -> None:
+        g_id = int(event.data.get("guild_id"))
+        r_id = int(event.data["role"]["id"])
+
+        role = self.cache.place_role_data(g_id, [event.data.get("role")])[r_id]
+        self.dispatch(ipy.events.RoleCreate(g_id, role))
+
+    @Processor.define()
+    async def _on_raw_guild_role_delete(
+        self, event: "ipy.events.RawGatewayEvent"
+    ) -> None:
+        g_id = int(event.data.get("guild_id"))
+        r_id = int(event.data.get("role_id"))
+
+        role = self.cache.get_role(r_id)
+        self.cache.delete_role(r_id)
+
+        self.dispatch(ipy.events.RoleDelete(g_id, r_id, role))
+
     def mention_cmd(self, name: str, scope: int = 0) -> str:
         return self.interactions_by_scope[scope][name].mention(scope)
 
