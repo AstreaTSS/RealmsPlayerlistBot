@@ -69,7 +69,7 @@ class GuildConfig(utils.Extension):
     async def info(self, ctx: utils.RealmContext) -> None:
         config = await ctx.fetch_config()
 
-        embed = ipy.Embed(color=self.bot.color, title="Server Config:")
+        embed = ipy.Embed(color=self.bot.color, title="Server Config")
         playerlist_channel = (
             f"<#{config.playerlist_chan}>" if config.playerlist_chan else "N/A"
         )
