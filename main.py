@@ -44,6 +44,7 @@ from tortoise.expressions import Q
 import common.classes as cclasses
 import common.help_tools as help_tools
 import common.models as models
+import common.splash_texts as splash_texts
 import common.utils as utils
 import db_settings
 
@@ -116,11 +117,11 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
         self.init_load = False
 
-        activity = ipy.Activity.create(
-            name="players on Realms",
-            type=ipy.ActivityType.WATCHING,
+        activity = cclasses.PatchedStatus(
+            name="Splash Text",
+            type=ipy.ActivityType.CUSTOM,
+            state=self.splash_texts.get(),
         )
-
         await self.change_presence(activity=activity)
 
     @ipy.listen("disconnect")
@@ -133,9 +134,10 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
     @ipy.listen("resume")
     async def on_resume_func(self) -> None:
-        activity = ipy.Activity.create(
-            name="players on Realms",
-            type=ipy.ActivityType.WATCHING,
+        activity = cclasses.PatchedStatus(
+            name="Splash Text",
+            type=ipy.ActivityType.CUSTOM,
+            state=self.splash_texts.get(),
         )
         await self.change_presence(activity=activity)
 
@@ -163,6 +165,15 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     @ipy.listen(is_default_listener=True)
     async def on_error(self, event: ipy.events.Error) -> None:
         await utils.error_handle(event.error)
+
+    @ipy.listen(splash_texts.SplashTextUpdated)
+    async def new_splash_text(self) -> None:
+        activity = cclasses.PatchedStatus(
+            name="Splash Text",
+            type=ipy.ActivityType.CUSTOM,
+            state=self.splash_texts.get(),
+        )
+        await self.change_presence(activity=activity)
 
     # guild related stuff so that no caching of guilds is even attempted
     # this code is cursed, im aware
@@ -271,6 +282,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         await bot.xbox.close()
         await bot.realms.close()
         await Tortoise.close_connections()
+        await bot.splash_texts.stop()
         await bot.redis.close(close_connection_pool=True)
 
         return await super().stop()
@@ -339,6 +351,7 @@ async def start() -> None:
         os.environ["REDIS_URL"],
         decode_responses=True,
     )
+    bot.splash_texts = await splash_texts.SplashTexts.from_bot(bot)
 
     # mark players as offline if they were online more than 5 minutes ago
     five_minutes_ago = ipy.Timestamp.utcnow() - datetime.timedelta(minutes=5)

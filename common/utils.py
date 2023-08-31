@@ -267,6 +267,7 @@ if typing.TYPE_CHECKING:
     from ordered_set import OrderedSet
 
     from .help_tools import MiniCommand, PermissionsResolver
+    from .splash_texts import SplashTexts
 
     class RealmBotBase(ipy.AutoShardedClient):
         prefixed: prefixed.PrefixedManager
@@ -285,6 +286,7 @@ if typing.TYPE_CHECKING:
         redis: aioredis.Redis
         own_gamertag: str
         background_tasks: set[asyncio.Task]
+        splash_texts: SplashTexts
 
         online_cache: defaultdict[int, set[str]]
         realm_name_cache: TTLCache[typing.Optional[str], str]
