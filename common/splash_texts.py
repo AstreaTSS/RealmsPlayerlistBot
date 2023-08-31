@@ -28,7 +28,7 @@ splash_texts = (
     "Also try other Realm bots!",
     "Bread is pain!",
     "Open source!",
-    "Watching over some Realms!Technically self-hostable!",
+    "Watching over some Realms!",
     "Check out the Server Setup Guide!",
     "Pong!",
     "In at least 1 server!",
@@ -59,13 +59,14 @@ splash_texts = (
     "Now in purple!",
     "Keyboard compatible!",
     "Made by AstreaTSS!",
-    "This is good for Realms.",  # actual splash text in mc proper
+    "This is good for Realms!",  # actual splash text in mc proper
     "config = await ctx.fetch_config()",  # used too often
     "Cloud computing!",
     "Typehinted!",
     "The Xbox API is a mess!",
     "As seen on Top.gg!",
     "Full of stars!",  # astrea, stars, ha
+    "Technically self-hostable!",
     "How to get bot?",
     "You can deal with whitespace!",  # people, i swear, its fine, you'll live using python
     "Made with interactions.py!",
