@@ -34,8 +34,9 @@ splash_texts = (
     "In at least 1 server!",
     "Vote Receieved!",  # typo is purposeful
     "RPL!",  # internal codename
-    "Using the Realm API!",
-    "Use #help-forum!What's a guild?",  # a two in one: guilds are servers, and the bot doesn't store guild object
+    "Using the Realms API!",
+    "Use #help-forum!",
+    "What's a guild?",  # a two in one: guilds are servers, and the bot doesn't store guild object
     "Now with shards!",
     "Not associated with Microsoft!",
     "Never dig down!",
