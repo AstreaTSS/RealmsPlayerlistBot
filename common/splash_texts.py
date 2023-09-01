@@ -107,7 +107,9 @@ class SplashTexts:
             await bot.redis.set("rpl-splash-text", current_index)
         else:
             current_index = int(current_index)
-        return cls(bot, current_index)
+        self = cls(bot, current_index)
+        await self.start()
+        return self
 
     def get(self) -> str:
         return splash_texts[self.current_index]
