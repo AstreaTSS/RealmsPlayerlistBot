@@ -383,6 +383,7 @@ if typing.TYPE_CHECKING:
         offline_realms: OrderedSet[int]
         dropped_offline_realms: set[int]
         fetch_devices_for: set[str]
+        blacklist: set[int]
 
         @property
         def guild_count(self) -> int:
@@ -402,9 +403,15 @@ else:
         pass
 
 
-async def _global_checks(ctx: ipy.BaseContext) -> bool:
-    if ctx.author.id in ctx.bot.owner_ids:
+async def _global_checks(ctx: RealmContext) -> bool:
+    if ctx.author_id in ctx.bot.owner_ids:
         return True
+
+    if (
+        int(ctx.author_id) in ctx.bot.blacklist
+        or int(ctx.guild_id) in ctx.bot.blacklist
+    ):
+        return False
 
     return bool(ctx.bot.fully_ready.is_set())
 

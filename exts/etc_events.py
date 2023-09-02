@@ -25,6 +25,10 @@ class EtcEvents(ipy.Extension):
         if not self.bot.is_ready:
             return
 
+        if int(event.guild_id) in self.bot.blacklist:
+            await self.bot.http.leave_guild(event.guild_id)
+            return
+
         await models.GuildConfig.get_or_create(guild_id=int(event.guild_id))
 
     @ipy.listen("guild_left")

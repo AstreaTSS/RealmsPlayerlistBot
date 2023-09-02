@@ -11,6 +11,7 @@ import typing
 
 import aiohttp
 import interactions as ipy
+import orjson
 import tansy
 from interactions.ext import paginators
 from interactions.ext import prefixed_commands as prefixed
@@ -407,6 +408,30 @@ class OwnerCMDs(utils.Extension):
                 ) as r:
                     r.raise_for_status()
 
+        await ctx.reply("Done!")
+
+    @debug.subcommand(aliases=["bl"])
+    async def blacklist(self, ctx: utils.RealmPrefixedContext) -> None:
+        await ctx.reply(str(ctx.bot.blacklist))
+
+    @blacklist.subcommand(name="add")
+    async def bl_add(
+        self, ctx: utils.RealmPrefixedContext, snowflake: ipy.SnowflakeObject
+    ) -> None:
+        if int(snowflake.id) in ctx.bot.blacklist:
+            raise ipy.errors.BadArgument("This entry is already in the blacklist.")
+        ctx.bot.blacklist.add(int(snowflake.id))
+        await ctx.bot.redis.set("rpl-blacklist", orjson.dumps(list(ctx.bot.blacklist)))
+        await ctx.reply("Done!")
+
+    @blacklist.subcommand(name="remove", aliases=["delete"])
+    async def bl_remove(
+        self, ctx: utils.RealmPrefixedContext, snowflake: ipy.SnowflakeObject
+    ) -> None:
+        if int(snowflake.id) not in ctx.bot.blacklist:
+            raise ipy.errors.BadArgument("This entry is not in the blacklist.")
+        ctx.bot.blacklist.discard(int(snowflake.id))
+        await ctx.bot.redis.set("rpl-blacklist", orjson.dumps(list(ctx.bot.blacklist)))
         await ctx.reply("Done!")
 
     async def ext_error(

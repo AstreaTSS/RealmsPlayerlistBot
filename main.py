@@ -30,6 +30,7 @@ import aiohttp_retry
 import discord_typings
 import elytra
 import interactions as ipy
+import orjson
 import redis.asyncio as aioredis
 import sentry_sdk
 from cachetools import TTLCache
@@ -340,6 +341,7 @@ bot.offline_realms = OrderedSet()  # type: ignore
 bot.dropped_offline_realms = set()
 bot.fetch_devices_for = set()
 bot.background_tasks = set()
+bot.blacklist = set()
 
 # oops, ipy made a mistake
 bot.http.proxy = None
@@ -352,6 +354,12 @@ async def start() -> None:
         decode_responses=True,
     )
     bot.splash_texts = await splash_texts.SplashTexts.from_bot(bot)
+
+    if blacklist_raw := await bot.redis.get("rpl-blacklist"):
+        bot.blacklist = set(orjson.loads(blacklist_raw))
+    else:
+        bot.blacklist = set()
+        await bot.redis.set("rpl-blacklist", orjson.dumps([]))
 
     # mark players as offline if they were online more than 5 minutes ago
     five_minutes_ago = ipy.Timestamp.utcnow() - datetime.timedelta(minutes=5)
