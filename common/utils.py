@@ -250,7 +250,10 @@ async def config_info_generate(
         dev_info_str = (
             f"Server ID: {ctx.guild_id}\nRealm ID:"
             f" {na_friendly_str(config.realm_id)}\nClub ID:"
-            f" {na_friendly_str(config.club_id)}\nLinked Premium ID: {premium_code_id}"
+            f" {na_friendly_str(config.club_id)}\nPlayerlist Channel ID:"
+            f" {na_friendly_str(config.playerlist_chan)}\nRealm Offline Role"
+            f" ID:{na_friendly_str(config.realm_offline_role)}\nLinked Premium ID:"
+            f" {premium_code_id}"
         )
         if config.premium_code:
             expires_at = (
@@ -261,7 +264,8 @@ async def config_info_generate(
             dev_info_str += (
                 "\nUses:"
                 f" {config.premium_code.uses} used/{config.premium_code.max_uses}\nExpires"
-                f" At: {expires_at}"
+                f" At: {expires_at}\nLive Online:"
+                f" {na_friendly_str(config.live_online_channel)}"
             )
 
         embed.add_field(
@@ -269,7 +273,7 @@ async def config_info_generate(
             dev_info_str,
             inline=True,
         )
-        shard_id = ctx.bot.get_shard_id(ctx.guild_id) if ctx.guild_id else 0
+        shard_id = ctx.bot.get_shard_id(config.guild_id)
         embed.set_footer(f"Shard ID: {shard_id}")
 
     return embed
