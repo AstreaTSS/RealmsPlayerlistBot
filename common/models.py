@@ -1,7 +1,7 @@
 import logging
 import os
 import typing
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from functools import cached_property
 from uuid import UUID
 
@@ -146,6 +146,13 @@ class PremiumCode(Model):
 
     guilds: fields.ReverseRelation["GuildConfig"]
 
+    _valid_code: bool | None = None
+
     @property
     def valid_code(self) -> bool:
-        return not self.expires_at or self.expires_at > datetime.now(UTC)
+        if self._valid_code:
+            return self._valid_code
+        self._valid_code = not self.expires_at or self.expires_at > datetime.now(
+            UTC
+        ) + timedelta(days=1)
+        return self._valid_code
