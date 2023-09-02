@@ -66,13 +66,16 @@ class GuildConfig(utils.Extension):
         sub_cmd_name="info",
         sub_cmd_description="Lists out the configuration settings for this server.",
     )
-    async def info(self, ctx: utils.RealmContext) -> None:
+    async def info(
+        self,
+        ctx: utils.RealmContext,
+        diagnostic_info: bool = tansy.Option(
+            "Additionally adds on extra information useful for diagnostics and bot"
+            " development.",
+            default=False,
+        ),
+    ) -> None:
         config = await ctx.fetch_config()
-
-        embed = ipy.Embed(color=self.bot.color, title="Server Config")
-        playerlist_channel = (
-            f"<#{config.playerlist_chan}>" if config.playerlist_chan else "N/A"
-        )
 
         if config.realm_id:
             self.bot.realm_name_cache.expire()
@@ -114,29 +117,16 @@ class GuildConfig(utils.Extension):
             realm_not_found = True
             realm_name = "Not Found"
 
-        autorunner = utils.toggle_friendly_str(
-            bool(config.realm_id and config.playerlist_chan)
-        )
-        offline_realm_ping = (
-            f"<@&{config.realm_offline_role}>" if config.realm_offline_role else "N/A"
-        )
-
-        if not config.valid_premium and (
+        if not config.premium_code and (
             config.live_playerlist or config.fetch_devices or config.live_online_channel
         ):
             await pl_utils.invalidate_premium(self.bot, config)
 
-        embed.description = (
-            f"Realm Name: {realm_name}\nAutorunner: {autorunner}\nAutorun Playerlist"
-            f" Channel: {playerlist_channel}\nOffline Realm Ping Role:"
-            f" {offline_realm_ping}\n\nPremium Activated:"
-            f" {utils.yesno_friendly_str(config.valid_premium)}\nLive Playerlist:"
-            f" {utils.toggle_friendly_str(config.live_playerlist)}\nFetch Devices:"
-            f" {utils.toggle_friendly_str(config.fetch_devices)}"
+        embed = await utils.config_info_generate(
+            ctx, config, realm_name, diagnostic_info=diagnostic_info
         )
 
         embeds: list[ipy.Embed] = []
-
         if realm_not_found:
             warning_embed = ipy.Embed(
                 title="Warning!",

@@ -46,15 +46,8 @@ class OwnerCMDs(utils.Extension):
             "premium_code"
         )
 
-        guild_name = guild_id
-
         guild_data = await self.bot.http.get_guild(guild_id)
         guild_name = guild_data["name"]
-
-        embed = ipy.Embed(
-            color=self.bot.color, title=f"Server Config for {guild_name}:"
-        )
-        playerlist_channel = utils.na_friendly_str(config.playerlist_chan)
 
         realm_name = utils.na_friendly_str(
             self.bot.realm_name_cache.get(config.realm_id)
@@ -64,23 +57,11 @@ class OwnerCMDs(utils.Extension):
         elif config.realm_id:
             realm_name = "Unknown/Not Found"
 
-        autorunner = utils.toggle_friendly_str(
-            bool(config.realm_id and config.playerlist_chan)
+        embed = await utils.config_info_generate(
+            ctx, config, realm_name, diagnostic_info=True
         )
-        offline_realm_ping = utils.na_friendly_str(config.realm_offline_role)
-
-        embed.description = (
-            f"Autorun Playerlist Channel ID: {playerlist_channel}\nRealm Name:"
-            f" {realm_name}\nAutorunner: {autorunner}\nOffline Realm Ping Role ID:"
-            f" {offline_realm_ping}\n\nPremium Activated:"
-            f" {utils.yesno_friendly_str(bool(config.premium_code))}\nLive Playerlist:"
-            f" {utils.toggle_friendly_str(config.live_playerlist)}\nFetch Devices:"
-            f" {utils.toggle_friendly_str(config.fetch_devices)}\n\nExtra Info:\nRealm"
-            f" ID: {utils.na_friendly_str(config.realm_id)}\nClub ID:"
-            f" {utils.na_friendly_str(config.club_id)}"
-        )
-
-        await ctx.send(embeds=[embed])
+        embed.title = f"Server Config for {guild_name}"
+        await ctx.send(embeds=embed)
 
     @tansy.slash_command(
         name="add-guild",

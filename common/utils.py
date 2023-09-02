@@ -193,6 +193,88 @@ def error_embed_generate(error_msg: str) -> ipy.Embed:
     )
 
 
+async def config_info_generate(
+    ctx: "RealmContext | RealmPrefixedContext",
+    config: GuildConfig,
+    realm_name: str,
+    *,
+    diagnostic_info: bool = False,
+) -> ipy.Embed:
+    embed = ipy.Embed(
+        color=ctx.bot.color, title="Server Config", timestamp=ipy.Timestamp.now()
+    )
+
+    playerlist_channel = (
+        f"<#{config.playerlist_chan}>" if config.playerlist_chan else "N/A"
+    )
+    autorunner = toggle_friendly_str(bool(config.realm_id and config.playerlist_chan))
+    offline_realm_ping = (
+        f"<@&{config.realm_offline_role}>" if config.realm_offline_role else "N/A"
+    )
+
+    embed.add_field(
+        "Basic Information",
+        f"Realm Name: {realm_name}\nAutorunner Enabled: {autorunner}\nAutorun"
+        f" Playerlist Channel: {playerlist_channel}\nRealm Offline Role:"
+        f" {offline_realm_ping}\nWarning Notifications:"
+        f" {toggle_friendly_str(config.warning_notifications)}",
+        inline=True,
+    )
+
+    if config.premium_code:
+        live_online_msg = "N/A"
+        if config.live_online_channel:
+            live_online_split = config.live_online_channel.split("|")
+            live_online_msg = f"https://discord.com/channels/{ctx.guild_id}/{live_online_split[0]}/{live_online_split[1]}"
+
+        premium_linked_to = (
+            f"<@{config.premium_code.user_id}>"
+            if config.premium_code and config.premium_code.user_id
+            else "N/A"
+        )
+        embed.add_field(
+            "Premium Information",
+            "Premium Active:"
+            f" {yesno_friendly_str(config.valid_premium)}\nLinked To:"
+            f" {premium_linked_to}\nLive Playerlist:"
+            f" {toggle_friendly_str(config.live_playerlist)}\nLive Online"
+            f" Message: {live_online_msg}\nFetch Devices:"
+            f" {toggle_friendly_str(config.fetch_devices)}",
+            inline=True,
+        )
+    else:
+        embed.fields[0].value += "\nPremium Active: no"
+
+    if diagnostic_info:
+        premium_code_id = str(config.premium_code.id) if config.premium_code else "N/A"
+        dev_info_str = (
+            f"Server ID: {ctx.guild_id}\nRealm ID:"
+            f" {na_friendly_str(config.realm_id)}\nClub ID:"
+            f" {na_friendly_str(config.club_id)}\nLinked Premium ID: {premium_code_id}"
+        )
+        if config.premium_code:
+            expires_at = (
+                f"<t:{int(config.premium_code.expires_at.timestamp())}:f>"
+                if config.premium_code.expires_at
+                else "N/A"
+            )
+            dev_info_str += (
+                "\nUses:"
+                f" {config.premium_code.uses} used/{config.premium_code.max_uses}\nExpires"
+                f" At: {expires_at}"
+            )
+
+        embed.add_field(
+            "Diagnostic Information",
+            dev_info_str,
+            inline=True,
+        )
+        shard_id = ctx.bot.get_shard_id(ctx.guild_id) if ctx.guild_id else 0
+        embed.set_footer(f"Shard ID: {shard_id}")
+
+    return embed
+
+
 class CustomCheckFailure(ipy.errors.BadArgument):
     # custom classs for custom prerequisite failures outside of normal command checks
     pass
