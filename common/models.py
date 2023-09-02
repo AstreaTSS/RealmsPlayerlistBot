@@ -150,7 +150,7 @@ class PremiumCode(Model):
 
     @property
     def valid_code(self) -> bool:
-        if self._valid_code:
+        if self._valid_code is not None:
             return self._valid_code
         self._valid_code = not self.expires_at or self.expires_at > datetime.now(
             UTC
