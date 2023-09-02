@@ -271,7 +271,7 @@ async def config_info_generate(
         embed.add_field(
             "Diagnostic Information",
             dev_info_str,
-            inline=True,
+            inline=False,
         )
         shard_id = ctx.bot.get_shard_id(config.guild_id)
         embed.set_footer(f"Shard ID: {shard_id}")
