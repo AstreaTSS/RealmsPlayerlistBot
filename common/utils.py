@@ -217,7 +217,9 @@ async def config_info_generate(
         f"Realm Name: {realm_name}\nAutorunner Enabled: {autorunner}\nAutorun"
         f" Playerlist Channel: {playerlist_channel}\nRealm Offline Role:"
         f" {offline_realm_ping}\nWarning Notifications:"
-        f" {toggle_friendly_str(config.warning_notifications)}",
+        f" {toggle_friendly_str(config.warning_notifications)}\nPlayer Watchlist Role:"
+        f" {na_friendly_str(config.player_watchlist_role)}\nPeople on Watchlist: See"
+        f" {ctx.bot.mention_cmd('watchlist list')}",
         inline=True,
     )
 
@@ -253,7 +255,8 @@ async def config_info_generate(
             f" {na_friendly_str(config.club_id)}\nPlayerlist Channel ID:"
             f" {na_friendly_str(config.playerlist_chan)}\nRealm Offline Role"
             f" ID:{na_friendly_str(config.realm_offline_role)}\nLinked Premium ID:"
-            f" {premium_code_id}"
+            f" {premium_code_id}\nPlayer Watchlist XUIDs:"
+            f" {na_friendly_str(config.player_watchlist)}"
         )
         if config.premium_code:
             expires_at = (
@@ -379,6 +382,7 @@ if typing.TYPE_CHECKING:
         slash_perms_cache: defaultdict[int, dict[int, PermissionsResolver]]
         mini_commands_per_scope: dict[int, dict[str, MiniCommand]]
         live_playerlist_store: defaultdict[str, set[int]]
+        player_watchlist_store: defaultdict[str, set[int]]
         uuid_cache: defaultdict[str, uuid.UUID]
         offline_realms: OrderedSet[int]
         dropped_offline_realms: set[int]

@@ -202,7 +202,7 @@ class Statistics(utils.Extension):
             choices=stats_utils.GATED_PERIOD_TO_GRAPH,
         ),
     ) -> None:
-        xuid = await stats_utils.xuid_from_gamertag(self.bot, gamertag)
+        xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
         await self.make_unsummary_single_graph(
             ctx,
             period,
@@ -230,7 +230,7 @@ class Statistics(utils.Extension):
             choices=stats_utils.GATED_SUMMARIZE_BY,
         ),
     ) -> None:
-        xuid = await stats_utils.xuid_from_gamertag(self.bot, gamertag)
+        xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
         await self.make_summary_single_graph(
             ctx,
             summarize_by,
@@ -348,7 +348,7 @@ class Statistics(utils.Extension):
             )
 
         xuid_list = [
-            await stats_utils.xuid_from_gamertag(self.bot, gamertag)
+            await pl_utils.xuid_from_gamertag(self.bot, gamertag)
             for gamertag in gamertags_list
         ]
 
@@ -604,7 +604,7 @@ class Statistics(utils.Extension):
 
         Has a cooldown of 5 seconds.
         """
-        xuid = await stats_utils.xuid_from_gamertag(self.bot, gamertag)
+        xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
 
         config = await ctx.fetch_config()
 

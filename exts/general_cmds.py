@@ -1,20 +1,16 @@
 import asyncio
-import contextlib
 import importlib
 import os
 import subprocess
 import time
-import typing
 
-import aiohttp
-import elytra
 import interactions as ipy
 import tansy
-from msgspec import ValidationError
 from tortoise.expressions import Q
 
 import common.classes as cclasses
 import common.models as models
+import common.playerlist_utils as pl_utils
 import common.utils as utils
 
 
@@ -242,8 +238,7 @@ class GeneralCMDS(utils.Extension):
         This lookup usually works well, but on the rare occasion it does fail, the bot will show \
         the XUID of a player instead of their gamertag to at least make sure something is shown about them.
 
-        This command is useful if the bot fails that lookup and displays the XUID to you. This is a reliable \
-        way of getting the gamertag, provided the XUID provided is correct in the first place.
+        This command is useful if the bot fails that lookup and displays the XUID to you.
         """
 
         try:
@@ -253,55 +248,9 @@ class GeneralCMDS(utils.Extension):
         except ValueError:
             raise ipy.errors.BadArgument(f'"{xuid}" is not a valid XUID.') from None
 
-        maybe_gamertag: typing.Union[str, elytra.ProfileResponse, None] = (
-            await self.bot.redis.get(str(valid_xuid))
-        )
-
-        if not maybe_gamertag:
-            with contextlib.suppress(asyncio.TimeoutError):
-                async with self.bot.openxbl_session.get(
-                    f"https://xbl.io/api/v2/account/{valid_xuid}",
-                    timeout=10,
-                ) as r:
-                    with contextlib.suppress(ValidationError, aiohttp.ContentTypeError):
-                        maybe_gamertag = await elytra.ProfileResponse.from_response(r)
-
-        if not maybe_gamertag:
-            with contextlib.suppress(
-                aiohttp.ClientResponseError,
-                asyncio.TimeoutError,
-                ValidationError,
-                elytra.MicrosoftAPIException,
-            ):
-                maybe_gamertag = await self.bot.xbox.fetch_profile_by_xuid(valid_xuid)
-
-        if not maybe_gamertag:
-            raise ipy.errors.BadArgument(
-                f"Could not find gamertag of XUID `{valid_xuid}`!"
-            )
-
-        if isinstance(maybe_gamertag, elytra.ProfileResponse):
-            maybe_gamertag = next(
-                s.value
-                for s in maybe_gamertag.profile_users[0].settings
-                if s.id == "Gamertag"
-            )
-
-            async with self.bot.redis.pipeline() as pipe:
-                pipe.setex(
-                    name=str(valid_xuid),
-                    time=utils.EXPIRE_GAMERTAGS_AT,
-                    value=maybe_gamertag,
-                )
-                pipe.setex(
-                    name=f"rpl-{maybe_gamertag}",
-                    time=utils.EXPIRE_GAMERTAGS_AT,
-                    value=str(valid_xuid),
-                )
-                await pipe.execute()
-
+        gamertag = await pl_utils.gamertag_from_xuid(self.bot, valid_xuid)
         embed = utils.make_embed(
-            f"`{valid_xuid}`'s gamertag: `{maybe_gamertag}`.",
+            f"`{valid_xuid}`'s gamertag: `{gamertag}`.",
             title="Gamertag from XUID",
         )
         await ctx.send(embed=embed)
@@ -309,5 +258,6 @@ class GeneralCMDS(utils.Extension):
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
+    importlib.reload(pl_utils)
     importlib.reload(cclasses)
     GeneralCMDS(bot)

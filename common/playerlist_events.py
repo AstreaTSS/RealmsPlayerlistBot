@@ -61,3 +61,15 @@ class LiveOnlineUpdate(LivePlayerlistSend):
 @define()
 class WarnMissingPlayerlist(PlayerlistEvent):
     pass
+
+
+@define()
+class PlayerWatchlistMatch(PlayerlistEvent):
+    player_xuid: str = attrs.field(repr=False)
+    guild_ids: set[int] = attrs.field(repr=False)
+
+    @property
+    def configs(self) -> QuerySet[models.GuildConfig]:
+        return models.GuildConfig.filter(
+            realm_id=self.realm_id, guild_id__in=self.guild_ids
+        )

@@ -316,6 +316,43 @@ class PlayerlistEventHandling(ipy.Extension):
                 else:
                     raise
 
+    @ipy.listen(pl_events.PlayerWatchlistMatch, is_default_listener=True)
+    async def watchlist_notify(self, event: pl_events.PlayerWatchlistMatch) -> None:
+        async for config in event.configs:
+            if not config.playerlist_chan or not config.player_watchlist:
+                self.bot.player_watchlist_store[
+                    f"{event.realm_id}-{event.player_xuid}"
+                ].discard(config.guild_id)
+                config.player_watchlist = None
+                await config.save()
+                continue
+
+            try:
+                chan = await pl_utils.fetch_playerlist_channel(self.bot, config)
+
+                try:
+                    gamertag = await pl_utils.gamertag_from_xuid(
+                        self.bot, event.player_xuid
+                    )
+                except ipy.errors.BadArgument:
+                    gamertag = f"Player with XUID {event.player_xuid}"
+
+                content = ""
+                if config.player_watchlist_role:
+                    content = f"<@&{config.player_watchlist_role}>, "
+
+                content += f"{gamertag} just joined the Realm!"
+
+                await chan.send(
+                    content,
+                    allowed_mentions=ipy.AllowedMentions.all(),
+                )
+            except ValueError:
+                continue
+            except ipy.errors.HTTPException:
+                await pl_utils.eventually_invalidate(self.bot, config)
+                continue
+
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)

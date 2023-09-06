@@ -6,6 +6,7 @@ from functools import cached_property
 from uuid import UUID
 
 from tortoise import fields
+from tortoise.contrib.postgres.fields import ArrayField
 from tortoise.models import Model
 
 logger = logging.getLogger("realms_bot")
@@ -24,6 +25,8 @@ class GuildConfig(Model):
     warning_notifications: bool = fields.BooleanField(default=True)  # type: ignore
     fetch_devices: bool = fields.BooleanField(default=False)  # type: ignore
     live_online_channel: typing.Optional[str] = fields.CharField(75, null=True)  # type: ignore
+    player_watchlist: list[str] | None = ArrayField("TEXT", null=True)  # type: ignore
+    player_watchlist_role: typing.Optional[int] = fields.BigIntField(null=True)
     premium_code: fields.ForeignKeyNullableRelation[
         "PremiumCode"
     ] = fields.ForeignKeyField(

@@ -254,6 +254,21 @@ async def has_linked_realm(ctx: utils.RealmContext) -> bool:
     return True
 
 
+async def has_playerlist_channel(ctx: utils.RealmContext) -> bool:
+    try:
+        guild_config = await ctx.fetch_config()
+    except DoesNotExist:
+        return False
+
+    if not guild_config.playerlist_chan:
+        raise utils.CustomCheckFailure(
+            "This server does not have a playerlist channel set up. Please check out"
+            f" [the Server Setup Guide]({os.environ['SETUP_LINK']}) for more"
+            " information."
+        )
+    return True
+
+
 async def invalidate_premium(
     bot: utils.RealmBotBase,
     config: models.GuildConfig,
@@ -306,11 +321,20 @@ async def eventually_invalidate(
         guild_config.playerlist_chan = None
         old_live_playerlist = guild_config.live_playerlist
         guild_config.live_playerlist = False
+        old_watchlist = guild_config.player_watchlist
+        guild_config.player_watchlist = None
+        guild_config.player_watchlist_role = None
         await guild_config.save()
         await bot.redis.delete(
             f"invalid-playerlist3-{guild_config.guild_id}",
             f"invalid-playerlist7-{guild_config.guild_id}",
         )
+
+        if guild_config.realm_id and old_watchlist:
+            for player_xuid in old_watchlist:
+                bot.player_watchlist_store[
+                    f"{guild_config.realm_id}-{player_xuid}"
+                ].discard(guild_config.guild_id)
 
         if guild_config.realm_id and old_live_playerlist:
             bot.live_playerlist_store[guild_config.realm_id].discard(
@@ -460,3 +484,111 @@ async def get_xuid_to_gamertag_map(
             gamertag_map[xuid] = gamertag_info.gamertag
 
     return gamertag_map
+
+
+async def gamertag_from_xuid(bot: utils.RealmBotBase, xuid: str | int) -> str:
+    if gamertag := await bot.redis.get(str(xuid)):
+        return gamertag
+
+    maybe_gamertag: elytra.ProfileResponse | None = None
+
+    with contextlib.suppress(
+        aiohttp.ClientResponseError,
+        asyncio.TimeoutError,
+        ValidationError,
+        elytra.MicrosoftAPIException,
+    ):
+        maybe_gamertag = await bot.xbox.fetch_profile_by_xuid(xuid)
+
+    if not maybe_gamertag:
+        async with bot.openxbl_session.get(
+            f"https://xbl.io/api/v2/account/{xuid}"
+        ) as r:
+            try:
+                r.raise_for_status()
+                maybe_gamertag = await elytra.ProfileResponse.from_response(r)
+            except (
+                aiohttp.ContentTypeError,
+                aiohttp.ClientResponseError,
+                ValidationError,
+            ):
+                # can happen, if not rare
+                text = await r.text()
+                logger.info(
+                    f"Failed to get gamertag of user `{xuid}`.\nResponse code:"
+                    f" {r.status}\nText: {text}"
+                )
+
+    if not maybe_gamertag:
+        raise ipy.errors.BadArgument(f"`{xuid}` is not a valid XUID.")
+
+    gamertag = next(
+        s.value for s in maybe_gamertag.profile_users[0].settings if s.id == "Gamertag"
+    )
+
+    async with bot.redis.pipeline() as pipe:
+        pipe.setex(
+            name=str(xuid),
+            time=utils.EXPIRE_GAMERTAGS_AT,
+            value=gamertag,
+        )
+        pipe.setex(
+            name=f"rpl-{gamertag}",
+            time=utils.EXPIRE_GAMERTAGS_AT,
+            value=str(xuid),
+        )
+        await pipe.execute()
+
+    return gamertag
+
+
+async def xuid_from_gamertag(bot: utils.RealmBotBase, gamertag: str) -> str:
+    if xuid := await bot.redis.get(f"rpl-{gamertag}"):
+        return xuid
+
+    maybe_xuid: elytra.ProfileResponse | None = None
+
+    with contextlib.suppress(
+        aiohttp.ClientResponseError,
+        asyncio.TimeoutError,
+        ValidationError,
+        elytra.MicrosoftAPIException,
+    ):
+        maybe_xuid = await bot.xbox.fetch_profile_by_gamertag(gamertag)
+
+    if not maybe_xuid:
+        async with aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=2.5)
+        ) as session:
+            headers = {
+                "X-Authorization": os.environ["OPENXBL_KEY"],
+                "Accept": "application/json",
+                "Accept-Language": "en-US",
+            }
+            with contextlib.suppress(asyncio.TimeoutError):
+                async with session.get(
+                    f"https://xbl.io/api/v2/search/{gamertag}",
+                    headers=headers,
+                ) as r:
+                    with contextlib.suppress(ValidationError, aiohttp.ContentTypeError):
+                        maybe_xuid = await elytra.ProfileResponse.from_response(r)
+
+    if not maybe_xuid:
+        raise ipy.errors.BadArgument(f"`{gamertag}` is not a valid gamertag.")
+
+    xuid = maybe_xuid.profile_users[0].id
+
+    async with bot.redis.pipeline() as pipe:
+        pipe.setex(
+            name=str(xuid),
+            time=utils.EXPIRE_GAMERTAGS_AT,
+            value=gamertag,
+        )
+        pipe.setex(
+            name=f"rpl-{gamertag}",
+            time=utils.EXPIRE_GAMERTAGS_AT,
+            value=str(xuid),
+        )
+        await pipe.execute()
+
+    return xuid

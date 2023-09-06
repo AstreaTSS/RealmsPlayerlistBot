@@ -227,6 +227,9 @@ class GuildConfig(utils.Extension):
         config.live_playerlist = False
         config.fetch_devices = False
         config.live_online_channel = None
+        old_player_watchlist = config.player_watchlist
+        config.player_watchlist = None
+        config.player_watchlist_role = None
 
         await config.save()
 
@@ -235,6 +238,12 @@ class GuildConfig(utils.Extension):
             f"invalid-playerlist3-{config.guild_id}",
             f"invalid-playerlist7-{config.guild_id}",
         )
+
+        if old_player_watchlist:
+            for player_xuid in old_player_watchlist:
+                self.bot.player_watchlist_store[f"{realm_id}-{player_xuid}"].discard(
+                    config.guild_id
+                )
 
         if not await models.GuildConfig.filter(
             realm_id=realm_id, fetch_devices=True
@@ -402,6 +411,7 @@ class GuildConfig(utils.Extension):
         sub_cmd_name="playerlist-channel",
         sub_cmd_description="Sets (or unsets) where the autorun playerlist is sent to.",
     )
+    @ipy.check(pl_utils.has_linked_realm)
     async def set_playerlist_channel(
         self,
         ctx: utils.RealmContext,
@@ -468,6 +478,7 @@ class GuildConfig(utils.Extension):
             " Realm is sent."
         ),
     )
+    @ipy.check(pl_utils.has_linked_realm)
     async def toggle_realm_warning(
         self,
         ctx: utils.RealmContext,
@@ -554,10 +565,11 @@ class GuildConfig(utils.Extension):
             " if the Realm goes offline."
         ),
     )
+    @ipy.check(pl_utils.has_linked_realm)
     async def set_realm_offline_role(
         self,
         ctx: utils.RealmContext,
-        role: typing.Optional[ipy.Role] = tansy.Option("The role to use for the ping."),
+        role: typing.Optional[ipy.Role] = tansy.Option("The role to ping."),
         unset: bool = tansy.Option("Should the role be unset?", default=False),
     ) -> None:
         """
@@ -678,6 +690,179 @@ class GuildConfig(utils.Extension):
             url=os.environ["SETUP_LINK"],
         )
         await ctx.send(embeds=embed, components=button)
+
+    watchlist = tansy.SlashCommand(
+        name="watchlist",
+        description="A series of commands to manage the player watchlist.",
+        default_member_permissions=ipy.Permissions.MANAGE_GUILD,
+        dm_permission=False,
+    )
+    watchlist.add_check(pl_utils.has_linked_realm)
+
+    @watchlist.subcommand(
+        sub_cmd_name="list",
+        sub_cmd_description=(
+            "Sends a list of people current on this server's watchlist and the role"
+            " pinged when one joins."
+        ),
+    )
+    async def watchlist_list(self, ctx: utils.RealmContext) -> None:
+        config = await ctx.fetch_config()
+
+        if not config.player_watchlist:
+            raise utils.CustomCheckFailure(
+                "There is no one on your watchlist for this server. Use"
+                f" {self.watchlist_add.mention()} to add people to the"
+                " watchlist. A maximum of 3 people can be on the list."
+            )
+
+        gamertags = await pl_utils.get_xuid_to_gamertag_map(
+            self.bot, config.player_watchlist
+        )
+
+        watchlist = "\n".join(
+            f"`{gamertags.get(xuid, f'Player with XUID {xuid}')}`"
+            for xuid in config.player_watchlist
+        )
+
+        desc = ""
+        if config.player_watchlist_role:
+            desc = f"**Role**: <@&{config.player_watchlist_role}>\n"
+        desc += f"**Watchlist**:\n{watchlist}"
+
+        desc += (
+            f"\n\n*Use {self.watchlist_add.mention()} and"
+            f" {self.watchlist_remove.mention()} to add or remove people to/from the"
+            " watchlist. A maximum of 3 people can be on the list.*"
+        )
+        await ctx.send(embed=utils.make_embed(desc, title="Player Watchlist"))
+
+    @watchlist.subcommand(
+        sub_cmd_name="add",
+        sub_cmd_description=(
+            "Adds a player to the watchlist, sending a message when they"
+            " join. Maximum of 3 people."
+        ),
+    )
+    @ipy.check(pl_utils.has_playerlist_channel)
+    async def watchlist_add(
+        self,
+        ctx: utils.RealmContext,
+        gamertag: str = tansy.Option("The gamertag of the user to watch for."),
+    ) -> None:
+        xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
+        config = await ctx.fetch_config()
+
+        if config.player_watchlist is None:
+            config.player_watchlist = []
+
+        if len(config.player_watchlist) >= 3:
+            raise utils.CustomCheckFailure(
+                "You can only track up to three players at once."
+            )
+
+        if xuid in config.player_watchlist:
+            raise ipy.errors.BadArgument("This user is already in your watchlist.")
+
+        config.player_watchlist.append(xuid)
+        self.bot.player_watchlist_store[f"{config.realm_id}-{xuid}"].add(
+            config.guild_id
+        )
+        await config.save()
+
+        await ctx.send(
+            embeds=utils.make_embed(f"Added `{gamertag}` to the player watchlist.")
+        )
+
+    @watchlist.subcommand(
+        sub_cmd_name="player-watchlist-remove",
+        sub_cmd_description="Removes a player from the watchlist.",
+    )
+    async def watchlist_remove(
+        self,
+        ctx: utils.RealmContext,
+        gamertag: str = tansy.Option(
+            "The gamertag of the user to remove from the list."
+        ),
+    ) -> None:
+        xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
+
+        config = await ctx.fetch_config()
+
+        if not config.player_watchlist:
+            raise ipy.errors.BadArgument("This user is not in your watchlist.")
+
+        try:
+            config.player_watchlist.remove(xuid)
+            if not config.player_watchlist:
+                config.player_watchlist = None
+            await config.save()
+        except ValueError:
+            raise ipy.errors.BadArgument(
+                "This user is not in your watchlist."
+            ) from None
+
+        self.bot.player_watchlist_store[f"{config.realm_id}-{xuid}"].discard(
+            config.guild_id
+        )
+
+        await ctx.send(
+            embeds=utils.make_embed(f"Removed `{gamertag}` from the player watchlist.")
+        )
+
+    @watchlist.subcommand(
+        sub_cmd_name="role",
+        sub_cmd_description=(
+            "Sets or unsets the role to be pinged when a player on the watchlist joins"
+            " the linked Realm."
+        ),
+    )
+    @ipy.check(pl_utils.has_playerlist_channel)
+    async def watchlist_role(
+        self,
+        ctx: utils.RealmContext,
+        role: typing.Optional[ipy.Role] = tansy.Option("The role to ping."),
+        unset: bool = tansy.Option("Should the role be unset?", default=False),
+    ) -> None:
+        if not (unset ^ bool(role)):
+            raise ipy.errors.BadArgument(
+                "You must either set a role or explictly unset the role. One must be"
+                " given."
+            )
+
+        config = await ctx.fetch_config()
+
+        if role:
+            if isinstance(role, str):  # ???
+                role: ipy.Role = await self.bot.cache.fetch_role(ctx.guild_id, role)
+
+            if (
+                not role.mentionable
+                and ipy.Permissions.MENTION_EVERYONE not in ctx.app_permissions
+            ):
+                raise utils.CustomCheckFailure(
+                    "I cannot ping this role. Make sure the role is either mentionable"
+                    " or the bot can mention all roles."
+                )
+
+            config.player_watchlist_role = int(role.id)
+            await config.save()
+            await ctx.send(
+                embed=utils.make_embed(
+                    f"Set the player watchlist role to {role.mention}."
+                )
+            )
+
+        else:
+            config.player_watchlist_role = None
+            await config.save()
+            await ctx.send(
+                embed=utils.make_embed(
+                    "Unset the player watchlist role. This does not turn of the player"
+                    " watchlist - please remove all players from the watchlist to do"
+                    " that."
+                )
+            )
 
 
 def setup(bot: utils.RealmBotBase) -> None:

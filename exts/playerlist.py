@@ -99,6 +99,17 @@ class Playerlist(utils.Extension):
                     joined.add(player.uuid)
                     kwargs["joined_at"] = now
                     joined_player_objs.append(models.PlayerSession(**kwargs))
+
+                    if guild_ids := self.bot.player_watchlist_store[
+                        f"{realm.id}-{player.uuid}"
+                    ]:
+                        self.bot.dispatch(
+                            pl_events.PlayerWatchlistMatch(
+                                str(realm.id),
+                                player.uuid,
+                                guild_ids,
+                            )
+                        )
                 else:
                     player_objs.append(models.PlayerSession(**kwargs))
 

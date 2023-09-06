@@ -335,6 +335,7 @@ bot.color = ipy.Color(int(os.environ["BOT_COLOR"]))  # b05bff, aka 11557887
 bot.online_cache = defaultdict(set)
 bot.slash_perms_cache = defaultdict(dict)
 bot.live_playerlist_store = defaultdict(set)
+bot.player_watchlist_store = defaultdict(set)
 bot.uuid_cache = defaultdict(uuid.uuid4)
 bot.mini_commands_per_scope = {}
 bot.offline_realms = OrderedSet()  # type: ignore
@@ -383,6 +384,16 @@ async def start() -> None:
         async for realm_id in bot.redis.scan_iter("missing-realm-*"):
             bot.offline_realms.add(int(realm_id.removeprefix("missing-realm-")))
 
+    async for config in models.GuildConfig.filter(
+        realm_id__not_isnull=True,
+        playerlist_chan__not_isnull=True,
+        player_watchlist__not_isnull=True,
+    ):
+        for player_xuid in config.player_watchlist:
+            bot.player_watchlist_store[f"{config.realm_id}-{player_xuid}"].add(
+                config.guild_id
+            )
+
     # add info for who has live playerlist on, as we can't rely on anything other than
     # pure memory for the playerlist getting code
     async for config in models.GuildConfig.filter(
@@ -392,21 +403,11 @@ async def start() -> None:
             | Q(premium_code__expires_at__gt=ipy.Timestamp.utcnow())
         )
         & Q(realm_id__not_isnull=True)
-        & Q(playerlist_chan__not_isnull=True)
-        & Q(live_playerlist=True)
     ).prefetch_related("premium_code"):
-        bot.live_playerlist_store[config.realm_id].add(config.guild_id)  # type: ignore
-
-    async for config in models.GuildConfig.filter(
-        Q(premium_code__id__not_isnull=True)
-        & Q(
-            Q(premium_code__expires_at__isnull=True)
-            | Q(premium_code__expires_at__gt=ipy.Timestamp.utcnow())
-        )
-        & Q(realm_id__not_isnull=True)
-        & Q(fetch_devices=True)
-    ):
-        bot.fetch_devices_for.add(config.realm_id)
+        if config.playerlist_chan and config.live_playerlist:
+            bot.live_playerlist_store[config.realm_id].add(config.guild_id)  # type: ignore
+        if config.fetch_devices:
+            bot.fetch_devices_for.add(config.realm_id)
 
     bot.realm_name_cache = TTLCache(maxsize=5000, ttl=600)
     bot.fully_ready = asyncio.Event()

@@ -1,5 +1,3 @@
-import asyncio
-import contextlib
 import datetime
 import io
 import os
@@ -7,10 +5,7 @@ import typing
 from collections import defaultdict
 from enum import IntEnum
 
-import aiohttp
-import elytra
 import interactions as ipy
-from msgspec import ValidationError
 
 import common.graph_template as graph_template
 import common.models as models
@@ -263,60 +258,6 @@ def timespan_minutes_per_day_of_the_week(
         datetime.date(year=1970, month=1, day=(k - 3) + 7): v
         for k, v in minutes_per_day_of_the_week.items()
     }
-
-
-async def xuid_from_gamertag(bot: utils.RealmBotBase, gamertag: str) -> str:
-    maybe_xuid: typing.Union[str, elytra.ProfileResponse, None] = await bot.redis.get(
-        f"rpl-{gamertag}"
-    )
-
-    if maybe_xuid:
-        return maybe_xuid
-
-    async with aiohttp.ClientSession(
-        timeout=aiohttp.ClientTimeout(total=2.5)
-    ) as session:
-        headers = {
-            "X-Authorization": os.environ["OPENXBL_KEY"],
-            "Accept": "application/json",
-            "Accept-Language": "en-US",
-        }
-        with contextlib.suppress(asyncio.TimeoutError):
-            async with session.get(
-                f"https://xbl.io/api/v2/search/{gamertag}",
-                headers=headers,
-            ) as r:
-                with contextlib.suppress(ValidationError, aiohttp.ContentTypeError):
-                    maybe_xuid = await elytra.ProfileResponse.from_response(r)
-
-        if not maybe_xuid:
-            with contextlib.suppress(
-                aiohttp.ClientResponseError,
-                asyncio.TimeoutError,
-                ValidationError,
-                elytra.MicrosoftAPIException,
-            ):
-                maybe_xuid = await bot.xbox.fetch_profile_by_gamertag(gamertag)
-
-    if not maybe_xuid:
-        raise ipy.errors.BadArgument(f"`{gamertag}` is not a valid gamertag.")
-
-    xuid = maybe_xuid.profile_users[0].id
-
-    async with bot.redis.pipeline() as pipe:
-        pipe.setex(
-            name=str(xuid),
-            time=utils.EXPIRE_GAMERTAGS_AT,
-            value=gamertag,
-        )
-        pipe.setex(
-            name=f"rpl-{gamertag}",
-            time=utils.EXPIRE_GAMERTAGS_AT,
-            value=str(xuid),
-        )
-        await pipe.execute()
-
-    return xuid
 
 
 async def gather_datetimes(
