@@ -341,7 +341,7 @@ class PlayerlistEventHandling(ipy.Extension):
                 if config.player_watchlist_role:
                     content = f"<@&{config.player_watchlist_role}>, "
 
-                content += f"{gamertag} just joined the Realm!"
+                content += f"`{gamertag}` joined the Realm!"
 
                 await chan.send(
                     content,
