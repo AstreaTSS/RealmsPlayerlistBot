@@ -775,7 +775,7 @@ class GuildConfig(utils.Extension):
         )
 
     @watchlist.subcommand(
-        sub_cmd_name="player-watchlist-remove",
+        sub_cmd_name="remove",
         sub_cmd_description="Removes a player from the watchlist.",
     )
     async def watchlist_remove(
