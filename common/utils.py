@@ -211,6 +211,9 @@ async def config_info_generate(
     offline_realm_ping = (
         f"<@&{config.realm_offline_role}>" if config.realm_offline_role else "N/A"
     )
+    player_watchlist_ping = (
+        f"<@&{config.player_watchlist_role}>" if config.player_watchlist_role else "N/A"
+    )
 
     embed.add_field(
         "Basic Information",
@@ -218,7 +221,7 @@ async def config_info_generate(
         f" Playerlist Channel: {playerlist_channel}\nRealm Offline Role:"
         f" {offline_realm_ping}\nWarning Notifications:"
         f" {toggle_friendly_str(config.warning_notifications)}\nPlayer Watchlist Role:"
-        f" {na_friendly_str(config.player_watchlist_role)}\nPeople on Watchlist: See"
+        f" {player_watchlist_ping}\nPeople on Watchlist: See"
         f" {ctx.bot.mention_cmd('watchlist list')}",
         inline=True,
     )
