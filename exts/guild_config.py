@@ -712,21 +712,16 @@ class GuildConfig(utils.Extension):
     async def watchlist_list(self, ctx: utils.RealmContext) -> None:
         config = await ctx.fetch_config()
 
-        if not config.player_watchlist:
-            raise utils.CustomCheckFailure(
-                "There is no one on your watchlist for this server. Use"
-                f" {self.watchlist_add.mention()} to add people to the"
-                " watchlist. A maximum of 3 people can be on the list."
+        if config.player_watchlist:
+            gamertags = await pl_utils.get_xuid_to_gamertag_map(
+                self.bot, config.player_watchlist
             )
-
-        gamertags = await pl_utils.get_xuid_to_gamertag_map(
-            self.bot, config.player_watchlist
-        )
-
-        watchlist = "\n".join(
-            f"`{gamertags.get(xuid, f'Player with XUID {xuid}')}`"
-            for xuid in config.player_watchlist
-        )
+            watchlist = "\n".join(
+                f"`{gamertags.get(xuid, f'Player with XUID {xuid}')}`"
+                for xuid in config.player_watchlist
+            )
+        else:
+            watchlist = "N/A"
 
         desc = f"**Role:** N/A (use {self.watchlist_ping_role.mention()} to set)\n"
         if config.player_watchlist_role:
