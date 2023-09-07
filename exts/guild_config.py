@@ -717,7 +717,7 @@ class GuildConfig(utils.Extension):
                 self.bot, config.player_watchlist
             )
             watchlist = "\n".join(
-                f"`{gamertags.get(xuid, f'Player with XUID {xuid}')}`"
+                f"`{gamertags[xuid] or f'Player with XUID {xuid}'}`"
                 for xuid in config.player_watchlist
             )
         else:
