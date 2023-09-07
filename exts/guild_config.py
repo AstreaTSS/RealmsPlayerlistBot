@@ -693,7 +693,10 @@ class GuildConfig(utils.Extension):
 
     watchlist = tansy.SlashCommand(
         name="watchlist",
-        description="A series of commands to manage the player watchlist.",
+        description=(
+            "A series of commands to manage people to watch over and send messages if"
+            " they join."
+        ),
         default_member_permissions=ipy.Permissions.MANAGE_GUILD,
         dm_permission=False,
     )
@@ -702,8 +705,8 @@ class GuildConfig(utils.Extension):
     @watchlist.subcommand(
         sub_cmd_name="list",
         sub_cmd_description=(
-            "Sends a list of people current on this server's watchlist and the role"
-            " pinged when one joins."
+            "Sends a list of people on this server's watchlist and the role pinged when"
+            " one joins (if set)."
         ),
     )
     async def watchlist_list(self, ctx: utils.RealmContext) -> None:
@@ -725,7 +728,7 @@ class GuildConfig(utils.Extension):
             for xuid in config.player_watchlist
         )
 
-        desc = ""
+        desc = f"**Role:** N/A (use {self.watchlist_ping_role.mention()} to set)\n"
         if config.player_watchlist_role:
             desc = f"**Role**: <@&{config.player_watchlist_role}>\n"
         desc += f"**Watchlist**:\n{watchlist}"
@@ -811,14 +814,14 @@ class GuildConfig(utils.Extension):
         )
 
     @watchlist.subcommand(
-        sub_cmd_name="role",
+        sub_cmd_name="ping-role",
         sub_cmd_description=(
             "Sets or unsets the role to be pinged when a player on the watchlist joins"
             " the linked Realm."
         ),
     )
     @ipy.check(pl_utils.has_playerlist_channel)
-    async def watchlist_role(
+    async def watchlist_ping_role(
         self,
         ctx: utils.RealmContext,
         role: typing.Optional[ipy.Role] = tansy.Option("The role to ping."),
