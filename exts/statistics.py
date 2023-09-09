@@ -7,7 +7,6 @@ from collections import Counter
 import humanize
 import interactions as ipy
 import tansy
-from tortoise.expressions import Q
 
 import common.classes as cclasses
 import common.fuzzy as fuzzy
@@ -615,11 +614,14 @@ class Statistics(utils.Extension):
         sessions_str: list[str] = []
         total_playtime: float = 0.0
 
-        async for session in models.PlayerSession.filter(
-            Q(xuid=xuid)
-            & Q(realm_id=config.realm_id)
-            & Q(Q(online=True) | Q(last_seen__gte=time_ago))
-        ).order_by("-last_seen"):
+        for session in await models.PlayerSession.prisma().find_many(
+            where={
+                "xuid": xuid,
+                "realm_id": str(config.realm_id),
+                "OR": [{"online": True}, {"last_seen": {"gte": time_ago}}],
+            },
+            order={"last_seen": "desc"},
+        ):
             session_str: list[str] = []
 
             if session.joined_at:

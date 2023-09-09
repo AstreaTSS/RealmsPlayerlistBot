@@ -50,7 +50,7 @@ splash_texts = (
     "Powered by elytras!",  # elytra-ms
     "Excel is a mess!",  # /premium export
     "Thanks, wiki.vg!",
-    "Powered by tortoises!",  # tortoise-orm
+    "Not powered by tortoises!",  # tortoise-orm
     "soon™",
     "PURPOSELY_INVALID_KEY_AAAAAAAAAAAAAAAA",  # actually used in the bot
     "Watching players on Realms!",
@@ -82,6 +82,7 @@ splash_texts = (
     "Medium-sized!",
     "Check out Playerlist Premium!",
     "Uses slash commands!",
+    "Powered by prisms!",  # prisma
 )
 
 

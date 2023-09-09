@@ -4,7 +4,6 @@ import importlib
 
 import interactions as ipy
 from dateutil.relativedelta import relativedelta
-from tortoise.connection import connections
 
 import common.classes as cclasses
 import common.models as models
@@ -79,15 +78,9 @@ class AutoRunPlayerlist(utils.Extension):
     async def player_session_delete(self) -> None:
         now = datetime.datetime.now(tz=datetime.UTC)
         time_back = now - datetime.timedelta(days=31)
-        await models.PlayerSession.filter(
-            online=False,
-            last_seen__lt=time_back,
-        ).delete()
-
-        # there's likely a lot of index reshuffling, dont trust db to do this automatically
-        # (though it should anyhow)
-        conn = connections.get("default")
-        await conn.execute_query("VACUUM")
+        await models.PlayerSession.prisma().delete_many(
+            where={"online": False, "last_seen": {"lt": time_back}}
+        )
 
     async def playerlist_loop(
         self,
@@ -100,16 +93,18 @@ class AutoRunPlayerlist(utils.Extension):
         list_cmd = next(
             c for c in self.bot.application_commands if str(c.name) == "playerlist"
         )
-        to_run = []
 
-        async for guild_config in models.GuildConfig.filter(
-            guild_id__in=list(self.bot.user._guild_ids),
-            realm_id__not_isnull=True,
-            playerlist_chan__not_isnull=True,
-            live_playerlist=False,
-        ).prefetch_related("premium_code"):
-            to_run.append(self.auto_run_playerlist(list_cmd, guild_config, upsell))
-
+        to_run = [
+            self.auto_run_playerlist(list_cmd, config, upsell)
+            for config in await models.GuildConfig.prisma().find_many(
+                where={
+                    "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
+                    "live_playerlist": False,
+                    "NOT": [{"realm_id": None}, {"playerlist_chan": None}],
+                },
+                include={"premium_code": True},
+            )
+        ]
         # this gather is done so that they can all run in parallel
         # should make things slightly faster for everyone
         output = await asyncio.gather(*to_run, return_exceptions=True)

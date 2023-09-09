@@ -275,21 +275,14 @@ class Playerlist(utils.Extension):
 
         hour_text = "hour" if hours_ago == 1 else "hours"
 
-        # select all values from the player session table where realm id is
-        # the realm id in the guild config, and (online is true or
-        # the last seen date for the entry is greater than or equal to how
-        # far back we want to go). order it by the xuid first (we'll
-        # get to distinct, but it won't work if it isn't like this), then by the last
-        # seen date from newest to older, and finally only return 1 distinct entry
-        # (the first entry in the sort, which is the latest last seen date)
-        # per xuid value
-        # fmt: off
-        player_sessions: list[models.PlayerSession] = await models.PlayerSession.raw(
-            f"SELECT DISTINCT ON (xuid) * FROM {models.PlayerSession.Meta.table} "  # noqa
-            f"WHERE realm_id='{config.realm_id}' AND (online=true "
-            f"OR last_seen>='{time_ago.isoformat()}') ORDER BY xuid, last_seen DESC"
-        )  # type: ignore
-        # fmt: on
+        player_sessions = await models.PlayerSession.prisma().find_many(
+            distinct=["xuid"],
+            order=[{"xuid": "asc"}, {"last_seen": "desc"}],
+            where={
+                "realm_id": str(config.realm_id),
+                "OR": [{"online": True}, {"last_seen": {"gte": time_ago}}],
+            },
+        )
 
         if not player_sessions:
             if autorunner:
@@ -414,8 +407,8 @@ class Playerlist(utils.Extension):
         """
         config = await ctx.fetch_config()
 
-        player_sessions = await models.PlayerSession.filter(
-            realm_id=config.realm_id, online=True
+        player_sessions = await models.PlayerSession.prisma().find_many(
+            where={"realm_id": str(config.realm_id), "online": True}
         )
 
         # okay, this is going to get complicated

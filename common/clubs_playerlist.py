@@ -6,6 +6,7 @@ import aiohttp
 import elytra
 import orjson
 from msgspec import ValidationError
+from prisma.types import PlayerSessionCreateWithoutRelationsInput
 
 import common.models as models
 import common.utils as utils
@@ -59,13 +60,13 @@ async def get_players_from_club_data(
     realm_id: str,
     club_id: str,
     time_ago: datetime.datetime,
-) -> list[models.PlayerSession] | None:
+) -> list[PlayerSessionCreateWithoutRelationsInput] | None:
     club_presence = await realm_club_get(bot, club_id)
     if not club_presence:
         return None
 
     now = datetime.datetime.now(tz=datetime.UTC)
-    player_list: list[models.PlayerSession] = []
+    player_list: list[PlayerSessionCreateWithoutRelationsInput] = []
 
     for member in club_presence:
         last_seen_state = member.last_seen_state
@@ -92,13 +93,13 @@ async def get_players_from_club_data(
 
         online = last_seen_state == elytra.ClubUserPresence.IN_GAME
         player_list.append(
-            models.PlayerSession(
-                custom_id=bot.uuid_cache[f"{realm_id}-{member.xuid}"],
-                realm_id=realm_id,
-                xuid=member.xuid,
-                online=online,
-                last_seen=now if online else last_seen,
-            )
+            {
+                "custom_id": bot.uuid_cache[f"{realm_id}-{member.xuid}"],
+                "realm_id": realm_id,
+                "xuid": member.xuid,
+                "online": online,
+                "last_seen": now if online else last_seen,
+            }
         )
         bot.online_cache[int(realm_id)].add(member.xuid)
 
@@ -116,8 +117,6 @@ async def fill_in_data_from_clubs(
     if not player_list:
         return
 
-    await models.PlayerSession.bulk_create(
-        player_list,
-        on_conflict=("custom_id",),
-        update_fields=("online", "last_seen"),
+    await models.PlayerSession.prisma().create_many(
+        data=player_list, skip_duplicates=True
     )

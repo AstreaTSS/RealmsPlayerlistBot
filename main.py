@@ -39,15 +39,13 @@ from interactions.api.events.processors import Processor
 from interactions.ext import prefixed_commands as prefixed
 from interactions.ext.sentry import HookedTask
 from ordered_set import OrderedSet
-from tortoise import Tortoise
-from tortoise.expressions import Q
+from prisma import Prisma
 
 import common.classes as cclasses
 import common.help_tools as help_tools
 import common.models as models
 import common.splash_texts as splash_texts
 import common.utils as utils
-import db_settings
 
 with contextlib.suppress(ImportError):
     import rook  # type: ignore
@@ -282,7 +280,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         await bot.session.close()
         await bot.xbox.close()
         await bot.realms.close()
-        await Tortoise.close_connections()
+        await bot.db.disconnect()
         await bot.splash_texts.stop()
         await bot.redis.close(close_connection_pool=True)
 
@@ -336,7 +334,7 @@ bot.online_cache = defaultdict(set)
 bot.slash_perms_cache = defaultdict(dict)
 bot.live_playerlist_store = defaultdict(set)
 bot.player_watchlist_store = defaultdict(set)
-bot.uuid_cache = defaultdict(uuid.uuid4)
+bot.uuid_cache = defaultdict(lambda: str(uuid.uuid4()))
 bot.mini_commands_per_scope = {}
 bot.offline_realms = OrderedSet()  # type: ignore
 bot.dropped_offline_realms = set()
@@ -349,7 +347,10 @@ bot.http.proxy = None
 
 
 async def start() -> None:
-    await Tortoise.init(db_settings.TORTOISE_ORM)
+    db = Prisma(use_dotenv=False, auto_register=True)
+    await db.connect()
+    bot.db = db
+
     bot.redis = aioredis.Redis.from_url(
         os.environ["REDIS_URL"],
         decode_responses=True,
@@ -364,19 +365,22 @@ async def start() -> None:
 
     # mark players as offline if they were online more than 5 minutes ago
     five_minutes_ago = ipy.Timestamp.utcnow() - datetime.timedelta(minutes=5)
-    num_updated = await models.PlayerSession.filter(
-        online=True, last_seen__lt=five_minutes_ago
-    ).update(online=False)
-
+    num_updated = await db.playersession.update_many(
+        data={"online": False},
+        where={
+            "online": True,
+            "last_seen": {"lt": five_minutes_ago},
+        },
+    )
     if num_updated > 0:
-        async for config in models.GuildConfig.filter(
-            live_online_channel__not_isnull=True
+        for config in await db.guildconfig.find_many(
+            where={"NOT": [{"live_online_channel": None}]}
         ):
             await bot.redis.hset(config.live_online_channel, "xuids", "")
             await bot.redis.hset(config.live_online_channel, "gamertags", "")
 
     # add all online players to the online cache
-    async for player in models.PlayerSession.filter(online=True):
+    for player in await models.PlayerSession.prisma().find_many(where={"online": True}):
         bot.uuid_cache[player.realm_xuid_id] = player.custom_id
         bot.online_cache[int(player.realm_id)].add(player.xuid)
 
@@ -384,10 +388,16 @@ async def start() -> None:
         async for realm_id in bot.redis.scan_iter("missing-realm-*"):
             bot.offline_realms.add(int(realm_id.removeprefix("missing-realm-")))
 
-    async for config in models.GuildConfig.filter(
-        realm_id__not_isnull=True,
-        playerlist_chan__not_isnull=True,
-        player_watchlist__not_isnull=True,
+    for config in await models.GuildConfig.prisma().find_many(
+        where={
+            "NOT": [
+                {
+                    "realm_id": None,
+                    "playerlist_chan": None,
+                    "player_watchlist": {"is_empty": True},
+                },
+            ]
+        }
     ):
         for player_xuid in config.player_watchlist:
             bot.player_watchlist_store[f"{config.realm_id}-{player_xuid}"].add(
@@ -396,14 +406,22 @@ async def start() -> None:
 
     # add info for who has live playerlist on, as we can't rely on anything other than
     # pure memory for the playerlist getting code
-    async for config in models.GuildConfig.filter(
-        Q(premium_code__id__not_isnull=True)
-        & Q(
-            Q(premium_code__expires_at__isnull=True)
-            | Q(premium_code__expires_at__gt=ipy.Timestamp.utcnow())
-        )
-        & Q(realm_id__not_isnull=True)
-    ).prefetch_related("premium_code"):
+    for config in await models.GuildConfig.prisma().find_many(
+        where={
+            "NOT": [
+                {"premium_code_id": None, "realm_id": None},
+            ],
+            "OR": [  # i honestly still cant believe this is all typehinted
+                {"premium_code": {"is_not": {"expires_at": None}}},
+                {
+                    "premium_code": {
+                        "is": {"expires_at": {"gt": ipy.Timestamp.utcnow()}}
+                    }
+                },
+            ],
+        },
+        include={"premium_code": True},
+    ):
         if config.playerlist_chan and config.live_playerlist:
             bot.live_playerlist_store[config.realm_id].add(config.guild_id)  # type: ignore
         if config.fetch_devices:

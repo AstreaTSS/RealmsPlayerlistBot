@@ -4,7 +4,6 @@ import datetime
 import os
 import traceback
 import typing
-import uuid
 from collections import defaultdict
 from pathlib import Path
 
@@ -316,9 +315,9 @@ class RealmContextMixin:
         if self.guild_config:
             return self.guild_config
 
-        config = await GuildConfig.get_or_none(guild_id=self.guild_id).prefetch_related(
-            "premium_code"
-        ) or await GuildConfig.create(guild_id=self.guild_id)
+        config = await GuildConfig.get(
+            self.guild_id
+        ) or await GuildConfig.prisma().create(data={"guild_id": self.guild_id})
 
         self.guild_config = config
         return config
@@ -357,6 +356,7 @@ if typing.TYPE_CHECKING:
     from aiohttp_retry import RetryClient
     from cachetools import TTLCache
     from ordered_set import OrderedSet
+    from prisma import Prisma
 
     from .help_tools import MiniCommand, PermissionsResolver
     from .splash_texts import SplashTexts
@@ -371,6 +371,7 @@ if typing.TYPE_CHECKING:
         fully_ready: asyncio.Event
         pl_sem: asyncio.Semaphore
 
+        db: Prisma
         session: aiohttp.ClientSession
         openxbl_session: RetryClient
         xbox: elytra.XboxAPI
@@ -386,7 +387,7 @@ if typing.TYPE_CHECKING:
         mini_commands_per_scope: dict[int, dict[str, MiniCommand]]
         live_playerlist_store: defaultdict[str, set[int]]
         player_watchlist_store: defaultdict[str, set[int]]
-        uuid_cache: defaultdict[str, uuid.UUID]
+        uuid_cache: defaultdict[str, str]
         offline_realms: OrderedSet[int]
         dropped_offline_realms: set[int]
         fetch_devices_for: set[str]

@@ -29,6 +29,8 @@ def load() -> None:
         for key, value in toml_dict.items():
             os.environ[key] = str(value)
 
+    os.environ["DATABASE_URL"] = os.environ["DB_URL"]
+
     file_location = Path(__file__).parent.absolute().as_posix()
     os.environ["DIRECTORY_OF_BOT"] = file_location
     os.environ["LOG_FILE_PATH"] = f"{file_location}/discord.log"

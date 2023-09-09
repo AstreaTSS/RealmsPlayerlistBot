@@ -267,18 +267,17 @@ async def gather_datetimes(
     gamertag: typing.Optional[str] = None,
     **filter_kwargs: typing.Any,
 ) -> list[GatherDatetimesReturn]:
-    datetimes_to_use: list[GatherDatetimesReturn] = []
-
-    async for entry in models.PlayerSession.filter(
-        realm_id=config.realm_id, joined_at__gte=min_datetime, **filter_kwargs
-    ):
-        if not entry.joined_at or not entry.last_seen:
-            continue
-
-        datetimes_to_use.append(
-            GatherDatetimesReturn(entry.xuid, entry.joined_at, entry.last_seen)
+    datetimes_to_use: list[GatherDatetimesReturn] = [
+        GatherDatetimesReturn(entry.xuid, entry.joined_at, entry.last_seen)
+        for entry in await models.PlayerSession.prisma().find_many(
+            where={
+                "realm_id": str(config.realm_id),
+                "joined_at": {"gte": min_datetime},
+            }
+            | filter_kwargs  # type: ignore
         )
-
+        if entry.joined_at and entry.last_seen
+    ]
     if not datetimes_to_use:
         if gamertag:
             raise utils.CustomCheckFailure(
@@ -366,7 +365,7 @@ async def summary_parse(
 class ProcessUnsummaryReturn(typing.NamedTuple):
     func_to_use: typing.Callable[..., VALID_TIME_DICTS]
     bottom_label: str
-    localizations: tuple[str, ...]
+    localizations: tuple[str, str]
     min_datetime: datetime.datetime
     formatted_title: str
     template_kwargs: dict[str, typing.Any]
@@ -375,7 +374,7 @@ class ProcessUnsummaryReturn(typing.NamedTuple):
 class ProcessSummaryReturn(typing.NamedTuple):
     func_to_use: typing.Callable[..., VALID_TIME_DICTS]
     bottom_label: str
-    localizations: tuple[str, ...]
+    localizations: tuple[str, str]
     formatted_title: str
     min_datetime: datetime.datetime
 
