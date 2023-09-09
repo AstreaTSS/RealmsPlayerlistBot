@@ -16,7 +16,6 @@ from prisma.models import (
 from prisma.models import (
     PremiumCode as PrismaPremiumCode,
 )
-from pydantic import Field
 
 logger = logging.getLogger("realms_bot")
 
@@ -75,9 +74,9 @@ class PlayerSession(PrismaPlayerSession):
         device: typing.Optional[str] = None
         show_left: bool = True
     else:
-        gamertag: typing.Optional[IgnoreModel] = Field(default=None, init_var=False)
-        device: typing.Optional[IgnoreModel] = Field(default=None, init_var=False)
-        show_left: IgnoreModel | bool = Field(default=True, init_var=False)
+        gamertag: typing.Optional[IgnoreModel] = None
+        device: typing.Optional[IgnoreModel] = None
+        show_left: IgnoreModel | bool = True
 
     @property
     def device_emoji(self) -> str | None:
