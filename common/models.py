@@ -3,42 +3,57 @@ import os
 import typing
 from datetime import UTC, datetime, timedelta
 from functools import cached_property
-from uuid import UUID
 
-from tortoise import fields
-from tortoise.contrib.postgres.fields import ArrayField
-from tortoise.models import Model
+# i cannot tell you just how ridiculous this seems
+# prisma generates models on the fly??? just for typehinting???
+# i love it
+from prisma.models import (
+    GuildConfig as PrismaGuildConfig,
+)
+from prisma.models import (
+    PlayerSession as PrismaPlayerSession,
+)
+from prisma.models import (
+    PremiumCode as PrismaPremiumCode,
+)
+from pydantic import Field
 
 logger = logging.getLogger("realms_bot")
 
 
-class GuildConfig(Model):
-    class Meta:
-        table = "realmguildconfig"
+class IgnoreModel:
+    __slots__ = ()
+    # problem: prisma reads every field in the model and adds them to a set of things to query
+    # this includes our virtual fields, which are not in the database
+    # solution: prisma ignores fields that are typehinted as their own type of model,
+    # and it detects it through the existence of this property, so here we are
+    __prisma_model__ = "IgnoreModel"
 
-    guild_id: int = fields.BigIntField(pk=True)
-    club_id: typing.Optional[str] = fields.CharField(50, null=True)
-    playerlist_chan: typing.Optional[int] = fields.BigIntField(null=True)
-    realm_id: typing.Optional[str] = fields.CharField(50, null=True)
-    live_playerlist: bool = fields.BooleanField(default=False)  # type: ignore
-    realm_offline_role: typing.Optional[int] = fields.BigIntField(null=True)
-    warning_notifications: bool = fields.BooleanField(default=True)  # type: ignore
-    fetch_devices: bool = fields.BooleanField(default=False)  # type: ignore
-    live_online_channel: typing.Optional[str] = fields.CharField(75, null=True)  # type: ignore
-    player_watchlist: list[str] | None = ArrayField("TEXT", null=True)  # type: ignore
-    player_watchlist_role: typing.Optional[int] = fields.BigIntField(null=True)
-    premium_code: fields.ForeignKeyNullableRelation[
-        "PremiumCode"
-    ] = fields.ForeignKeyField(
-        "models.PremiumCode",
-        related_name="guilds",
-        on_delete=fields.SET_NULL,
-        null=True,
-    )  # type: ignore
+
+class GuildConfig(PrismaGuildConfig):
+    premium_code: typing.Optional["PremiumCode"] = None
+
+    @classmethod
+    async def get(cls, guild_id: int) -> "GuildConfig":
+        return await cls.prisma().find_unique_or_raise(
+            where={"guild_id": guild_id}, include={"premium_code": True}
+        )
+
+    @classmethod
+    async def get_or_none(cls, guild_id: int) -> typing.Optional["GuildConfig"]:
+        return await cls.prisma().find_unique(
+            where={"guild_id": guild_id}, include={"premium_code": True}
+        )
 
     @cached_property
     def valid_premium(self) -> bool:
         return bool(self.premium_code and self.premium_code.valid_code)
+
+    async def save(self) -> None:
+        await self.prisma().update(
+            where={"guild_id": self.guild_id},
+            data=self.model_dump(exclude={"premium_code_id", "premium_code"}),  # type: ignore
+        )
 
 
 EMOJI_DEVICE_NAMES = {
@@ -54,23 +69,15 @@ EMOJI_DEVICE_NAMES = {
 }
 
 
-class PlayerSession(Model):
-    class Meta:
-        # pro tip: this table REALLY needs a good index for bigger instances -
-        # something i cant do automatically here through tortoise
-        # recommend using an index for (xuid, realm_id, online, last_seen DESC)
-        table = "realmplayersession"
-
-    custom_id: UUID = fields.UUIDField(pk=True)
-    realm_id: str = fields.CharField(50)
-    xuid: str = fields.CharField(50)
-    online: bool = fields.BooleanField(default=False)  # type: ignore
-    last_seen: datetime = fields.DatetimeField()
-    joined_at: typing.Optional[datetime] = fields.DatetimeField(null=True)
-
-    gamertag: typing.Optional[str] = None
-    device: typing.Optional[str] = None
-    show_left: bool = True
+class PlayerSession(PrismaPlayerSession):
+    if typing.TYPE_CHECKING:
+        gamertag: typing.Optional[str] = None
+        device: typing.Optional[str] = None
+        show_left: bool = True
+    else:
+        gamertag: typing.Optional[IgnoreModel] = Field(default=None, init_var=False)
+        device: typing.Optional[IgnoreModel] = Field(default=None, init_var=False)
+        show_left: IgnoreModel | bool = Field(default=True, init_var=False)
 
     @property
     def device_emoji(self) -> str | None:
@@ -135,21 +142,11 @@ class PlayerSession(Model):
         )
 
 
-class PremiumCode(Model):
-    class Meta:
-        table = "realmpremiumcode"
-
-    id: int = fields.IntField(pk=True)
-    code: str = fields.CharField(100)
-    user_id: int | None = fields.BigIntField(null=True)
-    uses: int = fields.IntField(default=0)
-    max_uses: int = fields.IntField(default=2)
-    customer_id: typing.Optional[str] = fields.CharField(50, null=True)
-    expires_at: typing.Optional[datetime] = fields.DatetimeField(null=True)
-
-    guilds: fields.ReverseRelation["GuildConfig"]
-
-    _valid_code: bool | None = None
+class PremiumCode(PrismaPremiumCode):
+    if typing.TYPE_CHECKING:
+        _valid_code: bool | None = None
+    else:
+        _valid_code: IgnoreModel | None = None
 
     @property
     def valid_code(self) -> bool:
@@ -159,3 +156,6 @@ class PremiumCode(Model):
             UTC
         ) + timedelta(days=1)
         return self._valid_code
+
+
+GuildConfig.model_rebuild(force=True)

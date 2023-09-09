@@ -79,8 +79,12 @@ class PremiumHandling(ipy.Extension):
         code = premium_code.full_code_generate(max_uses, user_id)
         encrypted_code = await self.encrypt_input(code)
 
-        await models.PremiumCode.create(
-            code=encrypted_code, user_id=actual_user_id, max_uses=max_uses
+        await models.PremiumCode.prisma().create(
+            data={
+                "code": encrypted_code,
+                "user_id": actual_user_id,
+                "max_uses": max_uses,
+            }
         )
         await ctx.send(f"Code created!\nCode: `{code}`")
 
@@ -116,7 +120,7 @@ class PremiumHandling(ipy.Extension):
                     " that you typed it in correctly?"
                 )
 
-        code_obj = await models.PremiumCode.get_or_none(code=encrypted_code)
+        code_obj = await models.PremiumCode.prisma().find_first(where={"code": code})
 
         if not code_obj:
             raise ipy.errors.BadArgument(
@@ -144,10 +148,16 @@ class PremiumHandling(ipy.Extension):
         if config.premium_code and config.premium_code.code == code:
             raise ipy.errors.BadArgument("This code has already been redeemed here.")
 
-        config.premium_code = code_obj
-        code_obj.uses += 1
-        await config.save()
-        await code_obj.save()
+        await models.GuildConfig.prisma().update(
+            data={"premium_code": {"connect": {"id": code_obj.id}}},
+            where={"guild_id": ctx.guild_id},
+        )
+
+        code_obj = await models.PremiumCode.prisma().update(
+            data={"uses": {"increment": 1}}, where={"id": code_obj.id}
+        )
+        if typing.TYPE_CHECKING:
+            assert code_obj is not None
 
         remaining_uses = code_obj.max_uses - code_obj.uses
         uses_str = "uses" if remaining_uses != 1 else "use"
@@ -235,8 +245,8 @@ class PremiumHandling(ipy.Extension):
                 " regardless.*"
             )
 
-        player_sessions = await models.PlayerSession.filter(
-            realm_id=config.realm_id, online=True
+        player_sessions = await models.PlayerSession.prisma().find_many(
+            where={"realm_id": config.realm_id, "online": True}
         )
         playerlist = await pl_utils.fill_in_gamertags_for_sessions(
             self.bot,
@@ -363,9 +373,9 @@ class PremiumHandling(ipy.Extension):
                 embeds=utils.make_embed("Turned off fetching and displaying devices.")
             )
 
-            if not await models.GuildConfig.filter(
-                realm_id=config.realm_id, fetch_devices=True
-            ).exists():
+            if not await models.GuildConfig.prisma().count(
+                where={"realm_id": config.realm_id, "fetch_devices": True}
+            ):
                 self.bot.fetch_devices_for.discard(config.realm_id)
 
     @premium.subcommand(
@@ -387,9 +397,10 @@ class PremiumHandling(ipy.Extension):
 
         csv_entries: list[str] = ["xuid,gamertag,online,last_seen,joined_at"]
 
-        sessions = await models.PlayerSession.filter(
-            realm_id=config.realm_id, joined_at__isnull=False
-        ).order_by("-last_seen")
+        sessions = await models.PlayerSession.prisma().find_many(
+            where={"realm_id": config.realm_id, "NOT": [{"joined_at": None}]},
+            order={"last_seen": "desc"},
+        )
         gamertags = await pl_utils.get_xuid_to_gamertag_map(
             self.bot, list(dict.fromkeys(session.xuid for session in sessions))
         )

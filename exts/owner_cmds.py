@@ -43,8 +43,8 @@ class OwnerCMDs(utils.Extension):
         ctx: utils.RealmContext,
         guild_id: str = tansy.Option("The guild to view."),
     ) -> None:
-        config = await GuildConfig.get(guild_id=int(guild_id)).prefetch_related(
-            "premium_code"
+        config = await GuildConfig.prisma().find_unique_or_raise(
+            {"guild_id": int(guild_id)}, include={"premium_code": True}
         )
 
         guild_data = await self.bot.http.get_guild(guild_id)
@@ -97,7 +97,7 @@ class OwnerCMDs(utils.Extension):
         if playerlist_chan:
             kwargs["playerlist_chan"] = int(playerlist_chan)
 
-        await GuildConfig.create(**kwargs)
+        await GuildConfig.prisma().create(data=kwargs)
         await ctx.send("Done!")
 
     @tansy.slash_command(
@@ -122,7 +122,9 @@ class OwnerCMDs(utils.Extension):
             "The playerlist channel ID for this guild.", default=None
         ),
     ) -> None:
-        guild_config = await GuildConfig.get(guild_id=int(guild_id))
+        guild_config = await GuildConfig.prisma().find_unique_or_raise(
+            {"guild_id": int(guild_id)}
+        )
 
         if realm_id:
             guild_config.realm_id = realm_id if realm_id != "None" else None
@@ -152,7 +154,7 @@ class OwnerCMDs(utils.Extension):
         ctx: utils.RealmContext,
         guild_id: str = tansy.Option("The guild ID for the guild to remove."),
     ) -> None:
-        await GuildConfig.filter(guild_id=int(guild_id)).delete()
+        await GuildConfig.prisma().delete(where={"guild_id": int(guild_id)})
         await ctx.send("Deleted!")
 
     @prefixed.prefixed_command(aliases=["jsk"])

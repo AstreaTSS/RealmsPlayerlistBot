@@ -166,9 +166,8 @@ class GuildConfig(utils.Extension):
 
         embeds: list[ipy.Embed] = []
 
-        if (
-            realm.club_id
-            and not await models.PlayerSession.filter(realm_id=realm.id).exists()
+        if realm.club_id and not await models.PlayerSession.prisma().count(
+            where={"realm_id": str(realm.id)}
         ):
             config.club_id = str(realm.club_id)
             await clubs_playerlist.fill_in_data_from_clubs(
@@ -228,10 +227,13 @@ class GuildConfig(utils.Extension):
         config.fetch_devices = False
         config.live_online_channel = None
         old_player_watchlist = config.player_watchlist
-        config.player_watchlist = None
+        config.player_watchlist = []
         config.player_watchlist_role = None
 
         await config.save()
+
+        if not realm_id:
+            return
 
         self.bot.live_playerlist_store[realm_id].discard(config.guild_id)
         await self.bot.redis.delete(
@@ -245,12 +247,12 @@ class GuildConfig(utils.Extension):
                     config.guild_id
                 )
 
-        if not await models.GuildConfig.filter(
-            realm_id=realm_id, fetch_devices=True
-        ).exists():
+        if not await models.GuildConfig.prisma().count(
+            where={"realm_id": realm_id, "fetch_devices": True}
+        ):
             self.bot.fetch_devices_for.discard(realm_id)
 
-        if not await models.GuildConfig.filter(realm_id=realm_id).exists():
+        if not await models.GuildConfig.prisma().count(where={"realm_id": realm_id}):
             try:
                 await self.bot.realms.leave_realm(realm_id)
             except elytra.MicrosoftAPIException as e:
@@ -751,9 +753,6 @@ class GuildConfig(utils.Extension):
         xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
         config = await ctx.fetch_config()
 
-        if config.player_watchlist is None:
-            config.player_watchlist = []
-
         if len(config.player_watchlist) >= 3:
             raise utils.CustomCheckFailure(
                 "You can only track up to three players at once."
@@ -792,8 +791,6 @@ class GuildConfig(utils.Extension):
 
         try:
             config.player_watchlist.remove(xuid)
-            if not config.player_watchlist:
-                config.player_watchlist = None
             await config.save()
         except ValueError:
             raise ipy.errors.BadArgument(

@@ -24,12 +24,16 @@ class PlayerlistEventHandling(ipy.Extension):
     async def on_playerlist_finish(
         self, event: pl_events.PlayerlistParseFinish
     ) -> None:
-        for container in event.containers:
-            await models.PlayerSession.bulk_create(
-                container.player_sessions,
-                on_conflict=("custom_id",),
-                update_fields=container.fields,
-            )
+        async with self.bot.db.batch_() as batch:
+            for container in event.containers:
+                for session in container.player_sessions:
+                    batch.playersession.upsert(
+                        where={"custom_id": session.custom_id},
+                        data={
+                            "create": session.model_dump(exclude_defaults=True),
+                            "update": session.model_dump(include=set(container.fields)),
+                        },  # type: ignore
+                    )
 
     @ipy.listen("live_playerlist_send", is_default_listener=True)
     async def on_live_playerlist_send(
@@ -42,6 +46,8 @@ class PlayerlistEventHandling(ipy.Extension):
                 xuid=p,
                 online=True,
                 joined_at=event.timestamp,
+                last_seen=event.timestamp,
+                show_left=False,
             )
             for p in event.joined
         ]
@@ -99,9 +105,7 @@ class PlayerlistEventHandling(ipy.Extension):
             )
 
         for guild_id in self.bot.live_playerlist_store[event.realm_id].copy():
-            config = await models.GuildConfig.get_or_none(
-                guild_id=guild_id
-            ).prefetch_related("premium_code")
+            config = await models.GuildConfig.get_or_none(guild_id)
 
             if not config:
                 self.bot.live_playerlist_store[event.realm_id].discard(guild_id)
@@ -210,7 +214,7 @@ class PlayerlistEventHandling(ipy.Extension):
             )
 
         # these, meanwhile, aren't
-        async for config in event.configs:
+        for config in await event.configs():
             if not config.playerlist_chan or not config.realm_offline_role:
                 continue
 
@@ -248,7 +252,7 @@ class PlayerlistEventHandling(ipy.Extension):
     ) -> None:
         no_playerlist_chan: list[bool] = []
 
-        async for config in event.configs:
+        for config in await event.configs():
             if not config.playerlist_chan:
                 if config.realm_id and config.live_playerlist:
                     self.bot.live_playerlist_store[config.realm_id].discard(
@@ -318,12 +322,12 @@ class PlayerlistEventHandling(ipy.Extension):
 
     @ipy.listen(pl_events.PlayerWatchlistMatch, is_default_listener=True)
     async def watchlist_notify(self, event: pl_events.PlayerWatchlistMatch) -> None:
-        async for config in event.configs:
+        for config in await event.configs():
             if not config.playerlist_chan or not config.player_watchlist:
                 self.bot.player_watchlist_store[
                     f"{event.realm_id}-{event.player_xuid}"
                 ].discard(config.guild_id)
-                config.player_watchlist = None
+                config.player_watchlist = []
                 await config.save()
                 continue
 

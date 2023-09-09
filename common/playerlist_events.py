@@ -3,7 +3,6 @@ from datetime import datetime
 
 import attrs
 import interactions as ipy
-from tortoise.queryset import QuerySet
 
 import common.models as models
 import common.playerlist_utils as pl_utils
@@ -30,9 +29,10 @@ class PlayerlistParseFinish(ipy.events.BaseEvent):
 class PlayerlistEvent(ipy.events.BaseEvent):
     realm_id: str = attrs.field(repr=False)
 
-    @property
-    def configs(self) -> QuerySet[models.GuildConfig]:
-        return models.GuildConfig.filter(realm_id=self.realm_id)
+    async def configs(self) -> list[models.GuildConfig]:
+        return await models.GuildConfig.prisma().find_many(
+            where={"realm_id": self.realm_id}
+        )
 
 
 @define()
@@ -68,8 +68,7 @@ class PlayerWatchlistMatch(PlayerlistEvent):
     player_xuid: str = attrs.field(repr=False)
     guild_ids: set[int] = attrs.field(repr=False)
 
-    @property
-    def configs(self) -> QuerySet[models.GuildConfig]:
-        return models.GuildConfig.filter(
-            realm_id=self.realm_id, guild_id__in=self.guild_ids
+    async def configs(self) -> list[models.GuildConfig]:
+        return await models.GuildConfig.prisma().find_many(
+            where={"realm_id": self.realm_id, "guild_id": {"in": list(self.guild_ids)}}
         )

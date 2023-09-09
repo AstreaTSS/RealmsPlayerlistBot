@@ -13,7 +13,6 @@ import interactions as ipy
 import orjson
 from msgspec import ValidationError
 from redis.asyncio.client import Pipeline
-from tortoise.exceptions import DoesNotExist
 
 import common.models as models
 import common.utils as utils
@@ -241,10 +240,7 @@ class GamertagHandler:
 
 
 async def has_linked_realm(ctx: utils.RealmContext) -> bool:
-    try:
-        guild_config = await ctx.fetch_config()
-    except DoesNotExist:
-        return False
+    guild_config = await ctx.fetch_config()
 
     if not guild_config.realm_id:
         raise utils.CustomCheckFailure(
@@ -255,10 +251,7 @@ async def has_linked_realm(ctx: utils.RealmContext) -> bool:
 
 
 async def has_playerlist_channel(ctx: utils.RealmContext) -> bool:
-    try:
-        guild_config = await ctx.fetch_config()
-    except DoesNotExist:
-        return False
+    guild_config = await ctx.fetch_config()
 
     if not guild_config.playerlist_chan:
         raise utils.CustomCheckFailure(
@@ -283,9 +276,9 @@ async def invalidate_premium(
 
     if config.realm_id:
         bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
-        if not await models.GuildConfig.filter(
-            realm_id=config.realm_id, fetch_devices=True
-        ).exists():
+        if not await models.GuildConfig.prisma().count(
+            where={"realm_id": config.realm_id, "fetch_devices": True}
+        ):
             bot.fetch_devices_for.discard(config.realm_id)
 
 

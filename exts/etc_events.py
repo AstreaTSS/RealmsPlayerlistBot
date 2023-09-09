@@ -29,27 +29,40 @@ class EtcEvents(ipy.Extension):
             await self.bot.http.leave_guild(event.guild_id)
             return
 
-        await models.GuildConfig.get_or_create(guild_id=int(event.guild_id))
+        if not await models.GuildConfig.prisma().count(
+            where={"guild_id": int(event.guild_id)}
+        ):
+            await models.GuildConfig.prisma().create({"guild_id": int(event.guild_id)})
 
     @ipy.listen("guild_left")
     async def on_guild_left(self, event: ipy.events.GuildLeft) -> None:
         if not self.bot.is_ready:
             return
 
-        if config := await models.GuildConfig.get_or_none(guild_id=int(event.guild_id)):
+        if config := await models.GuildConfig.prisma().find_unique(
+            where={"guild_id": int(event.guild_id)}
+        ):
             if (
                 config.realm_id
-                and await models.GuildConfig.filter(
-                    realm_id=config.realm_id, guild_id__not=int(event.guild_id)
-                ).count()
+                and await models.GuildConfig.prisma().count(
+                    where={
+                        "realm_id": config.realm_id,
+                        "guild_id": {"not": int(event.guild_id)},
+                    }
+                )
                 == 1
             ):
                 # don't want to keep around entries we no longer need, so delete them
-                await models.PlayerSession.filter(realm_id=config.realm_id).delete()
+                await models.PlayerSession.prisma().delete_many(
+                    where={"realm_id": config.realm_id}
+                )
                 # also attempt to leave the realm cus why not
                 with contextlib.suppress(elytra.MicrosoftAPIException):
                     await self.bot.realms.leave_realm(config.realm_id)
-            await config.delete()
+
+            await models.GuildConfig.prisma().delete(
+                where={"guild_id": int(event.guild_id)}
+            )
 
     def _update_tokens(self) -> None:
         with open(os.environ["XAPI_TOKENS_LOCATION"], mode="wb") as f:
