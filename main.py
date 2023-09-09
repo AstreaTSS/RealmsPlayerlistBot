@@ -412,7 +412,7 @@ async def start() -> None:
                 {"premium_code_id": None, "realm_id": None},
             ],
             "OR": [  # i honestly still cant believe this is all typehinted
-                {"premium_code": {"is_not": {"expires_at": None}}},
+                {"premium_code": {"is": {"expires_at": None}}},
                 {
                     "premium_code": {
                         "is": {"expires_at": {"gt": ipy.Timestamp.utcnow()}}
