@@ -2,6 +2,8 @@ import os
 import tomllib
 from pathlib import Path
 
+import orjson
+
 IS_LOADED = False
 
 
@@ -27,7 +29,10 @@ def load() -> None:
     with open(CONFIG_LOCATION, "rb") as f:
         toml_dict = tomllib.load(f)
         for key, value in toml_dict.items():
-            os.environ[key] = str(value)
+            if key == "DEBUG":
+                os.environ[key] = orjson.dumps(value).decode()
+            else:
+                os.environ[key] = str(value)
 
     file_location = Path(__file__).parent.absolute().as_posix()
     os.environ["DIRECTORY_OF_BOT"] = file_location

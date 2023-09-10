@@ -82,7 +82,7 @@ def default_sentry_filter(
 
 
 # im so sorry
-if not utils.TEST_MODE and utils.SENTRY_ENABLED:
+if not utils.FEATURE("PRINT_TRACKBACK_FOR_ERRORS") and utils.SENTRY_ENABLED:
     ipy.Task.on_error_sentry_hook = HookedTask.on_error_sentry_hook
     sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], before_send=default_sentry_filter)
 
@@ -347,7 +347,7 @@ bot.http.proxy = None
 
 
 async def start() -> None:
-    db = Prisma(use_dotenv=False, auto_register=True)
+    db = Prisma(auto_register=True, datasource={"url": os.environ["DB_URL"]})
     await db.connect()
     bot.db = db
 
@@ -384,7 +384,7 @@ async def start() -> None:
         bot.uuid_cache[player.realm_xuid_id] = player.custom_id
         bot.online_cache[int(player.realm_id)].add(player.xuid)
 
-    if not utils.TEST_MODE:
+    if utils.FEATURE("HANDLE_MISSING_REALMS"):
         async for realm_id in bot.redis.scan_iter("missing-realm-*"):
             bot.offline_realms.add(int(realm_id.removeprefix("missing-realm-")))
 
@@ -466,7 +466,10 @@ async def start() -> None:
         ):
             continue
 
-        if utils.TEST_MODE and ("autorun" in ext or "etc" in ext):
+        if not utils.FEATURE("AUTORUNNER") and "autorun" in ext:
+            continue
+
+        if not utils.FEATURE("ETC_EVENTS") and "etc" in ext:
             continue
 
         try:

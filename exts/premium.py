@@ -21,7 +21,7 @@ def premium_check() -> typing.Callable[[CommandT], CommandT]:
     async def check(ctx: utils.RealmContext) -> bool:
         config = await ctx.fetch_config()
 
-        if utils.TEST_MODE:
+        if utils.FEATURE("BYPASS_PREMIUM"):
             return True
 
         if not config.valid_premium:
