@@ -9,18 +9,33 @@ from pathlib import Path
 
 import aiohttp
 import interactions as ipy
+import orjson
 import redis.asyncio as aioredis
 import sentry_sdk
 from interactions.ext import prefixed_commands as prefixed
 
 from common.models import GuildConfig
 
-TEST_MODE: bool = os.environ.get("TEST_MODE", False)  # type: ignore
 SENTRY_ENABLED = bool(os.environ.get("SENTRY_DSN", False))  # type: ignore
 
 DEV_GUILD_ID = int(os.environ.get("DEV_GUILD_ID", "0"))
 
 EXPIRE_GAMERTAGS_AT = int(datetime.timedelta(days=7).total_seconds())
+
+_DEBUG: dict[str, bool] = orjson.loads(os.environ["DEBUG"])
+_debug_defaults = {
+    "HANDLE_MISSING_REALMS": True,
+    "PROCESS_REALMS": True,
+    "AUTORUNNER": True,
+    "BYPASS_PREMIUM": False,
+    "ETC_EVENTS": True,
+    "PRINT_TRACKBACK_FOR_ERRORS": False,
+    "EVENTUALLY_INVALIDATE": True,
+}
+
+
+def FEATURE(feature: str) -> bool:  # noqa: N802
+    return _DEBUG.get(feature, _debug_defaults[feature])
 
 
 async def sleep_until(dt: datetime.datetime) -> None:
@@ -35,7 +50,7 @@ async def error_handle(
     error: Exception, *, ctx: typing.Optional[ipy.BaseContext] = None
 ) -> None:
     if not isinstance(error, aiohttp.ServerDisconnectedError):
-        if TEST_MODE or not SENTRY_ENABLED:
+        if FEATURE("PRINT_TRACKBACK_FOR_ERRORS") or not SENTRY_ENABLED:
             traceback.print_exception(error)
         else:
             with sentry_sdk.configure_scope() as scope:

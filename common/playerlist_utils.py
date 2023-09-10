@@ -287,7 +287,7 @@ async def eventually_invalidate(
     guild_config: models.GuildConfig,
     limit: int = 3,
 ) -> None:
-    if utils.TEST_MODE:
+    if not utils.FEATURE("EVENTUALLY_INVALIDATE"):
         return
 
     # the idea here is to invalidate autorunners that simply can't be run
@@ -355,7 +355,7 @@ async def eventually_invalidate_live_online(
     bot: utils.RealmBotBase,
     guild_config: models.GuildConfig,
 ) -> None:
-    if utils.TEST_MODE:
+    if not utils.FEATURE("EVENTUALLY_INVALIDATE"):
         return
 
     num_times = await bot.redis.incr(f"invalid-liveonline-{guild_config.guild_id}")
