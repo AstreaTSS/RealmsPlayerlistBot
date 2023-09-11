@@ -21,9 +21,6 @@ def premium_check() -> typing.Callable[[CommandT], CommandT]:
     async def check(ctx: utils.RealmContext) -> bool:
         config = await ctx.fetch_config()
 
-        if utils.FEATURE("BYPASS_PREMIUM"):
-            return True
-
         if not config.valid_premium:
             raise utils.CustomCheckFailure(
                 "This server does not have premium activated! Check out"
@@ -120,7 +117,9 @@ class PremiumHandling(ipy.Extension):
                     " that you typed it in correctly?"
                 )
 
-        code_obj = await models.PremiumCode.prisma().find_first(where={"code": code})
+        code_obj = await models.PremiumCode.prisma().find_first(
+            where={"code": encrypted_code}
+        )
 
         if not code_obj:
             raise ipy.errors.BadArgument(

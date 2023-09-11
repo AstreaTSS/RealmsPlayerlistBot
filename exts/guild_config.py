@@ -166,13 +166,14 @@ class GuildConfig(utils.Extension):
 
         embeds: list[ipy.Embed] = []
 
-        if realm.club_id and not await models.PlayerSession.prisma().count(
-            where={"realm_id": str(realm.id)}
-        ):
+        if realm.club_id:
             config.club_id = str(realm.club_id)
-            await clubs_playerlist.fill_in_data_from_clubs(
-                self.bot, config.realm_id, config.club_id
-            )
+            if not await models.PlayerSession.prisma().count(
+                where={"realm_id": str(realm.id)}
+            ):
+                await clubs_playerlist.fill_in_data_from_clubs(
+                    self.bot, config.realm_id, config.club_id
+                )
         else:
             warning_embed = ipy.Embed(
                 title="Warning",

@@ -25,14 +25,17 @@ class GeneralCMDS(utils.Extension):
         await self.bot.wait_until_ready()
         self.invite_link = f"https://discord.com/api/oauth2/authorize?client_id={self.bot.user.id}&permissions=309238025280&scope=applications.commands%20bot"
 
-    def _get_commit_hash(self) -> str:
-        return (
-            subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
-            .decode("ascii")
-            .strip()
-        )
+    def _get_commit_hash(self) -> str | None:
+        try:
+            return (
+                subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+                .decode("ascii")
+                .strip()
+            )
+        except subprocess.CalledProcessError:
+            return None
 
-    async def get_commit_hash(self) -> str:
+    async def get_commit_hash(self) -> str | None:
         return await asyncio.to_thread(self._get_commit_hash)
 
     @ipy.slash_command(
@@ -174,6 +177,8 @@ class GeneralCMDS(utils.Extension):
                     (
                         "Commit Hash:"
                         f" [{commit_hash}](https://github.com/AstreaTSS/RealmsPlayerlistBot/commit/{commit_hash})"
+                        if commit_hash
+                        else "Commit Hash: N/A"
                     ),
                     (
                         "Interactions.py Version:"

@@ -14,11 +14,10 @@ REDIS_URL = "REDIS_URL"  # url to a redis database
 # worth noting for docker:
 # - you'll need a .env file with a POSTGRES_PASSWORD entry (POSTGRES_PASSWORD="PASSWORD"). docker limitation, i would squeeze it in config.toml if i could
 
-# - docker compose run --env DB_URL="postgresql://postgres:YOUR_DB_PASSWORD@db:5432/postgres" bot python -m prisma db push
-# or docker compose run --env DB_URL="postgresql://postgres:YOUR_DB_PASSWORD@db:5432/postgres" bot python -m prisma migrate dev (or deploy in a production environment)
-# or you can bash into the container and run the commands from there "docker compose run bot bash"
+# - docker compose run --env DB_URL="postgresql://postgres:YOUR_DB_PASSWORD@db:5432/postgres" bot python -m prisma migrate dev (or deploy in a prod environment and care about non-destructive changes)
+# or you can use the shell directly in the container and run the commands from there: docker compose run --env DB_URL="postgresql://postgres:YOUR_DB_PASSWORD@db:5432/postgres" bot bash
 # you'll need to run one of those commands to initialize the database on your first run, but it shouldn't be needed after that
-# which command you want to use depends on if you want to use the migrations or not - see https://www.prisma.io/docs/concepts/components/prisma-migrate
+# also, see https://www.prisma.io/docs/concepts/components/prisma-migrate
 
 # - you can swap out the redis for any redis supporting backend, though i'd suggest keeping the name of the entry in the compose file "redis" because
 # the bot relies on that to connect to it
