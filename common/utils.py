@@ -333,9 +333,8 @@ class RealmContextMixin:
         if self.guild_config:
             return self.guild_config
 
-        config = await GuildConfig.prisma().find_unique(
-            where={"guild_id": self.guild_id},
-            include={"premium_code": True},
+        config = await GuildConfig.get_or_none(
+            self.guild_id
         ) or await GuildConfig.prisma().create(data={"guild_id": self.guild_id})
 
         self.guild_config = config
