@@ -37,7 +37,7 @@ def load() -> None:
             else:
                 os.environ[key] = str(value)
 
-    if os.environ["DOCKER_MODE"]:
+    if os.environ.get("DOCKER_MODE", "False") == "True":
         os.environ["DB_URL"] = (
             f"postgresql://postgres:{os.environ['POSTGRES_PASSWORD']}@db:5432/postgres"
         )
