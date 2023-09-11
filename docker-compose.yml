@@ -1,0 +1,18 @@
+services:
+  redis:
+    image: "redis:alpine"
+    ports:
+      - 6379:6379
+
+  db:
+    image: "postgres:alpine"
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+
+  bot:
+    build: .
+    depends_on:
+      - db
+      - redis
