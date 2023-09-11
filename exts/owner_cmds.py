@@ -16,6 +16,7 @@ import tansy
 from interactions.ext import paginators
 from interactions.ext import prefixed_commands as prefixed
 from interactions.ext.debug_extension.utils import debug_embed, get_cache_state
+from prisma.types import GuildConfigCreateInput
 
 import common.utils as utils
 from common.clubs_playerlist import fill_in_data_from_clubs
@@ -86,18 +87,18 @@ class OwnerCMDs(utils.Extension):
             "The playerlist channel ID for this guild.", default=None
         ),
     ) -> None:
-        kwargs: dict[str, int | str] = {"guild_id": int(guild_id)}
+        data: GuildConfigCreateInput = {"guild_id": int(guild_id)}
 
         if club_id:
-            kwargs["club_id"] = club_id
+            data["club_id"] = club_id
             if club_id != "None" and realm_id and realm_id != "None":
                 await fill_in_data_from_clubs(self.bot, realm_id, club_id)
         if realm_id:
-            kwargs["realm_id"] = realm_id
+            data["realm_id"] = realm_id
         if playerlist_chan:
-            kwargs["playerlist_chan"] = int(playerlist_chan)
+            data["playerlist_chan"] = int(playerlist_chan)
 
-        await GuildConfig.prisma().create(data=kwargs)
+        await GuildConfig.prisma().create(data=data)
         await ctx.send("Done!")
 
     @tansy.slash_command(
