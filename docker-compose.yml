@@ -3,6 +3,8 @@ services:
     image: "redis:alpine"
     ports:
       - 6379:6379
+    volumes:
+      - ./data/redis:/var/lib/redis
 
   db:
     image: "postgres:alpine"
@@ -10,6 +12,8 @@ services:
       - 5432:5432
     environment:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
 
   bot:
     build: .
@@ -18,3 +22,4 @@ services:
     depends_on:
       - db
       - redis
+    restart: always

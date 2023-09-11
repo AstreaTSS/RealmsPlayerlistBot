@@ -1,6 +1,7 @@
 import asyncio
 import collections
 import datetime
+import logging
 import os
 import traceback
 import typing
@@ -22,12 +23,13 @@ DEV_GUILD_ID = int(os.environ.get("DEV_GUILD_ID", "0"))
 
 EXPIRE_GAMERTAGS_AT = int(datetime.timedelta(days=7).total_seconds())
 
+logger = logging.getLogger("realms_bot")
+
 _DEBUG: dict[str, bool] = orjson.loads(os.environ["DEBUG"])
 _debug_defaults = {
     "HANDLE_MISSING_REALMS": True,
     "PROCESS_REALMS": True,
     "AUTORUNNER": True,
-    "BYPASS_PREMIUM": False,
     "ETC_EVENTS": True,
     "PRINT_TRACKBACK_FOR_ERRORS": False,
     "EVENTUALLY_INVALIDATE": True,
@@ -52,6 +54,7 @@ async def error_handle(
     if not isinstance(error, aiohttp.ServerDisconnectedError):
         if FEATURE("PRINT_TRACKBACK_FOR_ERRORS") or not SENTRY_ENABLED:
             traceback.print_exception(error)
+            logger.error("An error occured.", exc_info=error)
         else:
             with sentry_sdk.configure_scope() as scope:
                 if ctx:
@@ -331,7 +334,8 @@ class RealmContextMixin:
             return self.guild_config
 
         config = await GuildConfig.prisma().find_unique(
-            where={"guild_id": self.guild_id}
+            where={"guild_id": self.guild_id},
+            include={"premium_code": True},
         ) or await GuildConfig.prisma().create(data={"guild_id": self.guild_id})
 
         self.guild_config = config

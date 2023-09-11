@@ -1,7 +1,6 @@
-FROM python:3.11
+FROM python:3.11-alpine
 
-RUN apt-get update
-RUN apt-get install ffmpeg libsm6 libxext6 gcc musl-dev -y
+RUN apk add --no-cache gcc bash
 
 WORKDIR /app
 
