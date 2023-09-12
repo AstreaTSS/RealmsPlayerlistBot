@@ -25,7 +25,7 @@ EXPIRE_GAMERTAGS_AT = int(datetime.timedelta(days=7).total_seconds())
 
 logger = logging.getLogger("realms_bot")
 
-_DEBUG: dict[str, bool] = orjson.loads(os.environ["DEBUG"])
+_DEBUG: dict[str, bool] = orjson.loads(os.environ.get("DEBUG", "{}"))
 _debug_defaults = {
     "HANDLE_MISSING_REALMS": True,
     "PROCESS_REALMS": True,
