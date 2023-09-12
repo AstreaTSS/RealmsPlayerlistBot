@@ -412,16 +412,13 @@ if typing.TYPE_CHECKING:
         blacklist: set[int]
 
         @property
-        def guild_count(self) -> int:
-            ...
+        def guild_count(self) -> int: ...
 
-        def mention_cmd(self, name: str, scope: int = 0) -> str:
-            ...
+        def mention_cmd(self, name: str, scope: int = 0) -> str: ...
 
         def create_task(
             self, coro: typing.Coroutine[typing.Any, typing.Any, ipy.const.T]
-        ) -> asyncio.Task[ipy.const.T]:
-            ...
+        ) -> asyncio.Task[ipy.const.T]: ...
 
 else:
 
