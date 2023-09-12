@@ -227,7 +227,7 @@ class GeneralCMDS(utils.Extension):
         description="Gets the gamertag for a specified XUID.",
         dm_permission=False,
     )
-    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
     async def gamertag_from_xuid(
         self,
         ctx: utils.RealmContext,

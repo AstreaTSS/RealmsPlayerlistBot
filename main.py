@@ -41,7 +41,6 @@ from interactions.ext.sentry import HookedTask
 from ordered_set import OrderedSet
 from prisma import Prisma
 
-import common.classes as cclasses
 import common.help_tools as help_tools
 import common.models as models
 import common.splash_texts as splash_texts
@@ -116,7 +115,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
         self.init_load = False
 
-        activity = cclasses.PatchedStatus(
+        activity = ipy.Activity(
             name="Splash Text",
             type=ipy.ActivityType.CUSTOM,
             state=self.splash_texts.get(),
@@ -133,7 +132,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
     @ipy.listen("resume")
     async def on_resume_func(self) -> None:
-        activity = cclasses.PatchedStatus(
+        activity = ipy.Activity(
             name="Splash Text",
             type=ipy.ActivityType.CUSTOM,
             state=self.splash_texts.get(),
@@ -167,7 +166,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
     @ipy.listen(splash_texts.SplashTextUpdated)
     async def new_splash_text(self) -> None:
-        activity = cclasses.PatchedStatus(
+        activity = ipy.Activity(
             name="Splash Text",
             type=ipy.ActivityType.CUSTOM,
             state=self.splash_texts.get(),
@@ -229,28 +228,6 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
         self.dispatch(ipy.events.MessageCreate(msg))
 
-    @Processor.define()
-    async def _on_raw_guild_role_create(
-        self, event: "ipy.events.RawGatewayEvent"
-    ) -> None:
-        g_id = int(event.data.get("guild_id"))
-        r_id = int(event.data["role"]["id"])
-
-        role = self.cache.place_role_data(g_id, [event.data.get("role")])[r_id]
-        self.dispatch(ipy.events.RoleCreate(g_id, role))
-
-    @Processor.define()
-    async def _on_raw_guild_role_delete(
-        self, event: "ipy.events.RawGatewayEvent"
-    ) -> None:
-        g_id = int(event.data.get("guild_id"))
-        r_id = int(event.data.get("role_id"))
-
-        role = self.cache.get_role(r_id)
-        self.cache.delete_role(r_id)
-
-        self.dispatch(ipy.events.RoleDelete(g_id, r_id, role))
-
     def mention_cmd(self, name: str, scope: int = 0) -> str:
         return self.interactions_by_scope[scope][name].mention(scope)
 
@@ -294,7 +271,7 @@ intents = ipy.Intents.new(
 mentions = ipy.AllowedMentions.all()
 
 bot = RealmsPlayerlistBot(
-    activity=cclasses.PatchedStatus(
+    activity=ipy.Activity(
         name="Status", type=ipy.ActivityType.CUSTOM, state="Loading..."
     ),
     status=ipy.Status.IDLE,

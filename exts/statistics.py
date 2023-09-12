@@ -145,7 +145,7 @@ class Statistics(utils.Extension):
             " graph."
         ),
     )
-    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
     async def graph_realm(
         self,
@@ -166,7 +166,7 @@ class Statistics(utils.Extension):
             "Summarizes the Realm over a specified period, by a specified interval."
         ),
     )
-    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
     async def graph_realm_summary(
         self,
@@ -189,7 +189,7 @@ class Statistics(utils.Extension):
             "Produces a graph of a player's playtime over a specifed period as a graph."
         ),
     )
-    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
     async def graph_player(
         self,
@@ -217,7 +217,7 @@ class Statistics(utils.Extension):
             "Summarizes a player over a specified period, by a specified interval."
         ),
     )
-    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
     async def graph_player_summary(
         self,
@@ -245,7 +245,7 @@ class Statistics(utils.Extension):
             "Produces a graph of multiple players' playtime over a specifed period."
         ),
     )
-    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
     @ipy.auto_defer(enabled=False)
     async def graph_multi_player(
@@ -285,7 +285,7 @@ class Statistics(utils.Extension):
             " specified interval."
         ),
     )
-    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
     @ipy.auto_defer(enabled=False)
     async def graph_multi_player_summary(
@@ -448,7 +448,7 @@ class Statistics(utils.Extension):
         ),
         dm_permission=False,
     )
-    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 15)
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 15)
     @ipy.check(pl_utils.has_linked_realm)
     async def leaderboard(
         self,
@@ -579,7 +579,7 @@ class Statistics(utils.Extension):
         default_member_permissions=ipy.Permissions.MANAGE_GUILD,
         dm_permission=False,
     )
-    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 5)
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
     @ipy.check(pl_utils.has_linked_realm)
     async def get_player_log(
         self,

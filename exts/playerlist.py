@@ -234,7 +234,7 @@ class Playerlist(utils.Extension):
         dm_permission=False,
     )
     @ipy.check(pl_utils.has_linked_realm)
-    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 60)
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 60)
     async def playerlist(
         self,
         ctx: utils.RealmContext | utils.RealmPrefixedContext,
@@ -392,7 +392,7 @@ class Playerlist(utils.Extension):
         description="Allows you to see if anyone is online on the Realm right now.",
         dm_permission=False,
     )
-    @ipy.cooldown(cclasses.CustomBucket.GUILD, 1, 10)
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 10)
     @ipy.check(pl_utils.has_linked_realm)
     async def online(
         self,
