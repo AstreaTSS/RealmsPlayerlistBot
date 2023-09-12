@@ -2,7 +2,9 @@ import asyncio
 import typing
 
 import interactions as ipy
+import orjson
 import redis.asyncio as aioredis
+from prisma._async_http import Response
 
 
 def valid_channel_check(channel: ipy.GuildChannel) -> ipy.GuildText:
@@ -48,3 +50,11 @@ class SemaphoreRedis(aioredis.Redis):
     ) -> typing.Any:
         async with self.semaphore:
             return await super().execute_command(*args, **options)
+
+
+class FastResponse(Response):
+    async def json(self, **kwargs: typing.Any) -> typing.Any:
+        return orjson.loads(await self.original.aread(), **kwargs)
+
+
+Response.json = FastResponse.json  # type: ignore
