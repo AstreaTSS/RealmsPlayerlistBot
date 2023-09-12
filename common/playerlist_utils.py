@@ -315,7 +315,7 @@ async def eventually_invalidate(
         old_live_playerlist = guild_config.live_playerlist
         guild_config.live_playerlist = False
         old_watchlist = guild_config.player_watchlist
-        guild_config.player_watchlist = None
+        guild_config.player_watchlist = []
         guild_config.player_watchlist_role = None
         await guild_config.save()
         await bot.redis.delete(
