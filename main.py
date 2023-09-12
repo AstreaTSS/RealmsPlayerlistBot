@@ -319,9 +319,6 @@ bot.fetch_devices_for = set()
 bot.background_tasks = set()
 bot.blacklist = set()
 
-# oops, ipy made a mistake
-bot.http.proxy = None
-
 
 async def start() -> None:
     db = Prisma(auto_register=True, datasource={"url": os.environ["DB_URL"]})
