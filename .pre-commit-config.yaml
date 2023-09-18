@@ -1,21 +1,34 @@
 repos:
-- repo: https://github.com/psf/black
-  rev: 23.9.1
-  hooks:
-    - id: black
-      args: [--target-version, py311, --preview]
-      language_version: python3.11
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.4.0
-  hooks:
-    - id: trailing-whitespace
-- repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: 'v0.0.288'
-  hooks:
-    - id: ruff
-      language_version: python3.11
+  - repo: https://github.com/psf/black
+    rev: 23.9.1
+    hooks:
+      - id: black
+        args: [--target-version, py311, --preview]
+        language_version: python3.11
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: "v0.0.288"
+    hooks:
+      - id: ruff
+        language_version: python3.11
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.4
+    hooks:
+      - id: insert-license
+        files: \.py$
+        args:
+          - --license-filepath
+          - license_header.txt
+          - --comment-style
+          - "\"\"\"||\"\"\""
+          - --allow-past-years
+          - --use-current-year
+          - --no-space-in-comment-prefix
 
 ci:
-  autofix_commit_msg: 'ci: auto fixes from pre-commit.com hooks'
-  autoupdate_branch: 'main'
-  autoupdate_commit_msg: 'ci: pre-commit autoupdate'
+  autofix_commit_msg: "ci: auto fixes from pre-commit.com hooks"
+  autoupdate_branch: "main"
+  autoupdate_commit_msg: "ci: pre-commit autoupdate"

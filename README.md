@@ -27,6 +27,11 @@ It's:
 <p align="center">
   <i>For more information, please <a href="https://rpl.astrea.cc">check the official website.</a></i>
 </p>
-<p align="center">
-  <i>The Realms Playerlist Bot is not an official Minecraft product, and is not approved by or associated with Mojang or Microsoft.</i>
-</p>
+
+### Copyright and License Notice
+
+Copyright 2020-2023 AstreaTSS.
+
+Unless otherwise stated, all files in this repository are licensed under the GNU Affero General Public License v3.0. A copy of the license is available in the [LICENSE](LICENSE) file.
+
+The Realms Playerlist Bot is not an official Minecraft product, and is not approved by or associated with Mojang or Microsoft.
