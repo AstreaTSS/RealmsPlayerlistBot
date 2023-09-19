@@ -378,6 +378,9 @@ async def summary_parse(
     return num_days, summary_split[1]
 
 
+# named tuples can't be subclasses and work as expected
+
+
 class ProcessUnsummaryReturn(typing.NamedTuple):
     func_to_use: typing.Callable[..., VALID_TIME_DICTS]
     bottom_label: str
@@ -624,7 +627,9 @@ async def send_graph(
     kwargs: dict[str, typing.Any] = {}
 
     try:
-        if isinstance(graph, dict):
+        if isinstance(
+            graph, dict
+        ):  # graph too big, make post req so qc can make graph image
             payload = {
                 "bkg": "white",
                 "w": 700,

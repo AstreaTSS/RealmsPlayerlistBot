@@ -77,7 +77,7 @@ def default_sentry_filter(
     if "log_record" in hint:
         record: logging.LogRecord = hint["log_record"]
         if "interactions" in record.name or "realms_bot" in record.name:
-            #  There are some logging messages that are not worth sending to sentry.
+            # there are some logging messages that are not worth sending to sentry
             if ": 403" in record.message:
                 return None
             if ": 404" in record.message:
@@ -102,6 +102,8 @@ if not utils.FEATURE("PRINT_TRACKBACK_FOR_ERRORS") and utils.SENTRY_ENABLED:
     sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], before_send=default_sentry_filter)
 
 
+# ipy used to implement this, but strayed away from it
+# im adding it back in just in case
 async def basic_guild_check(ctx: ipy.SlashContext) -> bool:
     return True if ctx.command.dm_permission else ctx.guild_id is not None
 
@@ -109,10 +111,13 @@ async def basic_guild_check(ctx: ipy.SlashContext) -> bool:
 class RealmsPlayerlistBot(utils.RealmBotBase):
     @ipy.listen("startup")
     async def on_startup(self) -> None:
-        self.fully_ready.set()  # only here because im too lazy to rewrite code
+        # frankly, this event isn't needed anymore,
+        # but too many things depend on fully_ready being set for me to remove it
+        self.fully_ready.set()
 
     @ipy.listen("ready")
     async def on_ready(self) -> None:
+        # dms bot owner on every ready noting if the bot is coming up or reconnecting
         utcnow = ipy.Timestamp.utcnow()
         time_format = f"<t:{int(utcnow.timestamp())}:f>"
 
@@ -131,6 +136,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
         self.init_load = False
 
+        # good time to change splash text too
         activity = ipy.Activity(
             name="Splash Text",
             type=ipy.ActivityType.CUSTOM,
@@ -165,6 +171,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         guild_id = int(data["guild_id"])
 
         if not self.slash_perms_cache[guild_id]:
+            # process slash command permissions for this guild for the help command
             await help_tools.process_bulk_slash_perms(self, guild_id)
             return
 
@@ -180,7 +187,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     async def on_error(self, event: ipy.events.Error) -> None:
         await utils.error_handle(event.error)
 
-    @ipy.listen(splash_texts.SplashTextUpdated)
+    @ipy.listen(splash_texts.SplashTextUpdated)  # custom event
     async def new_splash_text(self) -> None:
         activity = ipy.Activity(
             name="Splash Text",
@@ -245,9 +252,13 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         self.dispatch(ipy.events.MessageCreate(msg))
 
     def mention_cmd(self, name: str, scope: int = 0) -> str:
+        # nice shorthand for getting the string mention form of a cmd
+        # name does not need or want a / in front of it
         return self.interactions_by_scope[scope][name].mention(scope)
 
     def create_task(self, coro: typing.Coroutine) -> asyncio.Task:
+        # see the "important" note below for why we do this (to prevent early gc)
+        # https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
         task = asyncio.create_task(coro)
         self.background_tasks.add(task)
         task.add_done_callback(self.background_tasks.discard)
@@ -318,7 +329,9 @@ bot = RealmsPlayerlistBot(
     logger=logger,
 )
 prefixed.setup(bot, prefixed_context=utils.RealmPrefixedContext)
-bot.guild_event_timeout = -1
+bot.guild_event_timeout = (
+    -1
+)  # internal variable to control how long to wait for each guild object, but we dont care for them
 bot.unavailable_guilds = set()
 bot.init_load = True
 bot.bot_owner = None  # type: ignore
@@ -363,6 +376,7 @@ async def start() -> None:
         },
     )
     if num_updated > 0:
+        # we've reset all online entries, reset live online channels too
         for config in await db.guildconfig.find_many(
             where={"NOT": [{"live_online_channel": None}]}
         ):
@@ -394,8 +408,7 @@ async def start() -> None:
                 config.guild_id
             )
 
-    # add info for who has live playerlist on, as we can't rely on anything other than
-    # pure memory for the playerlist getting code
+    # add info for who has premium features on and has valid premium
     for config in await models.GuildConfig.prisma().find_many(
         where={
             "NOT": [
@@ -405,7 +418,13 @@ async def start() -> None:
                 {"premium_code": {"is": {"expires_at": None}}},
                 {
                     "premium_code": {
-                        "is": {"expires_at": {"gt": ipy.Timestamp.utcnow()}}
+                        "is": {
+                            "expires_at": {
+                                "gt": ipy.Timestamp.utcnow() - datetime.timedelta(
+                                    days=1
+                                )
+                            }
+                        }
                     }
                 },
             ],
@@ -419,7 +438,7 @@ async def start() -> None:
 
     bot.realm_name_cache = TTLCache(maxsize=5000, ttl=600)
     bot.fully_ready = asyncio.Event()
-    bot.pl_sem = asyncio.Semaphore(12)
+    bot.pl_sem = asyncio.Semaphore(12)  # TODO: maybe increase this?
 
     bot.xbox = await elytra.XboxAPI.from_file(
         os.environ["XBOX_CLIENT_ID"],
@@ -474,6 +493,7 @@ async def start() -> None:
 if __name__ == "__main__":
     loop_factory = None
 
+    # use uvloop if possible
     with contextlib.suppress(ImportError):
         import uvloop  # type: ignore
 

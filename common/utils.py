@@ -109,6 +109,7 @@ async def msg_to_owner(
 
 
 def line_split(content: str, split_by: int = 20) -> list[list[str]]:
+    # splits strings into lists of strings, each with a max length of split_by
     content_split = content.splitlines()
     return [
         content_split[x : x + split_by] for x in range(0, len(content_split), split_by)

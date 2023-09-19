@@ -169,6 +169,7 @@ def base_code_validate(code: str, *, n_parts: int = 3, part_len: int = 4) -> str
 
 
 def full_code_validate(code: str, user_id: ipy.Snowflake_Type) -> str:
+    # handles all the checks for a proper code, which includes the first part before -s
     code = code.upper()
     for replacement in REPLACEMENTS:
         code = replacement[0].sub(replacement[1], code)

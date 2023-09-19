@@ -326,6 +326,8 @@ async def eventually_invalidate(
             f" {num_times}/{limit} invalidations."
         )
 
+        # ALL of this is just to reset the config so that there's no more
+        # playerlist channel info
         old_playerlist_chan = guild_config.playerlist_chan
         guild_config.playerlist_chan = None
         old_live_playerlist = guild_config.live_playerlist
@@ -395,7 +397,7 @@ async def fetch_playerlist_channel(
     except TypeError:  # playerlist chan is none, do nothing
         raise ValueError() from None
 
-    if chan.type == ipy.MISSING:
+    if chan.type == ipy.MISSING:  # usually a dm
         await eventually_invalidate(bot, config)
         raise ValueError() from None
 
@@ -430,6 +432,9 @@ async def fill_in_gamertags_for_sessions(
 
             gamertag_list: list[str | None] = await pipeline.execute()
 
+        # order is important to keep while iterating
+        # hence the PURPOSELY_INVALID_KEY_AAAAAAAAAAAAAAAA earlier
+        # TODO: make this ordering indepenent
         for index, xuid in enumerate(session_dict.keys()):
             gamertag = gamertag_list[index]
             session_dict[xuid].gamertag = gamertag

@@ -120,6 +120,7 @@ class SplashTexts:
     async def from_bot(cls, bot: utils.RealmBotBase) -> typing.Self:
         current_index = await bot.redis.get("rpl-splash-text")
         if current_index is None:
+            # select a random splash text and set it as our first one
             current_index = random.randint(0, len(splash_texts) - 1)  # noqa: S311
             await bot.redis.set("rpl-splash-text", current_index)
         else:
