@@ -54,6 +54,9 @@ async def realm_club_presence(
             return elytra.ClubResponse.from_bytes(resp_bytes)
         except (aiohttp.ContentTypeError, orjson.JSONDecodeError, ValidationError):
             return None
+    except ValidationError as e:  # what?
+        utils.logger.warn("ValidationError", exc_info=e)
+        return None
 
 
 async def realm_club_get(
