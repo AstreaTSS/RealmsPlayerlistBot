@@ -167,9 +167,9 @@ class PremiumCode(PrismaPremiumCode):
     def valid_code(self) -> bool:
         if self._valid_code is not None:
             return self._valid_code
-        self._valid_code = not self.expires_at or self.expires_at > datetime.now(
-            UTC
-        ) + timedelta(days=1)
+        self._valid_code = not self.expires_at or self.expires_at + timedelta(
+            days=1
+        ) > datetime.now(UTC)
         return self._valid_code
 
 
