@@ -45,7 +45,15 @@ class IgnoreModel:
     __prisma_model__ = "IgnoreModel"
 
 
+class NotificationChannels(typing.TypedDict, total=False):
+    realm_offline: int
+    player_watchlist: int
+
+
 class GuildConfig(PrismaGuildConfig):
+    if typing.TYPE_CHECKING:
+        notification_channels: NotificationChannels
+
     premium_code: typing.Optional["PremiumCode"] = None
 
     @classmethod

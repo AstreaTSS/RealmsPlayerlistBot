@@ -22,6 +22,7 @@ model GuildConfig {
   live_online_channel   String?           @db.VarChar(75)
   player_watchlist_role BigInt?
   player_watchlist      String[]          @default([])
+  notification_channels Json              @db.JsonB @default("{}")
   premium_code      PremiumCode? @relation(fields: [premium_code_id], references: [id], onUpdate: NoAction)
 
   @@map("realmguildconfig")

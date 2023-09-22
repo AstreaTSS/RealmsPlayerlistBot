@@ -692,6 +692,65 @@ class GuildConfig(utils.Extension):
             await ctx.send(embeds=utils.make_embed("Unset the Realm offline ping."))
 
     @config.subcommand(
+        sub_cmd_name="notification-channel",
+        sub_cmd_description=(
+            "Sets (or reset) the channels used for certain notifications from the bot."
+            " Defaults to the playerlist channel."
+        ),
+    )
+    @ipy.check(pl_utils.has_linked_realm)
+    async def set_notification_channel(
+        self,
+        ctx: utils.RealmContext,
+        feature: typing.Literal["player_watchlist", "realm_offline"] = tansy.Option(
+            "The feature/notification type to set the channel for.",
+            choices=[
+                ipy.SlashCommandChoice("Player Watchlist", "player_watchlist"),
+                ipy.SlashCommandChoice("Realm Offline Notifications", "realm_offline"),
+            ],
+            type=str,
+        ),
+        channel: typing.Optional[ipy.GuildText] = tansy.Option(
+            "The channel to set the feature to.",
+            converter=cclasses.ValidChannelConverter,
+        ),
+        reset: bool = tansy.Option(
+            "Should the channel be reset? If so, the playerlist channel will be used"
+            " instead.",
+            default=False,
+        ),
+    ) -> None:
+        if not (reset ^ bool(channel)):
+            raise ipy.errors.BadArgument(
+                "You must either set a channel or explictly reset the channel. One must"
+                " be given."
+            )
+
+        config = await ctx.fetch_config()
+
+        if channel is not None:
+            config.notification_channels[feature] = channel.id
+            await config.save()
+
+            await ctx.send(
+                embeds=utils.make_embed(f"Set the channel to {channel.mention}.")
+            )
+        else:
+            result = config.notification_channels.pop(feature, None)
+            if result is None:
+                raise ipy.errors.BadArgument(
+                    "There was no channel set in the first place."
+                )
+            await config.save()
+
+            await ctx.send(
+                embeds=utils.make_embed(
+                    "Reset the channel. The playerlist channel will be used for that"
+                    " type of notification instead."
+                )
+            )
+
+    @config.subcommand(
         sub_cmd_name="help",
         sub_cmd_description="Tells you how to set up this bot.",
     )
@@ -875,6 +934,35 @@ class GuildConfig(utils.Extension):
                     " that."
                 )
             )
+
+    @watchlist.subcommand(
+        sub_cmd_name="channel",
+        sub_cmd_description=(
+            "Sets or resets the channel to send watchlist messages to. Defaults to the"
+            " playerlist channel."
+        ),
+    )
+    @ipy.check(pl_utils.has_linked_realm)
+    async def watchlist_channel(
+        self,
+        ctx: utils.RealmContext,
+        channel: typing.Optional[ipy.GuildText] = tansy.Option(
+            "The channel to set the feature to.",
+            converter=cclasses.ValidChannelConverter,
+        ),
+        reset: bool = tansy.Option(
+            "Should the channel be reset? If so, the playerlist channel will be used"
+            " instead.",
+            default=False,
+        ),
+    ) -> None:
+        await self.set_notification_channel.call_with_binding(
+            self.set_notification_channel.callback,
+            ctx,
+            "player_watchlist",
+            channel,
+            reset,
+        )
 
 
 def setup(bot: utils.RealmBotBase) -> None:
