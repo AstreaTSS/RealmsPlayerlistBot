@@ -374,6 +374,9 @@ async def eventually_invalidate(
 async def eventually_invalidate_watchlist(
     bot: utils.RealmBotBase, guild_config: models.GuildConfig
 ) -> None:
+    if not utils.FEATURE("EVENTUALLY_INVALIDATE"):
+        return
+
     num_times = await bot.redis.incr(f"invalid-watchlist-{guild_config.guild_id}")
 
     logger.info(
@@ -421,6 +424,9 @@ async def eventually_invalidate_watchlist(
 async def eventually_invalidate_realm_offline(
     bot: utils.RealmBotBase, guild_config: models.GuildConfig
 ) -> None:
+    if not utils.FEATURE("EVENTUALLY_INVALIDATE"):
+        return
+
     num_times = await bot.redis.incr(f"invalid-realm-offline-{guild_config.guild_id}")
 
     logger.info(
