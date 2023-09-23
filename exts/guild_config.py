@@ -246,6 +246,7 @@ class GuildConfig(utils.Extension):
         old_player_watchlist = config.player_watchlist
         config.player_watchlist = []
         config.player_watchlist_role = None
+        config.notification_channels = {}
 
         await config.save()
 
@@ -694,8 +695,8 @@ class GuildConfig(utils.Extension):
     @config.subcommand(
         sub_cmd_name="notification-channel",
         sub_cmd_description=(
-            "Sets (or reset) the channels used for certain notifications from the bot."
-            " Defaults to the playerlist channel."
+            "Sets/reset the channels used for notifications from the bot. Defaults to"
+            " the playerlist channel."
         ),
     )
     @ipy.check(pl_utils.has_linked_realm)

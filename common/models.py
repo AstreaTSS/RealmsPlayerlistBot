@@ -20,6 +20,8 @@ import typing
 from datetime import UTC, datetime, timedelta
 from functools import cached_property
 
+from prisma import Json
+
 # i cannot tell you just how ridiculous this seems
 # prisma generates models on the fly??? just for typehinting???
 # i love it
@@ -73,10 +75,9 @@ class GuildConfig(PrismaGuildConfig):
         return bool(self.premium_code and self.premium_code.valid_code)
 
     async def save(self) -> None:
-        await self.prisma().update(
-            where={"guild_id": self.guild_id},
-            data=self.model_dump(exclude={"premium_code_id", "premium_code"}),  # type: ignore
-        )
+        data = self.model_dump(exclude={"premium_code_id", "premium_code"})
+        data["notification_channels"] = Json(data["notification_channels"])
+        await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
 
 
 EMOJI_DEVICE_NAMES = {
