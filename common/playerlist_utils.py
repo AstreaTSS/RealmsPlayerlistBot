@@ -335,6 +335,7 @@ async def eventually_invalidate(
         old_watchlist = guild_config.player_watchlist
         guild_config.player_watchlist = []
         guild_config.player_watchlist_role = None
+        guild_config.notification_channels = {}
         await guild_config.save()
         await bot.redis.delete(
             f"invalid-playerlist3-{guild_config.guild_id}",
@@ -364,6 +365,99 @@ async def eventually_invalidate(
                     " permissions, make sure the bot has `View Channel`, `Send"
                     " Messages`, and `Embed Links` enabled, and then re-set the"
                     " playerlist channel."
+                )
+
+                await chan.send(msg)
+
+
+# TODO: combine these into one somehow
+async def eventually_invalidate_watchlist(
+    bot: utils.RealmBotBase, guild_config: models.GuildConfig
+) -> None:
+    if not utils.FEATURE("EVENTUALLY_INVALIDATE"):
+        return
+
+    num_times = await bot.redis.incr(f"invalid-watchlist-{guild_config.guild_id}")
+
+    logger.info(
+        f"Increased invalid-watchlist for guild {guild_config.guild_id} to"
+        f" {num_times}/3."
+    )
+
+    await bot.redis.expire(f"invalid-watchlist-{guild_config.guild_id}", 172000)
+
+    if num_times >= 3:
+        logger.info(
+            f"Unlinking watchlist for guild {guild_config.guild_id} with"
+            f" {num_times}/3 invalidations."
+        )
+
+        old_watchlist = guild_config.player_watchlist
+        guild_config.player_watchlist = []
+        guild_config.player_watchlist_role = None
+        old_chan = guild_config.notification_channels.pop("player_watchlist", None)
+        await guild_config.save()
+
+        if guild_config.realm_id and old_watchlist:
+            for player_xuid in old_watchlist:
+                bot.player_watchlist_store[
+                    f"{guild_config.realm_id}-{player_xuid}"
+                ].discard(guild_config.guild_id)
+
+        if old_chan:
+            with contextlib.suppress(ipy.errors.HTTPException, AttributeError):
+                chan = await bot.fetch_channel(old_chan)
+                if not chan:
+                    return
+
+                msg = (
+                    "The player watchlist players and channel has been unlinked as the"
+                    " bot has not been able to properly send messages to it. Please"
+                    " check your permissions, make sure the bot has `View Channel`,"
+                    " `Send Messages`, and `Embed Links` enabled, and then re-set the"
+                    " watchlist and channel."
+                )
+
+                await chan.send(msg)
+
+
+async def eventually_invalidate_realm_offline(
+    bot: utils.RealmBotBase, guild_config: models.GuildConfig
+) -> None:
+    if not utils.FEATURE("EVENTUALLY_INVALIDATE"):
+        return
+
+    num_times = await bot.redis.incr(f"invalid-realm-offline-{guild_config.guild_id}")
+
+    logger.info(
+        f"Increased invalid-realm-offline for guild {guild_config.guild_id} to"
+        f" {num_times}/3."
+    )
+
+    await bot.redis.expire(f"invalid-realm-offline-{guild_config.guild_id}", 172000)
+
+    if num_times >= 3:
+        logger.info(
+            f"Unlinking Realm offline for guild {guild_config.guild_id} with"
+            f" {num_times}/3 invalidations."
+        )
+
+        guild_config.realm_offline_role = None
+        old_chan = guild_config.notification_channels.pop("realm_offline", None)
+        await guild_config.save()
+
+        if old_chan:
+            with contextlib.suppress(ipy.errors.HTTPException, AttributeError):
+                chan = await bot.fetch_channel(old_chan)
+                if not chan:
+                    return
+
+                msg = (
+                    "The Realm Offline role and channel has been unlinked as the bot"
+                    " has not been able to properly send messages to it. Please check"
+                    " your permissions, make sure the bot has `View Channel`, `Send"
+                    " Messages`, and `Embed Links` enabled, and then re-set the role"
+                    " and channel."
                 )
 
                 await chan.send(msg)
