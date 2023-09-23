@@ -249,14 +249,24 @@ async def config_info_generate(
         f"<@&{config.player_watchlist_role}>" if config.player_watchlist_role else "N/A"
     )
 
+    notification_channels = ""
+    if config.notification_channels:
+        notification_channels = "__Notification Channels__:\n"
+    if player_watchlist := config.notification_channels.get("player_watchlist"):
+        notification_channels += f"Player Watchlist Channel: <#{player_watchlist}>\n"
+    if realm_offline := config.notification_channels.get("realm_offline"):
+        notification_channels += f"Realm Offline Channel: <#{realm_offline}>\n"
+
+    notification_channels = notification_channels.strip()
+
     embed.add_field(
         "Basic Information",
-        f"Realm Name: {realm_name}\nAutorunner Enabled: {autorunner}\nAutorun"
-        f" Playerlist Channel: {playerlist_channel}\nRealm Offline Role:"
-        f" {offline_realm_ping}\nWarning Notifications:"
-        f" {toggle_friendly_str(config.warning_notifications)}\nPlayer Watchlist Role:"
+        f"Realm Name: {realm_name}\n\nAutorunner Enabled: {autorunner}\nAutorun"
+        f" Playerlist Channel: {playerlist_channel}\nWarning Notifications:"
+        f" {toggle_friendly_str(config.warning_notifications)}\n\nRealm Offline Role:"
+        f" {offline_realm_ping}\nPlayer Watchlist Role:"
         f" {player_watchlist_ping}\nPeople on Watchlist: See"
-        f" {ctx.bot.mention_cmd('watchlist list')}",
+        f" {ctx.bot.mention_cmd('watchlist list')}\n\n{notification_channels}".strip(),
         inline=True,
     )
 
@@ -293,7 +303,8 @@ async def config_info_generate(
             f" {na_friendly_str(config.playerlist_chan)}\nRealm Offline Role"
             f" ID:{na_friendly_str(config.realm_offline_role)}\nLinked Premium ID:"
             f" {premium_code_id}\nPlayer Watchlist XUIDs:"
-            f" {na_friendly_str(config.player_watchlist)}"
+            f" {na_friendly_str(config.player_watchlist)}\nNotification Channels Dict:"
+            f" {na_friendly_str(config.notification_channels)}"
         )
         if config.premium_code:
             expires_at = (
