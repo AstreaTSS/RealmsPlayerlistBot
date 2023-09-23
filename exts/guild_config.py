@@ -246,7 +246,6 @@ class GuildConfig(utils.Extension):
         old_player_watchlist = config.player_watchlist
         config.player_watchlist = []
         config.player_watchlist_role = None
-        config.notification_channels = {}
 
         await config.save()
 
