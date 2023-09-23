@@ -76,7 +76,8 @@ class GuildConfig(PrismaGuildConfig):
 
     async def save(self) -> None:
         data = self.model_dump(exclude={"premium_code_id", "premium_code"})
-        data["notification_channels"] = Json(data["notification_channels"])
+        if data.get("notification_channels"):
+            data["notification_channels"] = Json(data["notification_channels"])
         await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
 
 
