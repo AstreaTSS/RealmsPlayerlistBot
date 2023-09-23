@@ -48,7 +48,7 @@ class GeneralCMDS(utils.Extension):
                 .decode("ascii")
                 .strip()
             )
-        except subprocess.CalledProcessError:
+        except Exception:  # screw it
             return None
 
     async def get_commit_hash(self) -> str | None:
