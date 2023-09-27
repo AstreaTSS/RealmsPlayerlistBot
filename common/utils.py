@@ -458,9 +458,8 @@ async def _global_checks(ctx: RealmContext) -> bool:
     if ctx.author_id in ctx.bot.owner_ids:
         return True
 
-    if (
-        int(ctx.author_id) in ctx.bot.blacklist
-        or int(ctx.guild_id) in ctx.bot.blacklist
+    if int(ctx.author_id) in ctx.bot.blacklist or (
+        ctx.guild_id and int(ctx.guild_id) in ctx.bot.blacklist
     ):
         return False
 
