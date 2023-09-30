@@ -246,7 +246,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         if not msg._guild_id and event.data.get("guild_id"):
             msg._guild_id = event.data["guild_id"]
 
-        if not msg.channel:
+        if not self.cache.get_channel(msg._channel_id):
             self.cache.channel_cache[ipy.to_snowflake(msg._channel_id)] = (
                 utils.partial_channel(self, msg._channel_id)
             )
