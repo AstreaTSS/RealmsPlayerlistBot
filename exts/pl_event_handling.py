@@ -307,6 +307,9 @@ class PlayerlistEventHandling(ipy.Extension):
 
             await pl_utils.eventually_invalidate(self.bot, config, limit=7)
 
+            if not config.playerlist_chan:
+                continue
+
             chan = utils.partial_channel(self.bot, config.playerlist_chan)
 
             with contextlib.suppress(ipy.errors.HTTPException):
