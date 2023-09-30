@@ -227,6 +227,12 @@ def error_embed_generate(error_msg: str) -> ipy.Embed:
     )
 
 
+def partial_channel(
+    bot: "RealmBotBase", channel_id: ipy.Snowflake_Type
+) -> ipy.GuildText:
+    return ipy.GuildText(client=bot, id=ipy.to_snowflake(channel_id), type=ipy.ChannelType.GUILD_TEXT)  # type: ignore
+
+
 async def config_info_generate(
     ctx: "RealmContext | RealmPrefixedContext",
     config: GuildConfig,
@@ -390,7 +396,10 @@ class RealmModalContext(RealmContextMixin, ipy.ModalContext):
 
 
 class RealmPrefixedContext(RealmContextMixin, prefixed.PrefixedContext):
-    pass
+    @property
+    def channel(self) -> ipy.GuildText:
+        """The channel this context was invoked in."""
+        return partial_channel(self.bot, self.channel_id)
 
 
 class RealmAutocompleteContext(RealmContextMixin, ipy.AutocompleteContext):

@@ -247,7 +247,9 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
             msg._guild_id = event.data["guild_id"]
 
         if not msg.channel:
-            await self.cache.fetch_channel(ipy.to_snowflake(msg._channel_id))
+            self.cache.channel_cache[ipy.to_snowflake(msg._channel_id)] = (
+                utils.partial_channel(self, msg._channel_id)
+            )
 
         self.dispatch(ipy.events.MessageCreate(msg))
 
@@ -313,14 +315,12 @@ bot = RealmsPlayerlistBot(
     context_menu_context=utils.RealmContextMenuContext,
     autocomplete_context=utils.RealmAutocompleteContext,
     auto_defer=ipy.AutoDefer(enabled=True, time_until_defer=0),
-    # we do not need messages
+    # we do not need many of these
     message_cache=ipy.utils.TTLCache(10, 10, 50),
     role_cache=ipy.utils.TTLCache(60, 100, 200),
-    # we don't need that many
-    user_cache=ipy.utils.TTLCache(60, 500, 1000),
-    member_cache=ipy.utils.TTLCache(60, 500, 1000),
-    # lets not make this too huge
-    channel_cache=ipy.utils.TTLCache(600, 5000, 10000),
+    channel_cache=ipy.utils.TTLCache(60, 200, 400),
+    user_cache=ipy.utils.TTLCache(60, 200, 400),
+    member_cache=ipy.utils.TTLCache(60, 200, 400),
     # do not need at all
     voice_state_cache=ipy.utils.NullCache(),
     user_guilds=ipy.utils.NullCache(),

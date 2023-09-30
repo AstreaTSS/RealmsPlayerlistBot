@@ -157,7 +157,7 @@ class PlayerlistEventHandling(ipy.Extension):
                 )
 
             try:
-                chan = await pl_utils.fetch_playerlist_channel(self.bot, config)
+                chan = utils.partial_channel(self.bot, config.playerlist_chan)
                 await chan.send(embeds=embed)
             except ValueError:
                 continue
@@ -250,17 +250,12 @@ class PlayerlistEventHandling(ipy.Extension):
             )
 
             try:
-                chan = await self.bot.fetch_channel(
+                chan = utils.partial_channel(
+                    self.bot,
                     config.notification_channels.get(
                         "realm_offline", config.playerlist_chan
-                    )
+                    ),
                 )
-                if (
-                    not chan
-                    or chan.type == ipy.MISSING
-                    or not isinstance(chan, ipy.MessageableMixin)
-                ):
-                    raise ValueError()
 
                 await chan.send(
                     role_mention,
@@ -268,7 +263,10 @@ class PlayerlistEventHandling(ipy.Extension):
                     allowed_mentions=ipy.AllowedMentions.all(),
                 )
             except (ipy.errors.HTTPException, ValueError):
-                await pl_utils.eventually_invalidate(self.bot, config)
+                if config.notification_channels.get("realm_offline"):
+                    await pl_utils.eventually_invalidate_realm_offline(self.bot, config)
+                else:
+                    await pl_utils.eventually_invalidate(self.bot, config)
                 continue
 
     @ipy.listen("warn_missing_playerlist", is_default_listener=True)
@@ -307,13 +305,9 @@ class PlayerlistEventHandling(ipy.Extension):
 
             logger.info(f"Warning {config.guild_id} for missing Realm.")
 
-            playerlist_chan = config.playerlist_chan
-
             await pl_utils.eventually_invalidate(self.bot, config, limit=7)
 
-            chan = await self.bot.fetch_channel(playerlist_chan)
-            if not chan or not isinstance(chan, ipy.MessageableMixin):
-                continue
+            chan = utils.partial_channel(self.bot, config.playerlist_chan)
 
             with contextlib.suppress(ipy.errors.HTTPException):
                 content = (
@@ -357,17 +351,12 @@ class PlayerlistEventHandling(ipy.Extension):
                 continue
 
             try:
-                chan = await self.bot.fetch_channel(
+                chan = utils.partial_channel(
+                    self.bot,
                     config.notification_channels.get(
                         "player_watchlist", config.playerlist_chan
-                    )
+                    ),
                 )
-                if (
-                    not chan
-                    or chan.type == ipy.MISSING
-                    or not isinstance(chan, ipy.MessageableMixin)
-                ):
-                    raise ValueError()
 
                 try:
                     gamertag = await pl_utils.gamertag_from_xuid(

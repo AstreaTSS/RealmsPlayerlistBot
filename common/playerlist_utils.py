@@ -355,9 +355,7 @@ async def eventually_invalidate(
 
         if old_playerlist_chan:
             with contextlib.suppress(ipy.errors.HTTPException, AttributeError):
-                chan = await bot.fetch_channel(old_playerlist_chan)
-                if not chan:
-                    return
+                chan = utils.partial_channel(bot, old_playerlist_chan)
 
                 msg = (
                     "The playerlist channel has been unlinked as the bot has not been"
@@ -406,9 +404,7 @@ async def eventually_invalidate_watchlist(
 
         if old_chan:
             with contextlib.suppress(ipy.errors.HTTPException, AttributeError):
-                chan = await bot.fetch_channel(old_chan)
-                if not chan:
-                    return
+                chan = utils.partial_channel(bot, old_chan)
 
                 msg = (
                     "The player watchlist players and channel has been unlinked as the"
@@ -448,9 +444,7 @@ async def eventually_invalidate_realm_offline(
 
         if old_chan:
             with contextlib.suppress(ipy.errors.HTTPException, AttributeError):
-                chan = await bot.fetch_channel(old_chan)
-                if not chan:
-                    return
+                chan = utils.partial_channel(bot, old_chan)
 
                 msg = (
                     "The Realm Offline role and channel has been unlinked as the bot"
@@ -477,29 +471,6 @@ async def eventually_invalidate_live_online(
         guild_config.live_online_channel = None
         await guild_config.save()
         await bot.redis.delete(f"invalid-liveonline-{guild_config.guild_id}")
-
-
-async def fetch_playerlist_channel(
-    bot: utils.RealmBotBase, config: models.GuildConfig
-) -> ipy.GuildText:
-    try:
-        chan = await bot.cache.fetch_channel(config.playerlist_chan)
-    except ipy.errors.HTTPException as e:
-        if e.status < 500:  # over 500 is a discord fault
-            await eventually_invalidate(bot, config)
-        raise ValueError() from None
-    except TypeError:  # playerlist chan is none, do nothing
-        raise ValueError() from None
-
-    if chan.type == ipy.MISSING:  # usually a dm
-        await eventually_invalidate(bot, config)
-        raise ValueError() from None
-
-    if not isinstance(chan, ipy.MessageableMixin):
-        await eventually_invalidate(bot, config)
-        raise ValueError() from None
-
-    return chan
 
 
 async def fill_in_gamertags_for_sessions(
