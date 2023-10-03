@@ -209,10 +209,10 @@ class GuildConfig(utils.Extension):
             title="Linked!",
             description=(
                 "Linked this server to the Realm:"
-                f" `{realm.name}`\n\n**IMPORTANT NOTE:** There will now be an"
-                f" account called `{self.bot.own_gamertag}` on your Realm's"
-                " player roster (and even the playerlist). *Do not ban or kick"
-                " them.* The bot will not work with your Realm if you do so."
+                f" `{FORMAT_CODE_REGEX.sub('', realm.name)}`\n\n**IMPORTANT NOTE:**"
+                f" There will now be an account called `{self.bot.own_gamertag}` on"
+                " your Realm's player roster (and even the playerlist). *Do not ban or"
+                " kick them.* The bot will not work with your Realm if you do so."
             ),
             color=ipy.RoleColors.GREEN,
         )
