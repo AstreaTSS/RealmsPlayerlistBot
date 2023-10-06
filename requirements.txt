@@ -13,6 +13,6 @@ rapidfuzz==3.3.1
 pycryptodome==3.19.0
 ordered-set==4.1.0
 cachetools==5.3.1
-msgspec==0.18.3
+msgspec==0.18.4
 elytra-ms==0.2.1
 uvloop==0.17.0; platform_system == "Linux"
