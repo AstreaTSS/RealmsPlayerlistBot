@@ -184,12 +184,19 @@ class SplashTexts:
             await self.next()
 
     async def next(self) -> None:
-        self.splash_index_list.pop(0)  # not efficient, but it works
+        last_index = self.splash_index_list.pop(0)  # not efficient, but it works
 
         if not self.splash_index_list:
             self.splash_index_list = random.sample(
                 range(self.splash_length), self.splash_length
             )
+
+            if self.splash_index_list[0] == last_index:
+                # swap first and third-to-last indexes
+                self.splash_index_list[0], self.splash_index_list[-3] = (
+                    self.splash_index_list[-3],
+                    self.splash_index_list[0],
+                )
 
         await self.bot.redis.set(
             "rpl-splash-index-list", orjson.dumps(self.splash_index_list)
