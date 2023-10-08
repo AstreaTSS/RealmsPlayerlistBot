@@ -21,6 +21,7 @@ import typing
 
 import attrs
 import interactions as ipy
+import orjson
 from dateutil.relativedelta import relativedelta
 
 import common.utils as utils
@@ -99,38 +100,72 @@ splash_texts = (
     "Check out Playerlist Premium!",
     "Uses slash commands!",
     "Powered by prisms!",  # prisma
+    "/vote for a cookie!",
+    "Help, I'm stuck in a splash text generator",
+    "Maybe dockerized!",  # i mean, if you self host, sure
+    "It's legal, too!",
 )
 
 
 class SplashTexts:
     __slots__ = (
-        "current_index",
+        "splash_index_list",
         "bot",
-        "splash_texts_length",
+        "splash_length",
         "task",
     )
 
-    def __init__(self, bot: utils.RealmBotBase, current_index: int) -> None:
-        self.current_index = current_index
+    def __init__(
+        self, bot: utils.RealmBotBase, splash_index_list: list[int], splash_length: int
+    ) -> None:
+        self.splash_index_list = splash_index_list
         self.bot = bot
-        self.splash_texts_length = len(splash_texts)
+        self.splash_length = splash_length
         self.task: asyncio.Task | None = None
 
     @classmethod
     async def from_bot(cls, bot: utils.RealmBotBase) -> typing.Self:
-        current_index = await bot.redis.get("rpl-splash-text")
-        if current_index is None:
-            # select a random splash text and set it as our first one
-            current_index = random.randint(0, len(splash_texts) - 1)  # noqa: S311
-            await bot.redis.set("rpl-splash-text", current_index)
+        current_index_list = await bot.redis.get("rpl-splash-index-list")
+        splash_length = len(splash_texts)
+
+        if current_index_list is None:
+            current_index_list = random.sample(range(splash_length), splash_length)
+            await bot.redis.set(
+                "rpl-splash-index-list", orjson.dumps(current_index_list)
+            )
+            await bot.redis.set("rpl-splash-length", splash_length)
+
         else:
-            current_index = int(current_index)
-        self = cls(bot, current_index)
+            current_index_list = orjson.loads(current_index_list)
+            stored_splash_length = int(await bot.redis.get("rpl-splash-length"))
+
+            if stored_splash_length < splash_length:
+                # add new indexes to the list, while keeping current first index
+                indexes_to_add = list(range(stored_splash_length, splash_length))
+                current_index_list = current_index_list[:1] + random.sample(
+                    current_index_list[1:] + indexes_to_add,
+                    len(current_index_list[1:] + indexes_to_add),
+                )
+                await bot.redis.set(
+                    "rpl-splash-index-list", orjson.dumps(current_index_list)
+                )
+                await bot.redis.set("rpl-splash-length", len(splash_texts))
+
+            if (
+                stored_splash_length > splash_length
+            ):  # this should never happen, but just reset
+                current_index_list = random.sample(current_index_list, splash_length)
+                await bot.redis.set(
+                    "rpl-splash-index-list", orjson.dumps(current_index_list)
+                )
+                await bot.redis.set("rpl-splash-length", len(splash_texts))
+
+        self = cls(bot, current_index_list, splash_length)
         await self.start()
         return self
 
     def get(self) -> str:
-        return splash_texts[self.current_index]
+        return splash_texts[self.splash_index_list[0]]
 
     async def start(self) -> None:
         self.task = asyncio.create_task(self._task_func())
@@ -147,10 +182,16 @@ class SplashTexts:
             )
             await utils.sleep_until(next_day)
             await self.next()
-            self.bot.dispatch(SplashTextUpdated())
 
     async def next(self) -> None:
-        self.current_index += 1
-        if self.current_index >= self.splash_texts_length:
-            self.current_index = 0
-        await self.bot.redis.set("rpl-splash-text", str(self.current_index))
+        self.splash_index_list.pop(0)  # not efficient, but it works
+
+        if not self.splash_index_list:
+            self.splash_index_list = random.sample(
+                range(self.splash_length), self.splash_length
+            )
+
+        await self.bot.redis.set(
+            "rpl-splash-index-list", orjson.dumps(self.splash_index_list)
+        )
+        self.bot.dispatch(SplashTextUpdated())
