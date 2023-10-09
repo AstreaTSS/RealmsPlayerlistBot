@@ -1,7 +1,7 @@
 discord-py-interactions[speedup]==5.10.0
 tansy==0.8.0
 humanize==4.8.0
-aiodns==3.0.0
+aiodns==3.1.0
 attrs==23.1.0
 pydantic==2.4.2
 prisma==0.10.0
