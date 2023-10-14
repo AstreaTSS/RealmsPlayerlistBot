@@ -33,10 +33,8 @@ import common.playerlist_utils as pl_utils
 import common.stats_utils as stats_utils
 import common.utils as utils
 
-AsyncCallableT = typing.TypeVar("AsyncCallableT", bound=ipy.const.AsyncCallable)
 
-
-def amazing_modal_error_handler(func: AsyncCallableT) -> AsyncCallableT:
+def amazing_modal_error_handler[T: ipy.const.AsyncCallable](func: T) -> T:
     async def wrapper(
         self: typing.Any,
         unknown: ipy.events.ModalCompletion | ipy.ModalContext,

@@ -3,8 +3,8 @@ repos:
     rev: 23.9.1
     hooks:
       - id: black
-        args: [--target-version, py311, --preview]
-        language_version: python3.11
+        args: [--target-version, py312, --preview]
+        language_version: python3.12
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
@@ -13,7 +13,7 @@ repos:
     rev: "v0.0.292"
     hooks:
       - id: ruff
-        language_version: python3.11
+        language_version: python3.12
   - repo: https://github.com/Lucas-C/pre-commit-hooks
     rev: v1.5.4
     hooks:

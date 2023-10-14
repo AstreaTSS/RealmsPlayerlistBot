@@ -491,13 +491,12 @@ async def start() -> None:
 
 
 if __name__ == "__main__":
-    loop_factory = None
+    run_method = asyncio.run
 
     # use uvloop if possible
     with contextlib.suppress(ImportError):
         import uvloop  # type: ignore
 
-        loop_factory = uvloop.new_event_loop
+        run_method = uvloop.run
 
-    with asyncio.Runner(loop_factory=loop_factory) as runner:
-        runner.run(start())
+    run_method(start())

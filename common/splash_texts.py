@@ -16,6 +16,7 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
 import datetime
+import platform
 import random
 import typing
 
@@ -32,8 +33,12 @@ class SplashTextUpdated(ipy.events.BaseEvent):
     pass
 
 
+# https://docs.python.org/3/library/platform.html?highlight=platform#platform.python_version_tuple
+PYTHON_VERSION = platform.python_version_tuple()
+
+
 # please add new entries to the end of the list
-splash_texts = (
+splash_texts: tuple[str, ...] = (
     "/online is used more than /playerlist",
     "99% bug free!",
     "Monkeypatch free!",  # for now
@@ -72,7 +77,7 @@ splash_texts = (
     "PURPOSELY_INVALID_KEY_AAAAAAAAAAAAAAAA",  # actually used in the bot
     "Watching players on Realms!",
     "Do bots dream of electric sheep?",
-    "Python 3.11!",
+    f"{platform.python_implementation()} {PYTHON_VERSION[0]}.{PYTHON_VERSION[1]}!",  # ie CPython 3.12
     "Now in purple!",
     "Keyboard compatible!",
     "Made by AstreaTSS!",

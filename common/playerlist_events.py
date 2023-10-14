@@ -23,8 +23,6 @@ import interactions as ipy
 import common.models as models
 import common.playerlist_utils as pl_utils
 
-_C = typing.TypeVar("_C")
-
 
 @typing.dataclass_transform(
     eq_default=False,
@@ -32,7 +30,7 @@ _C = typing.TypeVar("_C")
     kw_only_default=False,
     field_specifiers=(attrs.field,),
 )
-def define() -> typing.Callable[[_C], _C]:
+def define[C]() -> typing.Callable[[C], C]:
     return attrs.define(eq=False, order=False, hash=False, kw_only=False)  # type: ignore
 
 

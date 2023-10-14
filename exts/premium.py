@@ -30,10 +30,10 @@ import common.playerlist_utils as pl_utils
 import common.premium_code as premium_code
 import common.utils as utils
 
-CommandT = typing.TypeVar("CommandT", ipy.BaseCommand, ipy.const.AsyncCallable)
 
-
-def premium_check() -> typing.Callable[[CommandT], CommandT]:
+def premium_check[
+    T: (ipy.BaseCommand, ipy.const.AsyncCallable)
+]() -> typing.Callable[[T], T]:
     async def check(ctx: utils.RealmContext) -> bool:
         config = await ctx.fetch_config()
 

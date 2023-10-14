@@ -19,10 +19,10 @@ import typing
 import rapidfuzz
 from rapidfuzz import process
 
-T = typing.TypeVar("T")
 
-
-def extract_from_list(
+def extract_from_list[
+    T
+](
     argument: str,
     list_of_items: typing.Collection[T],
     processors: typing.Iterable[typing.Callable],
