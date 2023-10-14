@@ -62,14 +62,6 @@ import common.models as models
 import common.splash_texts as splash_texts
 import common.utils as utils
 
-with contextlib.suppress(ImportError):
-    import rook  # type: ignore
-
-    if os.environ.get("ROOK_TOKEN"):
-        rook.start(
-            token=os.environ["ROOK_TOKEN"], labels={"env": os.environ["ROOK_ENV"]}
-        )
-
 
 def default_sentry_filter(
     event: dict[str, typing.Any], hint: dict[str, typing.Any]
