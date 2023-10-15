@@ -345,7 +345,9 @@ class Statistics(utils.Extension):
         if not gamertags:
             raise ipy.errors.BadArgument("No gamertags were provided.")
 
-        gamertags_list = gamertags.splitlines()
+        gamertags_list = list(
+            dict.fromkeys(gamertags.splitlines())
+        )  # basic order keeping dedupe
 
         limit = 5 if config.valid_premium else 2
 
