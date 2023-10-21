@@ -90,8 +90,6 @@ async def get_players_from_club_data(
     for member in club_presence:
         last_seen_state = member.last_seen_state
 
-        # xbox live uses a bit more precision than python can understand
-        # so we cut out that precision
         last_seen = member.last_seen_timestamp.replace(tzinfo=datetime.UTC)
 
         # if this person was on the realm longer than the time period specified
