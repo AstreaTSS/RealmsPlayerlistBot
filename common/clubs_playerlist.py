@@ -90,15 +90,6 @@ async def get_players_from_club_data(
     for member in club_presence:
         last_seen_state = member.last_seen_state
 
-        if last_seen_state not in {
-            elytra.ClubUserPresence.IN_GAME,
-            elytra.ClubUserPresence.NOT_IN_CLUB,
-        }:
-            # we want to ignore people causally browsing the club itself
-            # this isn't perfect, as if they stop viewing the club, they'll be put in
-            # the "NotInClub" list, but that's fine
-            continue
-
         # xbox live uses a bit more precision than python can understand
         # so we cut out that precision
         last_seen = member.last_seen_timestamp.replace(tzinfo=datetime.UTC)
@@ -120,7 +111,9 @@ async def get_players_from_club_data(
                 "last_seen": now if online else last_seen,
             }
         )
-        bot.online_cache[int(realm_id)].add(member.xuid)
+
+        if online:
+            bot.online_cache[int(realm_id)].add(member.xuid)
 
     return player_list
 
