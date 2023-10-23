@@ -376,8 +376,9 @@ class Statistics(utils.Extension):
     async def handle_multi_players(
         self,
         ctx: utils.RealmModalContext,
-        returned_data: stats_utils.ProcessSummaryReturn
-        | stats_utils.ProcessUnsummaryReturn,
+        returned_data: (
+            stats_utils.ProcessSummaryReturn | stats_utils.ProcessUnsummaryReturn
+        ),
         now: datetime.datetime,
         xuid_list: list[str],
         gamertags: list[str],
