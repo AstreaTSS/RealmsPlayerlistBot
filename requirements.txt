@@ -13,7 +13,7 @@ sentry-sdk==1.32.0
 rapidfuzz==3.4.0
 pycryptodome==3.19.0
 ordered-set==4.1.0
-cachetools==5.3.1
+cachetools==5.3.2
 msgspec==0.18.4
 elytra-ms==0.2.1
 uvloop==0.19.0; platform_system == "Linux"
