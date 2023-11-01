@@ -16,6 +16,7 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
 import typing
+from copy import copy
 
 import interactions as ipy
 import orjson
@@ -51,6 +52,57 @@ class ValidChannelConverter(ipy.Converter):
         self, ctx: ipy.InteractionContext, argument: ipy.GuildText
     ) -> ipy.GuildText:
         return valid_channel_check(argument)
+
+
+class _Placeholder:
+    pass
+
+
+class OrderedSet[T]:
+    def __init__(self, an_iter: typing.Iterable[T] | None = None, /) -> None:
+        self._dict: dict[T, T] = {}
+
+        if an_iter is not None:
+            self._dict = {element: element for element in an_iter}
+
+    def __contains__(self, element: T) -> bool:
+        return self._dict.get(element, _Placeholder) != _Placeholder
+
+    def __len__(self) -> int:
+        return len(self._dict)
+
+    def __iter__(self) -> typing.Iterator[T]:
+        return iter(self._dict)
+
+    def add(self, element: T) -> None:
+        self._dict[element] = element
+
+    def remove(self, element: T) -> None:
+        self._dict.pop(element)
+
+    def discard(self, element: T) -> None:
+        self._dict.pop(element, None)
+
+    def pop(self, element: T) -> T:
+        return self._dict.pop(element)
+
+    def clear(self) -> None:
+        self._dict.clear()
+
+    def copy(self) -> typing.Self:
+        return copy(self)
+
+    def intersection(self, *others: typing.Iterable[T]) -> typing.Self:
+        return self.__class__(e for sub in others for e in sub if e in self)
+
+    def __and__(self, other: typing.Iterable[T]) -> typing.Self:
+        return self.intersection(other)
+
+    def union(self, *others: typing.Iterable[T]) -> typing.Self:
+        return self.__class__(self, *(e for sub in others for e in sub))
+
+    def __or__(self, other: typing.Iterable[T]) -> typing.Self:
+        return self.union(other)
 
 
 # left here just in case you want to use it

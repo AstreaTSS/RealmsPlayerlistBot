@@ -54,9 +54,9 @@ from elytra.core import BetterResponse, _dumps_wrapper
 from interactions.api.events.processors import Processor
 from interactions.ext import prefixed_commands as prefixed
 from interactions.ext.sentry import HookedTask
-from ordered_set import OrderedSet
 from prisma import Prisma
 
+import common.classes as cclasses
 import common.help_tools as help_tools
 import common.models as models
 import common.splash_texts as splash_texts
@@ -334,7 +334,7 @@ bot.live_playerlist_store = defaultdict(set)
 bot.player_watchlist_store = defaultdict(set)
 bot.uuid_cache = defaultdict(lambda: str(uuid.uuid4()))
 bot.mini_commands_per_scope = {}
-bot.offline_realms = OrderedSet()  # type: ignore
+bot.offline_realms = cclasses.OrderedSet()
 bot.dropped_offline_realms = set()
 bot.fetch_devices_for = set()
 bot.background_tasks = set()

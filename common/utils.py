@@ -410,9 +410,9 @@ if typing.TYPE_CHECKING:
     import elytra
     from aiohttp_retry import RetryClient
     from cachetools import TTLCache
-    from ordered_set import OrderedSet
     from prisma import Prisma
 
+    from .classes import OrderedSet
     from .help_tools import MiniCommand, PermissionsResolver
     from .splash_texts import SplashTexts
 
