@@ -293,7 +293,7 @@ async def config_info_generate(
             f" {yesno_friendly_str(config.valid_premium)}\nLinked To:"
             f" {premium_linked_to}\nLive Playerlist:"
             f" {toggle_friendly_str(config.live_playerlist)}\nLive Online"
-            f" Message: {live_online_msg}\nFetch Devices:"
+            f" Message: {live_online_msg}\nDisplay Device Information:"
             f" {toggle_friendly_str(config.fetch_devices)}",
             inline=True,
         )

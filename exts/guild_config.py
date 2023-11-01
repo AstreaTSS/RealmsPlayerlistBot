@@ -491,20 +491,19 @@ class GuildConfig(utils.Extension):
         return _check
 
     @config.subcommand(
-        sub_cmd_name="toggle-realm-warning",
+        sub_cmd_name="realm-warning",
         sub_cmd_description=(
-            "Toggles if the warning that is sent after no activity is detected in the"
-            " Realm is sent."
+            "Toggles the sending of warnings after detecting inactivity in the Realm."
         ),
     )
     @ipy.check(pl_utils.has_linked_realm)
-    async def toggle_realm_warning(
+    async def toggle_realm_warnings(
         self,
         ctx: utils.RealmContext,
         toggle: bool = tansy.Option("Should the warning be sent?"),
     ) -> None:
         """
-        Toggles if the warning that is sent after no activity is detected in the Realm is sent.
+        Toggles the sending of warnings after detecting inactivity in the Realm.
         This warning is usually sent after 24 hours of no activity has been detected.
         This is usually beneficial, but may be annoying if you have a Realm that is rarely used.
 
@@ -518,7 +517,7 @@ class GuildConfig(utils.Extension):
 
         if not toggle:
             embed = ipy.Embed(
-                title="Warning",
+                title="⚠ Warning ⚠",
                 description=(
                     "This warning is usually a very important warning. If the bot"
                     " cannot find any players on the Realm after 24 hours, this"
@@ -527,16 +526,16 @@ class GuildConfig(utils.Extension):
                     f" `{self.bot.own_gamertag}` has been kicked/banned, preventing the"
                     " bot from functioning. **You should not disable this warning"
                     " lightly, as it could be critical to fixing issues with the"
-                    " bot.**\n**Also note that the Realm will still be unlinked after"
-                    " 7 days of inactivity. It is your responsibility to keep track of"
-                    " this.**\nDisabling these warnings may still be beneficial if"
-                    " your Realm isn't as active, though, as long as you are aware of"
-                    " the risks.\n\n**If you wish to continue to silence these"
-                    " warnings, press the accept button.** You have two minutes to"
-                    " do so."
+                    " bot.**\n**Also note that the Realm's autorunner and related"
+                    " settings will still be disabled after 7 days of inactivity. It"
+                    " is your responsibility to keep track of this.**\nDisabling these"
+                    " warnings may still be beneficial if your Realm isn't as active,"
+                    " though, as long as you are aware of the risks.\n\n**If you wish"
+                    " to continue to silence these warnings, press the accept"
+                    " button.** You have two minutes to do so."
                 ),
                 timestamp=ipy.Timestamp.utcnow(),
-                color=ipy.RoleColors.YELLOW,
+                color=ipy.RoleColors.ORANGE,  # please pay attention to this warning
             )
 
             result = ""
@@ -715,8 +714,8 @@ class GuildConfig(utils.Extension):
             converter=cclasses.ValidChannelConverter,
         ),
         reset: bool = tansy.Option(
-            "Should the channel be reset? If so, the playerlist channel will be used"
-            " instead.",
+            "Should the channel be reset? If so, the playerlist channel will be"
+            " used instead.",
             default=False,
         ),
     ) -> None:
@@ -951,8 +950,8 @@ class GuildConfig(utils.Extension):
             converter=cclasses.ValidChannelConverter,
         ),
         reset: bool = tansy.Option(
-            "Should the channel be reset? If so, the playerlist channel will be used"
-            " instead.",
+            "Should the channel be reset? If so, the playerlist channel will be"
+            " used instead.",
             default=False,
         ),
     ) -> None:

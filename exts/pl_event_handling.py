@@ -317,12 +317,19 @@ class PlayerlistEventHandling(ipy.Extension):
                     "I have been unable to get any information about your Realm for"
                     " the last 24 hours. This could be because the Realm has been"
                     " turned off or because it's inactive, but if it hasn't, make sure"
-                    f" you haven't banned or kick `{self.bot.own_gamertag}`. If you"
-                    " have, please unban the account if needed and run"
+                    f" you haven't banned or kick {self.bot.own_gamertag}. If you have,"
+                    " please unban the account if needed and run"
                     f" {self.bot.mention_cmd('config link-realm')} again to fix"
-                    " it.\n\nAlternatively, if you want to disable the autorunner"
+                    " it.\n\nAlternatively:\n- If you want to disable the autorunner"
                     " entirely, you can use"
-                    f" {self.bot.mention_cmd('config playerlist-channel')} to do so."
+                    f" {self.bot.mention_cmd('config playerlist-channel')} to do so.\n-"
+                    " If you want to disable this warning, you can use"
+                    f" {self.bot.mention_cmd('config realm-warning')} to do so. *Note"
+                    " that these warnings are often useful, so disabling is not"
+                    " recommended unless you expect your Realm to be inactive for days"
+                    " on end.*\n\nThe bot will automatically disable the autorunner"
+                    " and related settings after 7 days of not getting information"
+                    " from your Realm."
                 )
                 await chan.send(content=content)
 

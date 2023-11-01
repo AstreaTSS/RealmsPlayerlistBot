@@ -413,8 +413,9 @@ class Playerlist(utils.Extension):
     async def online(
         self,
         ctx: utils.RealmContext,
-        fetch_devices: bool = tansy.Option(
-            "Should devices be fetched and displayed? Requires voting or Premium.",
+        device_information: bool = tansy.Option(
+            "Should the bot fetch and display device information? Requires voting or"
+            " Premium.",
             default=False,
         ),
     ) -> None:
@@ -431,14 +432,14 @@ class Playerlist(utils.Extension):
         # okay, this is going to get complicated
         bypass_cache = False
 
-        if fetch_devices:
+        if device_information:
             if (
                 not config.valid_premium
                 and os.environ.get("TOP_GG_TOKEN")
                 and await self.bot.redis.get(f"rpl-voted-{ctx.author_id}") != "1"
             ):
                 raise utils.CustomCheckFailure(
-                    "To fetch devices, you must vote for the bot [on"
+                    "To get device information, you must vote for the bot [on"
                     f" its Top.gg page](https://top.gg/bot/{self.bot.user.id}/vote) or"
                     " [purchase Playerlist"
                     f" Premium]({os.environ['PREMIUM_INFO_LINK']}). Voting lasts for 12"

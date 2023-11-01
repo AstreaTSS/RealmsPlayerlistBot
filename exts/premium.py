@@ -308,14 +308,14 @@ class PremiumHandling(ipy.Extension):
         return _check
 
     @premium.subcommand(
-        sub_cmd_name="fetch-devices",
+        sub_cmd_name="device-information",
         sub_cmd_description=(
-            "If enabled, fetches and displays devices of online players. Will make bot"
-            " slower. Premium only."
+            "Displays online player devices for various commands. Premium only; will"
+            " slow bot."
         ),
     )
     @premium_check()
-    async def toggle_fetch_devices(
+    async def toggle_device_information(
         self,
         ctx: utils.RealmContext,
         toggle: bool = tansy.Option("Should it be on (true) or off (false)?"),
@@ -333,16 +333,16 @@ class PremiumHandling(ipy.Extension):
             embed = ipy.Embed(
                 title="Warning",
                 description=(
-                    "This will fetch display the device the user is playing on if they"
-                    " are on the Realm whenever the bot shows them.\n**However, this"
-                    " will make the bot slower with certain commands**, like `/online`"
-                    " and `/playerlist`, and also slow down the live playerlist"
-                    " slightly (if enabled), as fetching the device requires a bit more"
-                    " information that what is usually stored.\n*This will also not"
-                    " work with every single player* - privacy settings may make the"
-                    " bot unable to fetch the device.\n\n**If you wish to continue with"
-                    " enabling the fetching and displaying of devices, press the accept"
-                    " button.** You have 90 seconds to do so."
+                    "This will display the device the user is playing on if they are on"
+                    " the Realm whenever the bot shows them.\n**However, this will make"
+                    " the bot slower with certain commands**, like `/online` and"
+                    " `/playerlist`, and also slow down the live playerlist slightly"
+                    " (if enabled), as getting the device information requires getting"
+                    " a bit more information that what is usually stored.\n*This will"
+                    " also not work with every single player* - privacy settings may"
+                    " make the bot unable to fetch the device.\n\n**If you wish to"
+                    " continue with enabling the displaying of devices, press the"
+                    " accept button.** You have 90 seconds to do so."
                 ),
                 timestamp=ipy.Timestamp.utcnow(),
                 color=ipy.RoleColors.YELLOW,
@@ -363,13 +363,13 @@ class PremiumHandling(ipy.Extension):
                 )
 
                 if event.ctx.custom_id == components[1].custom_id:
-                    result = "Declined fetching and displaying devices."
+                    result = "Declined displaying devices."
                 else:
                     config.fetch_devices = True
                     await config.save()
                     self.bot.fetch_devices_for.add(config.realm_id)
 
-                    result = "Turned on fetching and displaying devices."
+                    result = "Turned on displaying devices."
             except asyncio.TimeoutError:
                 result = "Timed out."
             finally:
@@ -384,9 +384,7 @@ class PremiumHandling(ipy.Extension):
             config.fetch_devices = False
             await config.save()
 
-            await ctx.send(
-                embeds=utils.make_embed("Turned off fetching and displaying devices.")
-            )
+            await ctx.send(embeds=utils.make_embed("Turned off displaying devices."))
 
             if not await models.GuildConfig.prisma().count(
                 where={"realm_id": config.realm_id, "fetch_devices": True}
