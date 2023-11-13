@@ -100,15 +100,13 @@ async def get_players_from_club_data(
             break
 
         online = last_seen_state == elytra.ClubUserPresence.IN_GAME
-        player_list.append(
-            {
-                "custom_id": bot.uuid_cache[f"{realm_id}-{member.xuid}"],
-                "realm_id": realm_id,
-                "xuid": member.xuid,
-                "online": online,
-                "last_seen": now if online else last_seen,
-            }
-        )
+        player_list.append({
+            "custom_id": bot.uuid_cache[f"{realm_id}-{member.xuid}"],
+            "realm_id": realm_id,
+            "xuid": member.xuid,
+            "online": online,
+            "last_seen": now if online else last_seen,
+        })
 
         if online:
             bot.online_cache[int(realm_id)].add(member.xuid)
