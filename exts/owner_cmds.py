@@ -443,6 +443,11 @@ class OwnerCMDs(utils.Extension):
         await ctx.bot.redis.set("rpl-blacklist", orjson.dumps(list(ctx.bot.blacklist)))
         await ctx.reply("Done!")
 
+    @debug.subcommand(aliases=["trigger-autorunning-playerlist", "trigger-autorunner"])
+    async def trigger_autorunning_playerlist(self, ctx: utils.RealmPrefixedContext):
+        await self.bot.ext["AutoRunPlayerlist"].playerlist_loop(None)  # type: ignore
+        await ctx.reply("Done!")
+
     @blacklist.subcommand(name="remove", aliases=["delete"])
     async def bl_remove(
         self, ctx: utils.RealmPrefixedContext, snowflake: ipy.SnowflakeObject
