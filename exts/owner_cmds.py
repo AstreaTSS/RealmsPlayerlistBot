@@ -444,7 +444,9 @@ class OwnerCMDs(utils.Extension):
         await ctx.reply("Done!")
 
     @debug.subcommand(aliases=["trigger-autorunning-playerlist", "trigger-autorunner"])
-    async def trigger_autorunning_playerlist(self, ctx: utils.RealmPrefixedContext):
+    async def trigger_autorunning_playerlist(
+        self, ctx: utils.RealmPrefixedContext
+    ) -> None:
         await self.bot.ext["AutoRunPlayerlist"].playerlist_loop(None)  # type: ignore
         await ctx.reply("Done!")
 
