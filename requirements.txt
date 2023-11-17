@@ -4,7 +4,7 @@ tansy==0.8.0
 humanize==4.8.0
 aiodns==3.1.1
 attrs==23.1.0
-pydantic==2.5.0
+pydantic==2.5.1
 prisma==0.11.0
 redis[hiredis]==5.0.1
 orjson==3.9.10
