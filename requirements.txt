@@ -1,7 +1,7 @@
 aiohttp==3.9.0rc0
 discord-py-interactions[speedup]==5.10.0
 tansy==0.8.0
-humanize==4.8.0
+humanize==4.9.0
 aiodns==3.1.1
 attrs==23.1.0
 pydantic==2.5.1
