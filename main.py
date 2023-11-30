@@ -136,14 +136,6 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         )
         await self.change_presence(activity=activity)
 
-    @ipy.listen("disconnect")
-    async def on_disconnect(self) -> None:
-        # basically, this needs to be done as otherwise, when the bot reconnects,
-        # redis may complain that a connection was closed by a peer
-        # this isnt a great solution, but it should work
-        with contextlib.suppress(Exception):
-            await self.redis.connection_pool.disconnect(inuse_connections=True)
-
     @ipy.listen("resume")
     async def on_resume_func(self) -> None:
         activity = ipy.Activity(
