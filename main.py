@@ -272,7 +272,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         await bot.realms.close()
         await bot.db.disconnect()
         await bot.splash_texts.stop()
-        await bot.redis.close(close_connection_pool=True)
+        await bot.redis.aclose(close_connection_pool=True)
 
         return await super().stop()
 
