@@ -38,8 +38,6 @@ OPENXBL_KEY = "KEY"  # register an account at https://xbl.io/ and you'll get a t
 # bot list site tokens. leave blank or remove the entries if you don't want to use them
 TOP_GG_TOKEN = ""
 DBL_TOKEN = ""
-DISCORDSCOM_TOKEN = ""
-DISCORD_BOTS_TOKEN = ""
 
 # various emojis used throughout the bot. more or less self explanatory
 GREEN_CIRCLE_EMOJI="RAW EMOJI STRING"

@@ -61,18 +61,6 @@ class Voting(ipy.Extension):
                 )
             )
 
-        if os.environ.get("DISCORDSCOM_TOKEN"):
-            self.handlers.append(
-                VoteHandler(
-                    name="Discords.com",
-                    base_url="https://discords.com/bots/api",
-                    headers={"Authorization": os.environ["DISCORDSCOM_TOKEN"]},
-                    data_url="/bot/{bot_id}",
-                    data_callback=lambda guild_count: {"server_count": guild_count},
-                    vote_url="https://discords.com/bots/bot/{bot_id}",
-                ),
-            )
-
         if os.environ.get("DBL_TOKEN"):
             self.handlers.append(
                 VoteHandler(
@@ -84,24 +72,6 @@ class Voting(ipy.Extension):
                     vote_url=(
                         "https://discordbotlist.com/bots/realms-playerlist-bot/upvote"
                     ),
-                )
-            )
-
-        if os.environ.get("DISCORD_BOTS_TOKEN"):
-            self.handlers.append(
-                VoteHandler(
-                    name="Discord Bots",
-                    base_url="https://discord.bots.gg/api/v1",
-                    headers={
-                        "Authorization": os.environ["DISCORD_BOTS_TOKEN"],
-                        "Content-Type": "application/json",
-                    },
-                    data_url="/bots/{bot_id}/stats",
-                    data_callback=lambda guild_count: {
-                        "guildCount": guild_count,
-                        "shardCount": self.shard_count,
-                    },
-                    vote_url=None,
                 )
             )
 
