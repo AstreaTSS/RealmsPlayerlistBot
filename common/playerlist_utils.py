@@ -318,7 +318,8 @@ async def eventually_invalidate(
         f" {num_times}/{limit}."
     )
 
-    await bot.redis.expire(f"invalid-playerlist{limit}-{guild_config.guild_id}", 172000)
+    # expire time - one day plus a bit of leeway
+    await bot.redis.expire(f"invalid-playerlist{limit}-{guild_config.guild_id}", 87400)
 
     if num_times >= limit:
         logger.info(
@@ -382,7 +383,7 @@ async def eventually_invalidate_watchlist(
         f" {num_times}/3."
     )
 
-    await bot.redis.expire(f"invalid-watchlist-{guild_config.guild_id}", 172000)
+    await bot.redis.expire(f"invalid-watchlist-{guild_config.guild_id}", 87400)
 
     if num_times >= 3:
         logger.info(
@@ -430,7 +431,7 @@ async def eventually_invalidate_realm_offline(
         f" {num_times}/3."
     )
 
-    await bot.redis.expire(f"invalid-realm-offline-{guild_config.guild_id}", 172000)
+    await bot.redis.expire(f"invalid-realm-offline-{guild_config.guild_id}", 87400)
 
     if num_times >= 3:
         logger.info(
