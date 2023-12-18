@@ -303,7 +303,7 @@ async def config_info_generate(
     if diagnostic_info:
         premium_code_id = str(config.premium_code.id) if config.premium_code else "N/A"
         dev_info_str = (
-            f"Server ID: {ctx.guild_id}\nRealm ID:"
+            f"Server ID: {config.guild_id}\nRealm ID:"
             f" {na_friendly_str(config.realm_id)}\nClub ID:"
             f" {na_friendly_str(config.club_id)}\nPlayerlist Channel ID:"
             f" {na_friendly_str(config.playerlist_chan)}\nRealm Offline Role"
