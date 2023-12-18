@@ -139,9 +139,9 @@ class OwnerCMDs(utils.Extension):
             "The playerlist channel ID for this guild.", default=None
         ),
     ) -> None:
-        guild_config = await GuildConfig.prisma().find_unique_or_raise({
-            "guild_id": int(guild_id)
-        })
+        guild_config = await GuildConfig.prisma().find_unique_or_raise(
+            {"guild_id": int(guild_id)}
+        )
 
         if realm_id:
             guild_config.realm_id = realm_id if realm_id != "None" else None
