@@ -190,9 +190,16 @@ class Autorunners(utils.Extension):
                     days=+days_to_next_sunday, hour=0, minute=0, second=0, microsecond=0
                 )
 
+                # silly way to have a bitfield that toggles every sunday
+                bit = self.bot.redis.bitfield(
+                    "rpl-sunday-bitshift", default_overflow="WRAP"
+                )
+                bit.incrby("u1", "#0", 1)
+                bit_resp: list[int] = await bit.execute()  # [0] or [1]
+
                 await utils.sleep_until(next_sunday)
                 await self.reoccurring_lb_loop(
-                    next_sunday.isocalendar().week % 2 == 0, next_sunday.day <= 7
+                    bit_resp[0] % 2 == 0, next_sunday.day <= 7
                 )
 
         except Exception as e:
