@@ -502,10 +502,13 @@ class PremiumHandling(ipy.Extension):
             await config.save()
 
             await ctx.send(
-                "Set the reoccurring leaderboard to run"
-                f" {utils.REOCCURRING_LB_FREQUENCY[frequency]} with a period of"
-                f" {utils.REOCCURRING_LB_PERIODS[period]}, sending the leaderboard to"
-                f" <#{config.notification_channels.get('reoccurring_leaderboard', config.playerlist_chan)}>.",
+                embed=utils.make_embed(
+                    "Set the reoccurring leaderboard to run"
+                    f" {utils.REOCCURRING_LB_FREQUENCY[frequency]} with a period of"
+                    f" {utils.REOCCURRING_LB_PERIODS[period]}, sending the"
+                    " leaderboard to"
+                    f" <#{config.notification_channels.get('reoccurring_leaderboard', config.playerlist_chan)}>."
+                ),
             )
 
         else:
@@ -518,7 +521,9 @@ class PremiumHandling(ipy.Extension):
             config.notification_channels.pop("reoccurring_leaderboard", None)
             await config.save()
 
-            await ctx.send("Disabled the reoccurring leaderboard.")
+            await ctx.send(
+                embed=utils.make_embed("Disabled the reoccurring leaderboard.")
+            )
 
     @premium.subcommand(
         sub_cmd_name="info",
