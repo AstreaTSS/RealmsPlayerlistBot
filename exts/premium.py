@@ -476,8 +476,8 @@ class PremiumHandling(ipy.Extension):
             default=None,
         ),
         channel: ipy.GuildText | None = tansy.Option(
-            "The channel to send the leaderboard to. Defaults to the autorunning"
-            " playerlist channel.",
+            "The channel to send the leaderboard to. If not set, defaults to the"
+            " autorunning playerlist channel.",
             converter=cclasses.ValidChannelConverter,
         ),
     ) -> None:
