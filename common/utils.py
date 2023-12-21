@@ -51,12 +51,12 @@ _debug_defaults = {
     "EVENTUALLY_INVALIDATE": True,
 }
 
-REOCCURING_LB_FREQUENCY: dict[int, str] = {
+REOCCURRING_LB_FREQUENCY: dict[int, str] = {
     1: "Every Sunday at 12:00 AM (00:00) UTC",
     2: "Every other Sunday at 12:00 AM (00:00) UTC",
     3: "The first Sunday of every month at 12:00 AM (00:00) UTC",
 }
-REOCCURING_LB_PERIODS: dict[int, str] = {
+REOCCURRING_LB_PERIODS: dict[int, str] = {
     1: "24 hours",
     2: "1 week",
     3: "2 weeks",
@@ -274,11 +274,11 @@ async def config_info_generate(
         notification_channels += f"Player Watchlist Channel: <#{player_watchlist}>\n"
     if realm_offline := config.notification_channels.get("realm_offline"):
         notification_channels += f"Realm Offline Channel: <#{realm_offline}>\n"
-    if reoccuring_leaderboard := config.notification_channels.get(
-        "reoccuring_leaderboard"
+    if reoccurring_leaderboard := config.notification_channels.get(
+        "reoccurring_leaderboard"
     ):
         notification_channels += (
-            f"Reoccuring Leaderboard Channel: <#{reoccuring_leaderboard}>\n"
+            f"Reoccuring Leaderboard Channel: <#{reoccurring_leaderboard}>\n"
         )
 
     notification_channels = notification_channels.strip()
@@ -306,10 +306,10 @@ async def config_info_generate(
             else "N/A"
         )
 
-        reoccuring_lb = (
-            f"{REOCCURING_LB_PERIODS[config.reoccuring_leaderboard % 10]} every"
-            f" {REOCCURING_LB_FREQUENCY[config.reoccuring_leaderboard // 10]}"
-            if config.reoccuring_leaderboard
+        reoccurring_lb = (
+            f"{REOCCURRING_LB_PERIODS[config.reoccurring_leaderboard % 10]} every"
+            f" {REOCCURRING_LB_FREQUENCY[config.reoccurring_leaderboard // 10]}"
+            if config.reoccurring_leaderboard
             else "N/A"
         )
 
@@ -320,7 +320,7 @@ async def config_info_generate(
             f" {toggle_friendly_str(config.live_playerlist)}\nLive Online Message:"
             f" {live_online_msg}\nDisplay Device Information:"
             f" {toggle_friendly_str(config.fetch_devices)}\nReoccuring Leaderboard:"
-            f" {reoccuring_lb}",
+            f" {reoccurring_lb}",
             inline=True,
         )
     else:
@@ -337,7 +337,7 @@ async def config_info_generate(
             f" {premium_code_id}\nPlayer Watchlist XUIDs:"
             f" {na_friendly_str(config.player_watchlist)}\nNotification Channels Dict:"
             f" {na_friendly_str(config.notification_channels)}\nReoccuring Leaderboard"
-            f" Value: {na_friendly_str(config.reoccuring_leaderboard)}\n"
+            f" Value: {na_friendly_str(config.reoccurring_leaderboard)}\n"
         )
         if config.premium_code:
             expires_at = (

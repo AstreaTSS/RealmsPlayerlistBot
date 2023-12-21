@@ -451,15 +451,15 @@ class OwnerCMDs(utils.Extension):
         await ctx.reply("Done!")
 
     @debug.subcommand(
-        aliases=["trigger-reoccuring-leaderboard", "trigger-reoccuring-lb"]
+        aliases=["trigger-reoccurring-leaderboard", "trigger-reoccurring-lb"]
     )
-    async def trigger_reoccuring_leaderboard(
+    async def trigger_reoccurring_leaderboard(
         self,
         ctx: utils.RealmPrefixedContext,
         second_sunday: bool,
         first_monday_of_month: bool,
     ) -> None:
-        await self.bot.ext["Autorunners"].reoccuring_lb_loop(  # type: ignore
+        await self.bot.ext["Autorunners"].reoccurring_lb_loop(  # type: ignore
             second_sunday, first_monday_of_month
         )
         await ctx.reply("Done!")

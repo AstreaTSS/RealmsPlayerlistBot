@@ -173,7 +173,7 @@ class Autorunners(utils.Extension):
                 # likely a can't send in channel, eventually invalidate and move on
                 await pl_utils.eventually_invalidate(self.bot, guild_config)
 
-    async def _start_reoccuring_lb(self) -> None:
+    async def _start_reoccurring_lb(self) -> None:
         await self.bot.fully_ready.wait()
         try:
             while True:
@@ -189,7 +189,7 @@ class Autorunners(utils.Extension):
                 )
 
                 await utils.sleep_until(next_sunday)
-                await self.reoccuring_lb_loop(
+                await self.reoccurring_lb_loop(
                     next_sunday.isocalendar().week % 2 == 0, next_sunday.day <= 7
                 )
 
@@ -197,7 +197,7 @@ class Autorunners(utils.Extension):
             if not isinstance(e, asyncio.CancelledError):
                 await utils.error_handle(e)
 
-    async def reoccuring_lb_loop(
+    async def reoccurring_lb_loop(
         self, second_sunday: bool, first_monday_of_month: bool
     ) -> None:
         lb_command = next(
@@ -208,7 +208,7 @@ class Autorunners(utils.Extension):
             configs = await models.GuildConfig.prisma().find_many(
                 where={
                     "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
-                    "NOT": [{"realm_id": None}, {"reoccuring_leaderboard": None}],
+                    "NOT": [{"realm_id": None}, {"reoccurring_leaderboard": None}],
                 },
                 include={"premium_code": True},
             )
@@ -218,7 +218,7 @@ class Autorunners(utils.Extension):
                     "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
                     "NOT": [
                         {"realm_id": None},
-                        {"reoccuring_leaderboard": {"gte": 20, "lt": 30}},
+                        {"reoccurring_leaderboard": {"gte": 20, "lt": 30}},
                     ],
                 },
                 include={"premium_code": True},
@@ -229,7 +229,7 @@ class Autorunners(utils.Extension):
                     "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
                     "NOT": [
                         {"realm_id": None},
-                        {"reoccuring_leaderboard": {"gte": 30, "lt": 40}},
+                        {"reoccurring_leaderboard": {"gte": 30, "lt": 40}},
                     ],
                 },
                 include={"premium_code": True},
@@ -240,20 +240,20 @@ class Autorunners(utils.Extension):
                     "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
                     "NOT": [
                         {"realm_id": None},
-                        {"reoccuring_leaderboard": {"gte": 20}},
+                        {"reoccurring_leaderboard": {"gte": 20}},
                     ],
                 },
                 include={"premium_code": True},
             )
 
-        to_run = [self.send_reoccuring_lb(lb_command, config) for config in configs]
+        to_run = [self.send_reoccurring_lb(lb_command, config) for config in configs]
         output = await asyncio.gather(*to_run, return_exceptions=True)
 
         for message in output:
             if isinstance(message, Exception):
                 await utils.error_handle(message)
 
-    async def send_reoccuring_lb(
+    async def send_reoccurring_lb(
         self,
         lb_command: ipy.InteractionCommand,
         config: models.GuildConfig,
@@ -270,7 +270,7 @@ class Autorunners(utils.Extension):
         a_ctx.author_id = self.bot.user.id
         a_ctx.channel_id = ipy.to_snowflake(
             config.notification_channels.get(
-                "reoccuring_leaderboard", config.playerlist_chan
+                "reoccurring_leaderboard", config.playerlist_chan
             )  # type: ignore
         )
         a_ctx.guild_id = ipy.to_snowflake(config.guild_id)
@@ -284,14 +284,16 @@ class Autorunners(utils.Extension):
 
         try:
             await lb_command.callback(
-                a_ctx, period_determiner(config.reoccuring_leaderboard % 10)
+                a_ctx, period_determiner(config.reoccurring_leaderboard % 10)
             )
         except ipy.errors.BadArgument:
             return
         except ipy.errors.HTTPException as e:
             if e.status < 500:
-                if config.notification_channels.get("reoccuring_leaderboard"):
-                    await pl_utils.eventually_invalidate_reoccuring_lb(self.bot, config)
+                if config.notification_channels.get("reoccurring_leaderboard"):
+                    await pl_utils.eventually_invalidate_reoccurring_lb(
+                        self.bot, config
+                    )
                 else:
                     await pl_utils.eventually_invalidate(self.bot, config)
 

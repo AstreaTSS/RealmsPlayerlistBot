@@ -702,14 +702,14 @@ class GuildConfig(utils.Extension):
         self,
         ctx: utils.RealmContext,
         feature: typing.Literal[
-            "player_watchlist", "realm_offline", "reoccuring_leaderboard"
+            "player_watchlist", "realm_offline", "reoccurring_leaderboard"
         ] = tansy.Option(
             "The feature/notification type to set the channel for.",
             choices=[
                 ipy.SlashCommandChoice("Player Watchlist", "player_watchlist"),
                 ipy.SlashCommandChoice("Realm Offline Notifications", "realm_offline"),
                 ipy.SlashCommandChoice(
-                    "Reoccuring Leaderboard", "reoccuring_leaderboard"
+                    "Reoccuring Leaderboard", "reoccurring_leaderboard"
                 ),
             ],
             type=str,

@@ -448,14 +448,14 @@ class PremiumHandling(ipy.Extension):
             csv_io.close()
 
     @premium.subcommand(
-        sub_cmd_name="reoccuring-leaderboard",
+        sub_cmd_name="reoccurring-leaderboard",
         sub_cmd_description=(
             "Configures a leaderboard that is sent at a certain frequency. Premium"
             " only."
         ),
     )
     @premium_check()
-    async def reoccuring_leaderboard(
+    async def reoccurring_leaderboard(
         self,
         ctx: utils.RealmContext,
         toggle: bool = tansy.Option("Should it be turned on (true) or off (false)?"),
@@ -463,7 +463,7 @@ class PremiumHandling(ipy.Extension):
             "How often the leaderboard should be sent.",
             choices=[
                 ipy.SlashCommandChoice(v, k)
-                for k, v in utils.REOCCURING_LB_FREQUENCY.items()
+                for k, v in utils.REOCCURRING_LB_FREQUENCY.items()
             ],
             default=None,
         ),
@@ -471,7 +471,7 @@ class PremiumHandling(ipy.Extension):
             "The period to gather data for each leaderboard for.",
             choices=[
                 ipy.SlashCommandChoice(v, k)
-                for k, v in utils.REOCCURING_LB_PERIODS.items()
+                for k, v in utils.REOCCURRING_LB_PERIODS.items()
             ],
             default=None,
         ),
@@ -496,29 +496,29 @@ class PremiumHandling(ipy.Extension):
                     " feature!"
                 )
 
-            config.reoccuring_leaderboard = (frequency * 10) + period
+            config.reoccurring_leaderboard = (frequency * 10) + period
             if channel:
-                config.notification_channels["reoccuring_leaderboard"] = channel.id
+                config.notification_channels["reoccurring_leaderboard"] = channel.id
             await config.save()
 
             await ctx.send(
-                "Set the reoccuring leaderboard to run"
-                f" {utils.REOCCURING_LB_FREQUENCY[frequency]} with a period of"
-                f" {utils.REOCCURING_LB_PERIODS[period]}, sending the leaderboard to"
-                f" <#{config.notification_channels.get('reoccuring_leaderboard', config.playerlist_chan)}>.",
+                "Set the reoccurring leaderboard to run"
+                f" {utils.REOCCURRING_LB_FREQUENCY[frequency]} with a period of"
+                f" {utils.REOCCURRING_LB_PERIODS[period]}, sending the leaderboard to"
+                f" <#{config.notification_channels.get('reoccurring_leaderboard', config.playerlist_chan)}>.",
             )
 
         else:
-            if not config.reoccuring_leaderboard:
+            if not config.reoccurring_leaderboard:
                 raise ipy.errors.BadArgument(
-                    "The reoccuring leaderboard hasn't been set yet!"
+                    "The reoccurring leaderboard hasn't been set yet!"
                 )
 
-            config.reoccuring_leaderboard = None
-            config.notification_channels.pop("reoccuring_leaderboard", None)
+            config.reoccurring_leaderboard = None
+            config.notification_channels.pop("reoccurring_leaderboard", None)
             await config.save()
 
-            await ctx.send("Disabled the reoccuring leaderboard.")
+            await ctx.send("Disabled the reoccurring leaderboard.")
 
     @premium.subcommand(
         sub_cmd_name="info",

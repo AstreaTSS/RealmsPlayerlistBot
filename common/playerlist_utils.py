@@ -287,7 +287,7 @@ async def invalidate_premium(
     config.live_playerlist = False
     config.fetch_devices = False
     config.live_online_channel = None
-    config.reoccuring_leaderboard = None
+    config.reoccurring_leaderboard = None
 
     await config.save()
 
@@ -335,7 +335,7 @@ async def eventually_invalidate(
         config.player_watchlist = []
         config.player_watchlist_role = None
         config.notification_channels = {}
-        config.reoccuring_leaderboard = None
+        config.reoccurring_leaderboard = None
         await config.save()
         await bot.redis.delete(
             f"invalid-playerlist3-{config.guild_id}",
@@ -453,28 +453,29 @@ async def eventually_invalidate_realm_offline(
                 await chan.send(msg)
 
 
-async def eventually_invalidate_reoccuring_lb(
+async def eventually_invalidate_reoccurring_lb(
     bot: utils.RealmBotBase, config: models.GuildConfig
 ) -> None:
     if not utils.FEATURE("EVENTUALLY_INVALIDATE"):
         return
 
-    num_times = await bot.redis.incr(f"invalid-realm-reoccuring-lb-{config.guild_id}")
+    num_times = await bot.redis.incr(f"invalid-realm-reoccurring-lb-{config.guild_id}")
 
     logger.info(
-        f"Increased invalid-reoccuring-lb for guild {config.guild_id} to {num_times}/3."
+        f"Increased invalid-reoccurring-lb for guild {config.guild_id} to"
+        f" {num_times}/3."
     )
 
-    await bot.redis.expire(f"invalid-realm-reoccuring-lb-{config.guild_id}", 87400)
+    await bot.redis.expire(f"invalid-realm-reoccurring-lb-{config.guild_id}", 87400)
 
     if num_times >= 3:
         logger.info(
-            f"Unlinking reoccuring leaderboard for guild {config.guild_id} with"
+            f"Unlinking reoccurring leaderboard for guild {config.guild_id} with"
             f" {num_times}/3 invalidations."
         )
 
-        config.reoccuring_leaderboard = None
-        old_chan = config.notification_channels.pop("reoccuring_leaderboard", None)
+        config.reoccurring_leaderboard = None
+        old_chan = config.notification_channels.pop("reoccurring_leaderboard", None)
         await config.save()
 
         if old_chan:
@@ -482,7 +483,7 @@ async def eventually_invalidate_reoccuring_lb(
                 chan = utils.partial_channel(bot, old_chan)
 
                 msg = (
-                    "The reoccuring leaderboard settings and channel has been unlinked"
+                    "The reoccurring leaderboard settings and channel has been unlinked"
                     " as the bot has not been able to properly send messages to it."
                     " Please check your permissions, make sure the bot has `View"
                     " Channel`, `Send Messages`, and `Embed Links` enabled, and then"
