@@ -369,11 +369,11 @@ class CustomCheckFailure(ipy.errors.BadArgument):
 
 
 class RealmContextMixin:
-    guild_config: typing.Optional[GuildConfig]
+    config: typing.Optional[GuildConfig]
     guild_id: ipy.Snowflake
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
-        self.guild_config = None
+        self.config = None
         super().__init__(*args, **kwargs)
 
     @property
@@ -391,14 +391,14 @@ class RealmContextMixin:
         if not self.guild_id:
             raise ValueError("No guild ID set.")
 
-        if self.guild_config:
-            return self.guild_config
+        if self.config:
+            return self.config
 
         config = await GuildConfig.get_or_none(
             self.guild_id
         ) or await GuildConfig.prisma().create(data={"guild_id": self.guild_id})
 
-        self.guild_config = config
+        self.config = config
         return config
 
 

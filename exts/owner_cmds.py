@@ -139,22 +139,22 @@ class OwnerCMDs(utils.Extension):
             "The playerlist channel ID for this guild.", default=None
         ),
     ) -> None:
-        guild_config = await GuildConfig.prisma().find_unique_or_raise(
+        config = await GuildConfig.prisma().find_unique_or_raise(
             {"guild_id": int(guild_id)}
         )
 
         if realm_id:
-            guild_config.realm_id = realm_id if realm_id != "None" else None
+            config.realm_id = realm_id if realm_id != "None" else None
         if club_id:
-            guild_config.club_id = club_id if club_id != "None" else None
-            if club_id != "None" and guild_config.realm_id:
-                await fill_in_data_from_clubs(self.bot, guild_config.realm_id, club_id)
+            config.club_id = club_id if club_id != "None" else None
+            if club_id != "None" and config.realm_id:
+                await fill_in_data_from_clubs(self.bot, config.realm_id, club_id)
         if playerlist_chan:
-            guild_config.playerlist_chan = (
+            config.playerlist_chan = (
                 int(playerlist_chan) if playerlist_chan != "None" else None
             )
 
-        await guild_config.save()
+        await config.save()
         await ctx.send("Done!")
 
     @tansy.slash_command(

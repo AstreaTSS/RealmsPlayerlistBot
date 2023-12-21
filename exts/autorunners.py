@@ -139,18 +139,18 @@ class Autorunners(utils.Extension):
     async def auto_run_playerlist(
         self,
         list_cmd: ipy.InteractionCommand,
-        guild_config: models.GuildConfig,
+        config: models.GuildConfig,
         upsell: str | None,
     ) -> None:
-        if guild_config.guild_id in self.bot.unavailable_guilds:
+        if config.guild_id in self.bot.unavailable_guilds:
             return
 
         # make a fake context to make things easier
         a_ctx = utils.RealmPrefixedContext(client=self.bot)
         a_ctx.author_id = self.bot.user.id
-        a_ctx.channel_id = ipy.to_snowflake(guild_config.playerlist_chan)
-        a_ctx.guild_id = ipy.to_snowflake(guild_config.guild_id)
-        a_ctx.guild_config = guild_config
+        a_ctx.channel_id = ipy.to_snowflake(config.playerlist_chan)
+        a_ctx.guild_id = ipy.to_snowflake(config.guild_id)
+        a_ctx.config = config
 
         a_ctx.prefix = ""
         a_ctx.content_parameters = ""
@@ -173,7 +173,7 @@ class Autorunners(utils.Extension):
         except ipy.errors.HTTPException as e:
             if e.status < 500:
                 # likely a can't send in channel, eventually invalidate and move on
-                await pl_utils.eventually_invalidate(self.bot, guild_config)
+                await pl_utils.eventually_invalidate(self.bot, config)
 
     async def _start_reoccurring_lb(self) -> None:
         await self.bot.fully_ready.wait()
@@ -276,7 +276,7 @@ class Autorunners(utils.Extension):
             )  # type: ignore
         )
         a_ctx.guild_id = ipy.to_snowflake(config.guild_id)
-        a_ctx.guild_config = config
+        a_ctx.config = config
 
         a_ctx.prefix = ""
         a_ctx.content_parameters = ""
