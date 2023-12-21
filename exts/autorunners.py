@@ -78,10 +78,12 @@ class Autorunners(utils.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.playerlist_task = self.bot.create_task(self._start_playerlist())
+        self.reoccuring_lb_task = self.bot.create_task(self._start_reoccurring_lb())
         self.player_session_delete.start()
 
     def drop(self) -> None:
         self.playerlist_task.cancel()
+        self.reoccuring_lb_task.cancel()
         self.player_session_delete.stop()
         super().drop()
 
