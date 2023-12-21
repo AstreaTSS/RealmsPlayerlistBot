@@ -50,6 +50,7 @@ class IgnoreModel:
 class NotificationChannels(typing.TypedDict, total=False):
     realm_offline: int
     player_watchlist: int
+    reoccurring_leaderboard: int
 
 
 class GuildConfig(PrismaGuildConfig):

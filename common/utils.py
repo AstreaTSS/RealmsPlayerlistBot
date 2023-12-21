@@ -51,6 +51,18 @@ _debug_defaults = {
     "EVENTUALLY_INVALIDATE": True,
 }
 
+REOCCURRING_LB_FREQUENCY: dict[int, str] = {
+    1: "Every Sunday at 12:00 AM (00:00) UTC",
+    2: "Every other Sunday at 12:00 AM (00:00) UTC",
+    3: "The first Sunday of every month at 12:00 AM (00:00) UTC",
+}
+REOCCURRING_LB_PERIODS: dict[int, str] = {
+    1: "24 hours",
+    2: "1 week",
+    3: "2 weeks",
+    4: "30 days",
+}
+
 
 def FEATURE(feature: str) -> bool:  # noqa: N802
     return _DEBUG.get(feature, _debug_defaults[feature])
@@ -262,6 +274,12 @@ async def config_info_generate(
         notification_channels += f"Player Watchlist Channel: <#{player_watchlist}>\n"
     if realm_offline := config.notification_channels.get("realm_offline"):
         notification_channels += f"Realm Offline Channel: <#{realm_offline}>\n"
+    if reoccurring_leaderboard := config.notification_channels.get(
+        "reoccurring_leaderboard"
+    ):
+        notification_channels += (
+            f"Reoccurring Leaderboard Channel: <#{reoccurring_leaderboard}>\n"
+        )
 
     notification_channels = notification_channels.strip()
 
@@ -287,14 +305,22 @@ async def config_info_generate(
             if config.premium_code and config.premium_code.user_id
             else "N/A"
         )
+
+        reoccurring_lb = (
+            f"{REOCCURRING_LB_PERIODS[config.reoccurring_leaderboard % 10]} every"
+            f" {REOCCURRING_LB_FREQUENCY[config.reoccurring_leaderboard // 10]}"
+            if config.reoccurring_leaderboard
+            else "N/A"
+        )
+
         embed.add_field(
             "Premium Information",
-            "Premium Active:"
-            f" {yesno_friendly_str(config.valid_premium)}\nLinked To:"
+            f"Premium Active: {yesno_friendly_str(config.valid_premium)}\nLinked To:"
             f" {premium_linked_to}\nLive Playerlist:"
-            f" {toggle_friendly_str(config.live_playerlist)}\nLive Online"
-            f" Message: {live_online_msg}\nDisplay Device Information:"
-            f" {toggle_friendly_str(config.fetch_devices)}",
+            f" {toggle_friendly_str(config.live_playerlist)}\nLive Online Message:"
+            f" {live_online_msg}\nDisplay Device Information:"
+            f" {toggle_friendly_str(config.fetch_devices)}\nReoccurring Leaderboard:"
+            f" {reoccurring_lb}",
             inline=True,
         )
     else:
@@ -310,7 +336,8 @@ async def config_info_generate(
             f" ID:{na_friendly_str(config.realm_offline_role)}\nLinked Premium ID:"
             f" {premium_code_id}\nPlayer Watchlist XUIDs:"
             f" {na_friendly_str(config.player_watchlist)}\nNotification Channels Dict:"
-            f" {na_friendly_str(config.notification_channels)}"
+            f" {na_friendly_str(config.notification_channels)}\nReoccurring Leaderboard"
+            f" Value: {na_friendly_str(config.reoccurring_leaderboard)}\n"
         )
         if config.premium_code:
             expires_at = (

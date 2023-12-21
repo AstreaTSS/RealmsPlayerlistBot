@@ -448,6 +448,84 @@ class PremiumHandling(ipy.Extension):
             csv_io.close()
 
     @premium.subcommand(
+        sub_cmd_name="reoccurring-leaderboard",
+        sub_cmd_description=(
+            "Configures a leaderboard that is sent at a certain frequency. Premium"
+            " only."
+        ),
+    )
+    @premium_check()
+    async def reoccurring_leaderboard(
+        self,
+        ctx: utils.RealmContext,
+        toggle: bool = tansy.Option("Should it be turned on (true) or off (false)?"),
+        frequency: int | None = tansy.Option(
+            "How often the leaderboard should be sent.",
+            choices=[
+                ipy.SlashCommandChoice(v, k)
+                for k, v in utils.REOCCURRING_LB_FREQUENCY.items()
+            ],
+            default=None,
+        ),
+        period: int | None = tansy.Option(
+            "The period to gather data for each leaderboard for.",
+            choices=[
+                ipy.SlashCommandChoice(v, k)
+                for k, v in utils.REOCCURRING_LB_PERIODS.items()
+            ],
+            default=None,
+        ),
+        channel: ipy.GuildText | None = tansy.Option(
+            "The channel to send the leaderboard to. If not set, defaults to the"
+            " autorunning playerlist channel.",
+            converter=cclasses.ValidChannelConverter,
+        ),
+    ) -> None:
+        config = await ctx.fetch_config()
+
+        if toggle:
+            if not (config.realm_id and config.playerlist_chan):
+                raise utils.CustomCheckFailure(
+                    "You need to link your Realm and set a playerlist channel before"
+                    " running this."
+                )
+
+            if not frequency or not period:
+                raise ipy.errors.BadArgument(
+                    "You must provide a frequency and period when enabling this"
+                    " feature!"
+                )
+
+            config.reoccurring_leaderboard = (frequency * 10) + period
+            if channel:
+                config.notification_channels["reoccurring_leaderboard"] = channel.id
+            await config.save()
+
+            await ctx.send(
+                embed=utils.make_embed(
+                    "Set the reoccurring leaderboard to run"
+                    f" {utils.REOCCURRING_LB_FREQUENCY[frequency]} with a period of"
+                    f" {utils.REOCCURRING_LB_PERIODS[period]}, sending the"
+                    " leaderboard to"
+                    f" <#{config.notification_channels.get('reoccurring_leaderboard', config.playerlist_chan)}>."
+                ),
+            )
+
+        else:
+            if not config.reoccurring_leaderboard:
+                raise ipy.errors.BadArgument(
+                    "The reoccurring leaderboard hasn't been set yet!"
+                )
+
+            config.reoccurring_leaderboard = None
+            config.notification_channels.pop("reoccurring_leaderboard", None)
+            await config.save()
+
+            await ctx.send(
+                embed=utils.make_embed("Disabled the reoccurring leaderboard.")
+            )
+
+    @premium.subcommand(
         sub_cmd_name="info",
         sub_cmd_description=(
             "Gives you information about Realms Playerlist Premium and how to get it."
