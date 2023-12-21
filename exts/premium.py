@@ -462,21 +462,16 @@ class PremiumHandling(ipy.Extension):
         frequency: int | None = tansy.Option(
             "How often the leaderboard should be sent.",
             choices=[
-                ipy.SlashCommandChoice("Every Sunday at 12:00 AM (00:00) UTC", 1),
-                ipy.SlashCommandChoice("Every other Sunday at 12:00 AM (00:00) UTC", 2),
-                ipy.SlashCommandChoice(
-                    "The first Sunday of every month at 12:00 AM (00:00) UTC", 3
-                ),
+                ipy.SlashCommandChoice(v, k)
+                for k, v in pl_utils.REOCCURING_LB_FREQUENCY.items()
             ],
             default=None,
         ),
         period: int | None = tansy.Option(
             "The period to gather data for each leaderboard for.",
             choices=[
-                ipy.SlashCommandChoice("24 hours", 1),
-                ipy.SlashCommandChoice("1 week", 2),
-                ipy.SlashCommandChoice("2 weeks", 3),
-                ipy.SlashCommandChoice("30 days", 4),
+                ipy.SlashCommandChoice(v, k)
+                for k, v in pl_utils.REOCCURING_LB_PERIODS.items()
             ],
             default=None,
         ),
@@ -493,9 +488,10 @@ class PremiumHandling(ipy.Extension):
             config.reoccuring_leaderboard = (frequency * 10) + period
             await config.save()
 
-            # TODO: add what was it set as
             await ctx.send(
-                "Set the reoccuring leaderboard!",
+                "Set the reoccuring leaderboard to run"
+                f" {pl_utils.REOCCURING_LB_FREQUENCY[frequency]} with a period of"
+                f" {pl_utils.REOCCURING_LB_PERIODS[period]}",
             )
 
         else:

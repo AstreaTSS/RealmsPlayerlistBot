@@ -36,6 +36,19 @@ import common.utils as utils
 logger = logging.getLogger("realms_bot")
 
 
+REOCCURING_LB_FREQUENCY: dict[int, str] = {
+    1: "Every Sunday at 12:00 AM (00:00) UTC",
+    2: "Every other Sunday at 12:00 AM (00:00) UTC",
+    3: "The first Sunday of every month at 12:00 AM (00:00) UTC",
+}
+REOCCURING_LB_PERIODS: dict[int, str] = {
+    1: "24 hours",
+    2: "1 week",
+    3: "2 weeks",
+    4: "30 days",
+}
+
+
 def _convert_fields(value: tuple[str, ...] | None) -> tuple[str, ...]:
     return ("online", "last_seen") + value if value else ("online", "last_seen")
 
