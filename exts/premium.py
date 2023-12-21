@@ -463,7 +463,7 @@ class PremiumHandling(ipy.Extension):
             "How often the leaderboard should be sent.",
             choices=[
                 ipy.SlashCommandChoice(v, k)
-                for k, v in pl_utils.REOCCURING_LB_FREQUENCY.items()
+                for k, v in utils.REOCCURING_LB_FREQUENCY.items()
             ],
             default=None,
         ),
@@ -471,7 +471,7 @@ class PremiumHandling(ipy.Extension):
             "The period to gather data for each leaderboard for.",
             choices=[
                 ipy.SlashCommandChoice(v, k)
-                for k, v in pl_utils.REOCCURING_LB_PERIODS.items()
+                for k, v in utils.REOCCURING_LB_PERIODS.items()
             ],
             default=None,
         ),
@@ -490,8 +490,8 @@ class PremiumHandling(ipy.Extension):
 
             await ctx.send(
                 "Set the reoccuring leaderboard to run"
-                f" {pl_utils.REOCCURING_LB_FREQUENCY[frequency]} with a period of"
-                f" {pl_utils.REOCCURING_LB_PERIODS[period]}",
+                f" {utils.REOCCURING_LB_FREQUENCY[frequency]} with a period of"
+                f" {utils.REOCCURING_LB_PERIODS[period]}",
             )
 
         else:
