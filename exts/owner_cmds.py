@@ -450,6 +450,20 @@ class OwnerCMDs(utils.Extension):
         await self.bot.ext["Autorunners"].playerlist_loop(None)  # type: ignore
         await ctx.reply("Done!")
 
+    @debug.subcommand(
+        aliases=["trigger-reoccuring-leaderboard", "trigger-reoccuring-lb"]
+    )
+    async def trigger_reoccuring_leaderboard(
+        self,
+        ctx: utils.RealmPrefixedContext,
+        second_sunday: bool,
+        first_monday_of_month: bool,
+    ) -> None:
+        await self.bot.ext["Autorunners"].reoccuring_lb_loop(  # type: ignore
+            second_sunday, first_monday_of_month
+        )
+        await ctx.reply("Done!")
+
     @blacklist.subcommand(name="remove", aliases=["delete"])
     async def bl_remove(
         self, ctx: utils.RealmPrefixedContext, snowflake: ipy.SnowflakeObject

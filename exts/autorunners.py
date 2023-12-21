@@ -198,13 +198,13 @@ class Autorunners(utils.Extension):
                 await utils.error_handle(e)
 
     async def reoccuring_lb_loop(
-        self, the_second_sunday: bool, first_monday_of_month: bool
+        self, second_sunday: bool, first_monday_of_month: bool
     ) -> None:
         lb_command = next(
             c for c in self.bot.application_commands if str(c.name) == "leaderboard"
         )
 
-        if the_second_sunday and first_monday_of_month:
+        if second_sunday and first_monday_of_month:
             configs = await models.GuildConfig.prisma().find_many(
                 where={
                     "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
@@ -223,7 +223,7 @@ class Autorunners(utils.Extension):
                 },
                 include={"premium_code": True},
             )
-        elif the_second_sunday:
+        elif second_sunday:
             configs = await models.GuildConfig.prisma().find_many(
                 where={
                     "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
