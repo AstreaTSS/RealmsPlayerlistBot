@@ -268,7 +268,11 @@ class Autorunners(utils.Extension):
         # make a fake context to make things easier
         a_ctx = utils.RealmPrefixedContext(client=self.bot)
         a_ctx.author_id = self.bot.user.id
-        a_ctx.channel_id = ipy.to_snowflake(config.playerlist_chan)
+        a_ctx.channel_id = ipy.to_snowflake(
+            config.notification_channels.get(
+                "reoccuring_leaderboard", config.playerlist_chan
+            )  # type: ignore
+        )
         a_ctx.guild_id = ipy.to_snowflake(config.guild_id)
         a_ctx.guild_config = config
 
@@ -286,8 +290,10 @@ class Autorunners(utils.Extension):
             return
         except ipy.errors.HTTPException as e:
             if e.status < 500:
-                # likely a can't send in channel, eventually invalidate and move on
-                await pl_utils.eventually_invalidate(self.bot, config)
+                if config.notification_channels.get("reoccuring_leaderboard"):
+                    await pl_utils.eventually_invalidate_reoccuring_lb(self.bot, config)
+                else:
+                    await pl_utils.eventually_invalidate(self.bot, config)
 
     @ipy.Task.create(
         ipy.OrTrigger(ipy.TimeTrigger(utc=True), ipy.TimeTrigger(hour=12, utc=True))

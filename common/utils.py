@@ -274,6 +274,12 @@ async def config_info_generate(
         notification_channels += f"Player Watchlist Channel: <#{player_watchlist}>\n"
     if realm_offline := config.notification_channels.get("realm_offline"):
         notification_channels += f"Realm Offline Channel: <#{realm_offline}>\n"
+    if reoccuring_leaderboard := config.notification_channels.get(
+        "reoccuring_leaderboard"
+    ):
+        notification_channels += (
+            f"Reoccuring Leaderboard Channel: <#{reoccuring_leaderboard}>\n"
+        )
 
     notification_channels = notification_channels.strip()
 
