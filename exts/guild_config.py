@@ -709,7 +709,7 @@ class GuildConfig(utils.Extension):
                 ipy.SlashCommandChoice("Player Watchlist", "player_watchlist"),
                 ipy.SlashCommandChoice("Realm Offline Notifications", "realm_offline"),
                 ipy.SlashCommandChoice(
-                    "Reoccuring Leaderboard", "reoccurring_leaderboard"
+                    "Reoccurring Leaderboard", "reoccurring_leaderboard"
                 ),
             ],
             type=str,

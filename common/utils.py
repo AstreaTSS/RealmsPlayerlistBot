@@ -278,7 +278,7 @@ async def config_info_generate(
         "reoccurring_leaderboard"
     ):
         notification_channels += (
-            f"Reoccuring Leaderboard Channel: <#{reoccurring_leaderboard}>\n"
+            f"Reoccurring Leaderboard Channel: <#{reoccurring_leaderboard}>\n"
         )
 
     notification_channels = notification_channels.strip()
@@ -319,7 +319,7 @@ async def config_info_generate(
             f" {premium_linked_to}\nLive Playerlist:"
             f" {toggle_friendly_str(config.live_playerlist)}\nLive Online Message:"
             f" {live_online_msg}\nDisplay Device Information:"
-            f" {toggle_friendly_str(config.fetch_devices)}\nReoccuring Leaderboard:"
+            f" {toggle_friendly_str(config.fetch_devices)}\nReoccurring Leaderboard:"
             f" {reoccurring_lb}",
             inline=True,
         )
@@ -336,7 +336,7 @@ async def config_info_generate(
             f" ID:{na_friendly_str(config.realm_offline_role)}\nLinked Premium ID:"
             f" {premium_code_id}\nPlayer Watchlist XUIDs:"
             f" {na_friendly_str(config.player_watchlist)}\nNotification Channels Dict:"
-            f" {na_friendly_str(config.notification_channels)}\nReoccuring Leaderboard"
+            f" {na_friendly_str(config.notification_channels)}\nReoccurring Leaderboard"
             f" Value: {na_friendly_str(config.reoccurring_leaderboard)}\n"
         )
         if config.premium_code:
