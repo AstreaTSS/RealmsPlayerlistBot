@@ -475,34 +475,47 @@ class PremiumHandling(ipy.Extension):
             ],
             default=None,
         ),
+        channel: ipy.GuildText | None = tansy.Option(
+            "The channel to send the leaderboard to. Defaults to the autorunning"
+            " playerlist channel.",
+            converter=cclasses.ValidChannelConverter,
+        ),
     ) -> None:
+        config = await ctx.fetch_config()
+
         if toggle:
+            if not (config.realm_id and config.playerlist_chan):
+                raise utils.CustomCheckFailure(
+                    "You need to link your Realm and set a playerlist channel before"
+                    " running this."
+                )
+
             if not frequency or not period:
                 raise ipy.errors.BadArgument(
                     "You must provide a frequency and period when enabling this"
                     " feature!"
                 )
 
-            config = await ctx.fetch_config()
-
             config.reoccuring_leaderboard = (frequency * 10) + period
+            if channel:
+                config.notification_channels["reoccuring_leaderboard"] = channel.id
             await config.save()
 
             await ctx.send(
                 "Set the reoccuring leaderboard to run"
                 f" {utils.REOCCURING_LB_FREQUENCY[frequency]} with a period of"
-                f" {utils.REOCCURING_LB_PERIODS[period]}",
+                f" {utils.REOCCURING_LB_PERIODS[period]}, sending to"
+                f" <#{config.notification_channels.get('reoccuring_leaderboard', config.playerlist_chan)}>.",
             )
 
         else:
-            config = await ctx.fetch_config()
-
             if not config.reoccuring_leaderboard:
                 raise ipy.errors.BadArgument(
                     "The reoccuring leaderboard hasn't been set yet!"
                 )
 
             config.reoccuring_leaderboard = None
+            config.notification_channels.pop("reoccuring_leaderboard", None)
             await config.save()
 
             await ctx.send("Disabled the reoccuring leaderboard.")
