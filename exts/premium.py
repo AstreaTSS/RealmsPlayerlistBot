@@ -448,6 +448,70 @@ class PremiumHandling(ipy.Extension):
             csv_io.close()
 
     @premium.subcommand(
+        sub_cmd_name="reoccuring-leaderboard",
+        sub_cmd_description=(
+            "Configures a leaderboard that is sent at a certain frequency. Premium"
+            " only."
+        ),
+    )
+    @premium_check()
+    async def reoccuring_leaderboard(
+        self,
+        ctx: utils.RealmContext,
+        toggle: bool = tansy.Option("Should it be turned on (true) or off (false)?"),
+        frequency: int | None = tansy.Option(
+            "How often the leaderboard should be sent.",
+            choices=[
+                ipy.SlashCommandChoice("Every Sunday at 12:00 AM (00:00) UTC", 1),
+                ipy.SlashCommandChoice("Every other Sunday at 12:00 AM (00:00) UTC", 2),
+                ipy.SlashCommandChoice(
+                    "The first Sunday of every month at 12:00 AM (00:00) UTC", 3
+                ),
+            ],
+            default=None,
+        ),
+        period: int | None = tansy.Option(
+            "The period to gather data for each leaderboard for.",
+            choices=[
+                ipy.SlashCommandChoice("24 hours", 1),
+                ipy.SlashCommandChoice("1 week", 2),
+                ipy.SlashCommandChoice("2 weeks", 3),
+                ipy.SlashCommandChoice("30 days", 4),
+            ],
+            default=None,
+        ),
+    ) -> None:
+        if toggle:
+            if not frequency or not period:
+                raise ipy.errors.BadArgument(
+                    "You must provide a frequency and period when enabling this"
+                    " feature!"
+                )
+
+            config = await ctx.fetch_config()
+
+            config.reoccuring_leaderboard = (frequency * 10) + period
+            await config.save()
+
+            # TODO: add what was it set as
+            await ctx.send(
+                "Set the reoccuring leaderboard!",
+            )
+
+        else:
+            config = await ctx.fetch_config()
+
+            if not config.reoccuring_leaderboard:
+                raise ipy.errors.BadArgument(
+                    "The reoccuring leaderboard hasn't been set yet!"
+                )
+
+            config.reoccuring_leaderboard = None
+            await config.save()
+
+            await ctx.send("Disabled the reoccuring leaderboard.")
+
+    @premium.subcommand(
         sub_cmd_name="info",
         sub_cmd_description=(
             "Gives you information about Realms Playerlist Premium and how to get it."

@@ -447,7 +447,7 @@ class OwnerCMDs(utils.Extension):
     async def trigger_autorunning_playerlist(
         self, ctx: utils.RealmPrefixedContext
     ) -> None:
-        await self.bot.ext["AutoRunPlayerlist"].playerlist_loop(None)  # type: ignore
+        await self.bot.ext["Autorunners"].playerlist_loop(None)  # type: ignore
         await ctx.reply("Done!")
 
     @blacklist.subcommand(name="remove", aliases=["delete"])

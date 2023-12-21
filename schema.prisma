@@ -10,20 +10,21 @@ generator client {
 }
 
 model GuildConfig {
-  guild_id              BigInt            @id @default(autoincrement())
-  club_id               String?           @db.VarChar(50)
-  playerlist_chan       BigInt?
-  realm_id              String?           @db.VarChar(50)
-  live_playerlist       Boolean           @default(false)
-  realm_offline_role    BigInt?
-  warning_notifications Boolean           @default(true)
-  premium_code_id       Int?
-  fetch_devices         Boolean           @default(false)
-  live_online_channel   String?           @db.VarChar(75)
-  player_watchlist_role BigInt?
-  player_watchlist      String[]          @default([])
-  notification_channels Json              @db.JsonB @default("{}")
-  premium_code      PremiumCode? @relation(fields: [premium_code_id], references: [id], onUpdate: NoAction)
+  guild_id               BigInt       @id @default(autoincrement())
+  club_id                String?      @db.VarChar(50)
+  playerlist_chan        BigInt?
+  realm_id               String?      @db.VarChar(50)
+  live_playerlist        Boolean      @default(false)
+  realm_offline_role     BigInt?
+  warning_notifications  Boolean      @default(true)
+  premium_code_id        Int?
+  fetch_devices          Boolean      @default(false)
+  live_online_channel    String?      @db.VarChar(75)
+  player_watchlist_role  BigInt?
+  player_watchlist       String[]     @default([])
+  notification_channels  Json         @default("{}") @db.JsonB
+  reoccuring_leaderboard Int?
+  premium_code           PremiumCode? @relation(fields: [premium_code_id], references: [id], onUpdate: NoAction)
 
   @@map("realmguildconfig")
 }
@@ -40,14 +41,14 @@ model PlayerSession {
 }
 
 model PremiumCode {
-  id               Int                @id @default(autoincrement())
-  code             String             @db.VarChar(100)
-  user_id          BigInt?
-  uses             Int                @default(0)
-  max_uses         Int                @default(2)
-  customer_id      String?            @db.VarChar(50)
-  expires_at       DateTime?          @db.Timestamptz(6)
-  guilds GuildConfig[]
+  id          Int           @id @default(autoincrement())
+  code        String        @db.VarChar(100)
+  user_id     BigInt?
+  uses        Int           @default(0)
+  max_uses    Int           @default(2)
+  customer_id String?       @db.VarChar(50)
+  expires_at  DateTime?     @db.Timestamptz(6)
+  guilds      GuildConfig[]
 
   @@map("realmpremiumcode")
 }

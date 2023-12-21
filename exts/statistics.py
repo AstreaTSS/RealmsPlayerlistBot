@@ -469,7 +469,7 @@ class Statistics(utils.Extension):
     @ipy.check(pl_utils.has_linked_realm)
     async def leaderboard(
         self,
-        ctx: utils.RealmContext,
+        ctx: utils.RealmContext | utils.RealmPrefixedContext,
         period: int = tansy.Option(
             "The period to gather data for.",
             choices=[

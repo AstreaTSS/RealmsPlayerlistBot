@@ -287,6 +287,7 @@ async def invalidate_premium(
     config.live_playerlist = False
     config.fetch_devices = False
     config.live_online_channel = None
+    config.reoccuring_leaderboard = None
 
     await config.save()
 
@@ -300,7 +301,7 @@ async def invalidate_premium(
 
 async def eventually_invalidate(
     bot: utils.RealmBotBase,
-    guild_config: models.GuildConfig,
+    config: models.GuildConfig,
     limit: int = 3,
 ) -> None:
     if not utils.FEATURE("EVENTUALLY_INVALIDATE"):
@@ -309,50 +310,46 @@ async def eventually_invalidate(
     # the idea here is to invalidate autorunners that simply can't be run
     # there's a bit of generousity here, as the code gives a total of limit tries
     # before actually doing it
-    num_times = await bot.redis.incr(
-        f"invalid-playerlist{limit}-{guild_config.guild_id}"
-    )
+    num_times = await bot.redis.incr(f"invalid-playerlist{limit}-{config.guild_id}")
 
     logger.info(
-        f"Increased invalid-playerlist for guild {guild_config.guild_id} to"
+        f"Increased invalid-playerlist for guild {config.guild_id} to"
         f" {num_times}/{limit}."
     )
 
     # expire time - one day plus a bit of leeway
-    await bot.redis.expire(f"invalid-playerlist{limit}-{guild_config.guild_id}", 87400)
+    await bot.redis.expire(f"invalid-playerlist{limit}-{config.guild_id}", 87400)
 
     if num_times >= limit:
         logger.info(
-            f"Unlinking guild {guild_config.guild_id} with"
-            f" {num_times}/{limit} invalidations."
+            f"Unlinking guild {config.guild_id} with {num_times}/{limit} invalidations."
         )
 
         # ALL of this is just to reset the config so that there's no more
         # playerlist channel info
-        old_playerlist_chan = guild_config.playerlist_chan
-        guild_config.playerlist_chan = None
-        old_live_playerlist = guild_config.live_playerlist
-        guild_config.live_playerlist = False
-        old_watchlist = guild_config.player_watchlist
-        guild_config.player_watchlist = []
-        guild_config.player_watchlist_role = None
-        guild_config.notification_channels = {}
-        await guild_config.save()
+        old_playerlist_chan = config.playerlist_chan
+        config.playerlist_chan = None
+        old_live_playerlist = config.live_playerlist
+        config.live_playerlist = False
+        old_watchlist = config.player_watchlist
+        config.player_watchlist = []
+        config.player_watchlist_role = None
+        config.notification_channels = {}
+        config.reoccuring_leaderboard = None
+        await config.save()
         await bot.redis.delete(
-            f"invalid-playerlist3-{guild_config.guild_id}",
-            f"invalid-playerlist7-{guild_config.guild_id}",
+            f"invalid-playerlist3-{config.guild_id}",
+            f"invalid-playerlist7-{config.guild_id}",
         )
 
-        if guild_config.realm_id and old_watchlist:
+        if config.realm_id and old_watchlist:
             for player_xuid in old_watchlist:
-                bot.player_watchlist_store[
-                    f"{guild_config.realm_id}-{player_xuid}"
-                ].discard(guild_config.guild_id)
+                bot.player_watchlist_store[f"{config.realm_id}-{player_xuid}"].discard(
+                    config.guild_id
+                )
 
-        if guild_config.realm_id and old_live_playerlist:
-            bot.live_playerlist_store[guild_config.realm_id].discard(
-                guild_config.guild_id
-            )
+        if config.realm_id and old_live_playerlist:
+            bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
 
         if old_playerlist_chan:
             with contextlib.suppress(ipy.errors.HTTPException, AttributeError):
@@ -371,37 +368,36 @@ async def eventually_invalidate(
 
 # TODO: combine these into one somehow
 async def eventually_invalidate_watchlist(
-    bot: utils.RealmBotBase, guild_config: models.GuildConfig
+    bot: utils.RealmBotBase, config: models.GuildConfig
 ) -> None:
     if not utils.FEATURE("EVENTUALLY_INVALIDATE"):
         return
 
-    num_times = await bot.redis.incr(f"invalid-watchlist-{guild_config.guild_id}")
+    num_times = await bot.redis.incr(f"invalid-watchlist-{config.guild_id}")
 
     logger.info(
-        f"Increased invalid-watchlist for guild {guild_config.guild_id} to"
-        f" {num_times}/3."
+        f"Increased invalid-watchlist for guild {config.guild_id} to {num_times}/3."
     )
 
-    await bot.redis.expire(f"invalid-watchlist-{guild_config.guild_id}", 87400)
+    await bot.redis.expire(f"invalid-watchlist-{config.guild_id}", 87400)
 
     if num_times >= 3:
         logger.info(
-            f"Unlinking watchlist for guild {guild_config.guild_id} with"
+            f"Unlinking watchlist for guild {config.guild_id} with"
             f" {num_times}/3 invalidations."
         )
 
-        old_watchlist = guild_config.player_watchlist
-        guild_config.player_watchlist = []
-        guild_config.player_watchlist_role = None
-        old_chan = guild_config.notification_channels.pop("player_watchlist", None)
-        await guild_config.save()
+        old_watchlist = config.player_watchlist
+        config.player_watchlist = []
+        config.player_watchlist_role = None
+        old_chan = config.notification_channels.pop("player_watchlist", None)
+        await config.save()
 
-        if guild_config.realm_id and old_watchlist:
+        if config.realm_id and old_watchlist:
             for player_xuid in old_watchlist:
-                bot.player_watchlist_store[
-                    f"{guild_config.realm_id}-{player_xuid}"
-                ].discard(guild_config.guild_id)
+                bot.player_watchlist_store[f"{config.realm_id}-{player_xuid}"].discard(
+                    config.guild_id
+                )
 
         if old_chan:
             with contextlib.suppress(ipy.errors.HTTPException, AttributeError):
@@ -419,29 +415,28 @@ async def eventually_invalidate_watchlist(
 
 
 async def eventually_invalidate_realm_offline(
-    bot: utils.RealmBotBase, guild_config: models.GuildConfig
+    bot: utils.RealmBotBase, config: models.GuildConfig
 ) -> None:
     if not utils.FEATURE("EVENTUALLY_INVALIDATE"):
         return
 
-    num_times = await bot.redis.incr(f"invalid-realm-offline-{guild_config.guild_id}")
+    num_times = await bot.redis.incr(f"invalid-realm-offline-{config.guild_id}")
 
     logger.info(
-        f"Increased invalid-realm-offline for guild {guild_config.guild_id} to"
-        f" {num_times}/3."
+        f"Increased invalid-realm-offline for guild {config.guild_id} to {num_times}/3."
     )
 
-    await bot.redis.expire(f"invalid-realm-offline-{guild_config.guild_id}", 87400)
+    await bot.redis.expire(f"invalid-realm-offline-{config.guild_id}", 87400)
 
     if num_times >= 3:
         logger.info(
-            f"Unlinking Realm offline for guild {guild_config.guild_id} with"
+            f"Unlinking Realm offline for guild {config.guild_id} with"
             f" {num_times}/3 invalidations."
         )
 
-        guild_config.realm_offline_role = None
-        old_chan = guild_config.notification_channels.pop("realm_offline", None)
-        await guild_config.save()
+        config.realm_offline_role = None
+        old_chan = config.notification_channels.pop("realm_offline", None)
+        await config.save()
 
         if old_chan:
             with contextlib.suppress(ipy.errors.HTTPException, AttributeError):
@@ -460,18 +455,18 @@ async def eventually_invalidate_realm_offline(
 
 async def eventually_invalidate_live_online(
     bot: utils.RealmBotBase,
-    guild_config: models.GuildConfig,
+    config: models.GuildConfig,
 ) -> None:
     if not utils.FEATURE("EVENTUALLY_INVALIDATE"):
         return
 
-    num_times = await bot.redis.incr(f"invalid-liveonline-{guild_config.guild_id}")
-    await bot.redis.expire(f"invalid-liveonline-{guild_config.guild_id}", 86400)
+    num_times = await bot.redis.incr(f"invalid-liveonline-{config.guild_id}")
+    await bot.redis.expire(f"invalid-liveonline-{config.guild_id}", 86400)
 
     if num_times >= 3:
-        guild_config.live_online_channel = None
-        await guild_config.save()
-        await bot.redis.delete(f"invalid-liveonline-{guild_config.guild_id}")
+        config.live_online_channel = None
+        await config.save()
+        await bot.redis.delete(f"invalid-liveonline-{config.guild_id}")
 
 
 async def fill_in_gamertags_for_sessions(

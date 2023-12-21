@@ -56,9 +56,23 @@ def upsell_determiner(dt: datetime.datetime) -> str | None:
     return None
 
 
-class AutoRunPlayerlist(utils.Extension):
-    # the cog that controls the automatic version of the playerlist
-    # this way, we can fix the main playerlist command itself without
+def period_determiner(period_index: int) -> int:
+    match period_index:
+        case 1:
+            return 1
+        case 2:
+            return 7
+        case 3:
+            return 14
+        case 4:
+            return 30
+
+    raise ValueError("This should never happen.")
+
+
+class Autorunners(utils.Extension):
+    # the cog that controls the automatic version of the some commands
+    # this way, we can fix the main command itself without
     # resetting the autorun cycle
 
     def __init__(self, bot: utils.RealmBotBase) -> None:
@@ -88,16 +102,6 @@ class AutoRunPlayerlist(utils.Extension):
             if not isinstance(e, asyncio.CancelledError):
                 await utils.error_handle(e)
 
-    @ipy.Task.create(
-        ipy.OrTrigger(ipy.TimeTrigger(utc=True), ipy.TimeTrigger(hour=12, utc=True))
-    )
-    async def player_session_delete(self) -> None:
-        now = datetime.datetime.now(tz=datetime.UTC)
-        time_back = now - datetime.timedelta(days=31)
-        await models.PlayerSession.prisma().delete_many(
-            where={"online": False, "last_seen": {"lt": time_back}}
-        )
-
     async def playerlist_loop(
         self,
         upsell: str | None,
@@ -125,8 +129,7 @@ class AutoRunPlayerlist(utils.Extension):
         # should make things slightly faster for everyone
         output = await asyncio.gather(*to_run, return_exceptions=True)
 
-        # all of this to send errors to the bot owner/me without
-        # stopping this entirely
+        # all of this to send errors without stopping this entirely
         for message in output:
             if isinstance(message, Exception):
                 await utils.error_handle(message)
@@ -170,9 +173,135 @@ class AutoRunPlayerlist(utils.Extension):
                 # likely a can't send in channel, eventually invalidate and move on
                 await pl_utils.eventually_invalidate(self.bot, guild_config)
 
+    async def _start_reoccuring_lb(self) -> None:
+        await self.bot.fully_ready.wait()
+        try:
+            while True:
+                # margin of error
+                now = ipy.Timestamp.utcnow() + datetime.timedelta(milliseconds=1)
+
+                days_to_next_sunday = 6 - now.weekday()
+                if days_to_next_sunday <= 0:
+                    days_to_next_sunday += 7
+
+                next_sunday = now + relativedelta(
+                    days=+days_to_next_sunday, hour=0, minute=0, second=0, microsecond=0
+                )
+
+                await utils.sleep_until(next_sunday)
+                await self.reoccuring_lb_loop(
+                    next_sunday.isocalendar().week % 2 == 0, next_sunday.day <= 7
+                )
+
+        except Exception as e:
+            if not isinstance(e, asyncio.CancelledError):
+                await utils.error_handle(e)
+
+    async def reoccuring_lb_loop(
+        self, the_second_sunday: bool, first_monday_of_month: bool
+    ) -> None:
+        lb_command = next(
+            c for c in self.bot.application_commands if str(c.name) == "leaderboard"
+        )
+
+        if the_second_sunday and first_monday_of_month:
+            configs = await models.GuildConfig.prisma().find_many(
+                where={
+                    "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
+                    "NOT": [{"realm_id": None}, {"reoccuring_leaderboard": None}],
+                },
+                include={"premium_code": True},
+            )
+        elif first_monday_of_month:
+            configs = await models.GuildConfig.prisma().find_many(
+                where={
+                    "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
+                    "NOT": [
+                        {"realm_id": None},
+                        {"reoccuring_leaderboard": {"gte": 20, "lt": 30}},
+                    ],
+                },
+                include={"premium_code": True},
+            )
+        elif the_second_sunday:
+            configs = await models.GuildConfig.prisma().find_many(
+                where={
+                    "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
+                    "NOT": [
+                        {"realm_id": None},
+                        {"reoccuring_leaderboard": {"gte": 30, "lt": 40}},
+                    ],
+                },
+                include={"premium_code": True},
+            )
+        else:
+            configs = await models.GuildConfig.prisma().find_many(
+                where={
+                    "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
+                    "NOT": [
+                        {"realm_id": None},
+                        {"reoccuring_leaderboard": {"gte": 20}},
+                    ],
+                },
+                include={"premium_code": True},
+            )
+
+        to_run = [self.send_reoccuring_lb(lb_command, config) for config in configs]
+        output = await asyncio.gather(*to_run, return_exceptions=True)
+
+        for message in output:
+            if isinstance(message, Exception):
+                await utils.error_handle(message)
+
+    async def send_reoccuring_lb(
+        self,
+        lb_command: ipy.InteractionCommand,
+        config: models.GuildConfig,
+    ) -> None:
+        if config.guild_id in self.bot.unavailable_guilds:
+            return
+
+        if not config.valid_premium:
+            await pl_utils.invalidate_premium(self.bot, config)
+            return
+
+        # make a fake context to make things easier
+        a_ctx = utils.RealmPrefixedContext(client=self.bot)
+        a_ctx.author_id = self.bot.user.id
+        a_ctx.channel_id = ipy.to_snowflake(config.playerlist_chan)
+        a_ctx.guild_id = ipy.to_snowflake(config.guild_id)
+        a_ctx.guild_config = config
+
+        a_ctx.prefix = ""
+        a_ctx.content_parameters = ""
+        a_ctx.command = None
+        a_ctx.args = []
+        a_ctx.kwargs = {}
+
+        try:
+            await lb_command.callback(
+                a_ctx, period_determiner(config.reoccuring_leaderboard % 10)
+            )
+        except ipy.errors.BadArgument:
+            return
+        except ipy.errors.HTTPException as e:
+            if e.status < 500:
+                # likely a can't send in channel, eventually invalidate and move on
+                await pl_utils.eventually_invalidate(self.bot, config)
+
+    @ipy.Task.create(
+        ipy.OrTrigger(ipy.TimeTrigger(utc=True), ipy.TimeTrigger(hour=12, utc=True))
+    )
+    async def player_session_delete(self) -> None:
+        now = datetime.datetime.now(tz=datetime.UTC)
+        time_back = now - datetime.timedelta(days=31)
+        await models.PlayerSession.prisma().delete_many(
+            where={"online": False, "last_seen": {"lt": time_back}}
+        )
+
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
     importlib.reload(pl_utils)
     importlib.reload(cclasses)
-    AutoRunPlayerlist(bot)
+    Autorunners(bot)
