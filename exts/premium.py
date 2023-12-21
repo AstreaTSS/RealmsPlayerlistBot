@@ -504,7 +504,7 @@ class PremiumHandling(ipy.Extension):
             await ctx.send(
                 "Set the reoccuring leaderboard to run"
                 f" {utils.REOCCURING_LB_FREQUENCY[frequency]} with a period of"
-                f" {utils.REOCCURING_LB_PERIODS[period]}, sending the message to"
+                f" {utils.REOCCURING_LB_PERIODS[period]}, sending the leaderboard to"
                 f" <#{config.notification_channels.get('reoccuring_leaderboard', config.playerlist_chan)}>.",
             )
 
