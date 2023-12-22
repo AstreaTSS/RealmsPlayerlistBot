@@ -109,6 +109,8 @@ splash_texts: tuple[str, ...] = (
     "Help, I'm stuck in a splash text generator",
     "Maybe dockerized!",  # i mean, if you self host, sure
     "It's legal, too!",
+    "Created on June 24th, 2020!",
+    "Licensed under AGPL!",
 )
 
 
