@@ -293,7 +293,9 @@ class Autorunners(utils.Extension):
 
         try:
             await lb_command.callback(
-                a_ctx, period_determiner(config.reoccurring_leaderboard % 10)
+                a_ctx,
+                period_determiner(config.reoccurring_leaderboard % 10),
+                autorunner=True,
             )
         except ipy.errors.BadArgument:
             return

@@ -479,6 +479,7 @@ class Statistics(utils.Extension):
                 ipy.SlashCommandChoice("30 days", 30),
             ],
         ),
+        **kwargs: typing.Any,
     ) -> None:
         config = await ctx.fetch_config()
 
@@ -569,6 +570,9 @@ class Statistics(utils.Extension):
                 color=ipy.RoleColors.YELLOW,
             )
             await ctx.send(embed=embed)
+
+        if kwargs.get("autorunner") and len(leaderboard_str) > 1000:
+            leaderboard_str = "\n".join(leaderboard_str.splitlines()[:20])
 
         if len(leaderboard_str) > 1000:
             pag = help_tools.HelpPaginator.create_from_list(
