@@ -546,6 +546,7 @@ class Statistics(utils.Extension):
             )
 
         leaderboard_str = "\n".join(leaderboard_builder)
+        leaderboard_count = len(leaderboard_builder)
 
         # im lazy
         match period:
@@ -571,10 +572,10 @@ class Statistics(utils.Extension):
             )
             await ctx.send(embed=embed)
 
-        if kwargs.get("autorunner") and len(leaderboard_str) > 1000:
+        if kwargs.get("autorunner") and leaderboard_count > 20:
             leaderboard_str = "\n".join(leaderboard_str.splitlines()[:20])
 
-        if len(leaderboard_str) > 1000:
+        if leaderboard_count > 20:
             pag = help_tools.HelpPaginator.create_from_list(
                 self.bot,
                 leaderboard_builder,
