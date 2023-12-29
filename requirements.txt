@@ -11,7 +11,7 @@ orjson==3.9.10
 python-dateutil==2.8.2
 sentry-sdk==1.39.1
 rapidfuzz==3.6.0
-pycryptodome==3.19.0
+pycryptodome==3.19.1
 cachetools==5.3.2
 msgspec==0.18.5
 elytra-ms==0.2.1
