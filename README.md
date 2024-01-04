@@ -30,7 +30,7 @@ It's:
 
 ### Copyright and License Notice
 
-Copyright 2020-2023 AstreaTSS.
+Copyright 2020-2024 AstreaTSS.
 
 Unless otherwise stated, all files in this repository are licensed under the GNU Affero General Public License v3.0. A copy of the license is available in the [LICENSE](LICENSE) file.
 
