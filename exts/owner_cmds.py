@@ -447,7 +447,8 @@ class OwnerCMDs(utils.Extension):
     async def trigger_autorunning_playerlist(
         self, ctx: utils.RealmPrefixedContext
     ) -> None:
-        await self.bot.ext["Autorunners"].playerlist_loop(None)  # type: ignore
+        async with ctx.channel.typing:
+            await self.bot.ext["Autorunners"].playerlist_loop(None)
         await ctx.reply("Done!")
 
     @debug.subcommand(
@@ -459,9 +460,10 @@ class OwnerCMDs(utils.Extension):
         second_sunday: bool,
         first_monday_of_month: bool,
     ) -> None:
-        await self.bot.ext["Autorunners"].reoccurring_lb_loop(  # type: ignore
-            second_sunday, first_monday_of_month
-        )
+        async with ctx.channel.typing:
+            await self.bot.ext["Autorunners"].reoccurring_lb_loop(
+                second_sunday, first_monday_of_month
+            )
         await ctx.reply("Done!")
 
     @blacklist.subcommand(name="remove", aliases=["delete"])
