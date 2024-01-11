@@ -90,8 +90,8 @@ class Autorunners(utils.Extension):
     async def _start_playerlist(self) -> None:
         await self.bot.fully_ready.wait()
 
-        try:
-            while True:
+        while True:
+            try:
                 # margin of error
                 now = ipy.Timestamp.utcnow() + datetime.timedelta(milliseconds=1)
                 next_delta = relativedelta(hours=+1, minute=0, second=5, microsecond=0)
@@ -99,10 +99,13 @@ class Autorunners(utils.Extension):
 
                 await utils.sleep_until(next_time)
 
-                await self.playerlist_loop(upsell=upsell_determiner(next_time))
-        except Exception as e:
-            if not isinstance(e, asyncio.CancelledError):
-                await utils.error_handle(e)
+                async with asyncio.timeout(180):
+                    await self.playerlist_loop(upsell=upsell_determiner(next_time))
+            except Exception as e:
+                if not isinstance(e, asyncio.CancelledError):
+                    await utils.error_handle(e)
+                else:
+                    return
 
     async def playerlist_loop(
         self,
@@ -164,11 +167,14 @@ class Autorunners(utils.Extension):
         # and yes, add the upsell info
 
         try:
-            await list_cmd.callback(
-                a_ctx,
-                1,
-                autorunner=True,
-                upsell=upsell,
+            await asyncio.wait_for(
+                list_cmd.callback(
+                    a_ctx,
+                    1,
+                    autorunner=True,
+                    upsell=upsell,
+                ),
+                timeout=30,
             )
         except ipy.errors.HTTPException as e:
             if e.status < 500:
