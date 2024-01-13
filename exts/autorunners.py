@@ -130,14 +130,20 @@ class Autorunners(utils.Extension):
                 include={"premium_code": True},
             )
         ]
-        # this gather is done so that they can all run in parallel
-        # should make things slightly faster for everyone
-        output = await asyncio.gather(*to_run, return_exceptions=True)
 
-        # all of this to send errors without stopping this entirely
-        for message in output:
-            if isinstance(message, Exception):
-                await utils.error_handle(message)
+        # run this in parallel. seems like things go wrong if too many are ran at once
+        # so try to slow things down a bit
+        chunks_of_to_runs = [to_run[x : x + 75] for x in range(0, len(to_run), 75)]
+
+        for to_runs in chunks_of_to_runs:
+            output = await asyncio.gather(*to_runs, return_exceptions=True)
+
+            # all of this to send errors without stopping this entirely
+            for message in output:
+                if isinstance(message, Exception):
+                    await utils.error_handle(message)
+
+            await asyncio.sleep(5)
 
     async def auto_run_playerlist(
         self,
