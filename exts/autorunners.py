@@ -98,9 +98,7 @@ class Autorunners(utils.Extension):
                 next_time = now + next_delta
 
                 await utils.sleep_until(next_time)
-
-                async with asyncio.timeout(180):
-                    await self.playerlist_loop(upsell=upsell_determiner(next_time))
+                await self.playerlist_loop(upsell=upsell_determiner(next_time))
             except Exception as e:
                 if not isinstance(e, asyncio.CancelledError):
                     await utils.error_handle(e)
@@ -143,7 +141,7 @@ class Autorunners(utils.Extension):
                 if isinstance(message, Exception):
                     await utils.error_handle(message)
 
-            await asyncio.sleep(5)
+            await asyncio.sleep(1)
 
     async def auto_run_playerlist(
         self,
@@ -304,10 +302,13 @@ class Autorunners(utils.Extension):
         a_ctx.kwargs = {}
 
         try:
-            await lb_command.callback(
-                a_ctx,
-                period_determiner(config.reoccurring_leaderboard % 10),
-                autorunner=True,
+            await asyncio.wait_for(
+                lb_command.callback(
+                    a_ctx,
+                    period_determiner(config.reoccurring_leaderboard % 10),
+                    autorunner=True,
+                ),
+                timeout=180,
             )
         except ipy.errors.BadArgument:
             return
