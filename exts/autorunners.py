@@ -15,6 +15,7 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
 import asyncio
+import contextlib
 import datetime
 import importlib
 
@@ -23,6 +24,7 @@ from dateutil.relativedelta import relativedelta
 
 import common.classes as cclasses
 import common.models as models
+import common.playerlist_events as pl_events
 import common.playerlist_utils as pl_utils
 import common.utils as utils
 
@@ -94,10 +96,15 @@ class Autorunners(utils.Extension):
             try:
                 # margin of error
                 now = ipy.Timestamp.utcnow() + datetime.timedelta(milliseconds=1)
-                next_delta = relativedelta(hours=+1, minute=0, second=5, microsecond=0)
-                next_time = now + next_delta
+                next_time = now.replace(minute=59, second=59, microsecond=0)
 
+                # yes, next_time could be in the past, but that's handled by sleep_until
                 await utils.sleep_until(next_time)
+
+                # wait for the playerlist to finish parsing
+                with contextlib.suppress(asyncio.TimeoutError):
+                    await self.bot.wait_for(pl_events.PlayerlistParseFinish, timeout=15)
+
                 await self.playerlist_loop(upsell=upsell_determiner(next_time))
             except Exception as e:
                 if not isinstance(e, asyncio.CancelledError):
