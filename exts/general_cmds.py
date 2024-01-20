@@ -128,7 +128,7 @@ class GeneralCMDS(utils.Extension):
             title="Support Server",
         )
 
-        components = (
+        components = [
             ipy.Button(
                 style=ipy.ButtonStyle.URL,
                 label="Read the FAQ",
@@ -139,7 +139,7 @@ class GeneralCMDS(utils.Extension):
                 label="Join Support Server",
                 url="https://discord.gg/NSdetwGjpK",
             ),
-        )
+        ]
         await ctx.send(embeds=embed, components=components)
 
     @ipy.slash_command("about", description="Gives information about the bot.")

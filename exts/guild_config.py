@@ -766,7 +766,7 @@ class GuildConfig(utils.Extension):
             " check out the various features of the bot through the other button.",
             title="Setup Bot",
         )
-        components = (
+        components = [
             ipy.Button(
                 style=ipy.ButtonStyle.LINK,
                 label="Server Setup Guide",
@@ -777,7 +777,7 @@ class GuildConfig(utils.Extension):
                 label="Bot Features",
                 url="https://rpl.astrea.cc/wiki/features.html",
             ),
-        )
+        ]
         await ctx.send(embeds=embed, components=components)
 
     watchlist = tansy.SlashCommand(
