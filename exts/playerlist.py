@@ -437,11 +437,11 @@ class Playerlist(utils.Extension):
                 and await self.bot.redis.get(f"rpl-voted-{ctx.author_id}") != "1"
             ):
                 raise utils.CustomCheckFailure(
-                    "To get device information, you must vote for the bot [on"
-                    f" its Top.gg page](https://top.gg/bot/{self.bot.user.id}/vote) or"
+                    "To get device information, you must vote for the bot [on its"
+                    f" Top.gg page](https://top.gg/bot/{self.bot.user.id}/vote) or"
                     " [purchase Playerlist"
-                    f" Premium]({os.environ['PREMIUM_INFO_LINK']}). Voting lasts for 12"
-                    " hours."
+                    " Premium](https://rpl.astrea.cc/wiki/premium.html). Voting lasts"
+                    " for 12 hours."
                 )
             else:
                 bypass_cache = True

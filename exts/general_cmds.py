@@ -107,7 +107,7 @@ class GeneralCMDS(utils.Extension):
             ipy.Button(
                 style=ipy.ButtonStyle.URL,
                 label="Server Setup Guide",
-                url=os.environ["SETUP_LINK"],
+                url="https://rpl.astrea.cc/wiki/server_setup.html",
             ),
             ipy.Button(
                 style=ipy.ButtonStyle.URL,

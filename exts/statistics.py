@@ -490,11 +490,10 @@ class Statistics(utils.Extension):
         ):
             await ctx.command.cooldown.reset(ctx)
             raise utils.CustomCheckFailure(
-                "To use this command, you must vote for the bot [on"
-                f" its Top.gg page](https://top.gg/bot/{self.bot.user.id}/vote) or"
-                " [purchase Playerlist"
-                f" Premium]({os.environ['PREMIUM_INFO_LINK']}). Voting lasts for 12"
-                " hours."
+                "To use this command, you must vote for the bot [on its Top.gg"
+                f" page](https://top.gg/bot/{self.bot.user.id}/vote) or [purchase"
+                " Playerlist Premium](https://rpl.astrea.cc/wiki/premium.html). Voting"
+                " lasts for 12 hours."
             )
 
         if period not in {1, 7, 14, 30}:

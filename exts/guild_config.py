@@ -17,7 +17,6 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import importlib
 import logging
-import os
 import re
 import typing
 
@@ -769,7 +768,7 @@ class GuildConfig(utils.Extension):
         button = ipy.Button(
             style=ipy.ButtonStyle.LINK,
             label="Server Setup Guide",
-            url=os.environ["SETUP_LINK"],
+            url="https://rpl.astrea.cc/wiki/server_setup.html",
         )
         await ctx.send(embeds=embed, components=button)
 

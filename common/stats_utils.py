@@ -325,8 +325,8 @@ async def period_parse(
                     "To use periods longer than 1 week, you must vote for the bot [on"
                     f" its Top.gg page](https://top.gg/bot/{bot.user.id}/vote) or"
                     " [purchase Playerlist"
-                    f" Premium]({os.environ['PREMIUM_INFO_LINK']}). Voting lasts for 12"
-                    " hours."
+                    " Premium](https://rpl.astrea.cc/wiki/premium.html). Voting lasts"
+                    " for 12 hours."
                 )
         else:
             raise ipy.errors.BadArgument("Invalid period given.")
@@ -360,8 +360,8 @@ async def summary_parse(
                     "To use periods longer than 1 week, you must vote for the bot [on"
                     f" its Top.gg page](https://top.gg/bot/{bot.user.id}/vote) or"
                     " [purchase Playerlist"
-                    f" Premium]({os.environ['PREMIUM_INFO_LINK']}). Voting lasts for 12"
-                    " hours."
+                    " Premium](https://rpl.astrea.cc/wiki/premium.html). Voting lasts"
+                    " for 12 hours."
                 )
         else:
             raise ipy.errors.BadArgument("Invalid summary given.")

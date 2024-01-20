@@ -533,14 +533,14 @@ class PremiumHandling(ipy.Extension):
     )
     async def premium_info(self, ctx: utils.RealmContext) -> None:
         embed = utils.make_embed(
-            "To learn about Realms Playerlist Premium, what it has, and how to get it,"
-            " check out the link below.",
+            "To learn about Realms Playerlist Premium, what features it has, and how to"
+            " get it, check out the link below.",
             title="Premium Info",
         )
         button = ipy.Button(
             style=ipy.ButtonStyle.URL,
             label="Premium Info",
-            url=os.environ["PREMIUM_INFO_LINK"],
+            url="https://rpl.astrea.cc/wiki/premium.html",
         )
         await ctx.send(embeds=embed, components=button)
 
