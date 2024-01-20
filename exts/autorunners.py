@@ -41,10 +41,7 @@ UPSELLS = [
         "Do you want a constantly updating live online list? Check out Playerlist"
         " Premium: /premium info"
     ),
-    (
-        "If you like the bot, you can vote for it via /vote! Voting helps the bot grow"
-        " and get more features."
-    ),
+    "Check out all of the features the bot has: https://rpl.astrea.cc/wiki/features",
 ]
 LENGTH_UPSELLS = len(UPSELLS)
 
