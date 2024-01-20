@@ -762,15 +762,23 @@ class GuildConfig(utils.Extension):
         ctx: utils.RealmContext,
     ) -> None:
         embed = utils.make_embed(
-            "To set up this bot, follow the Server Setup Guide below.",
+            "To set up this bot, follow the Server Setup Guide below. You can also see"
+            " the various features of the bot through the other button.",
             title="Setup Bot",
         )
-        button = ipy.Button(
-            style=ipy.ButtonStyle.LINK,
-            label="Server Setup Guide",
-            url="https://rpl.astrea.cc/wiki/server_setup.html",
+        components = (
+            ipy.Button(
+                style=ipy.ButtonStyle.LINK,
+                label="Server Setup Guide",
+                url="https://rpl.astrea.cc/wiki/server_setup.html",
+            ),
+            ipy.Button(
+                style=ipy.ButtonStyle.LINK,
+                label="Bot Features",
+                url="https://rpl.astrea.cc/wiki/features.html",
+            ),
         )
-        await ctx.send(embeds=embed, components=button)
+        await ctx.send(embeds=embed, components=components)
 
     watchlist = tansy.SlashCommand(
         name="watchlist",
