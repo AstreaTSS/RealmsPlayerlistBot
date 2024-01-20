@@ -762,8 +762,8 @@ class GuildConfig(utils.Extension):
         ctx: utils.RealmContext,
     ) -> None:
         embed = utils.make_embed(
-            "To set up this bot, follow the Server Setup Guide below. You can also see"
-            " the various features of the bot through the other button.",
+            "To set up this bot, follow the Server Setup Guide below. You can also"
+            " check out the various features of the bot through the other button.",
             title="Setup Bot",
         )
         components = (
