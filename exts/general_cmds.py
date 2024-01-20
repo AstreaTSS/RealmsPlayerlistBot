@@ -118,20 +118,29 @@ class GeneralCMDS(utils.Extension):
         await ctx.send(embeds=embed, components=components)
 
     @ipy.slash_command(
-        "support", description="Gives an invite link to the support server."
+        "support", description="Gives information about getting support."
     )
     async def support(self, ctx: ipy.InteractionContext) -> None:
         embed = utils.make_embed(
-            "If you need help with the bot, or just want to hang out, join the"
-            " support server!",
+            "Check out the FAQ to see if your question/issue has already been answered."
+            " If not, feel free to join the support server and ask your question/report"
+            " your issue there.",
             title="Support Server",
         )
-        button = ipy.Button(
-            style=ipy.ButtonStyle.URL,
-            label="Join Support Server",
-            url="https://discord.gg/NSdetwGjpK",
+
+        components = (
+            ipy.Button(
+                style=ipy.ButtonStyle.URL,
+                label="Read the FAQ",
+                url="https://rpl.astrea.cc/wiki/faq.html",
+            ),
+            ipy.Button(
+                style=ipy.ButtonStyle.URL,
+                label="Join Support Server",
+                url="https://discord.gg/NSdetwGjpK",
+            ),
         )
-        await ctx.send(embeds=embed, components=button)
+        await ctx.send(embeds=embed, components=components)
 
     @ipy.slash_command("about", description="Gives information about the bot.")
     async def about(self, ctx: ipy.InteractionContext) -> None:

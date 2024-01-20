@@ -42,6 +42,10 @@ UPSELLS = [
         " Premium: /premium info"
     ),
     "Check out all of the features the bot has: https://rpl.astrea.cc/wiki/features",
+    (
+        "Having issues with the bot? Check out the FAQ or join the support server:"
+        " /support"
+    ),
 ]
 LENGTH_UPSELLS = len(UPSELLS)
 
