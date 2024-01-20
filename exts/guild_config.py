@@ -755,7 +755,9 @@ class GuildConfig(utils.Extension):
 
     @config.subcommand(
         sub_cmd_name="help",
-        sub_cmd_description="Tells you how to set up this bot.",
+        sub_cmd_description=(
+            "Tells you how to set up this bot and gives an overview of its features."
+        ),
     )
     async def setup_help(
         self,
@@ -764,7 +766,7 @@ class GuildConfig(utils.Extension):
         embed = utils.make_embed(
             "To set up this bot, follow the Server Setup Guide below. You can also"
             " check out the various features of the bot through the other button.",
-            title="Setup Bot",
+            title="Configuration Help",
         )
         components = [
             ipy.Button(

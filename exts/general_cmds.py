@@ -125,7 +125,7 @@ class GeneralCMDS(utils.Extension):
             "Check out the FAQ to see if your question/issue has already been answered."
             " If not, feel free to join the support server and ask your question/report"
             " your issue there.",
-            title="Support Server",
+            title="Support",
         )
 
         components = [
