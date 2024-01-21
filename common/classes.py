@@ -23,25 +23,30 @@ import orjson
 import redis.asyncio as aioredis
 from prisma._async_http import Response
 
+import common.utils as utils
+
 
 def valid_channel_check(channel: ipy.GuildChannel) -> ipy.GuildText:
-    if not isinstance(channel, ipy.MessageableMixin):
-        raise ipy.errors.BadArgument(f"Cannot send messages in {channel.name}.")
+    if not isinstance(channel, ipy.GuildChannel):
+        raise ipy.errors.BadArgument(f"Cannot send messages in {channel.mention}.")
 
     perms = channel.permissions
 
     if not perms:
-        raise ipy.errors.BadArgument(f"Cannot resolve permissions for {channel.name}.")
+        raise ipy.errors.BadArgument(
+            f"Cannot resolve permissions for {channel.mention}."
+        )
 
     if (
         ipy.Permissions.VIEW_CHANNEL not in perms
     ):  # technically pointless, but who knows
-        raise ipy.errors.BadArgument(f"Cannot read messages in {channel.name}.")
+        raise ipy.errors.BadArgument(f"Cannot read messages in {channel.mention}.")
     elif ipy.Permissions.SEND_MESSAGES not in perms:
-        raise ipy.errors.BadArgument(f"Cannot send messages in {channel.name}.")
+        raise ipy.errors.BadArgument(f"Cannot send messages in {channel.mention}.")
     elif ipy.Permissions.EMBED_LINKS not in perms:
         raise ipy.errors.BadArgument(
-            f"Cannot send embeds (controlled through `Embed Links`) in {channel.name}."
+            "Cannot send embeds (controlled through `Embed Links`) in"
+            f" {channel.mention}."
         )
 
     return channel  # type: ignore
@@ -51,7 +56,37 @@ class ValidChannelConverter(ipy.Converter):
     async def convert(
         self, ctx: ipy.InteractionContext, argument: ipy.GuildText
     ) -> ipy.GuildText:
-        return valid_channel_check(argument)
+        channel = valid_channel_check(argument)
+
+        # im 90% sure discord's channel permission property is broken,
+        # so we'll just try to send a message and see if it errors out
+        try:
+            msg = await channel.send(embed=utils.make_embed("Testing..."))
+            await msg.delete()
+        except ipy.errors.HTTPException as e:
+            if isinstance(e, ipy.errors.Forbidden):
+                if e.text == "Missing Permissions":
+                    raise ipy.errors.BadArgument(
+                        "Cannot send messages and/or send embeds (controlled through"
+                        f" `Embed Links`) in {channel.mention}."
+                    ) from None
+                elif e.text == "Missing Access":
+                    raise ipy.errors.BadArgument(
+                        f"Cannot read messages in {channel.mention}."
+                    ) from None
+                else:
+                    raise ipy.errors.BadArgument(
+                        f"Cannot use {channel.mention}. Please check its permissions."
+                    ) from None
+
+            if e.status >= 500:
+                raise ipy.errors.BadArgument(
+                    "Discord is having issues. Try again later."
+                ) from None
+
+            raise e
+
+        return channel
 
 
 class _Placeholder:
