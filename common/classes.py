@@ -27,7 +27,7 @@ import common.utils as utils
 
 
 def valid_channel_check(channel: ipy.GuildChannel) -> ipy.GuildText:
-    if not isinstance(channel, ipy.GuildChannel):
+    if not isinstance(channel, ipy.MessageableMixin):
         raise ipy.errors.BadArgument(f"Cannot send messages in {channel.mention}.")
 
     perms = channel.permissions
