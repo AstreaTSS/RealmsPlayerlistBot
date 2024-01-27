@@ -534,7 +534,9 @@ class Statistics(utils.Extension):
 
         leaderboard_builder: list[str] = []
 
-        for index, (xuid, playtime) in enumerate(leaderboard_counter_sort):
+        index = 0
+
+        for xuid, playtime in leaderboard_counter_sort:
             if not xuid:  # likely subclient player
                 continue
 
@@ -548,6 +550,8 @@ class Statistics(utils.Extension):
             leaderboard_builder.append(
                 f"**{index+1}\\.** `{gamertag_map[xuid] or xuid}`: {precisedelta}"
             )
+
+            index += 1
 
         leaderboard_count = len(leaderboard_builder)
 
