@@ -522,6 +522,11 @@ class Statistics(utils.Extension):
 
         leaderboard_counter = +leaderboard_counter  # filters out 0s somehow?
 
+        if not leaderboard_counter:
+            raise utils.CustomCheckFailure(
+                "There's no data for the linked Realm for this timespan."
+            )
+
         leaderboard_counter_sort = leaderboard_counter.most_common()
         gamertag_map = await pl_utils.get_xuid_to_gamertag_map(
             self.bot, list(leaderboard_counter)
@@ -544,7 +549,6 @@ class Statistics(utils.Extension):
                 f"**{index+1}\\.** `{gamertag_map[xuid] or xuid}`: {precisedelta}"
             )
 
-        leaderboard_str = "\n".join(leaderboard_builder)
         leaderboard_count = len(leaderboard_builder)
 
         # im lazy
@@ -571,25 +575,38 @@ class Statistics(utils.Extension):
             )
             await ctx.send(embed=embed)
 
-        if kwargs.get("autorunner") and leaderboard_count > 20:
-            leaderboard_str = "\n".join(leaderboard_str.splitlines()[:20])
+        if kwargs.get("autorunner"):
+            leaderboard_builder = leaderboard_builder[:20]
 
         if leaderboard_count > 20:
-            pag = help_tools.HelpPaginator.create_from_list(
+            chunks_of_lb_builder = [
+                leaderboard_builder[x : x + 20]
+                for x in range(0, len(leaderboard_builder), 20)
+            ]
+
+            pag = help_tools.HelpPaginator.create_from_embeds(
                 self.bot,
-                leaderboard_builder,
-                page_size=1000,
+                *(
+                    ipy.Embed(
+                        title=f"Leaderboard for the past {period_str}",
+                        description="\n".join(chunk),
+                        color=ctx.bot.color,
+                        timestamp=now,
+                        footer=ipy.EmbedFooter("As of"),
+                    )
+                    for chunk in chunks_of_lb_builder
+                ),
                 timeout=120,
-                default_title=f"Leaderboard for the past {period_str}",
-                default_color=ctx.bot.color,
             )
+            pag.show_callback_button = False
+
             if len(pag.pages) > 25:  # this will be triggered, make no mistake
                 pag.show_select_menu = False
             await pag.send(ctx)
         else:
             await ctx.send(
                 embed=utils.make_embed(
-                    leaderboard_str,
+                    "\n".join(leaderboard_builder),
                     title=f"Leaderboard for the past {period_str}",
                 )
             )
