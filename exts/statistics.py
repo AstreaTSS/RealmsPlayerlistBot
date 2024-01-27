@@ -596,7 +596,6 @@ class Statistics(utils.Extension):
                         description="\n".join(chunk),
                         color=ctx.bot.color,
                         timestamp=now,
-                        footer=ipy.EmbedFooter("As of"),
                     )
                     for chunk in chunks_of_lb_builder
                 ),
