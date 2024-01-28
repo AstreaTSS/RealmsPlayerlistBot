@@ -581,6 +581,7 @@ class Statistics(utils.Extension):
 
         if kwargs.get("autorunner"):
             leaderboard_builder = leaderboard_builder[:20]
+            leaderboard_count = 20
 
         if leaderboard_count > 20:
             chunks_of_lb_builder = [
