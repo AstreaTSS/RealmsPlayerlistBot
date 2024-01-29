@@ -1,4 +1,4 @@
-aiohttp==3.9.1
+aiohttp==3.9.3
 discord-py-interactions[speedup]==5.11.0
 tansy==0.9.0
 humanize==4.9.0
