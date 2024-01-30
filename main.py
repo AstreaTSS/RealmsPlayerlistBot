@@ -399,9 +399,8 @@ async def start() -> None:
                     "premium_code": {
                         "is": {
                             "expires_at": {
-                                "gt": ipy.Timestamp.utcnow() - datetime.timedelta(
-                                    days=1
-                                )
+                                "gt": ipy.Timestamp.utcnow()
+                                - datetime.timedelta(days=1)
                             }
                         }
                     }
