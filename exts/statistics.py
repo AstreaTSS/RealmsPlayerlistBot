@@ -490,7 +490,7 @@ class Statistics(utils.Extension):
             await ctx.command.cooldown.reset(ctx)
             raise utils.CustomCheckFailure(
                 "To use this command, you must vote for the bot through one of the"
-                f" links listed in {self.bot.mention_cmd('vote')} or [purchase"
+                f" links listed in {self.bot.mention_command('vote')} or [purchase"
                 " Playerlist Premium](https://rpl.astrea.cc/wiki/premium.html). Voting"
                 " lasts for 12 hours."
             )

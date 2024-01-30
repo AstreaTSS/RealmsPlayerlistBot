@@ -237,11 +237,6 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
         self.dispatch(ipy.events.MessageCreate(msg))
 
-    def mention_cmd(self, name: str, scope: int = 0) -> str:
-        # nice shorthand for getting the string mention form of a cmd
-        # name does not need or want a / in front of it
-        return self.interactions_by_scope[scope][name].mention(scope)
-
     def create_task(self, coro: typing.Coroutine) -> asyncio.Task:
         # see the "important" note below for why we do this (to prevent early gc)
         # https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task

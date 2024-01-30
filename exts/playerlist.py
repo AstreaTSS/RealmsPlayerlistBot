@@ -437,7 +437,7 @@ class Playerlist(utils.Extension):
             ):
                 raise utils.CustomCheckFailure(
                     "To get device information, you must vote for the bot through one"
-                    f" of the links listed in {self.bot.mention_cmd('vote')} or"
+                    f" of the links listed in {self.bot.mention_command('vote')} or"
                     " [purchase Playerlist"
                     " Premium](https://rpl.astrea.cc/wiki/premium.html). Voting lasts"
                     " for 12 hours."

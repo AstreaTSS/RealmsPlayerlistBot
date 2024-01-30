@@ -40,7 +40,8 @@ def premium_check[
         if not config.valid_premium:
             raise utils.CustomCheckFailure(
                 "This server does not have premium activated! Check out"
-                f" {ctx.bot.mention_cmd('premium info')} for more information about it."
+                f" {ctx.bot.mention_command('premium info')} for more information"
+                " about it."
             )
 
         return True

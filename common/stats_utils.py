@@ -322,8 +322,8 @@ async def period_parse(
             ):
                 raise utils.CustomCheckFailure(
                     "To use periods longer than 1 week, you must vote for the bot"
-                    f" through one of the links listed in {bot.mention_cmd('vote')} or"
-                    " [purchase Playerlist"
+                    " through one of the links listed in"
+                    f" {bot.mention_command('vote')} or [purchase Playerlist"
                     " Premium](https://rpl.astrea.cc/wiki/premium.html). Voting lasts"
                     " for 12 hours."
                 )
@@ -357,8 +357,8 @@ async def summary_parse(
             ):
                 raise utils.CustomCheckFailure(
                     "To use periods longer than 1 week, you must vote for the bot"
-                    f" through one of the links listed in {bot.mention_cmd('vote')} or"
-                    " [purchase Playerlist"
+                    " through one of the links listed in"
+                    f" {bot.mention_command('vote')} or [purchase Playerlist"
                     " Premium](https://rpl.astrea.cc/wiki/premium.html). Voting lasts"
                     " for 12 hours."
                 )
