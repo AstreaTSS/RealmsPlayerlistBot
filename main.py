@@ -245,15 +245,6 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         task.add_done_callback(self.background_tasks.discard)
         return task
 
-    def load_extension(
-        self, name: str, package: str | None = None, **load_kwargs: typing.Any
-    ) -> None:
-        super().load_extension(name, package, **load_kwargs)
-
-        # ipy forgets to do this lol
-        if not self.sync_ext and self._ready.is_set():
-            asyncio.create_task(self._cache_interactions(warn_missing=False))
-
     def add_interaction(self, command: ipy.InteractionCommand) -> bool:
         result = super().add_interaction(command)
         if result and self.enforce_interaction_perms:
