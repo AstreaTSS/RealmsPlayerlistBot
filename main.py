@@ -320,7 +320,11 @@ bot.blacklist = set()
 
 
 async def start() -> None:
-    db = Prisma(auto_register=True, datasource={"url": os.environ["DB_URL"]})
+    db = Prisma(
+        auto_register=True,
+        datasource={"url": os.environ["DB_URL"]},
+        http={"http2": True},
+    )
     await db.connect()
     bot.db = db
 
