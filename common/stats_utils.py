@@ -16,7 +16,6 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
 import io
-import os
 import typing
 from collections import defaultdict
 from enum import IntEnum
@@ -317,13 +316,13 @@ async def period_parse(
     if period not in PERIODS:
         if period in GATED_PERIODS:
             if (
-                os.environ.get("TOP_GG_TOKEN")
+                utils.VOTING_ENABLED
                 and not config.valid_premium
                 and await bot.redis.get(f"rpl-voted-{user_id}") != "1"
             ):
                 raise utils.CustomCheckFailure(
-                    "To use periods longer than 1 week, you must vote for the bot [on"
-                    f" its Top.gg page](https://top.gg/bot/{bot.user.id}/vote) or"
+                    "To use periods longer than 1 week, you must vote for the bot"
+                    f" through one of the links listed in {bot.mention_cmd('vote')} or"
                     " [purchase Playerlist"
                     " Premium](https://rpl.astrea.cc/wiki/premium.html). Voting lasts"
                     " for 12 hours."
@@ -352,13 +351,13 @@ async def summary_parse(
     if summarize_by not in SUMMARIES:
         if summarize_by in GATED_SUMMARIES:
             if (
-                os.environ.get("TOP_GG_TOKEN")
+                utils.VOTING_ENABLED
                 and not config.valid_premium
                 and await bot.redis.get(f"rpl-voted-{user_id}") != "1"
             ):
                 raise utils.CustomCheckFailure(
-                    "To use periods longer than 1 week, you must vote for the bot [on"
-                    f" its Top.gg page](https://top.gg/bot/{bot.user.id}/vote) or"
+                    "To use periods longer than 1 week, you must vote for the bot"
+                    f" through one of the links listed in {bot.mention_cmd('vote')} or"
                     " [purchase Playerlist"
                     " Premium](https://rpl.astrea.cc/wiki/premium.html). Voting lasts"
                     " for 12 hours."

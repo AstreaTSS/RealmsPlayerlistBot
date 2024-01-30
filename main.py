@@ -451,12 +451,7 @@ async def start() -> None:
     ext_list = utils.get_all_extensions(os.environ["DIRECTORY_OF_BOT"])
     for ext in ext_list:
         # skip loading voting ext if token doesn't exist
-        if (
-            "voting" in ext
-            and not os.environ.get("TOP_GG_TOKEN")
-            and not os.environ.get("DBL_TOKEN")
-            and not os.environ.get("DISCORDSCOM_TOKEN")
-        ):
+        if "voting" in ext and not utils.VOTING_ENABLED:
             continue
 
         if not utils.FEATURE("AUTORUNNER") and "autorun" in ext:

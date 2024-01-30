@@ -16,7 +16,6 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
 import importlib
-import os
 import typing
 from collections import Counter
 
@@ -484,14 +483,14 @@ class Statistics(utils.Extension):
         config = await ctx.fetch_config()
 
         if (
-            os.environ.get("TOP_GG_TOKEN")
+            utils.VOTING_ENABLED
             and not config.valid_premium
             and await self.bot.redis.get(f"rpl-voted-{ctx.author.id}") != "1"
         ):
             await ctx.command.cooldown.reset(ctx)
             raise utils.CustomCheckFailure(
-                "To use this command, you must vote for the bot [on its Top.gg"
-                f" page](https://top.gg/bot/{self.bot.user.id}/vote) or [purchase"
+                "To use this command, you must vote for the bot through one of the"
+                f" links listed in {self.bot.mention_cmd('vote')} or [purchase"
                 " Playerlist Premium](https://rpl.astrea.cc/wiki/premium.html). Voting"
                 " lasts for 12 hours."
             )

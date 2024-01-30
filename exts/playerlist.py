@@ -18,7 +18,6 @@ import asyncio
 import datetime
 import importlib
 import math
-import os
 import typing
 
 import elytra
@@ -433,12 +432,12 @@ class Playerlist(utils.Extension):
         if device_information:
             if (
                 not config.valid_premium
-                and os.environ.get("TOP_GG_TOKEN")
+                and utils.VOTING_ENABLED
                 and await self.bot.redis.get(f"rpl-voted-{ctx.author_id}") != "1"
             ):
                 raise utils.CustomCheckFailure(
-                    "To get device information, you must vote for the bot [on its"
-                    f" Top.gg page](https://top.gg/bot/{self.bot.user.id}/vote) or"
+                    "To get device information, you must vote for the bot through one"
+                    f" of the links listed in {self.bot.mention_cmd('vote')} or"
                     " [purchase Playerlist"
                     " Premium](https://rpl.astrea.cc/wiki/premium.html). Voting lasts"
                     " for 12 hours."

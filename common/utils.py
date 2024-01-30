@@ -63,6 +63,8 @@ REOCCURRING_LB_PERIODS: dict[int, str] = {
     4: "30 days",
 }
 
+VOTING_ENABLED = bool(os.environ.get("TOP_GG_TOKEN") or os.environ.get("DBL_TOKEN"))
+
 
 def FEATURE(feature: str) -> bool:  # noqa: N802
     return _DEBUG.get(feature, _debug_defaults[feature])
