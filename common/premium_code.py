@@ -233,3 +233,24 @@ def bytestring_length_decode(the_input: str) -> int:
         return len(the_input.encode().decode("unicode_escape"))
     except UnicodeDecodeError:
         return -1
+
+
+if __name__ == "__main__":
+    from Crypto.Cipher import AES
+
+    encryption_key = input("Enter the encryption key: ")
+    user_id: str | None = input("Enter the user ID (or press enter to skip): ")
+    uses = int(input("Enter the max uses: "))
+
+    if not user_id:
+        user_id = None
+
+    code = full_code_generate(uses, user_id)
+
+    # see exts/premium.py
+    key = bytes(encryption_key, "utf-8")
+    aes = AES.new(key, AES.MODE_SIV)
+    encrypted_code = str(aes.encrypt_and_digest(bytes(code, "utf-8"))[0])  # type: ignore
+
+    print(f"Code: {code}")  # noqa: T201
+    print(f"Encrypted code: {encrypted_code}")  # noqa: T201
