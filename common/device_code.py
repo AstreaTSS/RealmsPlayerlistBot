@@ -80,7 +80,7 @@ async def handle_flow(
                             resp_json
                         )
                         break
-    except asyncio.TimeoutError:
+    except TimeoutError:
         raise utils.CustomCheckFailure("Authentication timed out.") from None
 
     if success_response is None:
@@ -142,7 +142,7 @@ async def handle_realms(
                 ),
                 components=[],
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await ctx.edit(msg, components=[])
             raise utils.CustomCheckFailure("Realm selection timed out.") from None
 

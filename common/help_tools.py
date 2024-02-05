@@ -44,7 +44,7 @@ class CustomTimeout(paginators.Timeout):
                 await asyncio.wait_for(
                     self.ping.wait(), timeout=self.paginator.timeout_interval
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 if self.paginator.message:
                     with contextlib.suppress(ipy.errors.HTTPException):
                         await self.paginator.message.edit(

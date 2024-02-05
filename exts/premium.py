@@ -371,7 +371,7 @@ class PremiumHandling(ipy.Extension):
                     self.bot.fetch_devices_for.add(config.realm_id)
 
                     result = "Turned on displaying devices."
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 result = "Timed out."
             finally:
                 embed = utils.make_embed(result)
