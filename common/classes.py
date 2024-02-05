@@ -54,7 +54,7 @@ def valid_channel_check(channel: ipy.GuildChannel) -> ipy.GuildText:
 
 class ValidChannelConverter(ipy.Converter):
     async def convert(
-        self, ctx: ipy.InteractionContext, argument: ipy.GuildText
+        self, _: ipy.InteractionContext, argument: ipy.GuildText
     ) -> ipy.GuildText:
         channel = valid_channel_check(argument)
 

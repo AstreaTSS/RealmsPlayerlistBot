@@ -27,7 +27,6 @@ from pathlib import Path
 import aiohttp
 import interactions as ipy
 import orjson
-import redis.asyncio as aioredis
 import sentry_sdk
 from interactions.ext import prefixed_commands as prefixed
 
@@ -437,6 +436,7 @@ class RealmAutocompleteContext(RealmContextMixin, ipy.AutocompleteContext):
 
 if typing.TYPE_CHECKING:
     import elytra
+    import redis.asyncio as aioredis
     from aiohttp_retry import RetryClient
     from cachetools import TTLCache
     from prisma import Prisma

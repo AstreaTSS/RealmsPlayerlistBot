@@ -297,7 +297,7 @@ class PermissionsResolver:
                 self.disabled_for_all_channels = permission["permission"]
                 continue
 
-            match permission["type"]:  # noqa: E999
+            match permission["type"]:
                 case 1:  # role
                     (
                         self.allowed_roles.add(object_id)
@@ -419,7 +419,7 @@ def _generate_signature(cmd: ipy.SlashCommand) -> str:
         (ipy.SlashCommandOption(**o) if isinstance(o, dict) else o) for o in cmd.options
     )
     signatures: list[str] = [
-        f"<{str(option.name)}>" if option.required else f"[{str(option.name)}]"
+        f"<{option.name!s}>" if option.required else f"[{option.name!s}]"
         for option in standardized_options
     ]
     return " ".join(signatures)
@@ -434,8 +434,8 @@ def _generate_bottom_text(cmd: ipy.SlashCommand) -> str:
     )
     str_builder = ["__Options:__"]
     str_builder.extend(
-        f"`{str(option.name)}` {'' if option.required else '(optional)'} -"
-        f" {str(option.description)}"
+        f"`{option.name!s}` {'' if option.required else '(optional)'} -"
+        f" {option.description!s}"
         for option in standardized_options
     )
 
@@ -569,7 +569,7 @@ def get_mini_commands_for_scope(
 
         base_mini_cmd = commands_dict[str(cmd.name)]
 
-        group_name = f"{str(cmd.name)} {str(cmd.group_name)}"
+        group_name = f"{cmd.name!s} {cmd.group_name!s}"
         if commands_dict.get(group_name, ipy.MISSING) is ipy.MISSING:
             commands_dict[group_name] = MiniCommand.from_slash_command(cmd, "group")
 

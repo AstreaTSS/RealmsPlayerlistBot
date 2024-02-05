@@ -15,7 +15,16 @@ select = [
     "T20",
     "RET",
     "SIM",
-    "I001",
+    "I",
+    "ASYNC",
+    "N",
+    "UP",
+    "DTZ",
+    "G",
+    "PIE",
+    "TCH",
+    "ARG",
+    "RUF",
 ]
 ignore = [
     "E501",

@@ -43,7 +43,6 @@ ipy_logger.addHandler(handler)
 
 import aiohttp
 import aiohttp_retry
-import discord_typings
 import elytra
 import interactions as ipy
 import orjson
@@ -61,6 +60,9 @@ import common.help_tools as help_tools
 import common.models as models
 import common.splash_texts as splash_texts
 import common.utils as utils
+
+if typing.TYPE_CHECKING:
+    import discord_typings
 
 
 def default_sentry_filter(
@@ -150,7 +152,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     async def i_like_my_events_very_raw(
         self, event: ipy.events.RawGatewayEvent
     ) -> None:
-        data: discord_typings.GuildApplicationCommandPermissionData = event.data  # type: ignore
+        data: "discord_typings.GuildApplicationCommandPermissionData" = event.data  # type: ignore
 
         guild_id = int(data["guild_id"])
 
@@ -207,7 +209,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
             self.dispatch(ipy.events.GuildAvailable(guild_id))
 
     @Processor.define()
-    async def _on_raw_guild_update(self, event: "ipy.events.RawGatewayEvent") -> None:
+    async def _on_raw_guild_update(self, _: "ipy.events.RawGatewayEvent") -> None:
         # yes, this is funny, but we never use guild updates and it would only add
         # to our cache
         return

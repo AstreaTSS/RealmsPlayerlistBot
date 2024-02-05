@@ -303,7 +303,7 @@ class PlayerlistEventHandling(ipy.Extension):
             if config.guild_id in self.bot.unavailable_guilds:
                 continue
 
-            logger.info(f"Warning {config.guild_id} for missing Realm.")
+            logger.info("Warning %s for missing Realm.", config.guild_id)
 
             await pl_utils.eventually_invalidate(self.bot, config, limit=7)
 
@@ -345,7 +345,7 @@ class PlayerlistEventHandling(ipy.Extension):
             except elytra.MicrosoftAPIException as e:
                 # might be an invalid id somehow? who knows
                 if e.resp.status == 404:
-                    logger.warning(f"Could not leave Realm with ID {event.realm_id}.")
+                    logger.warning("Could not leave Realm with ID %s.", event.realm_id)
                 else:
                     raise
 

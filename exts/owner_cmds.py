@@ -32,13 +32,15 @@ import tansy
 from interactions.ext import paginators
 from interactions.ext import prefixed_commands as prefixed
 from interactions.ext.debug_extension.utils import debug_embed, get_cache_state
-from prisma.types import GuildConfigCreateInput
 
 import common.utils as utils
 from common.clubs_playerlist import fill_in_data_from_clubs
 from common.models import GuildConfig
 
 DEV_GUILD_ID = int(os.environ["DEV_GUILD_ID"])
+
+if typing.TYPE_CHECKING:
+    from prisma.types import GuildConfigCreateInput
 
 
 class OwnerCMDs(utils.Extension):
@@ -103,7 +105,7 @@ class OwnerCMDs(utils.Extension):
             "The playerlist channel ID for this guild.", default=None
         ),
     ) -> None:
-        data: GuildConfigCreateInput = {"guild_id": int(guild_id)}
+        data: "GuildConfigCreateInput" = {"guild_id": int(guild_id)}
 
         if club_id:
             data["club_id"] = club_id
@@ -248,7 +250,7 @@ class OwnerCMDs(utils.Extension):
     @load.error
     @unload.error
     async def extension_error(
-        self, error: Exception, ctx: prefixed.PrefixedContext, *args: typing.Any
+        self, error: Exception, ctx: prefixed.PrefixedContext, *_: typing.Any
     ) -> ipy.Message | None:
         if isinstance(error, ipy.errors.CommandCheckFailure):
             return await ctx.reply(
@@ -286,7 +288,7 @@ class OwnerCMDs(utils.Extension):
         func = env["func"]
         try:
             with contextlib.redirect_stdout(stdout):
-                ret = await func()  # noqa
+                ret = await func()
         except Exception:
             await ctx.message.add_reaction("❌")
             raise
@@ -480,8 +482,8 @@ class OwnerCMDs(utils.Extension):
         self,
         error: Exception,
         ctx: ipy.BaseContext,
-        *args: typing.Any,
-        **kwargs: typing.Any,
+        *_: typing.Any,
+        **__: typing.Any,
     ) -> None:
         if isinstance(ctx, prefixed.PrefixedContext):
             ctx.send = ctx.message.reply  # type: ignore

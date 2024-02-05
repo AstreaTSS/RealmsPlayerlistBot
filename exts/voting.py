@@ -14,7 +14,6 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import asyncio
 import importlib
 import os
 import typing
@@ -42,7 +41,7 @@ class Voting(ipy.Extension):
         self.name = "Voting"
 
         self.shard_count = 0
-        asyncio.create_task(self.re_shard_count())
+        self.bot.create_task(self.re_shard_count())
 
         self.handlers: list[VoteHandler] = []
 

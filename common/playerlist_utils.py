@@ -37,7 +37,7 @@ logger = logging.getLogger("realms_bot")
 
 
 def _convert_fields(value: tuple[str, ...] | None) -> tuple[str, ...]:
-    return ("online", "last_seen") + value if value else ("online", "last_seen")
+    return ("online", "last_seen", *value) if value else ("online", "last_seen")
 
 
 class RealmPlayersContainer:
@@ -151,8 +151,10 @@ class GamertagHandler:
                     # can happen, if not rare
                     text = await r.text()
                     logger.info(
-                        f"Failed to get gamertag of user `{xuid}`.\nResponse code:"
-                        f" {r.status}\nText: {text}"
+                        "Failed to get gamertag of user %s.\nResponse code: %s\nText: %s",
+                        xuid,
+                        r.status,
+                        text,
                     )
 
             self.index += 1
@@ -314,8 +316,10 @@ async def eventually_invalidate(
     num_times = await bot.redis.incr(f"invalid-playerlist{limit}-{config.guild_id}")
 
     logger.info(
-        f"Increased invalid-playerlist for guild {config.guild_id} to"
-        f" {num_times}/{limit}."
+        "Increased invalid-playerlist for guild %s to %s/%s.",
+        config.guild_id,
+        num_times,
+        limit,
     )
 
     # expire time - one day plus a bit of leeway
@@ -323,7 +327,10 @@ async def eventually_invalidate(
 
     if num_times >= limit:
         logger.info(
-            f"Unlinking guild {config.guild_id} with {num_times}/{limit} invalidations."
+            "Unlinking guild %s's playerlist with %s/%s invalidations.",
+            config.guild_id,
+            num_times,
+            limit,
         )
 
         # ALL of this is just to reset the config so that there's no more
@@ -377,15 +384,18 @@ async def eventually_invalidate_watchlist(
     num_times = await bot.redis.incr(f"invalid-watchlist-{config.guild_id}")
 
     logger.info(
-        f"Increased invalid-watchlist for guild {config.guild_id} to {num_times}/3."
+        "Increased invalid-watchlist for guild %s to %s/3.",
+        config.guild_id,
+        num_times,
     )
 
     await bot.redis.expire(f"invalid-watchlist-{config.guild_id}", 87400)
 
     if num_times >= 3:
         logger.info(
-            f"Unlinking watchlist for guild {config.guild_id} with"
-            f" {num_times}/3 invalidations."
+            "Unlinking watchlist for guild %s with %s/3 invalidations.",
+            config.guild_id,
+            num_times,
         )
 
         old_watchlist = config.player_watchlist
@@ -424,15 +434,18 @@ async def eventually_invalidate_realm_offline(
     num_times = await bot.redis.incr(f"invalid-realm-offline-{config.guild_id}")
 
     logger.info(
-        f"Increased invalid-realm-offline for guild {config.guild_id} to {num_times}/3."
+        "Increased invalid-realm-offline for guild %s to %s/3.",
+        config.guild_id,
+        num_times,
     )
 
     await bot.redis.expire(f"invalid-realm-offline-{config.guild_id}", 87400)
 
     if num_times >= 3:
         logger.info(
-            f"Unlinking Realm offline for guild {config.guild_id} with"
-            f" {num_times}/3 invalidations."
+            "Unlinking Realm Offline for guild %s with %s/3 invalidations.",
+            config.guild_id,
+            num_times,
         )
 
         config.realm_offline_role = None
@@ -463,16 +476,18 @@ async def eventually_invalidate_reoccurring_lb(
     num_times = await bot.redis.incr(f"invalid-realm-reoccurring-lb-{config.guild_id}")
 
     logger.info(
-        f"Increased invalid-reoccurring-lb for guild {config.guild_id} to"
-        f" {num_times}/3."
+        "Increased invalid-reoccurring-lb for guild %s to %s/3.",
+        config.guild_id,
+        num_times,
     )
 
     await bot.redis.expire(f"invalid-realm-reoccurring-lb-{config.guild_id}", 87400)
 
     if num_times >= 3:
         logger.info(
-            f"Unlinking reoccurring leaderboard for guild {config.guild_id} with"
-            f" {num_times}/3 invalidations."
+            "Unlinking reoccurring leaderboard for guild %s with %s/3 invalidations.",
+            config.guild_id,
+            num_times,
         )
 
         config.reoccurring_leaderboard = None
@@ -631,8 +646,10 @@ async def gamertag_from_xuid(bot: utils.RealmBotBase, xuid: str | int) -> str:
                 # can happen, if not rare
                 text = await r.text()
                 logger.info(
-                    f"Failed to get gamertag of user `{xuid}`.\nResponse code:"
-                    f" {r.status}\nText: {text}"
+                    "Failed to get gamertag of user %s.\nResponse code: %s\nText: %s",
+                    xuid,
+                    r.status,
+                    text,
                 )
 
     if not maybe_gamertag:

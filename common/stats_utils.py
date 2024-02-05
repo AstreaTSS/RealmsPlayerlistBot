@@ -52,7 +52,8 @@ PERIOD_TO_GRAPH = [
     ipy.SlashCommandChoice("One day, per hour", "1pH"),
     ipy.SlashCommandChoice("1 week, per day", "7pD"),
 ]
-GATED_PERIOD_TO_GRAPH = PERIOD_TO_GRAPH + [
+GATED_PERIOD_TO_GRAPH = [
+    *PERIOD_TO_GRAPH,
     ipy.SlashCommandChoice("2 weeks, per day", "14pD"),
     ipy.SlashCommandChoice("30 days, per day", "30pD"),
 ]
@@ -62,7 +63,8 @@ GATED_PERIODS = frozenset({p.value for p in GATED_PERIOD_TO_GRAPH})
 SUMMARIZE_BY = [
     ipy.SlashCommandChoice("1 week, by hour", "7bH"),
 ]
-GATED_SUMMARIZE_BY = SUMMARIZE_BY + [
+GATED_SUMMARIZE_BY = [
+    *SUMMARIZE_BY,
     ipy.SlashCommandChoice("2 weeks, by hour", "14bH"),
     ipy.SlashCommandChoice("30 days, by hour", "30bH"),
     ipy.SlashCommandChoice("2 weeks, by day of the week", "14bD"),
@@ -167,7 +169,7 @@ def get_minutes_per_hour(
     )
 
     return {
-        datetime.datetime.utcfromtimestamp(k): minutes_per_hour[k]
+        datetime.datetime.utcfromtimestamp(k): minutes_per_hour[k]  # noqa: DTZ004
         for k in range(min_timestamp, max_timestamp + 1, InSeconds.HOUR)
     }
 
@@ -209,14 +211,14 @@ def get_minutes_per_day(
     )
 
     return {
-        datetime.datetime.utcfromtimestamp(k): minutes_per_day[k]
+        datetime.datetime.utcfromtimestamp(k): minutes_per_day[k]  # noqa: DTZ004
         for k in range(min_timestamp, max_timestamp + 1, InSeconds.DAY)
     }
 
 
 def timespan_minutes_per_hour(
     ranges: typing.Iterable[GatherDatetimesReturn],
-    **kwargs: typing.Any,
+    **_: typing.Any,
 ) -> dict[datetime.time, int]:
     # we want the dict to start at 0, so make the dict first
     minutes_per_hour: dict[int, int] = {i: 0 for i in range(24)}
@@ -247,7 +249,7 @@ def timespan_minutes_per_hour(
 
 def timespan_minutes_per_day_of_the_week(
     ranges: typing.Iterable[GatherDatetimesReturn],
-    **kwargs: typing.Any,
+    **_: typing.Any,
 ) -> dict[datetime.date, int]:
     minutes_per_day_of_the_week: dict[int, int] = {i: 0 for i in range(7)}
 

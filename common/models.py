@@ -127,7 +127,7 @@ class PlayerSession(PrismaPlayerSession):
             case "PlayStation":
                 base_emoji_id = os.environ["PLAYSTATION_EMOJI_ID"]
             case _:
-                logger.info(f"Unknown device: {self.device}")
+                logger.info("Unknown device: %s", self.device)
                 base_emoji_id = os.environ["UNKNOWN_DEVICE_EMOJI_ID"]
 
         return f"<:{EMOJI_DEVICE_NAMES.get(self.device, self.device.lower().replace(' ', '_'))}:{base_emoji_id}>"

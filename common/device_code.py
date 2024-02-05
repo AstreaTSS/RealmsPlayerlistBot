@@ -160,7 +160,7 @@ async def handle_realms(
             await ctx.bot.xbox.add_friend(xuid=user_xuid)
         except elytra.MicrosoftAPIException as e:
             # not too important, but we'll log it
-            logger.warning(f"Failed to add {user_xuid} as friend.", exc_info=e)
+            logger.warning("Failed to add %s as friend.", user_xuid, exc_info=e)
 
         await user_realms.invite_player(realm_id, my_xuid)
         await asyncio.sleep(5)
@@ -194,7 +194,7 @@ async def handle_realms(
             await user_xbox.remove_friend(xuid=my_xuid)
             await ctx.bot.xbox.remove_friend(xuid=user_xuid)
         except elytra.MicrosoftAPIException as e:
-            logger.warning(f"Failed to remove {user_xuid} as friend.", exc_info=e)
+            logger.warning("Failed to remove %s as friend.", user_xuid, exc_info=e)
 
         return associated_realm
     finally:

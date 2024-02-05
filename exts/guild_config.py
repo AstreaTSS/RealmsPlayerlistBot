@@ -274,7 +274,7 @@ class GuildConfig(utils.Extension):
             except elytra.MicrosoftAPIException as e:
                 # might be an invalid id somehow? who knows
                 if e.resp.status == 404:
-                    logger.warning(f"Could not leave Realm with ID {realm_id}.")
+                    logger.warning("Could not leave Realm with ID %s.", realm_id)
                 else:
                     raise
 
@@ -450,7 +450,7 @@ class GuildConfig(utils.Extension):
 
         if channel:
             if typing.TYPE_CHECKING:
-                assert isinstance(channel, ipy.GuildText)  # noqa: S101
+                assert isinstance(channel, ipy.GuildText)
 
             config.playerlist_chan = channel.id
             await config.save()
