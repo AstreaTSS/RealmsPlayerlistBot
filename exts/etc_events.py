@@ -55,7 +55,7 @@ class EtcEvents(ipy.Extension):
         if not self.bot.is_ready:
             return
 
-        if config := await models.GuildConfig.get(int(event.guild_id)):
+        if config := await models.GuildConfig.get_or_none(int(event.guild_id)):
             if (
                 config.realm_id
                 and await models.GuildConfig.prisma().count(
