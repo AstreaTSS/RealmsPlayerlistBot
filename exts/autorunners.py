@@ -127,7 +127,7 @@ class Autorunners(utils.Extension):
 
         to_run = [
             self.auto_run_playerlist(list_cmd, config, upsell)
-            for config in await models.GuildConfig.prisma().find_many(
+            for config in await models.AutorunGuildConfig.prisma().find_many(
                 where={
                     "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
                     "live_playerlist": False,
@@ -154,7 +154,7 @@ class Autorunners(utils.Extension):
     async def auto_run_playerlist(
         self,
         list_cmd: ipy.InteractionCommand,
-        config: models.GuildConfig,
+        config: models.AutorunGuildConfig,
         upsell: str | None,
     ) -> None:
         if config.guild_id in self.bot.unavailable_guilds:
@@ -165,7 +165,7 @@ class Autorunners(utils.Extension):
         a_ctx.author_id = self.bot.user.id
         a_ctx.channel_id = ipy.to_snowflake(config.playerlist_chan)
         a_ctx.guild_id = ipy.to_snowflake(config.guild_id)
-        a_ctx.config = config
+        a_ctx.config = config  # type: ignore
 
         a_ctx.prefix = ""
         a_ctx.content_parameters = ""

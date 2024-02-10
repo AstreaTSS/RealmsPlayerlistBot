@@ -310,6 +310,10 @@ class Playerlist(utils.Extension):
         bypass_cache_for: typing.Optional[set[str]] = None
         if config.fetch_devices:
             if not config.valid_premium:
+                if isinstance(config, models.AutorunGuildConfig):
+                    config = await models.GuildConfig.prisma().find_unique_or_raise(
+                        where={"guild_id": config.guild_id}
+                    )
                 await pl_utils.invalidate_premium(self.bot, config)
             else:
                 bypass_cache_for = {p.xuid for p in player_sessions if p.online}

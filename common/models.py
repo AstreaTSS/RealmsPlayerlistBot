@@ -34,6 +34,7 @@ from prisma.models import (
 from prisma.models import (
     PremiumCode as PrismaPremiumCode,
 )
+from prisma.partials import PrismaAutorunGuildConfig
 
 logger = logging.getLogger("realms_bot")
 
@@ -80,6 +81,14 @@ class GuildConfig(PrismaGuildConfig):
         if data.get("notification_channels") is not None:
             data["notification_channels"] = Json(data["notification_channels"])
         await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
+
+
+class AutorunGuildConfig(PrismaAutorunGuildConfig):
+    premium_code: typing.Optional["PremiumCode"] = None
+
+    @cached_property
+    def valid_premium(self) -> bool:
+        return bool(self.premium_code and self.premium_code.valid_code)
 
 
 EMOJI_DEVICE_NAMES = {
@@ -183,3 +192,4 @@ class PremiumCode(PrismaPremiumCode):
 
 
 GuildConfig.model_rebuild(force=True)
+AutorunGuildConfig.model_rebuild(force=True)
