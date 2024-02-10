@@ -14,7 +14,6 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import asyncio
 import importlib
 import logging
 import re
@@ -401,7 +400,7 @@ class GuildConfig(utils.Extension):
             else:
                 result = "Loading..."
                 success = True
-        except asyncio.TimeoutError:
+        except TimeoutError:
             result = "Timed out."
         finally:
             embed = utils.make_embed(result)
@@ -558,7 +557,7 @@ class GuildConfig(utils.Extension):
                     await config.save()
 
                     result = "Disabled the warnings."
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 result = "Timed out."
             finally:
                 embed = utils.make_embed(result)
@@ -669,7 +668,7 @@ class GuildConfig(utils.Extension):
                     await config.save()
 
                     result = f"Set the Realm offline ping to {role.mention}."
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 result = "Timed out."
             finally:
                 embed = utils.make_embed(result)
