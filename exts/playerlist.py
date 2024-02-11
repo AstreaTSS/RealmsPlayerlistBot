@@ -31,6 +31,11 @@ import common.playerlist_utils as pl_utils
 import common.utils as utils
 
 
+class PlayerlistKwargs(typing.TypedDict, total=False):
+    autorunner: bool
+    upsell: str | None
+
+
 class Playerlist(utils.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
@@ -258,7 +263,7 @@ class Playerlist(utils.Extension):
             max_value=24,
             default=12,
         ),
-        **kwargs: typing.Any,
+        **kwargs: typing.Unpack[PlayerlistKwargs],
     ) -> None:
         """
         Checks and makes a playerlist, a log of players who have joined and left.

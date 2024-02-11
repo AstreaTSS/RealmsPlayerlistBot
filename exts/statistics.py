@@ -33,6 +33,10 @@ import common.stats_utils as stats_utils
 import common.utils as utils
 
 
+class LeaderboardKwargs(typing.TypedDict, total=False):
+    autorunner: bool
+
+
 def amazing_modal_error_handler[T: ipy.const.AsyncCallable](func: T) -> T:
     async def wrapper(
         self: typing.Any,
@@ -478,7 +482,7 @@ class Statistics(utils.Extension):
                 ipy.SlashCommandChoice("30 days", 30),
             ],
         ),
-        **kwargs: typing.Any,
+        **kwargs: typing.Unpack[LeaderboardKwargs],
     ) -> None:
         config = await ctx.fetch_config()
 
