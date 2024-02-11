@@ -7,7 +7,7 @@ services:
       - ./data/redis:/var/lib/redis
 
   db:
-    image: "postgres:alpine"
+    image: "postgres:16-alpine"
     ports:
       - 5432:5432
     environment:
