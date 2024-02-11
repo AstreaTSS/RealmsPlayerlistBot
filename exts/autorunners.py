@@ -125,16 +125,40 @@ class Autorunners(utils.Extension):
             c for c in self.bot.application_commands if str(c.name) == "playerlist"
         )
 
+        configs = await models.AutorunGuildConfig.prisma().find_many(
+            where={
+                "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
+                "live_playerlist": False,
+                "NOT": [{"realm_id": None}, {"playerlist_chan": None}],
+            },
+            include={"premium_code": True},
+        )
+
+        realm_ids = {c.realm_id for c in configs}
+        for config in configs:
+            if config.fetch_devices and config.valid_premium:
+                realm_ids.discard(config.realm_id)
+
+        now = ipy.Timestamp.utcnow().replace(second=30)
+        time_delta = datetime.timedelta(hours=1, minutes=5)
+        time_ago = now - time_delta
+
+        player_sessions = await models.AutorunPlayerSession.prisma().find_many(
+            distinct=["xuid"],
+            order=[{"xuid": "asc"}, {"last_seen": "desc"}],
+            where={
+                "realm_id": {"in": list(realm_ids)},
+                "OR": [{"online": True}, {"last_seen": {"gte": time_ago}}],
+            },
+        )
+
+        gamertag_map = await pl_utils.get_xuid_to_gamertag_map(
+            self.bot, [p.xuid for p in player_sessions]
+        )
+
         to_run = [
-            self.auto_run_playerlist(list_cmd, config, upsell)
-            for config in await models.AutorunGuildConfig.prisma().find_many(
-                where={
-                    "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
-                    "live_playerlist": False,
-                    "NOT": [{"realm_id": None}, {"playerlist_chan": None}],
-                },
-                include={"premium_code": True},
-            )
+            self.auto_run_playerlist(list_cmd, config, upsell, gamertag_map)
+            for config in configs
         ]
 
         # run this in parallel. seems like things go wrong if too many are ran at once
@@ -156,6 +180,7 @@ class Autorunners(utils.Extension):
         list_cmd: ipy.InteractionCommand,
         config: models.AutorunGuildConfig,
         upsell: str | None,
+        gamertag_map: dict[str, str],
     ) -> None:
         if config.guild_id in self.bot.unavailable_guilds:
             return
@@ -185,6 +210,7 @@ class Autorunners(utils.Extension):
                     1,
                     autorunner=True,
                     upsell=upsell,
+                    gamertag_map=gamertag_map,
                 ),
                 timeout=30,
             )

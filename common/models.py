@@ -34,9 +34,20 @@ from prisma.models import (
 from prisma.models import (
     PremiumCode as PrismaPremiumCode,
 )
-from prisma.partials import PrismaAutorunGuildConfig
+from prisma.partials import AutorunPlayerSession, PrismaAutorunGuildConfig
 
 logger = logging.getLogger("realms_bot")
+
+__all__ = (
+    "GuildConfig",
+    "AutorunGuildConfig",
+    "PlayerSession",
+    "PremiumCode",
+    "NotificationChannels",
+    "IgnoreModel",
+    "AutorunPlayerSession",
+    "EMOJI_DEVICE_NAMES",
+)
 
 
 class IgnoreModel:

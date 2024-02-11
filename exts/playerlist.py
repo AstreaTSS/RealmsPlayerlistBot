@@ -19,6 +19,7 @@ import datetime
 import importlib
 import math
 import typing
+from collections import defaultdict
 
 import elytra
 import interactions as ipy
@@ -34,6 +35,7 @@ import common.utils as utils
 class PlayerlistKwargs(typing.TypedDict, total=False):
     autorunner: bool
     upsell: str | None
+    gamertag_map: defaultdict[str, str]
 
 
 class Playerlist(utils.Extension):
@@ -273,8 +275,8 @@ class Playerlist(utils.Extension):
         May take a while to run at first.
         """
 
-        autorunner: bool = kwargs.get("autorunner", False)
-        upsell: str | None = kwargs.get("upsell")
+        autorunner = kwargs.get("autorunner", False)
+        upsell = kwargs.get("upsell")
 
         config = await ctx.fetch_config()
 
@@ -324,7 +326,10 @@ class Playerlist(utils.Extension):
                 bypass_cache_for = {p.xuid for p in player_sessions if p.online}
 
         player_list = await pl_utils.fill_in_gamertags_for_sessions(
-            self.bot, player_sessions, bypass_cache_for=bypass_cache_for
+            self.bot,
+            player_sessions,
+            bypass_cache_for=bypass_cache_for,
+            gamertag_map=kwargs.get("gamertag_map"),
         )
 
         online_list = sorted(

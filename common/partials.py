@@ -14,7 +14,7 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from prisma.models import GuildConfig
+from prisma.models import GuildConfig, PlayerSession
 
 GuildConfig.create_partial(
     "PrismaAutorunGuildConfig",
@@ -27,3 +27,5 @@ GuildConfig.create_partial(
     ),
     required=("playerlist_chan", "realm_id"),
 )
+
+PlayerSession.create_partial("AutorunPlayerSession", include=("xuid",))

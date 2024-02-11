@@ -531,28 +531,32 @@ async def fill_in_gamertags_for_sessions(
     *,
     bypass_cache: bool = False,
     bypass_cache_for: set[str] | None = None,
+    gamertag_map: defaultdict[str, str] | None = None,
 ) -> list[models.PlayerSession]:
     session_dict = {session.xuid: session for session in player_sessions}
     unresolved: list[str] = []
 
-    if bypass_cache_for is None:
-        bypass_cache_for = set()
-
     if not bypass_cache:
+        session_dict_copy = session_dict.copy()
+
+        if bypass_cache_for:
+            for xuid in bypass_cache_for:
+                unresolved.append(xuid)
+                session_dict_copy.pop(xuid, None)
+
+        if gamertag_map:
+            for xuid, gamertag in gamertag_map.items():
+                if gamertag:
+                    session_dict[xuid].gamertag = gamertag
+                    session_dict_copy.pop(xuid, None)
+
         async with bot.redis.pipeline() as pipeline:
-            for session in player_sessions:
-                if session.xuid not in bypass_cache_for:
-                    pipeline.get(session.xuid)
-                else:
-                    # yes, this is dumb. yes, it works
-                    pipeline.get("PURPOSELY_INVALID_KEY_AAAAAAAAAAAAAAAA")
+            for session in session_dict_copy.values():
+                pipeline.get(session.xuid)
 
             gamertag_list: list[str | None] = await pipeline.execute()
 
-        # order is important to keep while iterating
-        # hence the PURPOSELY_INVALID_KEY_AAAAAAAAAAAAAAAA earlier
-        # TODO: make this ordering indepenent
-        for index, xuid in enumerate(session_dict.keys()):
+        for index, xuid in enumerate(session_dict_copy.keys()):
             gamertag = gamertag_list[index]
             session_dict[xuid].gamertag = gamertag
 
@@ -568,7 +572,7 @@ async def fill_in_gamertags_for_sessions(
             bot.pl_sem,
             tuple(unresolved),
             bot.openxbl_session,
-            gather_devices_for=bypass_cache_for,
+            gather_devices_for=bypass_cache_for or set(),
         )
         gamertag_dict = await gamertag_handler.run()
 
