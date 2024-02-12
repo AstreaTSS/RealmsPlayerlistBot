@@ -161,19 +161,12 @@ class Autorunners(utils.Extension):
             for config in configs
         ]
 
-        # run this in parallel. seems like things go wrong if too many are ran at once
-        # so try to slow things down a bit
-        chunks_of_to_runs = [to_run[x : x + 75] for x in range(0, len(to_run), 75)]
-
-        for to_runs in chunks_of_to_runs:
-            output = await asyncio.gather(*to_runs, return_exceptions=True)
-
-            # all of this to send errors without stopping this entirely
-            for message in output:
-                if isinstance(message, Exception):
-                    await utils.error_handle(message)
-
-            await asyncio.sleep(1)
+        # why not use a taskgroup? because if we did, if one task errored,
+        # the entire thing would stop and we don't want that
+        output = await asyncio.gather(*to_run, return_exceptions=True)
+        for message in output:
+            if isinstance(message, Exception):
+                await utils.error_handle(message)
 
     async def auto_run_playerlist(
         self,
@@ -212,7 +205,7 @@ class Autorunners(utils.Extension):
                     upsell=upsell,
                     gamertag_map=gamertag_map,
                 ),
-                timeout=30,
+                timeout=60,
             )
         except ipy.errors.HTTPException as e:
             if e.status < 500:
