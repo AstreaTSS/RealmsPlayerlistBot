@@ -546,7 +546,7 @@ async def fill_in_gamertags_for_sessions(
 
         if gamertag_map:
             for xuid, gamertag in gamertag_map.items():
-                if gamertag:
+                if gamertag and xuid in session_dict_copy:
                     session_dict[xuid].gamertag = gamertag
                     session_dict_copy.pop(xuid, None)
 
