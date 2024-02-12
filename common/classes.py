@@ -16,6 +16,7 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
 import typing
+from collections.abc import MutableSet
 from copy import copy
 
 import interactions as ipy
@@ -93,12 +94,17 @@ class _Placeholder:
     pass
 
 
-class OrderedSet[T]:
+class OrderedSet[T](MutableSet[T]):
     def __init__(self, an_iter: typing.Iterable[T] | None = None, /) -> None:
         self._dict: dict[T, T] = {}
 
         if an_iter is not None:
             self._dict = {element: element for element in an_iter}
+
+    def __repr__(self) -> str:
+        if not self:
+            return f"{self.__class__.__name__}()"
+        return f"{self.__class__.__name__}({list(self)!r})"
 
     def __contains__(self, element: T) -> bool:
         return self._dict.get(element, _Placeholder) != _Placeholder
