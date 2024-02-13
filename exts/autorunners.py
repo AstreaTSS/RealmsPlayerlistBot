@@ -210,7 +210,13 @@ class Autorunners(utils.Extension):
         except ipy.errors.HTTPException as e:
             if e.status < 500:
                 # likely a can't send in channel, eventually invalidate and move on
-                await pl_utils.eventually_invalidate(self.bot, config)
+                full_config = await models.GuildConfig.prisma().find_unique(
+                    where={"guild_id": config.guild_id}
+                )
+                if not full_config:
+                    return
+
+                await pl_utils.eventually_invalidate(self.bot, full_config)
 
     async def _start_reoccurring_lb(self) -> None:
         await self.bot.fully_ready.wait()
