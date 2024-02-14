@@ -291,7 +291,8 @@ async def config_info_generate(
         f" {toggle_friendly_str(config.warning_notifications)}\n\nRealm Offline Role:"
         f" {offline_realm_ping}\nPlayer Watchlist Role:"
         f" {player_watchlist_ping}\nPeople on Watchlist: See"
-        f" {ctx.bot.mention_command('watchlist list')}\n\n{notification_channels}".strip(),
+        f" {ctx.bot.mention_command('watchlist list')}\n\n{notification_channels}"
+        .strip(),
         inline=True,
     )
 

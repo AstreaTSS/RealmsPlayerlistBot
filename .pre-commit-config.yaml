@@ -3,7 +3,7 @@ repos:
     rev: 24.1.1
     hooks:
       - id: black
-        args: [--target-version, py312, --preview]
+        args: [--target-version, py312, --preview, --enable-unstable-feature=string_processing]
         language_version: python3.12
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0

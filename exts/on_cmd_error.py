@@ -52,7 +52,8 @@ class OnCMDError(ipy.Extension):
             )
             await self.handle_send(
                 event.ctx,
-                "You're doing that command too fast! " + "Try again in"
+                "You're doing that command too fast! "
+                + "Try again in"
                 f" `{humanize.precisedelta(delta_wait, format='%0.1f')}`.",
             )
 

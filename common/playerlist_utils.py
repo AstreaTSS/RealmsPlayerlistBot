@@ -151,7 +151,8 @@ class GamertagHandler:
                     # can happen, if not rare
                     text = await r.text()
                     logger.info(
-                        "Failed to get gamertag of user %s.\nResponse code: %s\nText: %s",
+                        "Failed to get gamertag of user %s.\nResponse code:"
+                        " %s\nText: %s",
                         xuid,
                         r.status,
                         text,
