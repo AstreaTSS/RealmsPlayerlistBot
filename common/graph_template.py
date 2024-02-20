@@ -34,13 +34,15 @@ def graph_dict(
     config = {
         "type": "bar",
         "data": {
-            "datasets": [{
-                "backgroundColor": "#a682e3",
-                "borderColor": "#92b972",
-                "borderWidth": 0,
-                "data": list(data),
-                "type": "bar",
-            }],
+            "datasets": [
+                {
+                    "backgroundColor": "#a682e3",
+                    "borderColor": "#92b972",
+                    "borderWidth": 0,
+                    "data": list(data),
+                    "type": "bar",
+                }
+            ],
             "labels": list(labels),
         },
         "options": {
@@ -52,28 +54,32 @@ def graph_dict(
                 "display": False,
             },
             "scales": {
-                "xAxes": [{
-                    "id": "X1",
-                    "display": True,
-                    "position": "bottom",
-                    "distribution": "linear",
-                    "scaleLabel": {
+                "xAxes": [
+                    {
+                        "id": "X1",
                         "display": True,
-                        "labelString": bottom_label,
-                    },
-                }],
-                "yAxes": [{
-                    "ticks": {
-                        "display": True,
-                        "fontSize": 12,
-                        "min": 0,
-                        "max": max_value,
-                    },
-                    "scaleLabel": {
-                        "display": True,
-                        "labelString": scale_label,
-                    },
-                }],
+                        "position": "bottom",
+                        "distribution": "linear",
+                        "scaleLabel": {
+                            "display": True,
+                            "labelString": bottom_label,
+                        },
+                    }
+                ],
+                "yAxes": [
+                    {
+                        "ticks": {
+                            "display": True,
+                            "fontSize": 12,
+                            "min": 0,
+                            "max": max_value,
+                        },
+                        "scaleLabel": {
+                            "display": True,
+                            "labelString": scale_label,
+                        },
+                    }
+                ],
             },
         },
     }
@@ -139,28 +145,32 @@ def multi_graph_dict(
                 "display": True,
             },
             "scales": {
-                "xAxes": [{
-                    "id": "X1",
-                    "display": True,
-                    "position": "bottom",
-                    "distribution": "linear",
-                    "scaleLabel": {
+                "xAxes": [
+                    {
+                        "id": "X1",
                         "display": True,
-                        "labelString": bottom_label,
-                    },
-                }],
-                "yAxes": [{
-                    "ticks": {
-                        "display": True,
-                        "fontSize": 12,
-                        "min": 0,
-                        "max": max_value,
-                    },
-                    "scaleLabel": {
-                        "display": True,
-                        "labelString": scale_label,
-                    },
-                }],
+                        "position": "bottom",
+                        "distribution": "linear",
+                        "scaleLabel": {
+                            "display": True,
+                            "labelString": bottom_label,
+                        },
+                    }
+                ],
+                "yAxes": [
+                    {
+                        "ticks": {
+                            "display": True,
+                            "fontSize": 12,
+                            "min": 0,
+                            "max": max_value,
+                        },
+                        "scaleLabel": {
+                            "display": True,
+                            "labelString": scale_label,
+                        },
+                    }
+                ],
             },
         },
     }

@@ -190,26 +190,28 @@ class GeneralCMDS(utils.Extension):
 
         about_embed.add_field(
             name="Stats",
-            value="\n".join((
-                f"Servers: {self.bot.guild_count} ({shards_str})",
-                f"Premium Servers: {premium_count}",
-                f"Commands: {command_num} ",
+            value="\n".join(
                 (
-                    "Startup Time:"
-                    f" {ipy.Timestamp.fromdatetime(self.bot.start_time).format(ipy.TimestampStyles.RelativeTime)}"
-                ),
-                (
-                    "Commit Hash:"
-                    f" [{commit_hash}](https://github.com/AstreaTSS/RealmsPlayerlistBot/commit/{commit_hash})"
-                    if commit_hash
-                    else "Commit Hash: N/A"
-                ),
-                (
-                    "Interactions.py Version:"
-                    f" [{ipy.__version__}](https://github.com/interactions-py/interactions.py/tree/{ipy.__version__})"
-                ),
-                "Made By: [AstreaTSS](https://astrea.cc)",
-            )),
+                    f"Servers: {self.bot.guild_count} ({shards_str})",
+                    f"Premium Servers: {premium_count}",
+                    f"Commands: {command_num} ",
+                    (
+                        "Startup Time:"
+                        f" {ipy.Timestamp.fromdatetime(self.bot.start_time).format(ipy.TimestampStyles.RelativeTime)}"
+                    ),
+                    (
+                        "Commit Hash:"
+                        f" [{commit_hash}](https://github.com/AstreaTSS/RealmsPlayerlistBot/commit/{commit_hash})"
+                        if commit_hash
+                        else "Commit Hash: N/A"
+                    ),
+                    (
+                        "Interactions.py Version:"
+                        f" [{ipy.__version__}](https://github.com/interactions-py/interactions.py/tree/{ipy.__version__})"
+                    ),
+                    "Made By: [AstreaTSS](https://astrea.cc)",
+                )
+            ),
             inline=True,
         )
 
@@ -222,11 +224,16 @@ class GeneralCMDS(utils.Extension):
         if os.environ.get("TOP_GG_TOKEN"):
             links.append(f"Top.gg Page: [Link](https://top.gg/bot/{self.bot.user.id})")
 
-        links.extend((
-            "Source Code: [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot)",
-            "Privacy Policy: [Link](https://rpl.astrea.cc/legal/privacy_policy.html)",
-            "Terms of Service: [Link](https://rpl.astrea.cc/legal/tos.html)",
-        ))
+        links.extend(
+            (
+                "Source Code: [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot)",
+                (
+                    "Privacy Policy:"
+                    " [Link](https://rpl.astrea.cc/legal/privacy_policy.html)"
+                ),
+                "Terms of Service: [Link](https://rpl.astrea.cc/legal/tos.html)",
+            )
+        )
 
         about_embed.add_field(
             name="Links",
