@@ -438,7 +438,6 @@ class RealmAutocompleteContext(RealmContextMixin, ipy.AutocompleteContext):
 if typing.TYPE_CHECKING:
     import elytra
     import redis.asyncio as aioredis
-    from aiohttp_retry import RetryClient
     from cachetools import TTLCache
     from prisma import Prisma
 
@@ -458,7 +457,7 @@ if typing.TYPE_CHECKING:
 
         db: Prisma
         session: aiohttp.ClientSession
-        openxbl_session: RetryClient
+        openxbl_session: aiohttp.ClientSession
         xbox: elytra.XboxAPI
         realms: elytra.BedrockRealmsAPI
         redis: aioredis.Redis

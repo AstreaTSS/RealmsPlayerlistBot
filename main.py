@@ -42,14 +42,12 @@ ipy_logger.setLevel(logging.INFO)
 ipy_logger.addHandler(handler)
 
 import aiohttp
-import aiohttp_retry
 import elytra
 import interactions as ipy
 import orjson
 import redis.asyncio as aioredis
 import sentry_sdk
 from cachetools import TTLCache
-from elytra.core import BetterResponse, _dumps_wrapper
 from interactions.api.events.processors import Processor
 from interactions.ext import prefixed_commands as prefixed
 from interactions.ext.sentry import HookedTask
@@ -432,12 +430,14 @@ async def start() -> None:
         "Accept": "application/json",
         "Accept-Language": "en-US",
     }
-    bot.openxbl_session = aiohttp_retry.RetryClient(
+    bot.openxbl_session = aiohttp.ClientSession(
         headers=headers,
-        response_class=BetterResponse,
-        json_serialize=_dumps_wrapper,
+        response_class=cclasses.BetterResponse,
+        json_serialize=lambda x: orjson.dumps(x).decode(),
     )
-    bot.session = aiohttp.ClientSession(json_serialize=_dumps_wrapper)
+    bot.session = aiohttp.ClientSession(
+        json_serialize=lambda x: orjson.dumps(x).decode()
+    )
 
     ext_list = utils.get_all_extensions(os.environ["DIRECTORY_OF_BOT"])
     for ext in ext_list:

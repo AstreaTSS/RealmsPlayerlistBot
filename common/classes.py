@@ -14,14 +14,13 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import asyncio
 import typing
 from collections.abc import MutableSet
 from copy import copy
 
+import aiohttp
 import interactions as ipy
 import orjson
-import redis.asyncio as aioredis
 from prisma._async_http import Response
 
 import common.utils as utils
@@ -146,19 +145,19 @@ class OrderedSet[T](MutableSet[T]):
         return self.union(other)
 
 
-# left here just in case you want to use it
-class SemaphoreRedis(aioredis.Redis):
-    def __init__(self, **kwargs: typing.Any) -> None:
-        semaphore_value = kwargs.pop("semaphore_value", 1)
-        super().__init__(**kwargs)
-        self.connection_pool.connection_kwargs.pop("semaphore_value", None)
-        self.semaphore = asyncio.BoundedSemaphore(semaphore_value)
-
-    async def execute_command(
-        self, *args: typing.Any, **options: typing.Any
-    ) -> typing.Any:
-        async with self.semaphore:
-            return await super().execute_command(*args, **options)
+class BetterResponse(aiohttp.ClientResponse):
+    def raise_for_status(self) -> None:
+        # i just dont want the resp to close lol
+        if not self.ok:
+            # reason should always be not None for a started response
+            assert self.reason is not None  # noqa: S101
+            raise aiohttp.ClientResponseError(
+                self.request_info,
+                self.history,
+                status=self.status,
+                message=self.reason,
+                headers=self.headers,
+            )
 
 
 class FastResponse(Response):
