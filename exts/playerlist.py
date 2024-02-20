@@ -213,12 +213,14 @@ class Playerlist(utils.Extension):
         self.previous_now = now
 
         self.bot.dispatch(
-            pl_events.PlayerlistParseFinish((
-                pl_utils.RealmPlayersContainer(player_sessions=player_objs),
-                pl_utils.RealmPlayersContainer(
-                    player_sessions=joined_player_objs, fields=("joined_at",)
-                ),
-            ))
+            pl_events.PlayerlistParseFinish(
+                (
+                    pl_utils.RealmPlayersContainer(player_sessions=player_objs),
+                    pl_utils.RealmPlayersContainer(
+                        player_sessions=joined_player_objs, fields=("joined_at",)
+                    ),
+                )
+            )
         )
 
     async def handle_missing_warning(self) -> None:
