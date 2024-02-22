@@ -272,7 +272,7 @@ class GuildConfig(utils.Extension):
                 await self.bot.realms.leave_realm(realm_id)
             except elytra.MicrosoftAPIException as e:
                 # might be an invalid id somehow? who knows
-                if e.resp.status == 404:
+                if e.resp.status_code == 404:
                     logger.warning("Could not leave Realm with ID %s.", realm_id)
                 else:
                     raise
@@ -342,7 +342,7 @@ class GuildConfig(utils.Extension):
         except elytra.MicrosoftAPIException as e:
             if (
                 isinstance(e.error, aiohttp.ClientResponseError)
-                and e.resp.status == 403
+                and e.resp.status_code == 403
             ):
                 raise ipy.errors.BadArgument(
                     "I could not join this Realm. Please make sure the Realm code"

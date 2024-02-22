@@ -34,7 +34,7 @@ async def realm_club_presence(
     try:
         return await bot.xbox.fetch_club_presence(club_id)
     except elytra.MicrosoftAPIException as e:
-        if e.resp in {400, 403}:
+        if e.resp.status_code in {400, 403}:
             return None
 
         resp = await bot.openxbl_session.get(f"https://xbl.io/api/v2/clubs/{club_id}")

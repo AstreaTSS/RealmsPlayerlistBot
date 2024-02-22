@@ -83,10 +83,16 @@ class Playerlist(utils.Extension):
             realms = await self.bot.realms.fetch_activities()
             self.forbidden_count = 0
         except Exception as e:
-            if isinstance(e, elytra.MicrosoftAPIException) and e.resp.status == 502:
+            if (
+                isinstance(e, elytra.MicrosoftAPIException)
+                and e.resp.status_code == 502
+            ):
                 # bad gateway, can't do much about it
                 return
-            if isinstance(e, elytra.MicrosoftAPIException) and e.resp.status == 403:
+            if (
+                isinstance(e, elytra.MicrosoftAPIException)
+                and e.resp.status_code == 403
+            ):
                 # oh boy, this one's painful
                 self.forbidden_count += 1
                 if self.forbidden_count > 3:

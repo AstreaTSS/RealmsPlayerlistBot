@@ -102,7 +102,7 @@ class GamertagHandler:
             )
 
         except elytra.MicrosoftAPIException as e:
-            people_json = await e.resp.json(loads=orjson.loads)
+            people_json = orjson.loads(await e.resp.aread())
 
             if people_json.get("code"):  # usually means ratelimited or invalid xuid
                 description: str = people_json["description"]

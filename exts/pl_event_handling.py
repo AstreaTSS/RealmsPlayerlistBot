@@ -344,7 +344,7 @@ class PlayerlistEventHandling(ipy.Extension):
                 await self.bot.realms.leave_realm(event.realm_id)
             except elytra.MicrosoftAPIException as e:
                 # might be an invalid id somehow? who knows
-                if e.resp.status == 404:
+                if e.resp.status_code == 404:
                     logger.warning("Could not leave Realm with ID %s.", event.realm_id)
                 else:
                     raise
