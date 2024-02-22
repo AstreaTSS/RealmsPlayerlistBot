@@ -19,8 +19,8 @@ import logging
 import re
 import typing
 
-import aiohttp
 import elytra
+import httpx
 import interactions as ipy
 import tansy
 
@@ -340,10 +340,7 @@ class GuildConfig(utils.Extension):
             embeds = await self.add_realm(ctx, realm)
             await ctx.send(embeds=embeds)
         except elytra.MicrosoftAPIException as e:
-            if (
-                isinstance(e.error, aiohttp.ClientResponseError)
-                and e.resp.status_code == 403
-            ):
+            if isinstance(e.error, httpx.HTTPStatusError) and e.resp.status_code == 403:
                 raise ipy.errors.BadArgument(
                     "I could not join this Realm. Please make sure the Realm code"
                     " is spelled correctly, and that the code is valid. Also make"
