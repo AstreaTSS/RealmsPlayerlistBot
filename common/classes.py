@@ -146,6 +146,9 @@ class OrderedSet[T](MutableSet[T]):
 
 
 class BetterResponse(aiohttp.ClientResponse):
+    async def aread(self) -> bytes:
+        return await self.read()
+
     def raise_for_status(self) -> None:
         # i just dont want the resp to close lol
         if not self.ok:
