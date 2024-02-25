@@ -436,7 +436,8 @@ async def start() -> None:
         json_serialize=lambda x: orjson.dumps(x).decode(),
     )
     bot.session = aiohttp.ClientSession(
-        json_serialize=lambda x: orjson.dumps(x).decode()
+        response_class=cclasses.BetterResponse,
+        json_serialize=lambda x: orjson.dumps(x).decode(),
     )
 
     ext_list = utils.get_all_extensions(os.environ["DIRECTORY_OF_BOT"])
