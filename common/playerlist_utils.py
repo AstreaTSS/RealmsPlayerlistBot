@@ -694,21 +694,18 @@ async def xuid_from_gamertag(bot: utils.RealmBotBase, gamertag: str) -> str:
         maybe_xuid = await bot.xbox.fetch_profile_by_gamertag(gamertag)
 
     if not maybe_xuid:
-        async with aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=2.5)
-        ) as session:
-            headers = {
-                "X-Authorization": os.environ["OPENXBL_KEY"],
-                "Accept": "application/json",
-                "Accept-Language": "en-US",
-            }
-            with contextlib.suppress(asyncio.TimeoutError):
-                async with session.get(
-                    f"https://xbl.io/api/v2/search/{gamertag}",
-                    headers=headers,
-                ) as r:
-                    with contextlib.suppress(ValidationError, aiohttp.ContentTypeError):
-                        maybe_xuid = await elytra.ProfileResponse.from_response(r)
+        headers = {
+            "X-Authorization": os.environ["OPENXBL_KEY"],
+            "Accept": "application/json",
+            "Accept-Language": "en-US",
+        }
+        with contextlib.suppress(asyncio.TimeoutError):
+            async with bot.session.get(
+                f"https://xbl.io/api/v2/search/{gamertag}",
+                headers=headers,
+            ) as r:
+                with contextlib.suppress(ValidationError, aiohttp.ContentTypeError):
+                    maybe_xuid = await elytra.ProfileResponse.from_response(r)
 
     if not maybe_xuid:
         raise ipy.errors.BadArgument(f"`{gamertag}` is not a valid gamertag.")
