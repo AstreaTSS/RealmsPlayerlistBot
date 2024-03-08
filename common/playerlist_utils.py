@@ -17,7 +17,6 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import contextlib
 import logging
-import os
 import typing
 from collections import defaultdict
 
@@ -694,16 +693,10 @@ async def xuid_from_gamertag(bot: utils.RealmBotBase, gamertag: str) -> str:
         maybe_xuid = await bot.xbox.fetch_profile_by_gamertag(gamertag)
 
     if not maybe_xuid:
-        headers = {
-            "X-Authorization": os.environ["OPENXBL_KEY"],
-            "Accept": "application/json",
-            "Accept-Language": "en-US",
-        }
         with contextlib.suppress(asyncio.TimeoutError):
-            async with bot.session.get(
+            async with bot.openxbl_session.get(
                 f"https://xbl.io/api/v2/search/{gamertag}",
                 timeout=aiohttp.ClientTimeout(total=2.5),
-                headers=headers,
             ) as r:
                 with contextlib.suppress(ValidationError, aiohttp.ContentTypeError):
                     maybe_xuid = await elytra.ProfileResponse.from_response(r)
