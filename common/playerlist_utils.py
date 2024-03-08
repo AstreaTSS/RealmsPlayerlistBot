@@ -702,6 +702,7 @@ async def xuid_from_gamertag(bot: utils.RealmBotBase, gamertag: str) -> str:
         with contextlib.suppress(asyncio.TimeoutError):
             async with bot.session.get(
                 f"https://xbl.io/api/v2/search/{gamertag}",
+                timeout=aiohttp.ClientTimeout(total=2.5),
                 headers=headers,
             ) as r:
                 with contextlib.suppress(ValidationError, aiohttp.ContentTypeError):
