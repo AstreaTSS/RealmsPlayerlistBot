@@ -17,7 +17,6 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import datetime
 import importlib
-import logging
 import math
 import time
 import typing
@@ -32,8 +31,6 @@ import common.models as models
 import common.playerlist_events as pl_events
 import common.playerlist_utils as pl_utils
 import common.utils as utils
-
-logger = logging.getLogger("realms_bot")
 
 
 class PlayerlistKwargs(typing.TypedDict, total=False):
@@ -78,7 +75,9 @@ class Playerlist(utils.Extension):
                 end = time.perf_counter()
 
                 if self.previous_now.minute in {0, 30}:
-                    logger.info("Ran parse_realms in {:.2f} seconds", end - start)
+                    ipy.const.get_logger().info(
+                        "Ran parse_realms in %s seconds", round(end - start, 3)
+                    )
 
                 if utils.FEATURE("HANDLE_MISSING_REALMS"):
                     self.bot.create_task(self.handle_missing_warning())
