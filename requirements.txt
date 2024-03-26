@@ -6,7 +6,7 @@ aiodns==3.1.1
 attrs==23.2.0
 pydantic==2.6.4
 httpx[http2]==0.27.0
-prisma==0.13.0
+prisma==0.13.1
 redis[hiredis]==5.0.3
 orjson==3.9.15
 python-dateutil==2.9.0.post0
