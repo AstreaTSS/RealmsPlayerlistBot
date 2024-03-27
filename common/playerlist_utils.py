@@ -172,8 +172,12 @@ class GamertagHandler:
 
         dict_gamertags[xuid] = GamertagInfo(gamertag, device)
 
-        pipe.setex(name=xuid, time=utils.EXPIRE_GAMERTAGS_AT, value=gamertag)
-        pipe.setex(name=f"rpl-{gamertag}", time=utils.EXPIRE_GAMERTAGS_AT, value=xuid)
+        pipe.setex(
+            name=f"rpl-xuid-{xuid}", time=utils.EXPIRE_GAMERTAGS_AT, value=gamertag
+        )
+        pipe.setex(
+            name=f"rpl-gt-{gamertag}", time=utils.EXPIRE_GAMERTAGS_AT, value=xuid
+        )
 
         return dict_gamertags
 
@@ -551,7 +555,7 @@ async def fill_in_gamertags_for_sessions(
 
         async with bot.redis.pipeline() as pipeline:
             for session in session_dict_copy.values():
-                pipeline.get(session.xuid)
+                pipeline.get(f"rpl-xuid-{session.xuid}")
 
             gamertag_list: list[str | None] = await pipeline.execute()
 
@@ -592,7 +596,7 @@ async def get_xuid_to_gamertag_map(
 
     async with bot.redis.pipeline() as pipeline:
         for xuid in xuid_list:
-            pipeline.get(xuid)
+            pipeline.get(f"rpl-xuid-{xuid}")
 
         gamertag_list: list[str | None] = await pipeline.execute()
 
@@ -621,7 +625,7 @@ async def get_xuid_to_gamertag_map(
 
 
 async def gamertag_from_xuid(bot: utils.RealmBotBase, xuid: str | int) -> str:
-    if gamertag := await bot.redis.get(str(xuid)):
+    if gamertag := await bot.redis.get(f"rpl-xuid-{xuid}"):
         return gamertag
 
     maybe_gamertag: elytra.ProfileResponse | None = None
@@ -664,12 +668,12 @@ async def gamertag_from_xuid(bot: utils.RealmBotBase, xuid: str | int) -> str:
 
     async with bot.redis.pipeline() as pipe:
         pipe.setex(
-            name=str(xuid),
+            name=f"rpl-xuid-{xuid}",
             time=utils.EXPIRE_GAMERTAGS_AT,
             value=gamertag,
         )
         pipe.setex(
-            name=f"rpl-{gamertag}",
+            name=f"rpl-gt-{gamertag}",
             time=utils.EXPIRE_GAMERTAGS_AT,
             value=str(xuid),
         )
@@ -679,7 +683,7 @@ async def gamertag_from_xuid(bot: utils.RealmBotBase, xuid: str | int) -> str:
 
 
 async def xuid_from_gamertag(bot: utils.RealmBotBase, gamertag: str) -> str:
-    if xuid := await bot.redis.get(f"rpl-{gamertag}"):
+    if xuid := await bot.redis.get(f"rpl-gt-{gamertag}"):
         return xuid
 
     maybe_xuid: elytra.ProfileResponse | None = None
@@ -708,12 +712,12 @@ async def xuid_from_gamertag(bot: utils.RealmBotBase, gamertag: str) -> str:
 
     async with bot.redis.pipeline() as pipe:
         pipe.setex(
-            name=str(xuid),
+            name=f"rpl-xuid-{xuid}",
             time=utils.EXPIRE_GAMERTAGS_AT,
             value=gamertag,
         )
         pipe.setex(
-            name=f"rpl-{gamertag}",
+            name=f"rpl-gt-{gamertag}",
             time=utils.EXPIRE_GAMERTAGS_AT,
             value=str(xuid),
         )
