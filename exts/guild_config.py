@@ -277,6 +277,10 @@ class GuildConfig(utils.Extension):
                 else:
                     raise
 
+            await models.PlayerSession.prisma().delete_many(
+                where={"realm_id": realm_id}
+            )
+
             self.bot.offline_realms.discard(int(realm_id))
             self.bot.dropped_offline_realms.discard(int(realm_id))
             await self.bot.redis.delete(
