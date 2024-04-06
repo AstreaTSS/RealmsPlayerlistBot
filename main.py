@@ -252,7 +252,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
         # ipy forgets to do this lol
         if not self.sync_ext and self._ready.is_set():
-            asyncio.create_task(self._cache_interactions(warn_missing=False))
+            self.create_task(self._cache_interactions(warn_missing=False))
 
     def add_interaction(self, command: ipy.InteractionCommand) -> bool:
         result = super().add_interaction(command)
