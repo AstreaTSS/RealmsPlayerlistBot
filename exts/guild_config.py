@@ -319,7 +319,7 @@ class GuildConfig(utils.Extension):
             ipy.Button(
                 style=ipy.ButtonStyle.GREEN,
                 label="Link Xbox/Microsoft account",
-                emoji="✅",
+                emoji=f"<:xbox_series:{os.environ['XBOX_SERIES_EMOJI_ID']}>",
             ),
             ipy.Button(
                 style=ipy.ButtonStyle.GREEN,
