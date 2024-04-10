@@ -378,7 +378,7 @@ class GuildConfig(utils.Extension):
             f" `{self.bot.own_gamertag}`. **This is"
             f" case-sensitive.**\n\n`{verification_code}`\n\nOnce you have done so,"
             " click the button below to verify that you have sent the message. You"
-            " have 2 minutes to do so.",
+            " have 5 minutes to do so.",
         )
 
         button = ipy.Button(
@@ -389,7 +389,7 @@ class GuildConfig(utils.Extension):
         await ctx.edit(msg, embeds=embed, components=[button])
 
         try:
-            async with asyncio.timeout(120):
+            async with asyncio.timeout(300):
                 while True:
                     event = await self.bot.wait_for_component(
                         msg, button, self.button_check(ctx.author.id)
