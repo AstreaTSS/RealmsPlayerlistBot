@@ -14,9 +14,14 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import asyncio
 import importlib
 import logging
+import os
+import random
 import re
+import secrets
+import string
 import typing
 
 import elytra
@@ -287,10 +292,147 @@ class GuildConfig(utils.Extension):
                 f"missing-realm-{realm_id}", f"invalid-realmoffline-{realm_id}"
             )
 
+    async def security_check(
+        self, ctx: utils.RealmContext
+    ) -> tuple[str, ipy.Message] | None:
+        embed = ipy.Embed(
+            title="Security Check",
+            description=(
+                "You have been randomly chosen, as part of a test, to verify that you"
+                " are an operator/moderator of the Realm you wish to link. There are"
+                " two methods to do this:\n- *Temporarily* link your Xbox/Microsoft"
+                " account so that the bot can verify who you are. This is the"
+                " recommended method, as it is the most secure - furthermore, the bot"
+                " will not store your credentials.\n- Send a specific message to the"
+                " bot's Xbox account. This method is less secure.\n\n**Please pick the"
+                " method you wish to use. You have 2 minutes to do so.**"
+            ),
+            timestamp=ipy.Timestamp.utcnow(),
+            color=ipy.RoleColors.YELLOW,
+        )
+
+        success = False
+        result = ""
+        event: typing.Optional[ipy.events.Component] = None
+
+        components = [
+            ipy.Button(
+                style=ipy.ButtonStyle.GREEN,
+                label="Link Xbox/Microsoft account",
+                emoji="✅",
+            ),
+            ipy.Button(
+                style=ipy.ButtonStyle.GREEN,
+                label="DM the bot's Xbox account",
+                emoji="📥",
+            ),
+            ipy.Button(
+                style=ipy.ButtonStyle.RED, label="I'm not an operator", emoji="✖️"
+            ),
+        ]
+        msg = await ctx.send(embed=embed, components=components, ephemeral=True)
+
+        try:
+            event = await self.bot.wait_for_component(
+                msg, components, self.button_check(ctx.author.id), timeout=120
+            )
+
+            if event.ctx.custom_id == components[-1].custom_id:
+                result = (
+                    "Unforunately, you must be an operator to link a Realm. If you"
+                    " have any complains about this test, please join the support"
+                    " server, the link of which can be found through"
+                    f" {ctx.bot.mention_command('support')}."
+                )
+            else:
+                result = "Loading..."
+                success = True
+        except TimeoutError:
+            result = "Timed out."
+        finally:
+            if event:
+                await event.ctx.defer(edit_origin=True)
+
+            if success:
+                embed = utils.make_embed(result)
+            else:
+                embed = utils.error_embed_generate(result)
+
+            await ctx.edit(msg, embeds=embed, components=[])
+
+        if not success or not event:
+            return None
+
+        if event.ctx.custom_id == components[0].custom_id:
+            oauth = await device_code.handle_flow(ctx, msg)
+            user_xbox = await elytra.XboxAPI.from_oauth(
+                os.environ["XBOX_CLIENT_ID"], os.environ["XBOX_CLIENT_SECRET"], oauth
+            )
+            return user_xbox.auth_mgr.xsts_token.xuid, msg
+
+        alphabet = string.ascii_uppercase + string.digits
+        verification_code = "".join(secrets.choice(alphabet) for _ in range(6))
+
+        embed = utils.make_embed(
+            "Please send the following message to the bot's Xbox account at"
+            f" `{self.bot.own_gamertag}`. **This is"
+            f" case-sensitive.**\n\n`{verification_code}`\n\nOnce you have done so,"
+            " click the button below to verify that you have sent the message. You"
+            " have 2 minutes to do so.",
+        )
+
+        button = ipy.Button(
+            style=ipy.ButtonStyle.GREEN,
+            label="Verify Message",
+            emoji="✅",
+        )
+        await ctx.edit(msg, embeds=embed, components=[button])
+
+        try:
+            async with asyncio.timeout(120):
+                while True:
+                    event = await self.bot.wait_for_component(
+                        msg, button, self.button_check(ctx.author.id)
+                    )
+
+                    inbox = await self.bot.xbox.fetch_inbox(50)
+                    if not inbox.primary.conversations:
+                        await event.ctx.send(
+                            embed=utils.error_embed_generate("Could not find message."),
+                            ephemeral=True,
+                        )
+                        continue
+
+                    conversation = next(
+                        (
+                            c
+                            for c in inbox.primary.conversations
+                            if c.last_message.content_payload
+                            and verification_code
+                            in c.last_message.content_payload.full_content
+                        ),
+                        None,
+                    )
+                    if not conversation:
+                        await event.ctx.send(
+                            embed=utils.error_embed_generate("Could not find message."),
+                            ephemeral=True,
+                        )
+                        continue
+
+                    await event.ctx.defer(edit_origin=True)
+                    return conversation.last_message.sender, msg
+
+        except TimeoutError:
+            await ctx.edit(
+                msg, embed=utils.error_embed_generate("Timed out."), components=[]
+            )
+            return None
+
     @config.subcommand(
         sub_cmd_name="link-realm",
         sub_cmd_description=(
-            "Links (or unlinks) a realm to this server via a realm code. This"
+            "Links (or unlinks) a Realm to this server via a Realm code. This"
             " overwrites the old Realm stored."
         ),
     )
@@ -335,14 +477,49 @@ class GuildConfig(utils.Extension):
 
         realm_code = realm_code_matches[1]
 
+        results: tuple[str, ipy.Message] | None = None
+
+        if (
+            await ctx.bot.redis.get(f"rpl-security-check-{ctx.author.id}")
+            or random.randint(0, 4) == 0  # noqa: S311
+        ):
+            await ctx.bot.redis.set(f"rpl-security-check-{ctx.author.id}", "1", ex=600)
+            results = await self.security_check(ctx)
+            if not results:
+                return
+
         try:
             realm = await ctx.bot.realms.join_realm_from_code(realm_code)
+
+            if results:
+                if not realm.players:
+                    raise ipy.errors.BadArgument(
+                        "I could not verify that you are an operator of this Realm."
+                    )
+
+                player_info = next(
+                    (p for p in realm.players if p.uuid == results[0]), None
+                )
+
+                if not player_info:
+                    raise ipy.errors.BadArgument(
+                        "You are not an operator of this Realm."
+                    )
+
+                if player_info.permission != elytra.Permission.OPERATOR:
+                    raise ipy.errors.BadArgument(
+                        "You are not an operator of this Realm."
+                    )
 
             if config.realm_id != str(realm.id):
                 await self.remove_realm(ctx)
 
             embeds = await self.add_realm(ctx, realm)
-            await ctx.send(embeds=embeds)
+
+            if results:
+                await ctx.edit(results[1], embeds=embeds, components=[])
+            else:
+                await ctx.send(embeds=embeds)
         except elytra.MicrosoftAPIException as e:
             if isinstance(e.error, httpx.HTTPStatusError) and e.resp.status_code == 403:
                 raise ipy.errors.BadArgument(
