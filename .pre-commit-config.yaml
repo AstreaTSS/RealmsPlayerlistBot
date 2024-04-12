@@ -6,11 +6,11 @@ repos:
         args: [--target-version, py312, --preview, --enable-unstable-feature=string_processing]
         language_version: python3.12
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: trailing-whitespace
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.3.4"
+    rev: "v0.3.5"
     hooks:
       - id: ruff
         language_version: python3.12
