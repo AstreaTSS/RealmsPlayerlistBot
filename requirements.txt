@@ -8,7 +8,7 @@ pydantic==2.6.4
 httpx[http2]==0.27.0
 prisma==0.13.1
 redis[hiredis]==5.0.3
-orjson==3.9.15
+orjson==3.10.0
 python-dateutil==2.9.0.post0
 sentry-sdk==1.43.0
 rapidfuzz==3.7.0
