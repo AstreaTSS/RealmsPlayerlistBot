@@ -153,7 +153,7 @@ class PlayerlistEventHandling(ipy.Extension):
                         event.timestamp,
                         full_gamertag_mapping,
                         config,
-                        realm_down_event=True,
+                        realm_down_event=event.realm_down_event,
                     )
                 )
 
