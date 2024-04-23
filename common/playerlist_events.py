@@ -60,6 +60,7 @@ class LivePlayerlistSend(PlayerlistEvent):
     joined: set[str] = attrs.field(repr=False)
     left: set[str] = attrs.field(repr=False)
     timestamp: datetime = attrs.field(repr=False)
+    realm_down_event: bool = attrs.field(repr=False, default=False, kw_only=True)
 
 
 @define()

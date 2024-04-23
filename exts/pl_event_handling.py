@@ -153,6 +153,7 @@ class PlayerlistEventHandling(ipy.Extension):
                         event.timestamp,
                         full_gamertag_mapping,
                         config,
+                        realm_down_event=True,
                     )
                 )
 
@@ -202,6 +203,9 @@ class PlayerlistEventHandling(ipy.Extension):
             event.live_online_channel, "gamertags", new_gamertag_str
         )
 
+        if event.realm_down_event:
+            new_gamertag_str = f"{os.environ['GRAY_CIRCLE_EMOJI']} *Realm is offline.*"
+
         embed = ipy.Embed(
             title=f"{len(xuids)}/10 people online",
             description=new_gamertag_str or "*No players online.*",
@@ -225,7 +229,11 @@ class PlayerlistEventHandling(ipy.Extension):
         if self.bot.live_playerlist_store[event.realm_id]:
             self.bot.dispatch(
                 pl_events.LivePlayerlistSend(
-                    event.realm_id, set(), event.disconnected, event.timestamp
+                    event.realm_id,
+                    set(),
+                    event.disconnected,
+                    event.timestamp,
+                    realm_down_event=True,
                 )
             )
 
