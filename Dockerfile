@@ -1,4 +1,4 @@
-FROM python:3.12-alpine
+FROM python:3.12.2-alpine
 
 RUN apk add --no-cache gcc bash musl-dev git
 
