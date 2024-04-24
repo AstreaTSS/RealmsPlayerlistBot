@@ -272,6 +272,9 @@ class GuildConfig(utils.Extension):
                     " server, the link of which can be found through"
                     f" {ctx.bot.mention_command('support')}."
                 )
+                ipy.get_logger().info(
+                    "User %s declined the security check.", ctx.author.id
+                )
             else:
                 result = "Loading..."
                 success = True
@@ -292,11 +295,20 @@ class GuildConfig(utils.Extension):
             return None
 
         if event.ctx.custom_id == components[0].custom_id:
+            ipy.get_logger().info(
+                "User %s chose to link their account for the security check.",
+                ctx.author.id,
+            )
+
             oauth = await device_code.handle_flow(ctx, msg)
             user_xbox = await elytra.XboxAPI.from_oauth(
                 os.environ["XBOX_CLIENT_ID"], os.environ["XBOX_CLIENT_SECRET"], oauth
             )
             return user_xbox.auth_mgr.xsts_token.xuid, msg
+
+        ipy.get_logger().info(
+            "User %s chose to send a message for the security check.", ctx.author.id
+        )
 
         verify_code_builder: list[str] = []
         for i in range(6):
@@ -426,6 +438,7 @@ class GuildConfig(utils.Extension):
         ):
             await ctx.defer(ephemeral=True)
             await ctx.bot.redis.set(f"rpl-security-check-{ctx.author.id}", "1", ex=3600)
+            ipy.get_logger().info("Running security check for %s.", ctx.author.id)
             results = await self.security_check(ctx)
             if not results:
                 return
