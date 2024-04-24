@@ -52,6 +52,12 @@ REALMS_LINK_REGEX = re.compile(
 )
 
 
+class SecurityCheckResults(typing.NamedTuple):
+    user_xuid: str
+    msg: ipy.Message
+    microsoft_link: bool = False
+
+
 logger = logging.getLogger("realms_bot")
 
 
@@ -97,7 +103,7 @@ class GuildConfig(utils.Extension):
         ctx: utils.RealmContext,
         realm: elytra.FullRealm,
         *,
-        alternative_link: bool = False,
+        microsoft_link: bool = False,
     ) -> list[ipy.Embed]:
         config = await ctx.fetch_config()
 
@@ -147,7 +153,7 @@ class GuildConfig(utils.Extension):
             ),
             color=ipy.RoleColors.GREEN,
         )
-        if alternative_link:
+        if microsoft_link:
             if typing.TYPE_CHECKING:
                 assert isinstance(confirm_embed.description, str)
 
@@ -222,7 +228,7 @@ class GuildConfig(utils.Extension):
 
     async def security_check(
         self, ctx: utils.RealmContext
-    ) -> tuple[str, ipy.Message] | None:
+    ) -> SecurityCheckResults | None:
         embed = ipy.Embed(
             title="Security Check",
             description=(
@@ -304,7 +310,7 @@ class GuildConfig(utils.Extension):
             user_xbox = await elytra.XboxAPI.from_oauth(
                 os.environ["XBOX_CLIENT_ID"], os.environ["XBOX_CLIENT_SECRET"], oauth
             )
-            return user_xbox.auth_mgr.xsts_token.xuid, msg
+            return SecurityCheckResults(user_xbox.auth_mgr.xsts_token.xuid, msg, True)
 
         ipy.get_logger().info(
             "User %s chose to send a message for the security check.", ctx.author.id
@@ -372,7 +378,7 @@ class GuildConfig(utils.Extension):
                         continue
 
                     await event.ctx.defer(edit_origin=True)
-                    return conversation.last_message.sender, msg
+                    return SecurityCheckResults(conversation.last_message.sender, msg)
 
         except TimeoutError:
             await ctx.edit(
@@ -430,7 +436,7 @@ class GuildConfig(utils.Extension):
 
         realm_code = realm_code_matches[1]
 
-        results: tuple[str, ipy.Message] | None = None
+        results: SecurityCheckResults | None = None
 
         if (
             await ctx.bot.redis.get(f"rpl-security-check-{ctx.author.id}")
@@ -451,7 +457,7 @@ class GuildConfig(utils.Extension):
                 await ctx.bot.realms.get(f"worlds/v1/link/{realm_code}")
             )
 
-            if results and realm.owner_uuid != results[0]:
+            if results and realm.owner_uuid != results.user_xuid:
                 usable_realm = await ctx.bot.realms.fetch_realm(realm.id)
 
                 try:
@@ -461,7 +467,12 @@ class GuildConfig(utils.Extension):
                         )
 
                     player_info = next(
-                        (p for p in usable_realm.players if p.uuid == results[0]), None
+                        (
+                            p
+                            for p in usable_realm.players
+                            if p.uuid == results.user_xuid
+                        ),
+                        None,
                     )
 
                     if not player_info:
@@ -475,7 +486,7 @@ class GuildConfig(utils.Extension):
                         )
                 except ipy.errors.BadArgument as e:
                     await ctx.edit(
-                        results[1],
+                        results.msg,
                         embeds=utils.error_embed_generate(str(e)),
                         components=[],
                     )
@@ -485,25 +496,41 @@ class GuildConfig(utils.Extension):
                 await self.remove_realm(ctx)
 
             realm = await ctx.bot.realms.join_realm_from_code(realm_code)
-            embeds = await self.add_realm(ctx, realm)
+            embeds = await self.add_realm(
+                ctx,
+                realm,
+                microsoft_link=results is not None and results.microsoft_link,
+            )
 
             if results:
-                await ctx.edit(results[1], embeds=embeds, components=[])
+                await ctx.edit(results.msg, embeds=embeds, components=[])
             else:
                 await ctx.send(embeds=embeds)
         except elytra.MicrosoftAPIException as e:
-            if isinstance(e.error, httpx.HTTPStatusError) and e.resp.status_code in {
+            if not isinstance(
+                e.error, httpx.HTTPStatusError
+            ) or e.resp.status_code not in {
                 403,
                 404,
             }:
-                raise ipy.errors.BadArgument(
-                    "I could not join this Realm. Please make sure the Realm code"
-                    " is spelled correctly, and that the code is valid. Also make"
-                    " sure that you have not banned or kicked"
-                    f" `{self.bot.own_gamertag}` from the Realm."
-                ) from None
-            else:
                 raise
+
+            error_msg = (
+                "I could not join this Realm. Please make sure the Realm code"
+                " is spelled correctly, and that the code is valid. Also make"
+                " sure that you have not banned or kicked"
+                f" `{self.bot.own_gamertag}` from the Realm."
+            )
+
+            if results:
+                await ctx.edit(
+                    results.msg,
+                    embeds=utils.error_embed_generate(error_msg),
+                    components=[],
+                )
+                return
+
+            raise ipy.errors.BadArgument(error_msg) from None
 
     @config.subcommand(
         sub_cmd_name="alternate-link",
@@ -573,7 +600,7 @@ class GuildConfig(utils.Extension):
         if config.realm_id != str(realm.id):
             await self.remove_realm(ctx)
 
-        embeds = await self.add_realm(ctx, realm, alternative_link=True)
+        embeds = await self.add_realm(ctx, realm, microsoft_link=True)
         await ctx.edit(msg, embeds=embeds, components=[])
 
     @config.subcommand(
