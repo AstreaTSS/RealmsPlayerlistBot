@@ -20,7 +20,6 @@ import logging
 import os
 import random
 import re
-import secrets
 import string
 import typing
 
@@ -51,7 +50,6 @@ REALMS_LINK_REGEX = re.compile(
     r"\.net/pocket/realms/invite/|(?:minecraft://)?acceptRealmInvite\?inviteID="
     r")?([\w-]{7,16})"
 )
-FORMAT_CODE_REGEX = re.compile(r"§\S")
 
 
 logger = logging.getLogger("realms_bot")
@@ -61,18 +59,6 @@ class GuildConfig(utils.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.name = "Server Config"
         self.bot: utils.RealmBotBase = bot
-
-    async def _gather_realm_names(
-        self, specific_realm_id: str
-    ) -> elytra.FullRealm | None:
-        response = await self.bot.realms.fetch_realms()
-        names = tuple((str(realm.id), realm.name) for realm in response.servers)
-        self.bot.realm_name_cache.update(names)
-
-        return next(
-            (realm for realm in response.servers if str(realm.id) == specific_realm_id),
-            None,
-        )
 
     config = tansy.TansySlashCommand(
         name="config",
@@ -96,73 +82,15 @@ class GuildConfig(utils.Extension):
     ) -> None:
         config = await ctx.fetch_config()
 
-        if config.realm_id:
-            self.bot.realm_name_cache.expire()
-
-            maybe_realm_name: str | None = self.bot.realm_name_cache.get(
-                config.realm_id
-            )
-            if not maybe_realm_name and config.club_id:
-                club_resp = await clubs_playerlist.realm_club_presence(
-                    self.bot, config.club_id
-                )
-
-                if club_resp:
-                    maybe_realm_name = club_resp.clubs[0].profile.name.value
-
-                    if maybe_realm_name:
-                        self.bot.realm_name_cache[config.realm_id] = maybe_realm_name
-
-            if not maybe_realm_name:
-                realm = await self._gather_realm_names(config.realm_id)
-
-                if realm:
-                    maybe_realm_name = realm.name
-                    if config.club_id != str(realm.club_id):
-                        config.club_id = str(realm.club_id)
-                        await config.save()
-
-            if maybe_realm_name:
-                maybe_realm_name = FORMAT_CODE_REGEX.sub("", maybe_realm_name)
-
-            realm_name = utils.na_friendly_str(maybe_realm_name)
-        else:
-            realm_name = "N/A"
-
-        realm_not_found = False
-        if realm_name != "N/A":
-            realm_name = f"`{realm_name}`"
-        elif config.realm_id:
-            realm_not_found = True
-            realm_name = "Not Found"
-
         if not config.premium_code and (
             config.live_playerlist or config.fetch_devices or config.live_online_channel
         ):
             await pl_utils.invalidate_premium(self.bot, config)
 
         embed = await utils.config_info_generate(
-            ctx, config, realm_name, diagnostic_info=diagnostic_info
+            ctx, config, diagnostic_info=diagnostic_info
         )
-
-        embeds: list[ipy.Embed] = []
-        if realm_not_found:
-            warning_embed = ipy.Embed(
-                title="Warning!",
-                description=(
-                    "There is a Realm ID associated with this Realm, but I could not"
-                    " find the Realm itself. This may just be a problem that resolves"
-                    " itself, but check that you haven't switched Realms or"
-                    f" kicked the account `{self.bot.own_gamertag}`. If you did, try"
-                    f" relinking the Realm via {self.link_realm.mention()}.\nFor more"
-                    " information, please check"
-                    " https://rpl.astrea.cc/wiki/faq.html#help-the-playerlist-online-command-isn-t-working."
-                ),
-            )
-            embeds.append(warning_embed)
-        embeds.append(embed)
-
-        await ctx.send(embeds=embeds)
+        await ctx.send(embeds=embed)
 
     async def add_realm(
         self,
@@ -174,7 +102,6 @@ class GuildConfig(utils.Extension):
         config = await ctx.fetch_config()
 
         config.realm_id = str(realm.id)
-        self.bot.realm_name_cache[config.realm_id] = realm.name
 
         # you may think this is weird, but if a realm is actually offline when it's
         # linked, the bot has no way of ever figuring that out, and so the bot will
@@ -212,10 +139,11 @@ class GuildConfig(utils.Extension):
             title="Linked!",
             description=(
                 "Linked this server to the Realm:"
-                f" `{FORMAT_CODE_REGEX.sub('', realm.name)}`\n\n**IMPORTANT NOTE:**"
-                f" There will now be an account called `{self.bot.own_gamertag}` on"
-                " your Realm's player roster (and even the playerlist). *Do not ban or"
-                " kick them.* The bot will not work with your Realm if you do so."
+                f" `{utils.FORMAT_CODE_REGEX.sub('', realm.name)}`\n\n**IMPORTANT"
+                " NOTE:** There will now be an account called"
+                f" `{self.bot.own_gamertag}` on your Realm's player roster (and even"
+                " the playerlist). *Do not ban or kick them.* The bot will not work"
+                " with your Realm if you do so."
             ),
             color=ipy.RoleColors.GREEN,
         )
@@ -317,12 +245,12 @@ class GuildConfig(utils.Extension):
 
         components = [
             ipy.Button(
-                style=ipy.ButtonStyle.GREEN,
+                style=ipy.ButtonStyle.BLURPLE,
                 label="Link Xbox/Microsoft account",
-                emoji=f"<:xbox_series:{os.environ['XBOX_SERIES_EMOJI_ID']}>",
+                emoji=f"<:xbox_one:{os.environ['XBOX_ONE_EMOJI_ID']}>",
             ),
             ipy.Button(
-                style=ipy.ButtonStyle.GREEN,
+                style=ipy.ButtonStyle.BLURPLE,
                 label="DM the bot's Xbox account",
                 emoji="📥",
             ),
@@ -370,15 +298,23 @@ class GuildConfig(utils.Extension):
             )
             return user_xbox.auth_mgr.xsts_token.xuid, msg
 
-        alphabet = string.ascii_uppercase + string.digits
-        verification_code = "".join(secrets.choice(alphabet) for _ in range(6))
+        verify_code_builder: list[str] = []
+        for i in range(6):
+            if i % 2 == 0:
+                verify_code_builder.append(
+                    random.choice(string.ascii_uppercase)  # noqa: S311
+                )
+            else:
+                verify_code_builder.append(random.choice(string.digits))  # noqa: S311
+
+        verification_code = "".join(verify_code_builder)
 
         embed = utils.make_embed(
             "Please send the following message to the bot's Xbox account at"
             f" `{self.bot.own_gamertag}`. **This is"
             f" case-sensitive.**\n\n`{verification_code}`\n\nOnce you have done so,"
             " click the button below to verify that you have sent the message. You"
-            " have 5 minutes to do so.",
+            " have 10 minutes to do so.",
         )
 
         button = ipy.Button(
@@ -389,30 +325,33 @@ class GuildConfig(utils.Extension):
         await ctx.edit(msg, embeds=embed, components=[button])
 
         try:
-            async with asyncio.timeout(300):
+            async with asyncio.timeout(600):
                 while True:
                     event = await self.bot.wait_for_component(
                         msg, button, self.button_check(ctx.author.id)
                     )
 
-                    inbox = await self.bot.xbox.fetch_inbox(50)
-                    if not inbox.primary.conversations:
-                        await event.ctx.send(
-                            embed=utils.error_embed_generate("Could not find message."),
-                            ephemeral=True,
-                        )
-                        continue
+                    conversation: elytra.Conversation | None = None
 
-                    conversation = next(
-                        (
-                            c
-                            for c in inbox.primary.conversations
-                            if c.last_message.content_payload
-                            and verification_code
-                            in c.last_message.content_payload.full_content
-                        ),
-                        None,
-                    )
+                    for folder_type in ("Secondary", "Primary"):
+                        folder = await self.bot.xbox.fetch_folder(folder_type, 50)
+
+                        if not folder.conversations:
+                            continue
+
+                        conversation = next(
+                            (
+                                c
+                                for c in folder.conversations
+                                if c.last_message.content_payload
+                                and verification_code
+                                in c.last_message.content_payload.full_content
+                            ),
+                            None,
+                        )
+                        if conversation:
+                            break
+
                     if not conversation:
                         await event.ctx.send(
                             embed=utils.error_embed_generate("Could not find message."),
@@ -436,6 +375,7 @@ class GuildConfig(utils.Extension):
             " overwrites the old Realm stored."
         ),
     )
+    @ipy.auto_defer(enabled=False)
     async def link_realm(
         self,
         ctx: utils.RealmContext,
@@ -460,6 +400,7 @@ class GuildConfig(utils.Extension):
             raise utils.CustomCheckFailure("There's no Realm to unlink!")
 
         if unlink:
+            await ctx.defer()
             await self.remove_realm(ctx)
             await ctx.send(embeds=utils.make_embed("Unlinked the Realm."))
             return
@@ -483,39 +424,54 @@ class GuildConfig(utils.Extension):
             await ctx.bot.redis.get(f"rpl-security-check-{ctx.author.id}")
             or random.randint(0, 4) == 0  # noqa: S311
         ):
-            await ctx.bot.redis.set(f"rpl-security-check-{ctx.author.id}", "1", ex=600)
+            await ctx.defer(ephemeral=True)
+            await ctx.bot.redis.set(f"rpl-security-check-{ctx.author.id}", "1", ex=3600)
             results = await self.security_check(ctx)
             if not results:
                 return
+        else:
+            await ctx.defer()
 
         try:
-            realm = await ctx.bot.realms.join_realm_from_code(realm_code)
+            # TODO: add this into elytra proper
+            realm = await elytra.FullRealm.from_response(
+                await ctx.bot.realms.get(f"worlds/v1/link/{realm_code}")
+            )
 
             if results and realm.owner_uuid != results[0]:
                 usable_realm = await ctx.bot.realms.fetch_realm(realm.id)
 
-                if not usable_realm.players:
-                    raise ipy.errors.BadArgument(
-                        "I could not verify that you are an operator of this Realm."
+                try:
+                    if not usable_realm.players:
+                        raise ipy.errors.BadArgument(
+                            "I could not verify that you are an operator of this Realm."
+                        )
+
+                    player_info = next(
+                        (p for p in usable_realm.players if p.uuid == results[0]), None
                     )
 
-                player_info = next(
-                    (p for p in usable_realm.players if p.uuid == results[0]), None
-                )
+                    if not player_info:
+                        raise ipy.errors.BadArgument(
+                            "You are not an operator of this Realm."
+                        )
 
-                if not player_info:
-                    raise ipy.errors.BadArgument(
-                        "You are not an operator of this Realm."
+                    if player_info.permission != elytra.Permission.OPERATOR:
+                        raise ipy.errors.BadArgument(
+                            "You are not an operator of this Realm."
+                        )
+                except ipy.errors.BadArgument as e:
+                    await ctx.edit(
+                        results[1],
+                        embeds=utils.error_embed_generate(str(e)),
+                        components=[],
                     )
-
-                if player_info.permission != elytra.Permission.OPERATOR:
-                    raise ipy.errors.BadArgument(
-                        "You are not an operator of this Realm."
-                    )
+                    return
 
             if config.realm_id != str(realm.id):
                 await self.remove_realm(ctx)
 
+            realm = await ctx.bot.realms.join_realm_from_code(realm_code)
             embeds = await self.add_realm(ctx, realm)
 
             if results:
