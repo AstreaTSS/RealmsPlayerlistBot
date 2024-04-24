@@ -492,7 +492,10 @@ class GuildConfig(utils.Extension):
             else:
                 await ctx.send(embeds=embeds)
         except elytra.MicrosoftAPIException as e:
-            if isinstance(e.error, httpx.HTTPStatusError) and e.resp.status_code == 403:
+            if isinstance(e.error, httpx.HTTPStatusError) and e.resp.status_code in {
+                403,
+                404,
+            }:
                 raise ipy.errors.BadArgument(
                     "I could not join this Realm. Please make sure the Realm code"
                     " is spelled correctly, and that the code is valid. Also make"
