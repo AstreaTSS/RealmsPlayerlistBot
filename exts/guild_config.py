@@ -491,14 +491,16 @@ class GuildConfig(utils.Extension):
         try:
             realm = await ctx.bot.realms.join_realm_from_code(realm_code)
 
-            if results:
-                if not realm.players:
+            if results and realm.owner_uuid != results[0]:
+                usable_realm = await ctx.bot.realms.fetch_realm(realm.id)
+
+                if not usable_realm.players:
                     raise ipy.errors.BadArgument(
                         "I could not verify that you are an operator of this Realm."
                     )
 
                 player_info = next(
-                    (p for p in realm.players if p.uuid == results[0]), None
+                    (p for p in usable_realm.players if p.uuid == results[0]), None
                 )
 
                 if not player_info:
