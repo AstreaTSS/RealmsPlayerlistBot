@@ -69,17 +69,7 @@ class OwnerCMDs(utils.Extension):
         guild_data = await self.bot.http.get_guild(guild_id)
         guild_name = guild_data["name"]
 
-        realm_name = utils.na_friendly_str(
-            self.bot.realm_name_cache.get(config.realm_id)
-        )
-        if realm_name != "N/A":
-            realm_name = f"`{realm_name}`"
-        elif config.realm_id:
-            realm_name = "Unknown/Not Found"
-
-        embed = await utils.config_info_generate(
-            ctx, config, realm_name, diagnostic_info=True
-        )
+        embed = await utils.config_info_generate(ctx, config, diagnostic_info=True)
         embed.title = f"Server Config for {guild_name}"
         await ctx.send(embeds=embed)
 

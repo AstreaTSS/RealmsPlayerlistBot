@@ -19,12 +19,14 @@ import collections
 import datetime
 import logging
 import os
+import re
 import traceback
 import typing
 from collections import defaultdict
 from pathlib import Path
 
 import aiohttp
+import elytra
 import interactions as ipy
 import orjson
 import sentry_sdk
@@ -62,7 +64,11 @@ REOCCURRING_LB_PERIODS: dict[int, str] = {
     4: "30 days",
 }
 
-VOTING_ENABLED = bool(os.environ.get("TOP_GG_TOKEN") or os.environ.get("DBL_TOKEN"))
+VOTING_ENABLED: bool = bool(
+    os.environ.get("TOP_GG_TOKEN") or os.environ.get("DBL_TOKEN")
+)
+
+FORMAT_CODE_REGEX: re.Pattern[str] = re.compile(r"§\S")
 
 
 def FEATURE(feature: str) -> bool:  # noqa: N802
@@ -249,7 +255,6 @@ def partial_channel(
 async def config_info_generate(
     ctx: "RealmContext | RealmPrefixedContext",
     config: GuildConfig,
-    realm_name: str,
     *,
     diagnostic_info: bool = False,
 ) -> ipy.Embed:
@@ -283,6 +288,16 @@ async def config_info_generate(
         )
 
     notification_channels = notification_channels.strip()
+
+    realm_name = "N/A"
+
+    if config.realm_id:
+        try:
+            realm = await ctx.bot.realms.fetch_realm(config.realm_id)
+            realm_name = FORMAT_CODE_REGEX.sub("", realm.name)
+            realm_name = f"`{realm_name}`"
+        except elytra.MicrosoftAPIException:
+            realm_name = "Not Found"
 
     embed.add_field(
         "Basic Information",
@@ -436,9 +451,7 @@ class RealmAutocompleteContext(RealmContextMixin, ipy.AutocompleteContext):
 
 
 if typing.TYPE_CHECKING:
-    import elytra
     import redis.asyncio as aioredis
-    from cachetools import TTLCache
     from prisma import Prisma
 
     from .classes import OrderedSet
@@ -466,7 +479,6 @@ if typing.TYPE_CHECKING:
         splash_texts: SplashTexts
 
         online_cache: defaultdict[int, set[str]]
-        realm_name_cache: TTLCache[typing.Optional[str], str]
         slash_perms_cache: defaultdict[int, dict[int, PermissionsResolver]]
         mini_commands_per_scope: dict[int, dict[str, MiniCommand]]
         live_playerlist_store: defaultdict[str, set[int]]

@@ -47,7 +47,6 @@ import interactions as ipy
 import orjson
 import redis.asyncio as aioredis
 import sentry_sdk
-from cachetools import TTLCache
 from interactions.api.events.processors import Processor
 from interactions.ext import prefixed_commands as prefixed
 from interactions.ext.sentry import HookedTask
@@ -418,7 +417,6 @@ async def start() -> None:
         if config.fetch_devices:
             bot.fetch_devices_for.add(config.realm_id)
 
-    bot.realm_name_cache = TTLCache(maxsize=5000, ttl=600)
     bot.fully_ready = asyncio.Event()
     bot.pl_sem = asyncio.Semaphore(12)  # TODO: maybe increase this?
 
