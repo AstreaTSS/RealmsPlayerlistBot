@@ -170,6 +170,10 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
     async def on_error(self, event: ipy.events.Error) -> None:
         await utils.error_handle(event.error)
 
+    @ipy.listen(ipy.events.ShardDisconnect)
+    async def shard_disconnect(self, event: ipy.events.ShardDisconnect) -> None:
+        await self.bot_owner.send(f"{event.shard_id} disconnected.")
+
     @ipy.listen(splash_texts.SplashTextUpdated)  # custom event
     async def new_splash_text(self) -> None:
         activity = ipy.Activity(
