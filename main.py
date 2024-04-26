@@ -17,6 +17,7 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import contextlib
 import datetime
+import functools
 import logging
 import os
 import typing
@@ -49,7 +50,6 @@ import redis.asyncio as aioredis
 import sentry_sdk
 from interactions.api.events.processors import Processor
 from interactions.ext import prefixed_commands as prefixed
-from interactions.ext.sentry import HookedTask
 from prisma import Prisma
 
 import common.classes as cclasses
@@ -87,9 +87,22 @@ def default_sentry_filter(
     return event
 
 
+class MyHookedTask(ipy.Task):
+    def on_error_sentry_hook(self: ipy.Task, error: Exception) -> None:
+        scope = sentry_sdk.Scope.get_current_scope()
+
+        if isinstance(self.callback, functools.partial):
+            scope.set_tag("task", self.callback.func.__name__)
+        else:
+            scope.set_tag("task", self.callback.__name__)
+
+        scope.set_tag("iteration", self.iteration)
+        sentry_sdk.capture_exception(error)
+
+
 # im so sorry
 if not utils.FEATURE("PRINT_TRACKBACK_FOR_ERRORS") and utils.SENTRY_ENABLED:
-    ipy.Task.on_error_sentry_hook = HookedTask.on_error_sentry_hook
+    ipy.Task.on_error_sentry_hook = MyHookedTask.on_error_sentry_hook
     sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], before_send=default_sentry_filter)
 
 

@@ -91,17 +91,17 @@ async def error_handle(
             traceback.print_exception(error)
             logger.error("An error occured.", exc_info=error)
         else:
-            with sentry_sdk.configure_scope() as scope:
-                if ctx:
-                    scope.set_context(
-                        type(ctx).__name__,
-                        {
-                            "args": ctx.args,  # type: ignore
-                            "kwargs": ctx.kwargs,  # type: ignore
-                            "message": ctx.message,
-                        },
-                    )
-                sentry_sdk.capture_exception(error)
+            scope = sentry_sdk.Scope.get_current_scope()
+            if ctx:
+                scope.set_context(
+                    type(ctx).__name__,
+                    {
+                        "args": ctx.args,  # type: ignore
+                        "kwargs": ctx.kwargs,  # type: ignore
+                        "message": ctx.message,
+                    },
+                )
+            sentry_sdk.capture_exception(error)
     if ctx:
         if isinstance(ctx, prefixed.PrefixedContext):
             await ctx.reply(
