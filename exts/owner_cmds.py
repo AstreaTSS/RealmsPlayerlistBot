@@ -269,7 +269,7 @@ class OwnerCMDs(utils.Extension):
 
         stdout = io.StringIO()
 
-        to_compile = "async def func():\n%s" % textwrap.indent(body, "  ")
+        to_compile = f"async def func():\n{textwrap.indent(body, '  ')}"
         try:
             exec(to_compile, env)  # noqa: S102
         except SyntaxError:
