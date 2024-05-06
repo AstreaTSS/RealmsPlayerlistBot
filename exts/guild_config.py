@@ -390,7 +390,7 @@ class GuildConfig(utils.Extension):
         sub_cmd_name="link-realm",
         sub_cmd_description=(
             "Links (or unlinks) a Realm to this server via a Realm code. Requires being"
-            " operator of Realm."
+            " operator of the Realm."
         ),
     )
     @ipy.auto_defer(enabled=False)
