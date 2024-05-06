@@ -389,8 +389,8 @@ class GuildConfig(utils.Extension):
     @config.subcommand(
         sub_cmd_name="link-realm",
         sub_cmd_description=(
-            "Links (or unlinks) a Realm to this server via a Realm code. This"
-            " overwrites the old Realm stored."
+            "Links (or unlinks) a Realm to this server via a Realm code. Requires being"
+            " operator of Realm."
         ),
     )
     @ipy.auto_defer(enabled=False)
