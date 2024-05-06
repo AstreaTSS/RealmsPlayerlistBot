@@ -49,6 +49,7 @@ import orjson
 import redis.asyncio as aioredis
 import sentry_sdk
 from interactions.api.events.processors import Processor
+from interactions.api.gateway.state import ConnectionState
 from interactions.ext import prefixed_commands as prefixed
 from prisma import Prisma
 
@@ -185,7 +186,22 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
 
     @ipy.listen(ipy.events.ShardDisconnect)
     async def shard_disconnect(self, event: ipy.events.ShardDisconnect) -> None:
-        await self.bot_owner.send(f"{event.shard_id} disconnected.")
+        # this usually means disconnect with an error, which is very unusual
+        # thus, we should log this and attempt to restart
+        try:
+            await self.wait_for(ipy.events.Disconnect, timeout=1)
+        except TimeoutError:
+            return
+
+        await self.bot_owner.send(
+            f"Shard {event.shard_id} disconnected due to an error. Attempting restart."
+        )
+        await asyncio.sleep(5)
+
+        self._connection_states[event.shard_id] = ConnectionState(
+            self, self.intents, event.shard_id
+        )
+        self.create_task(self._connection_states[event.shard_id].start())
 
     @ipy.listen(splash_texts.SplashTextUpdated)  # custom event
     async def new_splash_text(self) -> None:
