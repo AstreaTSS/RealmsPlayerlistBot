@@ -17,6 +17,7 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import collections
 import datetime
+import inspect
 import logging
 import os
 import re
@@ -515,9 +516,75 @@ async def _global_checks(ctx: RealmContext) -> bool:
 
 
 class Extension(ipy.Extension):
+    # replica of https://github.com/interactions-py/interactions.py/pull/1680
     def __new__(
-        cls, bot: ipy.Client, *args: typing.Any, **kwargs: typing.Any
+        cls, bot: ipy.Client, *_: typing.Any, **kwargs: typing.Any
     ) -> ipy.Extension:
-        new_cls = super().__new__(cls, bot, *args, **kwargs)
-        new_cls.add_ext_check(_global_checks)  # type: ignore
-        return new_cls
+        instance = object.__new__(cls)
+        instance.bot = bot
+        instance.client = bot
+
+        instance.name = cls.__name__
+
+        if instance.name in bot.ext:
+            raise ValueError(
+                f"An extension with the name {instance.name} is already loaded!"
+            )
+
+        instance.extension_name = inspect.getmodule(instance).__name__
+        instance.extension_checks = []
+        instance.extension_prerun = []
+        instance.extension_postrun = []
+        instance.extension_error = None
+        instance.interaction_tree = {}
+        instance.auto_defer = ipy.MISSING
+
+        instance.description = kwargs.get("Description") or (
+            inspect.cleandoc(cls.__doc__) if cls.__doc__ else None
+        )
+
+        # load commands from class
+        instance._commands = []
+        instance._listeners = []
+
+        callables: list[tuple[str, typing.Callable]] = inspect.getmembers(
+            instance, predicate=lambda x: isinstance(x, ipy.CallbackObject | ipy.Task)
+        )
+
+        for _name, val in callables:
+            if isinstance(val, ipy.BaseCommand):
+                val.extension = instance
+                val = ipy.utils.wrap_partial(val, instance)
+                bot.add_command(val)
+                instance._commands.append(val)
+
+            elif isinstance(val, ipy.Task):
+                ipy.utils.wrap_partial(val, instance)
+
+            elif isinstance(val, ipy.Listener):
+                val.extension = instance
+                val = val.copy_with_binding(instance)
+                bot.add_listener(val)  # type: ignore
+                instance._listeners.append(val)
+            elif isinstance(val, ipy.GlobalAutoComplete):
+                val.extension = instance
+                val = val.copy_with_binding(instance)
+                bot.add_global_autocomplete(val)
+        bot.dispatch(
+            ipy.events.ExtensionCommandParse(extension=instance, callables=callables)
+        )
+
+        instance.bot.ext[instance.name] = instance
+
+        if hasattr(instance, "async_start"):
+            if inspect.iscoroutinefunction(instance.async_start):
+                bot.async_startup_tasks.append((instance.async_start, (), {}))
+            else:
+                raise TypeError(
+                    "async_start is a reserved method and must be a coroutine"
+                )
+
+        bot.dispatch(ipy.events.ExtensionLoad(extension=instance))
+
+        instance.add_ext_check(_global_checks)  # type: ignore  the only real new line
+        return instance
