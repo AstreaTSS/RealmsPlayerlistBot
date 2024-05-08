@@ -14,10 +14,8 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import asyncio
 import datetime
 import importlib
-import math
 import time
 import typing
 from collections import defaultdict
@@ -48,45 +46,26 @@ class Playerlist(utils.Extension):
         self.forbidden_count: int = 0
 
         if utils.FEATURE("PROCESS_REALMS"):
-            self.get_people_task = self.bot.create_task(self.get_people_runner())
+            self.get_realms_runner.start()
 
     def drop(self) -> None:
         if utils.FEATURE("PROCESS_REALMS"):
-            self.get_people_task.cancel()
+            self.get_realms_runner.stop()
         super().drop()
 
-    def next_time(self) -> ipy.Timestamp:
-        now = ipy.Timestamp.utcnow()
-        # margin of error
-        multiplicity = math.ceil((now.timestamp() + 0.1) / 60)
-        next_time = multiplicity * 60
-        return ipy.Timestamp.utcfromtimestamp(next_time)
+    @ipy.Task.create(ipy.CronTrigger("* * * * *"))
+    async def get_realms_runner(self) -> None:
+        start = time.perf_counter()
+        await self.parse_realms()
+        end = time.perf_counter()
 
-    async def get_people_runner(self) -> None:
-        await self.bot.fully_ready.wait()
-        await utils.sleep_until(self.next_time())
+        if self.previous_now.minute in {0, 30}:
+            ipy.const.get_logger().info(
+                "Ran parse_realms in %s seconds", round(end - start, 3)
+            )
 
-        while True:
-            try:
-                next_time = self.next_time()
-
-                start = time.perf_counter()
-                await self.parse_realms()
-                end = time.perf_counter()
-
-                if self.previous_now.minute in {0, 30}:
-                    ipy.const.get_logger().info(
-                        "Ran parse_realms in %s seconds", round(end - start, 3)
-                    )
-
-                if utils.FEATURE("HANDLE_MISSING_REALMS"):
-                    self.bot.create_task(self.handle_missing_warning())
-                await utils.sleep_until(next_time)
-            except Exception as e:
-                if not isinstance(e, asyncio.CancelledError):
-                    await utils.error_handle(e)
-                else:
-                    break
+        if utils.FEATURE("HANDLE_MISSING_REALMS"):
+            self.bot.create_task(self.handle_missing_warning())
 
     async def parse_realms(self) -> None:
         try:
