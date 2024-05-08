@@ -35,7 +35,7 @@ class VoteHandler:
     vote_url: typing.Optional[str] = attrs.field()
 
 
-class Voting(ipy.Extension):
+class Voting(utils.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.name = "Voting"

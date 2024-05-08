@@ -31,7 +31,7 @@ import common.utils as utils
 logger = logging.getLogger("realms_bot")
 
 
-class PlayerlistEventHandling(ipy.Extension):
+class PlayerlistEventHandling(utils.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.name = "Playerlist Event Handling"
