@@ -27,7 +27,7 @@ import common.models as models
 import common.utils as utils
 
 
-class EtcEvents(ipy.Extension):
+class EtcEvents(utils.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.update_tokens.start()
