@@ -14,8 +14,6 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import asyncio
-import datetime
 import platform
 import random
 import typing
@@ -23,7 +21,6 @@ import typing
 import attrs
 import interactions as ipy
 import orjson
-from dateutil.relativedelta import relativedelta
 
 import common.utils as utils
 
@@ -119,7 +116,6 @@ class SplashTexts:
         "splash_index_list",
         "bot",
         "splash_length",
-        "task",
     )
 
     def __init__(
@@ -128,7 +124,6 @@ class SplashTexts:
         self.splash_index_list = splash_index_list
         self.bot = bot
         self.splash_length = splash_length
-        self.task: asyncio.Task | None = None
 
     @classmethod
     async def from_bot(cls, bot: utils.RealmBotBase) -> typing.Self:
@@ -175,20 +170,15 @@ class SplashTexts:
         return splash_texts[self.splash_index_list[0]]
 
     async def start(self) -> None:
-        self.task = asyncio.create_task(self._task_func())
+        self._task_func.start()
 
     async def stop(self) -> None:
-        if self.task:
-            self.task.cancel()
+        if self._task_func.started:
+            self._task_func.stop()
 
+    @ipy.Task.create(ipy.CronTrigger("0 0 * * *"))
     async def _task_func(self) -> None:
-        while True:
-            now = datetime.datetime.now(datetime.UTC)
-            next_day = now + relativedelta(
-                days=+1, hour=0, minute=0, second=0, microsecond=0
-            )
-            await utils.sleep_until(next_day)
-            await self.next()
+        await self.next()
 
     async def next(self) -> None:
         last_index = self.splash_index_list.pop(0)  # not efficient, but it works
