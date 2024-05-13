@@ -81,12 +81,12 @@ class Autorunners(utils.Extension):
         self.bot: utils.RealmBotBase = bot
         self.playerlist_task = self.bot.create_task(self._start_playerlist())
         self.reoccurring_lb_task.start()
-        self.player_session_delete.start()
+        self.cleanup_player_session.start()
 
     def drop(self) -> None:
         self.playerlist_task.cancel()
         self.reoccurring_lb_task.stop()
-        self.player_session_delete.stop()
+        self.cleanup_player_session.stop()
         super().drop()
 
     async def _start_playerlist(self) -> None:
@@ -335,12 +335,24 @@ class Autorunners(utils.Extension):
                     await pl_utils.eventually_invalidate(self.bot, config)
 
     @ipy.Task.create(ipy.CronTrigger("0 0,12 * * *"))
-    async def player_session_delete(self) -> None:
+    async def cleanup_player_session(self) -> None:
         now = datetime.datetime.now(tz=datetime.UTC)
         time_back = now - datetime.timedelta(days=31)
         await models.PlayerSession.prisma().delete_many(
             where={"online": False, "last_seen": {"lt": time_back}}
         )
+
+        too_far_ago = now - datetime.timedelta(hours=1)
+        online_for_too_long = await models.PlayerSession.prisma().find_many(
+            where={"online": True, "last_seen": {"lt": too_far_ago}}
+        )
+        await models.PlayerSession.prisma().update_many(
+            data={"online": False},
+            where={"online": True, "last_seen": {"lt": too_far_ago}},
+        )
+
+        for session in online_for_too_long:
+            self.bot.online_cache[int(session.realm_id)].discard(session.xuid)
 
 
 def setup(bot: utils.RealmBotBase) -> None:
