@@ -49,7 +49,7 @@ def premium_check[
     return ipy.check(check)
 
 
-class PremiumHandling(utils.Extension):
+class PremiumHandling(ipy.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.name = "Premium Handling"

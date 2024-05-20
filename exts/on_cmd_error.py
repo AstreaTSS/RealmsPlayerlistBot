@@ -24,7 +24,7 @@ from interactions.ext import prefixed_commands as prefixed
 import common.utils as utils
 
 
-class OnCMDError(utils.Extension):
+class OnCMDError(ipy.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
 
