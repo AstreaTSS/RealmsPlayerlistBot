@@ -264,7 +264,6 @@ class Playerlist(utils.Extension):
             )
             self.bot.dropped_offline_realms = set()
 
-    # can't be a tansy command due to the weird stuff we do with kwargs
     @tansy.slash_command(
         name="playerlist",
         description="Sends a playerlist, a log of players who have joined and left.",
