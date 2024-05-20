@@ -20,6 +20,7 @@ import datetime
 import importlib
 
 import interactions as ipy
+from dateutil.relativedelta import relativedelta
 
 import common.classes as cclasses
 import common.models as models
@@ -80,13 +81,13 @@ class Autorunners(utils.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
         self.playerlist_task = self.bot.create_task(self._start_playerlist())
-        self.reoccurring_lb_task.start()
-        self.cleanup_player_session.start()
+        self.reoccuring_lb_task = self.bot.create_task(self._start_reoccurring_lb())
+        self.player_session_delete.start()
 
     def drop(self) -> None:
         self.playerlist_task.cancel()
-        self.reoccurring_lb_task.stop()
-        self.cleanup_player_session.stop()
+        self.reoccuring_lb_task.cancel()
+        self.player_session_delete.stop()
         super().drop()
 
     async def _start_playerlist(self) -> None:
@@ -217,17 +218,36 @@ class Autorunners(utils.Extension):
 
                 await pl_utils.eventually_invalidate(self.bot, full_config)
 
-    @ipy.Task.create(ipy.CronTrigger("0 0 * * 0"))
-    async def reoccurring_lb_task(self) -> None:
-        # margin of error
-        now = ipy.Timestamp.utcnow() + datetime.timedelta(milliseconds=1)
+    async def _start_reoccurring_lb(self) -> None:
+        await self.bot.fully_ready.wait()
+        try:
+            while True:
+                # margin of error
+                now = ipy.Timestamp.utcnow() + datetime.timedelta(milliseconds=1)
 
-        # silly way to have a bitfield that toggles every sunday
-        bit = self.bot.redis.bitfield("rpl-sunday-bitshift", default_overflow="WRAP")
-        bit.incrby("u1", "#0", 1)
-        bit_resp: list[int] = await bit.execute()  # [0] or [1]
+                days_to_next_sunday = 6 - now.weekday()
+                if days_to_next_sunday <= 0:
+                    days_to_next_sunday += 7
 
-        await self.reoccurring_lb_loop(bit_resp[0] % 2 == 0, now.day <= 7)
+                next_sunday = now + relativedelta(
+                    days=+days_to_next_sunday, hour=0, minute=0, second=0, microsecond=0
+                )
+
+                # silly way to have a bitfield that toggles every sunday
+                bit = self.bot.redis.bitfield(
+                    "rpl-sunday-bitshift", default_overflow="WRAP"
+                )
+                bit.incrby("u1", "#0", 1)
+                bit_resp: list[int] = await bit.execute()  # [0] or [1]
+
+                await utils.sleep_until(next_sunday)
+                await self.reoccurring_lb_loop(
+                    bit_resp[0] % 2 == 0, next_sunday.day <= 7
+                )
+
+        except Exception as e:
+            if not isinstance(e, asyncio.CancelledError):
+                await utils.error_handle(e)
 
     async def reoccurring_lb_loop(
         self, second_sunday: bool, first_monday_of_month: bool
@@ -334,8 +354,10 @@ class Autorunners(utils.Extension):
                 else:
                     await pl_utils.eventually_invalidate(self.bot, config)
 
-    @ipy.Task.create(ipy.CronTrigger("0 0,12 * * *"))
-    async def cleanup_player_session(self) -> None:
+    @ipy.Task.create(
+        ipy.OrTrigger(ipy.TimeTrigger(utc=True), ipy.TimeTrigger(hour=12, utc=True))
+    )
+    async def player_session_delete(self) -> None:
         now = datetime.datetime.now(tz=datetime.UTC)
         time_back = now - datetime.timedelta(days=31)
         await models.PlayerSession.prisma().delete_many(
