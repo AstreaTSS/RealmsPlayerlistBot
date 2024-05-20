@@ -14,7 +14,6 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import functools
 import platform
 import random
 import typing
@@ -125,8 +124,6 @@ class SplashTexts:
         self.splash_index_list = splash_index_list
         self.bot = bot
         self.splash_length = splash_length
-
-        self._task_func.callback = functools.partial(self._task_func.callback, self)
 
     @classmethod
     async def from_bot(cls, bot: utils.RealmBotBase) -> typing.Self:
