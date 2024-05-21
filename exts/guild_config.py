@@ -439,8 +439,12 @@ class GuildConfig(utils.Extension):
         results: SecurityCheckResults | None = None
 
         if (
-            await ctx.bot.redis.get(f"rpl-security-check-{ctx.author.id}")
-            or random.randint(0, 1) == 0  # noqa: S311
+            utils.FEATURE("SECURITY_CHECK")
+            and await ctx.bot.redis.get(f"rpl-security-check-{ctx.author.id}")
+            or (
+                utils.FEATURE("ALWAYS_SECURITY_CHECK")
+                or random.randint(0, 1) == 0  # noqa: S311
+            )
         ):
             await ctx.defer(ephemeral=True)
             await ctx.bot.redis.set(f"rpl-security-check-{ctx.author.id}", "1", ex=3600)
