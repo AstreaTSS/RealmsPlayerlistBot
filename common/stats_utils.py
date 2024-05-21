@@ -17,7 +17,7 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 import datetime
 import io
 import typing
-from collections import defaultdict
+from collections import Counter, defaultdict
 from enum import IntEnum
 
 import interactions as ipy
@@ -275,6 +275,28 @@ def timespan_minutes_per_day_of_the_week(
         datetime.date(year=1970, month=1, day=(k - 3) + 7): v
         for k, v in minutes_per_day_of_the_week.items()
     }
+
+
+def _process_lb_timespan(datetime_entry: GatherDatetimesReturn) -> int:
+    start = int(datetime_entry.joined_at.timestamp())
+    end = int(datetime_entry.last_seen.timestamp())
+
+    start = (start // 60) * 60
+    end = (end // 60) * 60
+
+    return 0 if end <= start else end - start
+
+
+def calc_leaderboard(
+    ranges: typing.Iterable[GatherDatetimesReturn],
+) -> list[tuple[str, int]]:
+    leaderboard_counter: Counter[str] = Counter()
+
+    for datetime_entry in ranges:
+        leaderboard_counter[datetime_entry.xuid] += _process_lb_timespan(datetime_entry)
+
+    leaderboard_counter = +leaderboard_counter  # filters out 0s somehow?
+    return [e for e in leaderboard_counter.most_common() if e[0]]
 
 
 async def gather_datetimes(

@@ -17,7 +17,6 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 import datetime
 import importlib
 import typing
-from collections import Counter
 
 import humanize
 import interactions as ipy
@@ -450,16 +449,6 @@ class Statistics(utils.Extension):
         )
         await self.handle_multi_players(ctx, returned_data, now, xuid_list, gamertags)
 
-    @staticmethod
-    def process_timespan(datetime_entry: stats_utils.GatherDatetimesReturn) -> int:
-        start = int(datetime_entry.joined_at.timestamp())
-        end = int(datetime_entry.last_seen.timestamp())
-
-        start = (start // 60) * 60
-        end = (end // 60) * 60
-
-        return 0 if end <= start else end - start
-
     @tansy.slash_command(
         name="leaderboard",
         description=(
@@ -516,22 +505,11 @@ class Statistics(utils.Extension):
             min_datetime + datetime.timedelta(days=1) < earliest_datetime
         )
 
-        leaderboard_counter: Counter[str] = Counter()
-
-        for datetime_entry in datetimes:
-            leaderboard_counter[datetime_entry.xuid] += self.process_timespan(
-                datetime_entry
-            )
-
-        leaderboard_counter = +leaderboard_counter  # filters out 0s somehow?
-
-        if not leaderboard_counter:
+        leaderboard_counter_sort = stats_utils.calc_leaderboard(datetimes)
+        if not leaderboard_counter_sort:
             raise utils.CustomCheckFailure(
                 "There's no data for the linked Realm for this timespan."
             )
-
-        leaderboard_counter_sort = leaderboard_counter.most_common()
-        leaderboard_counter_sort = [e for e in leaderboard_counter_sort if e[0]]
 
         if kwargs.get("autorunner"):
             leaderboard_counter_sort = leaderboard_counter_sort[:20]
@@ -562,6 +540,7 @@ class Statistics(utils.Extension):
 
         if len(leaderboard_counter_sort) > 20:
             pag = cclasses.DynamicLeaderboardPaginator(
+                client=self.bot,
                 pages_data=leaderboard_counter_sort,
                 period_str=period_str,
                 timestamp=now,
@@ -570,7 +549,7 @@ class Statistics(utils.Extension):
             return
 
         gamertag_map = await pl_utils.get_xuid_to_gamertag_map(
-            self.bot, list(leaderboard_counter)
+            self.bot, [e[0] for e in leaderboard_counter_sort]
         )
 
         leaderboard_builder: list[str] = []
