@@ -14,6 +14,6 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import rpl_config
+import os
 
-rpl_config.load()
+os.environ["BOT_COLOR"] = "0"
