@@ -531,31 +531,10 @@ class Statistics(utils.Extension):
             )
 
         leaderboard_counter_sort = leaderboard_counter.most_common()
-        gamertag_map = await pl_utils.get_xuid_to_gamertag_map(
-            self.bot, list(leaderboard_counter)
-        )
+        leaderboard_counter_sort = [e for e in leaderboard_counter_sort if e[0]]
 
-        leaderboard_builder: list[str] = []
-        index = 0
-
-        for xuid, playtime in leaderboard_counter_sort:
-            if not xuid:  # likely subclient player
-                continue
-
-            precisedelta = humanize.precisedelta(
-                playtime, minimum_unit="minutes", format="%0.0f"
-            )
-
-            if precisedelta == "1 minutes":  # why humanize
-                precisedelta = "1 minute"
-
-            leaderboard_builder.append(
-                f"**{index+1}\\.** `{gamertag_map[xuid] or xuid}`: {precisedelta}"
-            )
-
-            index += 1
-
-        leaderboard_count = len(leaderboard_builder)
+        if kwargs.get("autorunner"):
+            leaderboard_counter_sort = leaderboard_counter_sort[:20]
 
         # im lazy
         match period:
@@ -581,41 +560,39 @@ class Statistics(utils.Extension):
             )
             await ctx.send(embed=embed)
 
-        if kwargs.get("autorunner"):
-            leaderboard_builder = leaderboard_builder[:20]
-            leaderboard_count = 20
-
-        if leaderboard_count > 20:
-            chunks_of_lb_builder = [
-                leaderboard_builder[x : x + 20]
-                for x in range(0, len(leaderboard_builder), 20)
-            ]
-
-            pag = help_tools.HelpPaginator.create_from_embeds(
-                self.bot,
-                *(
-                    ipy.Embed(
-                        title=f"Leaderboard for the past {period_str}",
-                        description="\n".join(chunk),
-                        color=ctx.bot.color,
-                        timestamp=now,
-                    )
-                    for chunk in chunks_of_lb_builder
-                ),
-                timeout=120,
+        if len(leaderboard_counter_sort) > 20:
+            pag = cclasses.DynamicLeaderboardPaginator(
+                pages_data=leaderboard_counter_sort,
+                period_str=period_str,
+                timestamp=now,
             )
-            pag.show_callback_button = False
-
-            if len(pag.pages) > 25:  # this will be triggered, make no mistake
-                pag.show_select_menu = False
             await pag.send(ctx)
-        else:
-            await ctx.send(
-                embed=utils.make_embed(
-                    "\n".join(leaderboard_builder),
-                    title=f"Leaderboard for the past {period_str}",
-                )
+            return
+
+        gamertag_map = await pl_utils.get_xuid_to_gamertag_map(
+            self.bot, list(leaderboard_counter)
+        )
+
+        leaderboard_builder: list[str] = []
+
+        for index, (xuid, playtime) in enumerate(leaderboard_counter_sort):
+            precisedelta = humanize.precisedelta(
+                playtime, minimum_unit="minutes", format="%0.0f"
             )
+
+            if precisedelta == "1 minutes":  # why humanize
+                precisedelta = "1 minute"
+
+            leaderboard_builder.append(
+                f"**{index+1}\\.** `{gamertag_map[xuid] or xuid}`: {precisedelta}"
+            )
+
+        await ctx.send(
+            embed=utils.make_embed(
+                "\n".join(leaderboard_builder),
+                title=f"Leaderboard for the past {period_str}",
+            )
+        )
 
     @tansy.slash_command(
         name="get-player-log",

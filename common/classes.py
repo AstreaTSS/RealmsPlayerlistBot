@@ -157,6 +157,8 @@ class DynamicLeaderboardPaginator:
     )
     """The client to hook listeners into"""
 
+    pages_data: list[tuple[str, int]] = attrs.field(repr=False, kw_only=True)
+    """The entries for the leaderboard"""
     period_str: str = attrs.field(repr=False, kw_only=True)
     """The period, represented as a string."""
     timestamp: ipy.Timestamp = attrs.field(repr=False, kw_only=True)
@@ -164,10 +166,6 @@ class DynamicLeaderboardPaginator:
 
     page_index: int = attrs.field(repr=False, kw_only=True, default=0)
     """The index of the current page being displayed"""
-    pages_data: list[tuple[str, int]] = attrs.field(
-        repr=False, factory=list, kw_only=True
-    )
-    """The entries for the leaderboard"""
     timeout_interval: int = attrs.field(repr=False, default=120, kw_only=True)
     """How long until this paginator disables itself"""
 
@@ -177,8 +175,6 @@ class DynamicLeaderboardPaginator:
     _author_id: ipy.Snowflake_Type = attrs.field(repr=False, default=ipy.MISSING)
 
     def __attrs_post_init__(self) -> None:
-        self.pages_data = [e for e in self.pages_data if e[0]]
-
         self.client.add_component_callback(
             ipy.ComponentCommand(
                 name=f"Paginator:{self._uuid}",
