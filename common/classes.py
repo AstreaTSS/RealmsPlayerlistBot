@@ -157,7 +157,7 @@ class OrderedSet[T](MutableSet[T]):
 
 @ipy.utils.define(kw_only=False, auto_detect=True)
 class DynamicLeaderboardPaginator:
-    client: utils.RealmBotBase = attrs.field(
+    client: "utils.RealmBotBase" = attrs.field(
         repr=False,
     )
     """The client to hook listeners into"""
@@ -173,6 +173,10 @@ class DynamicLeaderboardPaginator:
     """The index of the current page being displayed"""
     timeout_interval: int = attrs.field(repr=False, default=120, kw_only=True)
     """How long until this paginator disables itself"""
+
+    context: ipy.InteractionContext | None = attrs.field(
+        default=None, init=False, repr=False
+    )
 
     _uuid: str = attrs.field(repr=False, init=False, factory=uuid.uuid4)
     _message: ipy.Message = attrs.field(repr=False, init=False, default=ipy.MISSING)
@@ -223,55 +227,47 @@ class DynamicLeaderboardPaginator:
             A list of ActionRows
 
         """
-        output: list[ipy.Button | ipy.StringSelectMenu] = []
-
         lower_index = max(0, min((self.last_page_index + 1) - 25, self.page_index - 12))
-        output.append(
+
+        output: list[ipy.Button | ipy.StringSelectMenu] = [
             ipy.StringSelectMenu(
                 *(
                     ipy.StringSelectOption(label=f"Page {i+1}", value=str(i))
-                    for i in range(lower_index, lower_index + 25)
+                    for i in range(
+                        lower_index,
+                        min(self.last_page_index + 1, lower_index + 25),
+                    )
                 ),
                 custom_id=f"{self._uuid}|select",
                 placeholder=f"Page {self.page_index+1}",
                 max_values=1,
                 disabled=disable,
-            )
-        )
-
-        output.append(
+            ),
             ipy.Button(
                 style=ipy.ButtonStyle.BLURPLE,
                 emoji="⏮️",
                 custom_id=f"{self._uuid}|first",
                 disabled=disable or self.page_index == 0,
-            )
-        )
-        output.append(
+            ),
             ipy.Button(
                 style=ipy.ButtonStyle.BLURPLE,
                 emoji="⬅️",
                 custom_id=f"{self._uuid}|back",
                 disabled=disable or self.page_index == 0,
-            )
-        )
-        output.append(
+            ),
             ipy.Button(
                 style=ipy.ButtonStyle.BLURPLE,
                 emoji="➡️",
                 custom_id=f"{self._uuid}|next",
                 disabled=disable or self.page_index >= self.last_page_index,
-            )
-        )
-        output.append(
+            ),
             ipy.Button(
                 style=ipy.ButtonStyle.BLURPLE,
                 emoji="⏩",
                 custom_id=f"{self._uuid}|last",
                 disabled=disable or self.page_index >= self.last_page_index,
-            )
-        )
-
+            ),
+        ]
         return ipy.spread_to_rows(*output)
 
     async def to_dict(self) -> dict:
@@ -324,7 +320,10 @@ class DynamicLeaderboardPaginator:
             The resulting message
 
         """
-        self._message = await ctx.send(**self.to_dict(), **kwargs)
+        if isinstance(ctx, ipy.InteractionContext):
+            self.context = ctx
+
+        self._message = await ctx.send(**await self.to_dict(), **kwargs)
         self._author_id = ctx.author.id
 
         if self.timeout_interval > 1:
@@ -348,7 +347,7 @@ class DynamicLeaderboardPaginator:
             case "last":
                 self.page_index = self.last_page_index
             case "next":
-                if (self.page_index + 1) < self.last_page_index:
+                if (self.page_index + 1) <= self.last_page_index:
                     self.page_index += 1
             case "back":
                 if self.page_index >= 1:
