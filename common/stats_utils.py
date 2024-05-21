@@ -169,7 +169,7 @@ def get_minutes_per_hour(
     )
 
     return {
-        datetime.datetime.utcfromtimestamp(k): minutes_per_hour[k]  # noqa: DTZ004
+        datetime.datetime.fromtimestamp(k, tz=datetime.UTC): minutes_per_hour[k]
         for k in range(min_timestamp, max_timestamp + 1, InSeconds.HOUR)
     }
 
@@ -211,7 +211,7 @@ def get_minutes_per_day(
     )
 
     return {
-        datetime.datetime.utcfromtimestamp(k): minutes_per_day[k]  # noqa: DTZ004
+        datetime.datetime.fromtimestamp(k, tz=datetime.UTC): minutes_per_day[k]
         for k in range(min_timestamp, max_timestamp + 1, InSeconds.DAY)
     }
 

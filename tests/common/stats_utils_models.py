@@ -738,14 +738,14 @@ TEST_DATETIMES = [
 ]
 
 MINUTES_PER_DAY_RESULTS = {
-    datetime.datetime(2024, 5, 14, 0, 0): 85,  # noqa: DTZ001
-    datetime.datetime(2024, 5, 15, 0, 0): 305,  # noqa: DTZ001
-    datetime.datetime(2024, 5, 16, 0, 0): 771,  # noqa: DTZ001
-    datetime.datetime(2024, 5, 17, 0, 0): 239,  # noqa: DTZ001
-    datetime.datetime(2024, 5, 18, 0, 0): 463,  # noqa: DTZ001
-    datetime.datetime(2024, 5, 19, 0, 0): 182,  # noqa: DTZ001
-    datetime.datetime(2024, 5, 20, 0, 0): 219,  # noqa: DTZ001
-    datetime.datetime(2024, 5, 21, 0, 0): 12,  # noqa: DTZ001
+    datetime.datetime(2024, 5, 14, 0, 0, tzinfo=datetime.UTC): 85,
+    datetime.datetime(2024, 5, 15, 0, 0, tzinfo=datetime.UTC): 305,
+    datetime.datetime(2024, 5, 16, 0, 0, tzinfo=datetime.UTC): 771,
+    datetime.datetime(2024, 5, 17, 0, 0, tzinfo=datetime.UTC): 239,
+    datetime.datetime(2024, 5, 18, 0, 0, tzinfo=datetime.UTC): 463,
+    datetime.datetime(2024, 5, 19, 0, 0, tzinfo=datetime.UTC): 182,
+    datetime.datetime(2024, 5, 20, 0, 0, tzinfo=datetime.UTC): 219,
+    datetime.datetime(2024, 5, 21, 0, 0, tzinfo=datetime.UTC): 12,
 }
 
 CALC_LEADERBOARD_RESULTS = [
