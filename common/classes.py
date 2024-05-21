@@ -15,15 +15,20 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
 import typing
+import uuid
 from collections.abc import MutableSet
 from copy import copy
 
 import aiohttp
+import attrs
+import humanize
 import interactions as ipy
 import orjson
 from prisma._async_http import Response
 
+import common.playerlist_utils as pl_utils
 import common.utils as utils
+from common.help_tools import CustomTimeout
 
 
 def valid_channel_check(channel: ipy.GuildChannel) -> ipy.GuildText:
@@ -143,6 +148,211 @@ class OrderedSet[T](MutableSet[T]):
 
     def __or__(self, other: typing.Iterable[T]) -> typing.Self:
         return self.union(other)
+
+
+@ipy.utils.define(kw_only=False, auto_detect=True)
+class DynamicLeaderboardPaginator:
+    client: utils.RealmBotBase = attrs.field(
+        repr=False,
+    )
+    """The client to hook listeners into"""
+
+    period_str: str = attrs.field(repr=False, kw_only=True)
+    """The period, represented as a string."""
+    timestamp: ipy.Timestamp = attrs.field(repr=False, kw_only=True)
+    """The timestamp to use for the embeds."""
+
+    page_index: int = attrs.field(repr=False, kw_only=True, default=0)
+    """The index of the current page being displayed"""
+    pages_data: list[tuple[str, int]] = attrs.field(
+        repr=False, factory=list, kw_only=True
+    )
+    """The entries for the leaderboard"""
+    timeout_interval: int = attrs.field(repr=False, default=120, kw_only=True)
+    """How long until this paginator disables itself"""
+
+    _uuid: str = attrs.field(repr=False, factory=uuid.uuid4)
+    _message: ipy.Message = attrs.field(repr=False, default=ipy.MISSING)
+    _timeout_task: CustomTimeout = attrs.field(repr=False, default=ipy.MISSING)
+    _author_id: ipy.Snowflake_Type = attrs.field(repr=False, default=ipy.MISSING)
+
+    def __attrs_post_init__(self) -> None:
+        self.pages_data = [e for e in self.pages_data if e[0]]
+
+        self.client.add_component_callback(
+            ipy.ComponentCommand(
+                name=f"Paginator:{self._uuid}",
+                callback=self._on_button,
+                listeners=[
+                    f"{self._uuid}|select",
+                    f"{self._uuid}|first",
+                    f"{self._uuid}|back",
+                    f"{self._uuid}|next",
+                    f"{self._uuid}|last",
+                ],
+            )
+        )
+
+    @property
+    def message(self) -> ipy.Message:
+        """The message this paginator is currently attached to"""
+        return self._message
+
+    @property
+    def author_id(self) -> ipy.Snowflake_Type:
+        """The ID of the author of the message this paginator is currently attached to"""
+        return self._author_id
+
+    @property
+    def last_page_index(self) -> int:
+        return len(self.pages_data) // 20
+
+    def create_components(self, disable: bool = False) -> list[ipy.ActionRow]:
+        """
+        Create the components for the paginator message.
+
+        Args:
+            disable: Should all the components be disabled?
+
+        Returns:
+            A list of ActionRows
+
+        """
+        output: list[ipy.Button | ipy.StringSelectMenu] = []
+
+        lower_index = max(0, min((self.last_page_index + 1) - 25, self.page_index - 12))
+        output.append(
+            ipy.StringSelectMenu(
+                *(
+                    ipy.StringSelectOption(label=f"Page {i+1}", value=str(i))
+                    for i in range(lower_index, lower_index + 25)
+                ),
+                custom_id=f"{self._uuid}|select",
+                placeholder=f"Page {self.page_index+1}",
+                max_values=1,
+                disabled=disable,
+            )
+        )
+
+        output.append(
+            ipy.Button(
+                style=ipy.ButtonStyle.BLURPLE,
+                emoji="⏮️",
+                custom_id=f"{self._uuid}|first",
+                disabled=disable or self.page_index == 0,
+            )
+        )
+        output.append(
+            ipy.Button(
+                style=ipy.ButtonStyle.BLURPLE,
+                emoji="⬅️",
+                custom_id=f"{self._uuid}|back",
+                disabled=disable or self.page_index == 0,
+            )
+        )
+        output.append(
+            ipy.Button(
+                style=ipy.ButtonStyle.BLURPLE,
+                emoji="➡️",
+                custom_id=f"{self._uuid}|next",
+                disabled=disable or self.page_index >= self.last_page_index,
+            )
+        )
+        output.append(
+            ipy.Button(
+                style=ipy.ButtonStyle.BLURPLE,
+                emoji="⏩",
+                custom_id=f"{self._uuid}|last",
+                disabled=disable or self.page_index >= self.last_page_index,
+            )
+        )
+
+        return ipy.spread_to_rows(*output)
+
+    async def to_dict(self) -> dict:
+        """Convert this paginator into a dictionary for sending."""
+        page_data = self.pages_data[self.page_index * 20 : (self.page_index * 20) + 20]
+
+        gamertag_map = await pl_utils.get_xuid_to_gamertag_map(
+            self.client, [e[0] for e in page_data]
+        )
+
+        leaderboard_builder: list[str] = []
+        index = self.page_index * 20
+
+        for xuid, playtime in page_data:
+            precisedelta = humanize.precisedelta(
+                playtime, minimum_unit="minutes", format="%0.0f"
+            )
+
+            if precisedelta == "1 minutes":  # why humanize
+                precisedelta = "1 minute"
+
+            leaderboard_builder.append(
+                f"**{index+1}\\.** `{gamertag_map[xuid] or xuid}`: {precisedelta}"
+            )
+
+            index += 1
+
+        page = ipy.Embed(
+            title=f"Leaderboard for the past {self.period_str}",
+            description="\n".join(leaderboard_builder),
+            color=self.client.color,
+            timestamp=self.timestamp,
+        )
+        page.set_author(name=f"Page {self.page_index+1}/{self.last_page_index+1}")
+
+        return {
+            "embeds": [page.to_dict()],
+            "components": [c.to_dict() for c in self.create_components()],
+        }
+
+    async def send(self, ctx: ipy.BaseContext, **kwargs: typing.Any) -> ipy.Message:
+        """
+        Send this paginator.
+
+        Args:
+            ctx: The context to send this paginator with
+            **kwargs: Additional options to pass to `send`.
+
+        Returns:
+            The resulting message
+
+        """
+        self._message = await ctx.send(**self.to_dict(), **kwargs)
+        self._author_id = ctx.author.id
+
+        if self.timeout_interval > 1:
+            self._timeout_task = CustomTimeout(self)
+            self.client.create_task(self._timeout_task())
+
+        return self._message
+
+    async def _on_button(
+        self, ctx: ipy.ComponentContext, *_: typing.Any, **__: typing.Any
+    ) -> typing.Optional[ipy.Message]:
+        if ctx.author.id != self.author_id:
+            return await ctx.send(
+                "You are not allowed to use this paginator.", ephemeral=True
+            )
+        if self._timeout_task:
+            self._timeout_task.ping.set()
+        match ctx.custom_id.split("|")[1]:
+            case "first":
+                self.page_index = 0
+            case "last":
+                self.page_index = self.last_page_index
+            case "next":
+                if (self.page_index + 1) < self.last_page_index:
+                    self.page_index += 1
+            case "back":
+                if self.page_index >= 1:
+                    self.page_index -= 1
+            case "select":
+                self.page_index = int(ctx.values[0])
+
+        await ctx.edit_origin(**await self.to_dict())
+        return None
 
 
 class BetterResponse(aiohttp.ClientResponse):

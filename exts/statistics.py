@@ -536,7 +536,6 @@ class Statistics(utils.Extension):
         )
 
         leaderboard_builder: list[str] = []
-
         index = 0
 
         for xuid, playtime in leaderboard_counter_sort:
