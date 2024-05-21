@@ -19,7 +19,8 @@ import typing
 import uuid
 from collections.abc import MutableSet
 from copy import copy
-from unittest.mock import MagicMock, patch
+from datetime import UTC
+from unittest.mock import MagicMock, Mock, patch
 
 import aiohttp
 import attrs
@@ -390,6 +391,12 @@ def orjson_default(obj: typing.Any) -> typing.Any:
         return str(obj)
     if isinstance(obj, Json):
         return orjson_dumps(obj.data)
+    if isinstance(obj, ipy.Timestamp):
+        if obj.tzinfo != UTC:
+            obj = obj.astimezone(UTC)
+
+        obj = obj.replace(microsecond=int(obj.microsecond / 1000) * 1000)
+        return obj.isoformat()
     raise TypeError
 
 
@@ -398,8 +405,13 @@ def orjson_dumps(obj: typing.Any, **kwargs: typing.Any) -> str:
     return orjson.dumps(obj, **kwargs).decode()
 
 
-magic_mock = MagicMock()
-patched = patch(f"{prisma_dumps.__module__}.{prisma_dumps.__qualname__}", magic_mock)
-patched.start()
+if isinstance(prisma_dumps, Mock):
+    prisma_dumps.side_effect = orjson_dumps
+else:
+    magic_mock = MagicMock()
+    patched = patch(
+        f"{prisma_dumps.__module__}.{prisma_dumps.__qualname__}", magic_mock
+    )
+    patched.start()
 
-magic_mock.side_effect = orjson_dumps
+    magic_mock.side_effect = orjson_dumps
