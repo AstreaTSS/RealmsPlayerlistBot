@@ -169,10 +169,14 @@ class DynamicLeaderboardPaginator:
     timeout_interval: int = attrs.field(repr=False, default=120, kw_only=True)
     """How long until this paginator disables itself"""
 
-    _uuid: str = attrs.field(repr=False, factory=uuid.uuid4)
-    _message: ipy.Message = attrs.field(repr=False, default=ipy.MISSING)
-    _timeout_task: CustomTimeout = attrs.field(repr=False, default=ipy.MISSING)
-    _author_id: ipy.Snowflake_Type = attrs.field(repr=False, default=ipy.MISSING)
+    _uuid: str = attrs.field(repr=False, init=False, factory=uuid.uuid4)
+    _message: ipy.Message = attrs.field(repr=False, init=False, default=ipy.MISSING)
+    _timeout_task: CustomTimeout = attrs.field(
+        repr=False, init=False, default=ipy.MISSING
+    )
+    _author_id: ipy.Snowflake_Type = attrs.field(
+        repr=False, init=False, default=ipy.MISSING
+    )
 
     def __attrs_post_init__(self) -> None:
         self.client.add_component_callback(
