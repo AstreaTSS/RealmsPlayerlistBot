@@ -228,7 +228,7 @@ def na_friendly_str(obj: typing.Any) -> str:
     return str(obj) if obj else "N/A"
 
 
-_bot_color = ipy.Color(int(os.environ["BOT_COLOR"]))
+_bot_color = ipy.Color(int(os.environ.get("BOT_COLOR", "11557887")))
 
 
 def make_embed(description: str, *, title: str | None = None) -> ipy.Embed:
