@@ -14,11 +14,16 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from stats_utils_models import MINUTES_PER_DAY_RESULTS, TEST_DATETIMES
+import stats_utils_models
 
 import common.stats_utils as stats_utils
 
 
 def test_get_minutes_per_day() -> None:
-    results = stats_utils.get_minutes_per_day(TEST_DATETIMES)
-    assert results == MINUTES_PER_DAY_RESULTS
+    results = stats_utils.get_minutes_per_day(stats_utils_models.TEST_DATETIMES)
+    assert results == stats_utils_models.MINUTES_PER_DAY_RESULTS
+
+
+def test_calc_leaderboard() -> None:
+    results = stats_utils.calc_leaderboard(stats_utils_models.TEST_DATETIMES)
+    assert results == stats_utils_models.CALC_LEADERBOARD_RESULTS
