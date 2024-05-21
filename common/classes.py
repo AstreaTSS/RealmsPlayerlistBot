@@ -14,10 +14,12 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import decimal
 import typing
 import uuid
 from collections.abc import MutableSet
 from copy import copy
+from unittest.mock import MagicMock, patch
 
 import aiohttp
 import attrs
@@ -25,6 +27,8 @@ import humanize
 import interactions as ipy
 import orjson
 from prisma._async_http import Response
+from prisma._builder import dumps as prisma_dumps
+from prisma.fields import Base64, Json
 
 import common.playerlist_utils as pl_utils
 import common.utils as utils
@@ -379,3 +383,23 @@ class FastResponse(Response):
 
 
 Response.json = FastResponse.json  # type: ignore
+
+
+def orjson_default(obj: typing.Any) -> typing.Any:
+    if isinstance(obj, decimal.Decimal | Base64):
+        return str(obj)
+    if isinstance(obj, Json):
+        return orjson_dumps(obj.data)
+    raise TypeError
+
+
+def orjson_dumps(obj: typing.Any, **kwargs: typing.Any) -> str:
+    kwargs.setdefault("default", orjson_default)
+    return orjson.dumps(obj, **kwargs).decode()
+
+
+magic_mock = MagicMock()
+patched = patch(f"{prisma_dumps.__module__}.{prisma_dumps.__qualname__}", magic_mock)
+patched.start()
+
+magic_mock.side_effect = orjson_dumps
