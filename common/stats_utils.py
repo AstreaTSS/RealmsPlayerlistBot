@@ -129,8 +129,8 @@ def get_minutes_per_hour(
     minutes_per_hour: defaultdict[int, int] = defaultdict(int)
 
     for _, start, end in ranges:
-        end_time = int(end.timestamp())
-        current_hour = int(start.timestamp())
+        end_time = int(end.timestamp()) // 60 * 60
+        current_hour = int(start.timestamp()) // 60 * 60
 
         while current_hour < end_time:
             # comments arent repeated for every function, use this one as ref
@@ -183,8 +183,8 @@ def get_minutes_per_day(
     minutes_per_day: defaultdict[int, int] = defaultdict(int)
 
     for _, start, end in ranges:
-        end_time = int(end.timestamp())
-        current_day = int(start.timestamp())
+        end_time = int(end.timestamp()) // 60 * 60
+        current_day = int(start.timestamp()) // 60 * 60
 
         while current_day < end_time:
             day_floored = current_day // InSeconds.DAY * InSeconds.DAY
@@ -224,8 +224,8 @@ def timespan_minutes_per_hour(
     minutes_per_hour: dict[int, int] = {i: 0 for i in range(24)}
 
     for _, start, end in ranges:
-        end_time = int(end.timestamp())
-        current_hour = int(start.timestamp())
+        end_time = int(end.timestamp()) // 60 * 60
+        current_hour = int(start.timestamp()) // 60 * 60
 
         while current_hour < end_time:
             next_hour = (
@@ -254,8 +254,8 @@ def timespan_minutes_per_day_of_the_week(
     minutes_per_day_of_the_week: dict[int, int] = {i: 0 for i in range(7)}
 
     for _, start, end in ranges:
-        end_time = int(end.timestamp())
-        current_day = int(start.timestamp())
+        end_time = int(end.timestamp()) // 60 * 60
+        current_day = int(start.timestamp()) // 60 * 60
 
         while current_day < end_time:
             next_day = (current_day // InSeconds.DAY * InSeconds.DAY) + InSeconds.DAY
