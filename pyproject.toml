@@ -70,8 +70,6 @@ exclude = [
     "node_modules",
     "venv",
 ]
-per-file-ignores = {}
-
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
@@ -82,3 +80,6 @@ fix = true
 [tool.ruff.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
 max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**.py" = ["S101"]
