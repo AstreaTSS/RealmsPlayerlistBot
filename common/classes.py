@@ -14,17 +14,22 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import pkgutil
 import typing
 import uuid
 from collections.abc import MutableSet
 from copy import copy
+from datetime import UTC
 
 import aiohttp
 import attrs
 import humanize
 import interactions as ipy
+import msgspec
 import orjson
+from prisma import Base64, Json
 from prisma._async_http import Response
+from prisma._builder import dumps as prisma_dumps
 
 import common.playerlist_utils as pl_utils
 import common.utils as utils
@@ -380,37 +385,30 @@ class FastResponse(Response):
 Response.json = FastResponse.json  # type: ignore
 
 
-# def msgspec_enc_hook(obj: typing.Any) -> typing.Any:
-#     if isinstance(obj, Base64):
-#         return str(obj)
-#     if isinstance(obj, Json):
-#         return msgspec_dump(obj.data)
-#     if isinstance(obj, ipy.Timestamp):
-#         if obj.tzinfo != UTC:
-#             obj = obj.astimezone(UTC)
+def msgspec_enc_hook(obj: typing.Any) -> typing.Any:
+    if isinstance(obj, Base64):
+        return str(obj)
+    if isinstance(obj, Json):
+        return msgspec_dump(obj.data)
+    if isinstance(obj, ipy.Timestamp):
+        if obj.tzinfo != UTC:
+            obj = obj.astimezone(UTC)
 
-#         obj = obj.replace(microsecond=int(obj.microsecond / 1000) * 1000)
-#         return obj.isoformat()
-#     if isinstance(obj, ipy.Snowflake):
-#         return int(obj)
+        obj = obj.replace(microsecond=int(obj.microsecond / 1000) * 1000)
+        return obj.isoformat()
+    if isinstance(obj, ipy.Snowflake):
+        return int(obj)
 
-#     raise NotImplementedError(f"Objects of type {type(obj)} are not supported")
-
-
-# msgspec_encoder = msgspec.json.Encoder(enc_hook=msgspec_enc_hook)
+    raise NotImplementedError(f"Objects of type {type(obj)} are not supported")
 
 
-# def msgspec_dump(obj: typing.Any, **_: typing.Any) -> str:
-#     return msgspec_encoder.encode(obj).decode()
+msgspec_encoder = msgspec.json.Encoder(enc_hook=msgspec_enc_hook)
 
 
-# if isinstance(prisma_dumps, Mock):
-#     prisma_dumps.side_effect = msgspec_dump
-# else:
-#     magic_mock = MagicMock()
-#     patched = patch(
-#         f"{prisma_dumps.__module__}.{prisma_dumps.__qualname__}", magic_mock
-#     )
-#     patched.start()
+def msgspec_dump(obj: typing.Any, **_: typing.Any) -> str:
+    return msgspec_encoder.encode(obj).decode()
 
-#     magic_mock.side_effect = msgspec_dump
+
+if prisma_dumps != msgspec_dump:
+    target = pkgutil.resolve_name(prisma_dumps.__module__)
+    setattr(target, prisma_dumps.__qualname__, msgspec_dump)
