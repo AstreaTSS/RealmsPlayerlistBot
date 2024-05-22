@@ -1,5 +1,4 @@
 FROM python:3.12-alpine
-FROM node:16-alpine
 
 RUN apk add --no-cache gcc bash musl-dev git libffi-dev npm
 
