@@ -402,9 +402,11 @@ def msgspec_enc_hook(obj: typing.Any) -> typing.Any:
     raise NotImplementedError(f"Objects of type {type(obj)} are not supported")
 
 
-def msgspec_dump(obj: typing.Any, **kwargs: typing.Any) -> str:
-    kwargs.setdefault("enc_hook", msgspec_enc_hook)
-    return msgspec.json.encode(obj, **kwargs).decode()
+msgspec_encoder = msgspec.json.Encoder(enc_hook=msgspec_enc_hook)
+
+
+def msgspec_dump(obj: typing.Any, **_: typing.Any) -> str:
+    return msgspec_encoder.encode(obj).decode()
 
 
 if isinstance(prisma_dumps, Mock):
