@@ -1,6 +1,6 @@
 FROM python:3.12-alpine
 
-RUN apk add --no-cache gcc bash musl-dev git
+RUN apk add --no-cache gcc bash musl-dev git libffi-dev
 
 WORKDIR /app
 
