@@ -737,7 +737,7 @@ TEST_DATETIMES = [
     ),
 ]
 
-MINUTES_PER_DAY_RESULTS = {
+MINUTES_PER_DAY_RESULTS: dict[datetime.datetime, int] = {
     datetime.datetime(2024, 5, 14, 0, 0, tzinfo=datetime.UTC): 85,
     datetime.datetime(2024, 5, 15, 0, 0, tzinfo=datetime.UTC): 305,
     datetime.datetime(2024, 5, 16, 0, 0, tzinfo=datetime.UTC): 771,
@@ -748,7 +748,7 @@ MINUTES_PER_DAY_RESULTS = {
     datetime.datetime(2024, 5, 21, 0, 0, tzinfo=datetime.UTC): 12,
 }
 
-CALC_LEADERBOARD_RESULTS = [
+CALC_LEADERBOARD_RESULTS: list[tuple[str, int]] = [
     ("cdb29742-12b7-4593-b7da-1d6c2aef1149", 35160),
     ("cdf719ae-77eb-4f55-931c-c862bf9040fa", 11880),
     ("5cbfe0b3-b2c0-4692-944d-89d9f31e2864", 6000),
