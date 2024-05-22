@@ -14,7 +14,6 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import decimal
 import typing
 import uuid
 from collections.abc import MutableSet
@@ -26,6 +25,7 @@ import aiohttp
 import attrs
 import humanize
 import interactions as ipy
+import msgspec
 import orjson
 from prisma._async_http import Response
 from prisma._builder import dumps as prisma_dumps
@@ -385,27 +385,30 @@ class FastResponse(Response):
 Response.json = FastResponse.json  # type: ignore
 
 
-def orjson_default(obj: typing.Any) -> typing.Any:
-    if isinstance(obj, decimal.Decimal | Base64):
+def msgspec_enc_hook(obj: typing.Any) -> typing.Any:
+    if isinstance(obj, Base64):
         return str(obj)
     if isinstance(obj, Json):
-        return orjson_dumps(obj.data)
+        return msgspec_dump(obj.data)
     if isinstance(obj, ipy.Timestamp):
         if obj.tzinfo != UTC:
             obj = obj.astimezone(UTC)
 
         obj = obj.replace(microsecond=int(obj.microsecond / 1000) * 1000)
         return obj.isoformat()
-    raise TypeError
+    if isinstance(obj, ipy.Snowflake):
+        return int(obj)
+
+    raise NotImplementedError(f"Objects of type {type(obj)} are not supported")
 
 
-def orjson_dumps(obj: typing.Any, **kwargs: typing.Any) -> str:
-    kwargs.setdefault("default", orjson_default)
-    return orjson.dumps(obj, **kwargs).decode()
+def msgspec_dump(obj: typing.Any, **kwargs: typing.Any) -> str:
+    kwargs.setdefault("enc_hook", msgspec_enc_hook)
+    return msgspec.json.encode(obj, **kwargs).decode()
 
 
 if isinstance(prisma_dumps, Mock):
-    prisma_dumps.side_effect = orjson_dumps
+    prisma_dumps.side_effect = msgspec_dump
 else:
     magic_mock = MagicMock()
     patched = patch(
@@ -413,4 +416,4 @@ else:
     )
     patched.start()
 
-    magic_mock.side_effect = orjson_dumps
+    magic_mock.side_effect = msgspec_dump
