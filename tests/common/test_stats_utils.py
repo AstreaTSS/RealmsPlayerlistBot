@@ -24,6 +24,23 @@ def test_get_minutes_per_day() -> None:
     assert results == stats_utils_models.MINUTES_PER_DAY_RESULTS
 
 
+def test_get_minutes_per_hour() -> None:
+    results = stats_utils.get_minutes_per_hour(stats_utils_models.TEST_DATETIMES)
+    assert results == stats_utils_models.MINUTES_PER_HOUR_RESULTS
+
+
+def test_timespan_minutes_per_hour() -> None:
+    results = stats_utils.timespan_minutes_per_hour(stats_utils_models.TEST_DATETIMES)
+    assert results == stats_utils_models.TIMESPAN_MINUTES_PER_HOUR_RESULTS
+
+
+def test_timespan_minutes_per_day_of_the_week() -> None:
+    results = stats_utils.timespan_minutes_per_day_of_the_week(
+        stats_utils_models.TEST_DATETIMES
+    )
+    assert results == stats_utils_models.TIMESPAN_MINUTES_PER_DAY_OF_THE_WEEK_RESULTS
+
+
 def test_calc_leaderboard() -> None:
     results = stats_utils.calc_leaderboard(stats_utils_models.TEST_DATETIMES)
     assert results == stats_utils_models.CALC_LEADERBOARD_RESULTS
