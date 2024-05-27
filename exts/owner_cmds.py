@@ -95,7 +95,7 @@ class OwnerCMDs(utils.Extension):
             "The playerlist channel ID for this guild.", default=None
         ),
     ) -> None:
-        data: "GuildConfigCreateInput" = {"guild_id": int(guild_id)}
+        data: GuildConfigCreateInput = {"guild_id": int(guild_id)}
 
         if club_id:
             data["club_id"] = club_id
