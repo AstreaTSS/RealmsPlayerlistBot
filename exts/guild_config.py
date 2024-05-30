@@ -537,50 +537,7 @@ class GuildConfig(utils.Extension):
     async def alternate_link(self, ctx: utils.RealmContext) -> None:
         config = await ctx.fetch_config()
 
-        embed = ipy.Embed(
-            title="Warning",
-            description=(
-                "**This method requires signing into and giving brief access to your"
-                " Microsoft/Xbox account.**\nThe bot will only use this to get your"
-                " Realms and add the bot's account to said Realm - the bot will not"
-                " store your credientials. However, you may feel uncomfortable with"
-                f" this. If so, you can use {self.link_realm.mention()} to link your"
-                " Realm, though that requires a Realm code (even temporarily).\n\n**If"
-                " you wish to continue, click the accept button below.** You have two"
-                " minutes to do so."
-            ),
-            timestamp=ipy.Timestamp.utcnow(),
-            color=ipy.RoleColors.YELLOW,
-        )
-
-        success = False
-        result = ""
-        event = None
-
-        components = [
-            ipy.Button(style=ipy.ButtonStyle.GREEN, label="Accept", emoji="✅"),
-            ipy.Button(style=ipy.ButtonStyle.RED, label="Decline", emoji="✖️"),
-        ]
-        msg = await ctx.send(embed=embed, components=components)
-
-        try:
-            event = await self.bot.wait_for_component(
-                msg, components, self.button_check(ctx.author.id), timeout=120
-            )
-
-            if event.ctx.custom_id == components[1].custom_id:
-                result = "Declined linking the Realm through this method."
-            else:
-                result = "Loading..."
-                success = True
-        except TimeoutError:
-            result = "Timed out."
-        finally:
-            embed = utils.make_embed(result)
-            await ctx.edit(msg, embeds=embed, components=[])
-
-        if not success:
-            return
+        msg = await ctx.send(embeds=utils.make_embed("Loading..."))
 
         try:
             oauth = await device_code.handle_flow(ctx, msg)
