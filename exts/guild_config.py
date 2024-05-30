@@ -414,7 +414,7 @@ class GuildConfig(utils.Extension):
                     custom_id="realm_code",
                     min_length=3,
                 ),
-                title="Realm Code Entry",
+                title="Realm Code/Link Entry",
                 custom_id="realm_code_modal",
             )
             await ctx.send_modal(modal)
