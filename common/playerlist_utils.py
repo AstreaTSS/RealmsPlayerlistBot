@@ -277,9 +277,10 @@ async def has_autorunning_playerlist_channel(ctx: utils.RealmContext) -> bool:
 
     if not config.playerlist_chan:
         raise utils.CustomCheckFailure(
-            "This server does not have an autorunning playerlist channel set up. Please check out"
-            " [the Server Setup Guide](https://rpl.astrea.cc/wiki/server_setup.html)"
-            " for more information."
+            "This server does not have an autorunning playerlist channel set up. Please"
+            " check out [the Server Setup"
+            " Guide](https://rpl.astrea.cc/wiki/server_setup.html) for more"
+            " information."
         )
     return True
 
