@@ -328,16 +328,16 @@ class PlayerlistEventHandling(utils.Extension):
                     f" you haven't banned or kick `{self.bot.own_gamertag}`. If you"
                     " have, please unban the account if needed and run"
                     f" {self.bot.mention_command('config link-realm')} again to fix"
-                    " it.\n\nAlternatively:\n- If you want to disable the autorunning playerlist"
-                    " entirely, you can use"
-                    f" {self.bot.mention_command('config autorunning-playerlist-channel')} to do"
-                    " so.\n- If you want to disable this warning, you can use"
+                    " it.\n\nAlternatively:\n- If you want to disable the autorunning"
+                    " playerlist entirely, you can use"
+                    f" {self.bot.mention_command('config autorunning-playerlist-channel')} to"
+                    " do so.\n- If you want to disable this warning, you can use"
                     f" {self.bot.mention_command('config realm-warning')} to do so."
                     " *Note that these warnings are often useful, so disabling is not"
                     " recommended unless you expect your Realm to be inactive for days"
-                    " on end.*\n\nThe bot will automatically disable the autorunning playerlist"
-                    " and related settings after 7 days of not getting information"
-                    " from your Realm."
+                    " on end.*\n\nThe bot will automatically disable the autorunning"
+                    " playerlist and related settings after 7 days of not getting"
+                    " information from your Realm."
                 )
                 await chan.send(content=content)
 

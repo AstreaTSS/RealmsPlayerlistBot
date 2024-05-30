@@ -272,9 +272,7 @@ class GuildConfig(utils.Extension):
             )
 
             if event.ctx.custom_id == components[-1].custom_id:
-                result = (
-                    "Unforunately, you must be an operator to link a Realm."
-                )
+                result = "Unforunately, you must be an operator to link a Realm."
                 ipy.get_logger().info(
                     "User %s declined the security check.", ctx.author.id
                 )
@@ -556,7 +554,9 @@ class GuildConfig(utils.Extension):
 
     @config.subcommand(
         sub_cmd_name="autorunning-playerlist-channel",
-        sub_cmd_description="Sets (or unsets) where the autorunning playerlist is sent to.",
+        sub_cmd_description=(
+            "Sets (or unsets) where the autorunning playerlist is sent to."
+        ),
     )
     @ipy.check(pl_utils.has_linked_realm)
     async def set_autorunning_playerlist_channel(
@@ -609,7 +609,9 @@ class GuildConfig(utils.Extension):
             if config.realm_id:
                 self.bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
 
-            await ctx.send(embeds=utils.make_embed("Unset the autorunning playerlist channel."))
+            await ctx.send(
+                embeds=utils.make_embed("Unset the autorunning playerlist channel.")
+            )
 
     @staticmethod
     def button_check(author_id: int) -> typing.Callable[..., bool]:
@@ -707,7 +709,8 @@ class GuildConfig(utils.Extension):
     @config.subcommand(
         sub_cmd_name="realm-offline-role",
         sub_cmd_description=(
-            "Sets/unsets the role that is pinged in the autorunning playerlist channel if the Realm goes offline."
+            "Sets/unsets the role that is pinged in the autorunning playerlist channel"
+            " if the Realm goes offline."
         ),
     )
     @ipy.check(pl_utils.has_linked_realm)
