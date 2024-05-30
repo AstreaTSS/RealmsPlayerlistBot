@@ -87,6 +87,9 @@ class GuildConfig(PrismaGuildConfig):
     def valid_premium(self) -> bool:
         return bool(self.premium_code and self.premium_code.valid_code)
 
+    def get_notif_channel(self, type_name: str) -> int:
+        return self.notification_channels.get(type_name, self.playerlist_chan)
+
     async def save(self) -> None:
         data = self.model_dump(exclude={"premium_code_id", "premium_code"})
         if data.get("notification_channels") is not None:

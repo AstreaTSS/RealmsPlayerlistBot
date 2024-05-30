@@ -322,9 +322,7 @@ class Autorunners(utils.Extension):
         a_ctx = utils.RealmPrefixedContext(client=self.bot)
         a_ctx.author_id = self.bot.user.id
         a_ctx.channel_id = ipy.to_snowflake(
-            config.notification_channels.get(
-                "reoccurring_leaderboard", config.playerlist_chan
-            )  # type: ignore
+            config.get_notif_channel("reoccurring_leaderboard")
         )
         a_ctx.guild_id = ipy.to_snowflake(config.guild_id)
         a_ctx.config = config

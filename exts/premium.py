@@ -508,7 +508,7 @@ class PremiumHandling(utils.Extension):
                     f" {utils.REOCCURRING_LB_FREQUENCY[frequency]} with a period of"
                     f" {utils.REOCCURRING_LB_PERIODS[period]}, sending the"
                     " leaderboard to"
-                    f" <#{config.notification_channels.get('reoccurring_leaderboard', config.playerlist_chan)}>."
+                    f" <#{config.get_notif_channel('reoccurring_leaderboard')}>."
                 ),
             )
 
