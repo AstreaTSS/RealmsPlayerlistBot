@@ -330,7 +330,7 @@ class PlayerlistEventHandling(utils.Extension):
                     f" {self.bot.mention_command('config link-realm')} again to fix"
                     " it.\n\nAlternatively:\n- If you want to disable the autorunner"
                     " entirely, you can use"
-                    f" {self.bot.mention_command('config playerlist-channel')} to do"
+                    f" {self.bot.mention_command('config autorun-playerlist-channel')} to do"
                     " so.\n- If you want to disable this warning, you can use"
                     f" {self.bot.mention_command('config realm-warning')} to do so."
                     " *Note that these warnings are often useful, so disabling is not"

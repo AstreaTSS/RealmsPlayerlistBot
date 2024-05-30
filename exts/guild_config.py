@@ -555,11 +555,11 @@ class GuildConfig(utils.Extension):
         await ctx.edit(msg, embeds=embeds, components=[])
 
     @config.subcommand(
-        sub_cmd_name="playerlist-channel",
+        sub_cmd_name="autorun-playerlist-channel",
         sub_cmd_description="Sets (or unsets) where the autorun playerlist is sent to.",
     )
     @ipy.check(pl_utils.has_linked_realm)
-    async def set_playerlist_channel(
+    async def set_autorun_playerlist_channel(
         self,
         ctx: utils.RealmContext,
         channel: typing.Optional[ipy.GuildText] = tansy.Option(
@@ -759,7 +759,7 @@ class GuildConfig(utils.Extension):
             if not config.playerlist_chan:
                 raise utils.CustomCheckFailure(
                     "Please set up the autorunner with"
-                    f" {self.set_playerlist_channel.mention()} first."
+                    f" {self.set_autorun_playerlist_channel.mention()} first."
                 )
 
             embed = ipy.Embed(
