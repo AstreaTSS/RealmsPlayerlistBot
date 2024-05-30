@@ -260,9 +260,7 @@ class PlayerlistEventHandling(utils.Extension):
             try:
                 chan = utils.partial_channel(
                     self.bot,
-                    config.notification_channels.get(
-                        "realm_offline", config.playerlist_chan
-                    ),
+                    config.get_notif_channel("realm_offline"),
                 )
 
                 await chan.send(
@@ -371,9 +369,7 @@ class PlayerlistEventHandling(utils.Extension):
             try:
                 chan = utils.partial_channel(
                     self.bot,
-                    config.notification_channels.get(
-                        "player_watchlist", config.playerlist_chan
-                    ),
+                    config.get_notif_channel("player_watchlist"),
                 )
 
                 try:
