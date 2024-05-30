@@ -555,15 +555,15 @@ class GuildConfig(utils.Extension):
         await ctx.edit(msg, embeds=embeds, components=[])
 
     @config.subcommand(
-        sub_cmd_name="autorun-playerlist-channel",
-        sub_cmd_description="Sets (or unsets) where the autorun playerlist is sent to.",
+        sub_cmd_name="autorunning-playerlist-channel",
+        sub_cmd_description="Sets (or unsets) where the autorunning playerlist is sent to.",
     )
     @ipy.check(pl_utils.has_linked_realm)
-    async def set_autorun_playerlist_channel(
+    async def set_autorunning_playerlist_channel(
         self,
         ctx: utils.RealmContext,
         channel: typing.Optional[ipy.GuildText] = tansy.Option(
-            "The channel to set the playerlist to.",
+            "The channel to set the autorunning playerlist to.",
             converter=cclasses.ValidChannelConverter,
         ),
         unset: bool = tansy.Option("Should the channel be unset?", default=False),
@@ -590,7 +590,7 @@ class GuildConfig(utils.Extension):
 
             await ctx.send(
                 embeds=utils.make_embed(
-                    f"Set the playerlist channel to {channel.mention}."
+                    f"Set the autorunning playerlist channel to {channel.mention}."
                 )
             )
         else:
@@ -609,7 +609,7 @@ class GuildConfig(utils.Extension):
             if config.realm_id:
                 self.bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
 
-            await ctx.send(embeds=utils.make_embed("Unset the playerlist channel."))
+            await ctx.send(embeds=utils.make_embed("Unset the autorunning playerlist channel."))
 
     @staticmethod
     def button_check(author_id: int) -> typing.Callable[..., bool]:
@@ -654,7 +654,7 @@ class GuildConfig(utils.Extension):
                     f" `{self.bot.own_gamertag}` has been kicked/banned, preventing the"
                     " bot from functioning. **You should not disable this warning"
                     " lightly, as it could be critical to fixing issues with the"
-                    " bot.**\n**Also note that the Realm's autorunner and related"
+                    " bot.**\n**Also note that the Realm's autorunners and related"
                     " settings will still be disabled after 7 days of inactivity. It"
                     " is your responsibility to keep track of this.**\nDisabling these"
                     " warnings may still be beneficial if your Realm isn't as active,"
@@ -707,8 +707,7 @@ class GuildConfig(utils.Extension):
     @config.subcommand(
         sub_cmd_name="realm-offline-role",
         sub_cmd_description=(
-            "Sets (or unsets) the role that should be pinged in the autorunner channel"
-            " if the Realm goes offline."
+            "Sets/unsets the role that is pinged in the autorunning playerlist channel if the Realm goes offline."
         ),
     )
     @ipy.check(pl_utils.has_linked_realm)
@@ -719,7 +718,7 @@ class GuildConfig(utils.Extension):
         unset: bool = tansy.Option("Should the role be unset?", default=False),
     ) -> None:
         """
-        Sets (or unsets) the role that should be pinged in the autorunner channel if the Realm goes offline.
+        Sets/unsets the role that is pinged in the autorunning playerlist channel if the Realm goes offline.
         This may be unreliable due to how it's made - it works best in large Realms that \
         rarely have 0 players, and may trigger too often otherwise.
 
@@ -758,8 +757,8 @@ class GuildConfig(utils.Extension):
 
             if not config.playerlist_chan:
                 raise utils.CustomCheckFailure(
-                    "Please set up the autorunner with"
-                    f" {self.set_autorun_playerlist_channel.mention()} first."
+                    "Please set up the autorunning playerlist with"
+                    f" {self.set_autorunning_playerlist_channel.mention()} first."
                 )
 
             embed = ipy.Embed(
@@ -962,7 +961,7 @@ class GuildConfig(utils.Extension):
             " join. Maximum of 3 people."
         ),
     )
-    @ipy.check(pl_utils.has_playerlist_channel)
+    @ipy.check(pl_utils.has_autorunning_playerlist_channel)
     async def watchlist_add(
         self,
         ctx: utils.RealmContext,
@@ -1030,7 +1029,7 @@ class GuildConfig(utils.Extension):
             " the linked Realm."
         ),
     )
-    @ipy.check(pl_utils.has_playerlist_channel)
+    @ipy.check(pl_utils.has_autorunning_playerlist_channel)
     async def watchlist_ping_role(
         self,
         ctx: utils.RealmContext,

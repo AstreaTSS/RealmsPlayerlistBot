@@ -303,8 +303,8 @@ async def config_info_generate(
 
     embed.add_field(
         "Basic Information",
-        f"Realm Name: {realm_name}\n\nAutorunner Enabled: {autorunner}\nAutorun"
-        f" Playerlist Channel: {playerlist_channel}\nWarning Notifications:"
+        f"Realm Name: {realm_name}\n\nAutorunner Enabled: {autorunner}\n"
+        f"Autorunning Playerlist Channel: {playerlist_channel}\nWarning Notifications:"
         f" {toggle_friendly_str(config.warning_notifications)}\n\nRealm Offline Role:"
         f" {offline_realm_ping}\nPlayer Watchlist Role:"
         f" {player_watchlist_ping}\nPeople on Watchlist: See"
@@ -350,7 +350,7 @@ async def config_info_generate(
         dev_info_str = (
             f"Server ID: {config.guild_id}\nRealm ID:"
             f" {na_friendly_str(config.realm_id)}\nClub ID:"
-            f" {na_friendly_str(config.club_id)}\nPlayerlist Channel ID:"
+            f" {na_friendly_str(config.club_id)}\nAutorunning Playerlist Channel ID:"
             f" {na_friendly_str(config.playerlist_chan)}\nRealm Offline Role"
             f" ID:{na_friendly_str(config.realm_offline_role)}\nLinked Premium ID:"
             f" {premium_code_id}\nPlayer Watchlist XUIDs:"
