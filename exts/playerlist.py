@@ -286,7 +286,7 @@ class Playerlist(utils.Extension):
     ) -> None:
         """
         Checks and makes a playerlist, a log of players who have joined and left.
-        The autorun version only goes back an hour.
+        The autorunning version only goes back an hour.
 
         Has a cooldown of 60 seconds due to how intensive this command can be.
         May take a while to run at first.

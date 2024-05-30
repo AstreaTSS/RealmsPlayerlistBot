@@ -272,12 +272,12 @@ async def has_linked_realm(ctx: utils.RealmContext) -> bool:
     return True
 
 
-async def has_playerlist_channel(ctx: utils.RealmContext) -> bool:
+async def has_autorunning_playerlist_channel(ctx: utils.RealmContext) -> bool:
     config = await ctx.fetch_config()
 
     if not config.playerlist_chan:
         raise utils.CustomCheckFailure(
-            "This server does not have a playerlist channel set up. Please check out"
+            "This server does not have an autorunning playerlist channel set up. Please check out"
             " [the Server Setup Guide](https://rpl.astrea.cc/wiki/server_setup.html)"
             " for more information."
         )
