@@ -232,14 +232,14 @@ class GuildConfig(utils.Extension):
         embed = ipy.Embed(
             title="Security Check",
             description=(
-                "You have been randomly chosen, as part of a test, to verify that you"
-                " are an operator/moderator of the Realm you wish to link. There are"
-                " two methods to do this:\n- *Temporarily* link your Xbox/Microsoft"
-                " account so that the bot can verify who you are. This is the"
-                " recommended method, as it is the most secure - furthermore, the bot"
-                " will not store your credentials.\n- Send a specific message to the"
-                " bot's Xbox account. This method is less secure.\n\n**Please pick the"
-                " method you wish to use. You have 2 minutes to do so.**"
+                "You must verify that you are an operator/moderator of the Realm you"
+                " wish to link. There are two methods to do this:\n- *Temporarily* link"
+                " your Xbox/Microsoft account so that the bot can verify who you are."
+                " This is the recommended method, as it is the most secure -"
+                " furthermore, the bot will not store your credentials.\n- Send a"
+                " specific message to the bot's Xbox account. This method is less"
+                " secure.\n\n**Please pick the method you wish to use. You have 2"
+                " minutes to do so.**"
             ),
             timestamp=ipy.Timestamp.utcnow(),
             color=ipy.RoleColors.YELLOW,
@@ -273,10 +273,7 @@ class GuildConfig(utils.Extension):
 
             if event.ctx.custom_id == components[-1].custom_id:
                 result = (
-                    "Unforunately, you must be an operator to link a Realm. If you"
-                    " have any complains about this test, please join the support"
-                    " server, the link of which can be found through"
-                    f" {ctx.bot.mention_command('support')}."
+                    "Unforunately, you must be an operator to link a Realm."
                 )
                 ipy.get_logger().info(
                     "User %s declined the security check.", ctx.author.id
@@ -438,14 +435,7 @@ class GuildConfig(utils.Extension):
 
         results: SecurityCheckResults | None = None
 
-        if (
-            utils.FEATURE("SECURITY_CHECK")
-            and await ctx.bot.redis.get(f"rpl-security-check-{ctx.author.id}")
-            or (
-                utils.FEATURE("ALWAYS_SECURITY_CHECK")
-                or random.randint(0, 1) == 0  # noqa: S311
-            )
-        ):
+        if utils.FEATURE("SECURITY_CHECK"):
             await ctx.defer(ephemeral=True)
             await ctx.bot.redis.set(f"rpl-security-check-{ctx.author.id}", "1", ex=3600)
             ipy.get_logger().info("Running security check for %s.", ctx.author.id)
