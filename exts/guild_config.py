@@ -100,7 +100,7 @@ class GuildConfig(utils.Extension):
 
     async def add_realm(
         self,
-        ctx: utils.RealmContext,
+        ctx: utils.RealmContext | utils.RealmModalContext,
         realm: elytra.FullRealm,
         *,
         microsoft_link: bool = False,
@@ -170,7 +170,9 @@ class GuildConfig(utils.Extension):
         embeds.append(confirm_embed)
         return embeds
 
-    async def remove_realm(self, ctx: utils.RealmContext) -> None:
+    async def remove_realm(
+        self, ctx: utils.RealmContext | utils.RealmModalContext
+    ) -> None:
         config = await ctx.fetch_config()
 
         realm_id = config.realm_id
@@ -227,7 +229,7 @@ class GuildConfig(utils.Extension):
             )
 
     async def security_check(
-        self, ctx: utils.RealmContext
+        self, ctx: utils.RealmModalContext
     ) -> SecurityCheckResults | None:
         embed = ipy.Embed(
             title="Security Check",
@@ -383,46 +385,73 @@ class GuildConfig(utils.Extension):
 
     @config.subcommand(
         sub_cmd_name="link-realm",
-        sub_cmd_description=(
-            "Links (or unlinks) a Realm to this server via a Realm code. Requires being"
-            " operator of the Realm."
-        ),
+        sub_cmd_description="Links (or unlinks) a Realm to this server.",
     )
     @ipy.auto_defer(enabled=False)
     async def link_realm(
         self,
         ctx: utils.RealmContext,
-        _realm_code: typing.Optional[str] = tansy.Option(
-            "The Realm code or link.", name="realm_code", default=None
-        ),
-        unlink: bool = tansy.Option(
-            "Should the Realm be unlinked from this server? Do not set this if you"
-            " are linking your Realm.",
-            default=False,
+        link_method: int = tansy.Option(
+            "The method for linking/unlinking.",
+            choices=[
+                ipy.SlashCommandChoice("Realm Code/Link (Requires Being Operator)", 1),
+                ipy.SlashCommandChoice("Direct Link (Requires Being Owner)", 2),
+                ipy.SlashCommandChoice("Unlink", -1),
+            ],
         ),
     ) -> None:
-        if not (unlink ^ bool(_realm_code)):
-            raise ipy.errors.BadArgument(
-                "You must either give a realm code/link or explictly unlink your Realm."
-                " One must be given."
-            )
-
-        config = await ctx.fetch_config()
-
-        if unlink and not config.realm_id:
-            raise utils.CustomCheckFailure("There's no Realm to unlink!")
-
-        if unlink:
+        if link_method == -1:
             await ctx.defer()
             await self.remove_realm(ctx)
             await ctx.send(embeds=utils.make_embed("Unlinked the Realm."))
             return
 
-        if not _realm_code:
-            raise utils.CustomCheckFailure(
-                "This should never happen. If it does, join the support server and"
-                " report this."
+        if link_method == 1:
+            modal = ipy.Modal(
+                ipy.InputText(
+                    label="What's your Realm code/link?",
+                    style=ipy.TextStyles.SHORT,
+                    custom_id="realm_code",
+                    min_length=3,
+                ),
+                title="Realm Code Entry",
+                custom_id="realm_code_modal",
             )
+            await ctx.send_modal(modal)
+            return
+
+        if link_method == 2:
+            await ctx.defer(ephemeral=True)
+            msg = await ctx.send(embeds=utils.make_embed("Loading..."))
+
+            config = await ctx.fetch_config()
+
+            try:
+                oauth = await device_code.handle_flow(ctx, msg)
+                realm = await device_code.handle_realms(ctx, msg, oauth)
+            except ipy.errors.HTTPException as e:
+                if e.status == 404:
+                    # probably just cant edit embed because it was dismissed
+                    return
+                raise
+
+            if config.realm_id != str(realm.id):
+                await self.remove_realm(ctx)
+
+            embeds = await self.add_realm(ctx, realm, microsoft_link=True)
+            await ctx.edit(msg, embeds=embeds, components=[])
+
+        raise ipy.errors.BadArgument("Invalid link method.")
+
+    @ipy.modal_callback("realm_code_modal")
+    async def _realm_code_modal(self, ctx: utils.RealmModalContext) -> None:
+        await ctx.defer(ephemeral=True)
+        config = await ctx.fetch_config()
+
+        _realm_code = ctx.responses["realm_code"]
+
+        if not _realm_code:
+            raise utils.CustomCheckFailure("No Realm code/link provided.")
 
         realm_code_matches = REALMS_LINK_REGEX.fullmatch(_realm_code)
 
@@ -434,14 +463,11 @@ class GuildConfig(utils.Extension):
         results: SecurityCheckResults | None = None
 
         if utils.FEATURE("SECURITY_CHECK"):
-            await ctx.defer(ephemeral=True)
             await ctx.bot.redis.set(f"rpl-security-check-{ctx.author.id}", "1", ex=3600)
             ipy.get_logger().info("Running security check for %s.", ctx.author.id)
             results = await self.security_check(ctx)
             if not results:
                 return
-        else:
-            await ctx.defer()
 
         try:
             # TODO: add this into elytra proper
@@ -523,34 +549,6 @@ class GuildConfig(utils.Extension):
                 return
 
             raise ipy.errors.BadArgument(error_msg) from None
-
-    @config.subcommand(
-        sub_cmd_name="alternate-link",
-        sub_cmd_description=(
-            "An alternate way to link a Realm to this server. Requires being the"
-            " Realm owner."
-        ),
-    )
-    @ipy.auto_defer(enabled=True, ephemeral=True)
-    async def alternate_link(self, ctx: utils.RealmContext) -> None:
-        config = await ctx.fetch_config()
-
-        msg = await ctx.send(embeds=utils.make_embed("Loading..."))
-
-        try:
-            oauth = await device_code.handle_flow(ctx, msg)
-            realm = await device_code.handle_realms(ctx, msg, oauth)
-        except ipy.errors.HTTPException as e:
-            if e.status == 404:
-                # probably just cant edit embed because it was dismissed
-                return
-            raise
-
-        if config.realm_id != str(realm.id):
-            await self.remove_realm(ctx)
-
-        embeds = await self.add_realm(ctx, realm, microsoft_link=True)
-        await ctx.edit(msg, embeds=embeds, components=[])
 
     @config.subcommand(
         sub_cmd_name="autorunning-playerlist-channel",
