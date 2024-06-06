@@ -1106,10 +1106,82 @@ class GuildConfig(utils.Extension):
             reset,
         )
 
+    nickname = tansy.SlashCommand(
+        name="nickname",
+        description="A series of commands to manage nicknames for users.",
+        default_member_permissions=ipy.Permissions.MANAGE_GUILD,
+        dm_permission=False,
+    )
+    nickname.add_check(pl_utils.has_linked_realm)
+
+    @nickname.subcommand(
+        sub_cmd_name="list",
+        sub_cmd_description="Sends a list of nicknames set for this server.",
+    )
+    async def nicknames_list(self, ctx: utils.RealmContext) -> None:
+        config = await ctx.fetch_config()
+
+        if not config.nicknames:
+            raise utils.CustomCheckFailure("This server has no nicknames set.")
+
+        str_builder: list[str] = []
+        gamertag_map = await pl_utils.get_xuid_to_gamertag_map(
+            self.bot, list(config.nicknames.keys())
+        )
+
+        for xuid, nickname in config.nicknames.items():
+            str_builder.append(f"`{gamertag_map[xuid] or xuid}` -> `{nickname}`")
+
+        await ctx.send(
+            embeds=utils.make_embed("\n".join(str_builder), title="Nickname List")
+        )
+
+    @nickname.subcommand(
+        sub_cmd_name="set",
+        sub_cmd_description="Sets a nickname for a given gamertag.",
+    )
+    async def nicknames_set(
+        self,
+        ctx: utils.RealmContext,
+        gamertag: str = tansy.Option("The gamertag of the user."),
+        nickname: str = tansy.Option("The new nickname for the user."),
+    ) -> None:
+        config = await ctx.fetch_config()
+
+        if len(config.nicknames) >= 10:
+            raise utils.CustomCheckFailure("Cannot set more than 10 nicknames.")
+
+        xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
+        config.nicknames[xuid] = nickname
+        await config.save()
+
+        await ctx.send(f"Nickname for `{gamertag}` set to `{nickname}`.")
+
+    @nickname.subcommand(
+        sub_cmd_name="remove",
+        sub_cmd_description="Removes/unsets a nickname for a given gamertag.",
+    )
+    async def nicknames_remove(
+        self,
+        ctx: utils.RealmContext,
+        gamertag: str = tansy.Option("The gamertag of the user."),
+    ) -> None:
+        config = await ctx.fetch_config()
+
+        xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
+        nickname = config.nicknames.pop(xuid, None)
+        if not nickname:
+            raise ipy.errors.BadArgument("This user didn't have a nickname to clear.")
+
+        await config.save()
+
+        await ctx.send(f"Removed nickname `{nickname}` for `{gamertag}`.")
+
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
     importlib.reload(device_code)
     importlib.reload(clubs_playerlist)
     importlib.reload(cclasses)
+    importlib.reload(pl_utils)
     GuildConfig(bot)
