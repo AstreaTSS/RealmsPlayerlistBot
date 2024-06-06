@@ -286,6 +286,24 @@ class GeneralCMDS(utils.Extension):
         )
         await ctx.send(embed=embed)
 
+    @tansy.slash_command(
+        "xuid-from-gamertag",
+        description="Gets the XUID for a specified gamertag.",
+        dm_permission=False,
+    )
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    async def xuid_from_gamertag(
+        self,
+        ctx: utils.RealmContext,
+        gamertag: str = tansy.Option("The gamertag of the player to get."),
+    ) -> None:
+        xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
+        embed = utils.make_embed(
+            f"`{gamertag}`'s XUID: `{xuid}`.",
+            title="XUID from gamertag",
+        )
+        await ctx.send(embed=embed)
+
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
