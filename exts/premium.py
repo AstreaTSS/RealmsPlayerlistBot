@@ -544,13 +544,14 @@ class PremiumHandling(utils.Extension):
         # stripe subscriptions by making a code and then using it just like normal
         # TODO: what happens if guild already has code?
 
-        code = premium_utils.full_code_generate(1)
+        code = premium_utils.full_code_generate(1, entitlement._user_id)
         encrypted_code = await premium_utils.encrypt_input(code)
 
         code = await models.PremiumCode.prisma().create(
             data={
                 "code": encrypted_code,
                 "max_uses": 1,
+                "user_id": int(entitlement._user_id) if entitlement._user_id else None,
                 "expires_at": entitlement.ends_at,
                 "customer_id": str(entitlement.subscription_id),
             }
