@@ -14,7 +14,6 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import asyncio
 import importlib
 import io
 import os
@@ -22,12 +21,11 @@ import typing
 
 import interactions as ipy
 import tansy
-from Crypto.Cipher import AES
 
 import common.classes as cclasses
 import common.models as models
 import common.playerlist_utils as pl_utils
-import common.premium_code as premium_code
+import common.premium_utils as premium_utils
 import common.utils as utils
 
 
@@ -54,22 +52,6 @@ class PremiumHandling(utils.Extension):
         self.bot: utils.RealmBotBase = bot
         self.name = "Premium Handling"
 
-    def _encrypt_input(self, code: str) -> str:
-        key = bytes(os.environ["PREMIUM_ENCRYPTION_KEY"], "utf-8")
-        # siv is best when we don't want nonces
-        # we can't exactly use anything as a nonce since we have no way of obtaining
-        # info about a code without the code itself - there's no username that a database
-        # can look up to get the nonce
-        aes = AES.new(key, AES.MODE_SIV)
-
-        # the database stores values in keys - furthermore, only the first part of
-        # the tuple given is actually the key
-        return str(aes.encrypt_and_digest(bytes(code, "utf-8"))[0])  # type: ignore
-
-    async def encrypt_input(self, code: str) -> str:
-        # just because this is a technically complex function by design - aes isn't cheap
-        return await asyncio.to_thread(self._encrypt_input, code)
-
     @tansy.slash_command(
         name="generate-code",
         description="Generates a premium code. Can only be used by the bot's owner.",
@@ -90,8 +72,8 @@ class PremiumHandling(utils.Extension):
 
         actual_user_id = int(user_id) if user_id is not None else None
 
-        code = premium_code.full_code_generate(max_uses, user_id)
-        encrypted_code = await self.encrypt_input(code)
+        code = premium_utils.full_code_generate(max_uses, user_id)
+        encrypted_code = await premium_utils.encrypt_input(code)
 
         await models.PremiumCode.prisma().create(
             data={
@@ -120,14 +102,14 @@ class PremiumHandling(utils.Extension):
     ) -> None:
         encrypted_code: str | None = None
 
-        if maybe_valid_code := premium_code.full_code_validate(code, ctx.author.id):
-            encrypted_code = await self.encrypt_input(maybe_valid_code)
+        if maybe_valid_code := premium_utils.full_code_validate(code, ctx.author.id):
+            encrypted_code = await premium_utils.encrypt_input(maybe_valid_code)
         else:
             if 20 < len(code) < 24:  # support old codes
-                encrypted_code = await self.encrypt_input(code)
+                encrypted_code = await premium_utils.encrypt_input(code)
             if (
                 not encrypted_code
-                or premium_code.bytestring_length_decode(encrypted_code) != 22
+                or premium_utils.bytestring_length_decode(encrypted_code) != 22
             ):
                 raise ipy.errors.BadArgument(
                     f'Invalid code: "{code}". Are you sure this is the correct code and'
@@ -545,10 +527,80 @@ class PremiumHandling(utils.Extension):
         )
         await ctx.send(embeds=embed, components=button)
 
+    @ipy.listen(ipy.events.EntitlementCreate)
+    async def entitlement_create(self, event: ipy.events.EntitlementCreate) -> None:
+        entitlement = event.entitlement
+
+        if (
+            int(entitlement.sku_id) != os.environ.get("PREMIUM_SKU_ID")
+            or not entitlement.ends_at
+            or not entitlement.subscription_id
+            or not entitlement._guild_id
+        ):
+            return
+
+        # admittedly, i really don't want to go through the effort of making
+        # stuff for just entitlements, so we're going to pretend they're
+        # stripe subscriptions by making a code and then using it just like normal
+        # TODO: what happens if guild already has code?
+
+        code = premium_utils.full_code_generate(1)
+        encrypted_code = await premium_utils.encrypt_input(code)
+
+        code = await models.PremiumCode.prisma().create(
+            data={
+                "code": encrypted_code,
+                "max_uses": 1,
+                "expires_at": entitlement.ends_at,
+                "customer_id": str(entitlement.subscription_id),
+            }
+        )
+
+        await models.GuildConfig.prisma().update(
+            data={"premium_code": {"connect": {"id": code.id}}},
+            where={"guild_id": int(entitlement._guild_id)},
+        )
+        await models.PremiumCode.prisma().update(
+            data={"uses": {"increment": 1}}, where={"id": code.id}
+        )
+
+    @ipy.listen(ipy.events.EntitlementUpdate)
+    async def entitlement_update(self, event: ipy.events.EntitlementUpdate) -> None:
+        entitlement = event.entitlement
+
+        if (
+            int(entitlement.sku_id) != os.environ.get("PREMIUM_SKU_ID")
+            or not entitlement.ends_at
+            or not entitlement.subscription_id
+            or not entitlement._guild_id
+        ):
+            return
+
+        await models.PremiumCode.prisma().update_many(
+            data={"expires_at": entitlement.ends_at},
+            where={"customer_id": str(entitlement.subscription_id)},
+        )
+
+    @ipy.listen(ipy.events.EntitlementDelete)
+    async def entitlement_delete(self, event: ipy.events.EntitlementDelete) -> None:
+        entitlement = event.entitlement
+
+        if (
+            int(entitlement.sku_id) != os.environ.get("PREMIUM_SKU_ID")
+            or not entitlement.ends_at
+            or not entitlement.subscription_id
+            or not entitlement._guild_id
+        ):
+            return
+
+        await models.PremiumCode.prisma().delete_many(
+            where={"customer_id": str(entitlement.subscription_id)}
+        )
+
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
     importlib.reload(cclasses)
     importlib.reload(pl_utils)
-    importlib.reload(premium_code)
+    importlib.reload(premium_utils)
     PremiumHandling(bot)
