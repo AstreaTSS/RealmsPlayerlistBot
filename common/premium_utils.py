@@ -39,12 +39,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import asyncio
 import codecs
+import os
 import re
 import secrets
 import typing
 
 import interactions as ipy
+from Crypto.Cipher import AES
 
 __all__ = ("full_code_generate", "full_code_validate", "bytestring_length_decode")
 
@@ -235,9 +238,25 @@ def bytestring_length_decode(the_input: str) -> int:
         return -1
 
 
-if __name__ == "__main__":
-    from Crypto.Cipher import AES
+def _encrypt_input(code: str) -> str:
+    key = bytes(os.environ["PREMIUM_ENCRYPTION_KEY"], "utf-8")
+    # siv is best when we don't want nonces
+    # we can't exactly use anything as a nonce since we have no way of obtaining
+    # info about a code without the code itself - there's no username that a database
+    # can look up to get the nonce
+    aes = AES.new(key, AES.MODE_SIV)
 
+    # the database stores values in keys - furthermore, only the first part of
+    # the tuple given is actually the key
+    return str(aes.encrypt_and_digest(bytes(code, "utf-8"))[0])  # type: ignore
+
+
+async def encrypt_input(code: str) -> str:
+    # just because this is a technically complex function by design - aes isn't cheap
+    return await asyncio.to_thread(_encrypt_input, code)
+
+
+if __name__ == "__main__":
     encryption_key = input("Enter the encryption key: ")
     user_id: str | None = input("Enter the user ID (or press enter to skip): ")
     uses = int(input("Enter the max uses: "))
