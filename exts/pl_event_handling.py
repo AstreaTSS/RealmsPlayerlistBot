@@ -194,10 +194,6 @@ class PlayerlistEventHandling(utils.Extension):
         event.gamertag_mapping.update(dict(zip(xuids_init, gamertags, strict=True)))
         reverse_gamertag_map = {v: k for k, v in event.gamertag_mapping.items()}
 
-        # TODO: nicknames can overlap with gamertags, does this cause issues here?
-        event.gamertag_mapping.update(event.config.nicknames)
-        reverse_gamertag_map.update({v: k for k, v in event.config.nicknames.items()})
-
         xuids: set[str] = set(xuids_init)
         xuids = xuids.union(event.joined).difference(event.left)
 
@@ -217,6 +213,15 @@ class PlayerlistEventHandling(utils.Extension):
 
         if event.realm_down_event:
             new_gamertag_str = f"{os.environ['GRAY_CIRCLE_EMOJI']} *Realm is offline.*"
+        else:
+            actual_gamertag_list = sorted(
+                (
+                    event.config.nicknames[xuid] or event.gamertag_mapping[xuid]
+                    for xuid in xuids
+                ),
+                key=lambda g: g.lower(),
+            )
+            new_gamertag_str = "\n".join(actual_gamertag_list)
 
         embed = ipy.Embed(
             title=f"{len(xuids)}/10 people online",
