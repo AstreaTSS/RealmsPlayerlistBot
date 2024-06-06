@@ -120,6 +120,7 @@ class SplashTexts:
         "bot",
         "splash_length",
         "task",
+        "override",
     )
 
     def __init__(
@@ -129,6 +130,7 @@ class SplashTexts:
         self.bot = bot
         self.splash_length = splash_length
         self.task: asyncio.Task | None = None
+        self.override: str | None = "Check out early June 2024 update in bio!"
 
     @classmethod
     async def from_bot(cls, bot: utils.RealmBotBase) -> typing.Self:
@@ -172,6 +174,8 @@ class SplashTexts:
         return self
 
     def get(self) -> str:
+        if self.override:
+            return self.override
         return splash_texts[self.splash_index_list[0]]
 
     async def start(self) -> None:
@@ -191,6 +195,9 @@ class SplashTexts:
             await self.next()
 
     async def next(self) -> None:
+        if self.override:
+            return
+
         last_index = self.splash_index_list.pop(0)  # not efficient, but it works
 
         if not self.splash_index_list:
