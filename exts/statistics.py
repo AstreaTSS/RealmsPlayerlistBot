@@ -223,7 +223,7 @@ class Statistics(utils.Extension):
         await self.make_unsummary_single_graph(
             ctx,
             period,
-            f"Playtime of {config.nicknames[xuid] or gamertag} over the last "
+            f"Playtime of {config.nicknames.get(xuid) or gamertag} over the last "
             + "{days_humanized}",
             individual=True,
             gamertag=gamertag,
@@ -254,7 +254,7 @@ class Statistics(utils.Extension):
         await self.make_summary_single_graph(
             ctx,
             summarize_by,
-            f"Playtime of {config.nicknames[xuid] or gamertag} over the past "
+            f"Playtime of {config.nicknames.get(xuid) or gamertag} over the past "
             + "{days_humanized} by {summarize_by}",
             gamertag=gamertag,
             filter_kwargs={"xuid": xuid},
@@ -576,7 +576,7 @@ class Statistics(utils.Extension):
 
             leaderboard_builder.append(
                 f"**{index+1}\\.**"
-                f" `{config.nicknames[xuid] or gamertag_map[xuid] or xuid}`:"
+                f" `{config.nicknames.get(xuid) or gamertag_map[xuid] or xuid}`:"
                 f" {precisedelta}"
             )
 
@@ -679,7 +679,7 @@ class Statistics(utils.Extension):
         embeds = [
             ipy.Embed(
                 title=(
-                    f"Log for {config.nicknames[xuid] or gamertag} for the past"
+                    f"Log for {config.nicknames.get(xuid) or gamertag} for the past"
                     f" {days_ago} {days_text}"
                 ),
                 description=f"Total playtime over this period: {natural_playtime}",

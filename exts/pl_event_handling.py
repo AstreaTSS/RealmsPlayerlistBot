@@ -144,7 +144,7 @@ class PlayerlistEventHandling(utils.Extension):
                     value="\n".join(
                         sorted(
                             (
-                                config.nicknames[p] or gamertag_mapping[p]
+                                config.nicknames.get(p) or gamertag_mapping[p]
                                 for p in event.joined
                             ),
                             key=lambda x: x.lower(),
@@ -157,7 +157,7 @@ class PlayerlistEventHandling(utils.Extension):
                     value="\n".join(
                         sorted(
                             (
-                                config.nicknames[p] or gamertag_mapping[p]
+                                config.nicknames.get(p) or gamertag_mapping[p]
                                 for p in event.left
                             ),
                             key=lambda x: x.lower(),
@@ -216,7 +216,7 @@ class PlayerlistEventHandling(utils.Extension):
         else:
             actual_gamertag_list = sorted(
                 (
-                    event.config.nicknames[xuid] or event.gamertag_mapping[xuid]
+                    event.config.nicknames.get(xuid) or event.gamertag_mapping[xuid]
                     for xuid in xuids
                 ),
                 key=lambda g: g.lower(),
