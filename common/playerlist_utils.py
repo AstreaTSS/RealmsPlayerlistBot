@@ -535,7 +535,7 @@ async def fill_in_gamertags_for_sessions(
     *,
     bypass_cache: bool = False,
     bypass_cache_for: set[str] | None = None,
-    gamertag_map: defaultdict[str, str] | None = None,
+    gamertag_map: defaultdict[str, str] | dict[str, str] | None = None,
 ) -> list[models.PlayerSession]:
     session_dict = {session.xuid: session for session in player_sessions}
     unresolved: list[str] = []
@@ -549,6 +549,9 @@ async def fill_in_gamertags_for_sessions(
                 session_dict_copy.pop(xuid, None)
 
         if gamertag_map:
+            if not isinstance(gamertag_map, defaultdict):
+                gamertag_map = defaultdict(lambda: "", gamertag_map)
+
             for xuid, gamertag in gamertag_map.items():
                 if gamertag and xuid in session_dict_copy:
                     session_dict[xuid].gamertag = gamertag
@@ -581,7 +584,8 @@ async def fill_in_gamertags_for_sessions(
         gamertag_dict = await gamertag_handler.run()
 
         for xuid, gamertag_info in gamertag_dict.items():
-            session_dict[xuid].gamertag = gamertag_info.gamertag
+            if not session_dict[xuid].gamertag:
+                session_dict[xuid].gamertag = gamertag_info.gamertag
             session_dict[xuid].device = gamertag_info.device
 
     return list(session_dict.values())

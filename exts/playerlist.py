@@ -294,8 +294,12 @@ class Playerlist(utils.Extension):
 
         autorunner = kwargs.get("autorunner", False)
         upsell = kwargs.get("upsell")
+        gamertag_map: defaultdict[str, str] | None = kwargs.get("gamertag_map")
 
         config = await ctx.fetch_config()
+
+        if gamertag_map:
+            gamertag_map |= config.nicknames
 
         # this may seem a bit weird to you... but let's say it's 8:00:03, and we want to
         # go one hour back
@@ -346,7 +350,7 @@ class Playerlist(utils.Extension):
             self.bot,
             player_sessions,
             bypass_cache_for=bypass_cache_for,
-            gamertag_map=kwargs.get("gamertag_map"),
+            gamertag_map=gamertag_map,
         )
 
         online_list = sorted(
@@ -485,6 +489,7 @@ class Playerlist(utils.Extension):
             self.bot,
             player_sessions,
             bypass_cache=bypass_cache,
+            gamertag_map=config.nicknames,
         )
 
         if not (

@@ -217,11 +217,14 @@ class Statistics(utils.Extension):
             choices=stats_utils.GATED_PERIOD_TO_GRAPH,
         ),
     ) -> None:
+        config = await ctx.fetch_config()
+
         xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
         await self.make_unsummary_single_graph(
             ctx,
             period,
-            f"Playtime of {gamertag} over the last " + "{days_humanized}",
+            f"Playtime of {config.nicknames[xuid] or gamertag} over the last "
+            + "{days_humanized}",
             individual=True,
             gamertag=gamertag,
             filter_kwargs={"xuid": xuid},
@@ -245,11 +248,13 @@ class Statistics(utils.Extension):
             choices=stats_utils.GATED_SUMMARIZE_BY,
         ),
     ) -> None:
+        config = await ctx.fetch_config()
+
         xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
         await self.make_summary_single_graph(
             ctx,
             summarize_by,
-            f"Playtime of {gamertag} over the past "
+            f"Playtime of {config.nicknames[xuid] or gamertag} over the past "
             + "{days_humanized} by {summarize_by}",
             gamertag=gamertag,
             filter_kwargs={"xuid": xuid},
@@ -385,8 +390,10 @@ class Statistics(utils.Extension):
         xuid_list: list[str],
         gamertags: list[str],
     ) -> None:
+        config = await ctx.fetch_config()
+
         time_data, earliest_datetime = await stats_utils.process_multi_graph_data(
-            await ctx.fetch_config(),
+            config,
             xuid_list,
             gamertag_list=gamertags,
             min_datetime=returned_data.min_datetime,
@@ -398,7 +405,10 @@ class Statistics(utils.Extension):
             title=returned_data.formatted_title,
             bottom_label=returned_data.bottom_label,
             time_data=time_data,
-            gamertags=gamertags,
+            gamertags=[
+                config.nicknames.get(x) or g
+                for x, g in zip(xuid_list, gamertags, strict=True)
+            ],
             localizations=returned_data.localizations,
             **(
                 returned_data.template_kwargs
@@ -544,12 +554,14 @@ class Statistics(utils.Extension):
                 pages_data=leaderboard_counter_sort,
                 period_str=period_str,
                 timestamp=now,
+                nicknames=config.nicknames,
             )
             await pag.send(ctx)
             return
 
         gamertag_map = await pl_utils.get_xuid_to_gamertag_map(
-            self.bot, [e[0] for e in leaderboard_counter_sort]
+            self.bot,
+            [e[0] for e in leaderboard_counter_sort if e[0] not in config.nicknames],
         )
 
         leaderboard_builder: list[str] = []
@@ -563,7 +575,9 @@ class Statistics(utils.Extension):
                 precisedelta = "1 minute"
 
             leaderboard_builder.append(
-                f"**{index+1}\\.** `{gamertag_map[xuid] or xuid}`: {precisedelta}"
+                f"**{index+1}\\.**"
+                f" `{config.nicknames[xuid] or gamertag_map[xuid] or xuid}`:"
+                f" {precisedelta}"
             )
 
         await ctx.send(
@@ -664,7 +678,10 @@ class Statistics(utils.Extension):
         # don't index at 0
         embeds = [
             ipy.Embed(
-                title=f"Log for {gamertag} for the past {days_ago} {days_text}",
+                title=(
+                    f"Log for {config.nicknames[xuid] or gamertag} for the past"
+                    f" {days_ago} {days_text}"
+                ),
                 description=f"Total playtime over this period: {natural_playtime}",
                 fields=[  # type: ignore
                     ipy.EmbedField(

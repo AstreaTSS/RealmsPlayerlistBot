@@ -23,6 +23,7 @@ GuildConfig.create_partial(
         "fetch_devices",
         "realm_id",
         "playerlist_chan",
+        "nicknames",
         "premium_code",
     ),
     required=("playerlist_chan", "realm_id"),
