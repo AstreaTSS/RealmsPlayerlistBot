@@ -68,6 +68,7 @@ class NotificationChannels(typing.TypedDict, total=False):
 class GuildConfig(PrismaGuildConfig):
     if typing.TYPE_CHECKING:
         notification_channels: NotificationChannels
+        nicknames: dict[str, str]
 
     premium_code: typing.Optional["PremiumCode"] = None
 
@@ -94,10 +95,15 @@ class GuildConfig(PrismaGuildConfig):
         data = self.model_dump(exclude={"premium_code_id", "premium_code"})
         if data.get("notification_channels") is not None:
             data["notification_channels"] = Json(data["notification_channels"])
+        if data.get("nicknames") is not None:
+            data["nicknames"] = Json(data["nicknames"])
         await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
 
 
 class AutorunGuildConfig(PrismaAutorunGuildConfig):
+    if typing.TYPE_CHECKING:
+        nicknames: dict[str, str]
+
     premium_code: typing.Optional["PremiumCode"] = None
 
     @cached_property

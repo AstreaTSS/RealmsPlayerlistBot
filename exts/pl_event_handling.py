@@ -91,34 +91,13 @@ class PlayerlistEventHandling(utils.Extension):
         gamertag_mapping = {p.xuid: p.base_display for p in players}
         full_gamertag_mapping = {p.xuid: p.display for p in players}
 
-        embed = ipy.Embed(
+        base_embed = ipy.Embed(
             color=ipy.RoleColors.DARK_GREY,
             timestamp=ipy.Timestamp.fromdatetime(event.timestamp),
         )
-        embed.set_footer(
+        base_embed.set_footer(
             f"{len(self.bot.online_cache[int(event.realm_id)])} players online as of"
         )
-
-        if event.joined:
-            embed.add_field(
-                name=f"{os.environ['GREEN_CIRCLE_EMOJI']} Joined",
-                value="\n".join(
-                    sorted(
-                        (gamertag_mapping[p] for p in event.joined),
-                        key=lambda x: x.lower(),
-                    )
-                ),
-            )
-        if event.left:
-            embed.add_field(
-                name=f"{os.environ['GRAY_CIRCLE_EMOJI']} Left",
-                value="\n".join(
-                    sorted(
-                        (gamertag_mapping[p] for p in event.left),
-                        key=lambda x: x.lower(),
-                    )
-                ),
-            )
 
         for guild_id in self.bot.live_playerlist_store[event.realm_id].copy():
             config = await models.GuildConfig.get_or_none(guild_id)
@@ -157,6 +136,35 @@ class PlayerlistEventHandling(utils.Extension):
                     )
                 )
 
+            embed = ipy.Embed.from_dict(base_embed.to_dict())
+
+            if event.joined:
+                embed.add_field(
+                    name=f"{os.environ['GREEN_CIRCLE_EMOJI']} Joined",
+                    value="\n".join(
+                        sorted(
+                            (
+                                config.nicknames[p] or gamertag_mapping[p]
+                                for p in event.joined
+                            ),
+                            key=lambda x: x.lower(),
+                        )
+                    ),
+                )
+            if event.left:
+                embed.add_field(
+                    name=f"{os.environ['GRAY_CIRCLE_EMOJI']} Left",
+                    value="\n".join(
+                        sorted(
+                            (
+                                config.nicknames[p] or gamertag_mapping[p]
+                                for p in event.left
+                            ),
+                            key=lambda x: x.lower(),
+                        )
+                    ),
+                )
+
             try:
                 chan = utils.partial_channel(self.bot, config.playerlist_chan)
                 await chan.send(embeds=embed)
@@ -185,6 +193,10 @@ class PlayerlistEventHandling(utils.Extension):
 
         event.gamertag_mapping.update(dict(zip(xuids_init, gamertags, strict=True)))
         reverse_gamertag_map = {v: k for k, v in event.gamertag_mapping.items()}
+
+        # TODO: nicknames can overlap with gamertags, does this cause issues here?
+        event.gamertag_mapping.update(event.config.nicknames)
+        reverse_gamertag_map.update({v: k for k, v in event.config.nicknames.items()})
 
         xuids: set[str] = set(xuids_init)
         xuids = xuids.union(event.joined).difference(event.left)
@@ -372,12 +384,15 @@ class PlayerlistEventHandling(utils.Extension):
                     config.get_notif_channel("player_watchlist"),
                 )
 
-                try:
-                    gamertag = await pl_utils.gamertag_from_xuid(
-                        self.bot, event.player_xuid
-                    )
-                except ipy.errors.BadArgument:
-                    gamertag = f"Player with XUID {event.player_xuid}"
+                if config.nicknames.get(event.player_xuid):
+                    gamertag = config.nicknames[event.player_xuid]
+                else:
+                    try:
+                        gamertag = await pl_utils.gamertag_from_xuid(
+                            self.bot, event.player_xuid
+                        )
+                    except ipy.errors.BadArgument:
+                        gamertag = f"Player with XUID {event.player_xuid}"
 
                 content = ""
                 if config.player_watchlist_role:

@@ -168,6 +168,8 @@ class DynamicLeaderboardPaginator:
     """The period, represented as a string."""
     timestamp: ipy.Timestamp = attrs.field(repr=False, kw_only=True)
     """The timestamp to use for the embeds."""
+    nicknames: dict[str, str] = attrs.field(repr=False, kw_only=True)
+    """The nicknames to use for this leaderboard."""
 
     page_index: int = attrs.field(repr=False, kw_only=True, default=0)
     """The index of the current page being displayed"""
@@ -275,7 +277,7 @@ class DynamicLeaderboardPaginator:
         page_data = self.pages_data[self.page_index * 20 : (self.page_index * 20) + 20]
 
         gamertag_map = await pl_utils.get_xuid_to_gamertag_map(
-            self.client, [e[0] for e in page_data]
+            self.client, [e[0] for e in page_data if e[0] not in self.nicknames]
         )
 
         leaderboard_builder: list[str] = []
@@ -290,7 +292,9 @@ class DynamicLeaderboardPaginator:
                 precisedelta = "1 minute"
 
             leaderboard_builder.append(
-                f"**{index+1}\\.** `{gamertag_map[xuid] or xuid}`: {precisedelta}"
+                f"**{index+1}\\.**"
+                f" `{self.nicknames[xuid] or gamertag_map[xuid] or xuid}`:"
+                f" {precisedelta}"
             )
 
             index += 1
