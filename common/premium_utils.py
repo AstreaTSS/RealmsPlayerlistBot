@@ -238,22 +238,24 @@ def bytestring_length_decode(the_input: str) -> int:
         return -1
 
 
-def _encrypt_input(code: str) -> str:
-    key = bytes(os.environ["PREMIUM_ENCRYPTION_KEY"], "utf-8")
+def _encrypt_input(code: str, *, encryption_key: bytes | None = None) -> str:
+    if not encryption_key:
+        encryption_key = bytes(os.environ["PREMIUM_ENCRYPTION_KEY"], "utf-8")
+
     # siv is best when we don't want nonces
     # we can't exactly use anything as a nonce since we have no way of obtaining
     # info about a code without the code itself - there's no username that a database
     # can look up to get the nonce
-    aes = AES.new(key, AES.MODE_SIV)
+    aes = AES.new(encryption_key, AES.MODE_SIV)
 
     # the database stores values in keys - furthermore, only the first part of
     # the tuple given is actually the key
     return str(aes.encrypt_and_digest(bytes(code, "utf-8"))[0])  # type: ignore
 
 
-async def encrypt_input(code: str) -> str:
+async def encrypt_input(code: str, *, encryption_key: bytes | None = None) -> str:
     # just because this is a technically complex function by design - aes isn't cheap
-    return await asyncio.to_thread(_encrypt_input, code)
+    return await asyncio.to_thread(_encrypt_input, code, encryption_key=encryption_key)
 
 
 if __name__ == "__main__":
@@ -265,11 +267,7 @@ if __name__ == "__main__":
         user_id = None
 
     code = full_code_generate(uses, user_id)
-
-    # see exts/premium.py
-    key = bytes(encryption_key, "utf-8")
-    aes = AES.new(key, AES.MODE_SIV)
-    encrypted_code = str(aes.encrypt_and_digest(bytes(code, "utf-8"))[0])  # type: ignore
+    encrypted_code = _encrypt_input(code, encryption_key=bytes(encryption_key, "utf-8"))
 
     print(f"Code: {code}")  # noqa: T201
     print(f"Encrypted code: {encrypted_code}")  # noqa: T201
