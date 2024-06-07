@@ -293,7 +293,7 @@ class DynamicLeaderboardPaginator:
 
             leaderboard_builder.append(
                 f"**{index+1}\\.**"
-                f" `{self.nicknames[xuid] or gamertag_map[xuid] or xuid}`:"
+                f" `{self.nicknames.get(xuid) or gamertag_map[xuid] or xuid}`:"
                 f" {precisedelta}"
             )
 
