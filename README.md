@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://rpl.astrea.cc/wiki/server_setup.html">
-    <img src="https://img.shields.io/badge/Server%20Setup%20Guide-Link-%23b05bff?style=for-the-badge&logo=bookstack&logoColor=%23b05bff" alt="Server Setup Guide">
+    <img src="https://img.shields.io/badge/Server%20Setup%20Guide-Link-%23c156e0?style=for-the-badge&logo=bookstack&logoColor=%23c156e0" alt="Server Setup Guide">
   </a>
   <a href="https://discord.gg/NSdetwGjpK">
     <img src="https://img.shields.io/badge/Support%20Server-Link-%235865F2?style=for-the-badge&logo=discord" alt="Support Server">
