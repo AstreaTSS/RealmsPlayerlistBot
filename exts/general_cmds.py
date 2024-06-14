@@ -275,7 +275,8 @@ class GeneralCMDS(utils.Extension):
         try:
             if len(xuid) > 64:
                 raise ValueError()
-            valid_xuid = int(xuid)
+
+            valid_xuid = int(xuid) if xuid.isdigit() else int(xuid, 16)
         except ValueError:
             raise ipy.errors.BadArgument(f'"{xuid}" is not a valid XUID.') from None
 
@@ -299,7 +300,7 @@ class GeneralCMDS(utils.Extension):
     ) -> None:
         xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
         embed = utils.make_embed(
-            f"`{gamertag}`'s XUID: `{xuid}`.",
+            f"`{gamertag}`'s XUID: `{xuid}` (hex: `{int(xuid):0{len(xuid)}X}`).",
             title="XUID from gamertag",
         )
         await ctx.send(embed=embed)
