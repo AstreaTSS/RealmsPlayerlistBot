@@ -111,6 +111,10 @@ splash_texts: tuple[str, ...] = (
     "It's legal, too!",
     "Created on June 24th, 2020!",
     "Licensed under AGPL!",
+    "Now with nicknames!",
+    "Made with asyncio!",
+    "RIP Playerlist Zero",
+    "/leaderboard is used more than /playerlist",
 )
 
 
@@ -130,7 +134,7 @@ class SplashTexts:
         self.bot = bot
         self.splash_length = splash_length
         self.task: asyncio.Task | None = None
-        self.override: str | None = "Check out early June 2024 update in bio!"
+        self.override: str | None = None
 
     @classmethod
     async def from_bot(cls, bot: utils.RealmBotBase) -> typing.Self:
