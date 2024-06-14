@@ -134,7 +134,7 @@ class SplashTexts:
         self.bot = bot
         self.splash_length = splash_length
         self.task: asyncio.Task | None = None
-        self.override: str | None = None
+        self.override: str | None = "New features in main bot! Check out bio for info"
 
     @classmethod
     async def from_bot(cls, bot: utils.RealmBotBase) -> typing.Self:
