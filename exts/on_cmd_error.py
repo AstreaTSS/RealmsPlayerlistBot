@@ -68,6 +68,14 @@ class OnCMDError(utils.Extension):
         else:
             await utils.error_handle(event.error, ctx=event.ctx)
 
+    @ipy.listen(ipy.events.ModalError, disable_default_listeners=True)
+    async def on_modal_error(self, event: ipy.events.ModalError) -> None:
+        await self.on_command_error.callback(self, event)
+
+    @ipy.listen(ipy.events.ComponentError, disable_default_listeners=True)
+    async def on_component_error(self, event: ipy.events.ComponentError) -> None:
+        await self.on_command_error.callback(self, event)
+
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
