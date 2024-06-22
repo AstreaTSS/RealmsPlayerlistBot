@@ -46,7 +46,6 @@ UPSELLS = [
         "Having issues with the bot? Check out the FAQ or join the support server:"
         " /support"
     ),
-    "Check out the new Mid June 2024 Update post: https://sh.astrea.cc/midjun24",
 ]
 LENGTH_UPSELLS = len(UPSELLS)
 
