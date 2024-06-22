@@ -10,7 +10,7 @@ prisma==0.13.1
 redis[hiredis]==5.0.6
 orjson==3.10.4
 python-dateutil==2.9.0.post0
-sentry-sdk==2.5.1
+sentry-sdk==2.6.0
 rapidfuzz==3.9.3
 pycryptodome==3.20.0
 cachetools==5.3.3
