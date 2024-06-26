@@ -17,7 +17,6 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import collections
 import datetime
-import inspect
 import logging
 import os
 import re
@@ -387,71 +386,6 @@ class CustomCheckFailure(ipy.errors.BadArgument):
     pass
 
 
-class RealmContextMixin:
-    config: typing.Optional[GuildConfig]
-    guild_id: ipy.Snowflake
-
-    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
-        self.config = None
-        super().__init__(*args, **kwargs)
-
-    @property
-    def bot(self) -> "RealmBotBase":
-        """A reference to the bot instance."""
-        return self.client  # type: ignore
-
-    async def fetch_config(self) -> GuildConfig:
-        """
-        Gets the configuration for the context's guild.
-
-        Returns:
-            GuildConfig: The guild config.
-        """
-        if not self.guild_id:
-            raise ValueError("No guild ID set.")
-
-        if self.config:
-            return self.config
-
-        config = await GuildConfig.get_or_none(
-            self.guild_id
-        ) or await GuildConfig.prisma().create(data={"guild_id": self.guild_id})
-
-        self.config = config
-        return config
-
-
-class RealmInteractionContext(RealmContextMixin, ipy.InteractionContext):
-    pass
-
-
-class RealmContext(RealmContextMixin, ipy.SlashContext):
-    pass
-
-
-class RealmComponentContext(RealmContextMixin, ipy.ComponentContext):
-    pass
-
-
-class RealmContextMenuContext(RealmContextMixin, ipy.ContextMenuContext):
-    pass
-
-
-class RealmModalContext(RealmContextMixin, ipy.ModalContext):
-    pass
-
-
-class RealmPrefixedContext(RealmContextMixin, prefixed.PrefixedContext):
-    @property
-    def channel(self) -> ipy.GuildText:
-        """The channel this context was invoked in."""
-        return partial_channel(self.bot, self.channel_id)
-
-
-class RealmAutocompleteContext(RealmContextMixin, ipy.AutocompleteContext):
-    pass
-
-
 if typing.TYPE_CHECKING:
     import redis.asyncio as aioredis
     from prisma import Prisma
@@ -504,6 +438,68 @@ else:
         pass
 
 
+class RealmContextMixin:
+    config: typing.Optional[GuildConfig]
+    guild_id: ipy.Snowflake
+
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        self.config = None
+        super().__init__(*args, **kwargs)
+
+    async def fetch_config(self) -> GuildConfig:
+        """
+        Gets the configuration for the context's guild.
+
+        Returns:
+            GuildConfig: The guild config.
+        """
+        if not self.guild_id:
+            raise ValueError("No guild ID set.")
+
+        if self.config:
+            return self.config
+
+        config = await GuildConfig.get_or_none(
+            self.guild_id
+        ) or await GuildConfig.prisma().create(data={"guild_id": self.guild_id})
+
+        self.config = config
+        return config
+
+
+class RealmInteractionContext(RealmContextMixin, ipy.InteractionContext[RealmBotBase]):
+    pass
+
+
+class RealmContext(RealmContextMixin, ipy.SlashContext[RealmBotBase]):
+    pass
+
+
+class RealmComponentContext(RealmContextMixin, ipy.ComponentContext[RealmBotBase]):
+    pass
+
+
+class RealmContextMenuContext(RealmContextMixin, ipy.ContextMenuContext[RealmBotBase]):
+    pass
+
+
+class RealmModalContext(RealmContextMixin, ipy.ModalContext[RealmBotBase]):
+    pass
+
+
+class RealmPrefixedContext(RealmContextMixin, prefixed.PrefixedContext[RealmBotBase]):
+    @property
+    def channel(self) -> ipy.GuildText:
+        """The channel this context was invoked in."""
+        return partial_channel(self.bot, self.channel_id)
+
+
+class RealmAutocompleteContext(
+    RealmContextMixin, ipy.AutocompleteContext[RealmBotBase]
+):
+    pass
+
+
 async def _global_checks(ctx: RealmContext) -> bool:
     if ctx.author_id in ctx.bot.owner_ids:
         return True
@@ -517,75 +513,9 @@ async def _global_checks(ctx: RealmContext) -> bool:
 
 
 class Extension(ipy.Extension):
-    # replica of https://github.com/interactions-py/interactions.py/pull/1680
     def __new__(
         cls, bot: ipy.Client, *_: typing.Any, **kwargs: typing.Any
     ) -> ipy.Extension:
-        instance = object.__new__(cls)
-        instance.bot = bot
-        instance.client = bot
-
-        instance.name = cls.__name__
-
-        if instance.name in bot.ext:
-            raise ValueError(
-                f"An extension with the name {instance.name} is already loaded!"
-            )
-
-        instance.extension_name = inspect.getmodule(instance).__name__
-        instance.extension_checks = []
-        instance.extension_prerun = []
-        instance.extension_postrun = []
-        instance.extension_error = None
-        instance.interaction_tree = {}
-        instance.auto_defer = ipy.MISSING
-
-        instance.description = kwargs.get("Description") or (
-            inspect.cleandoc(cls.__doc__) if cls.__doc__ else None
-        )
-
-        # load commands from class
-        instance._commands = []
-        instance._listeners = []
-
-        callables: list[tuple[str, typing.Callable]] = inspect.getmembers(
-            instance, predicate=lambda x: isinstance(x, ipy.CallbackObject | ipy.Task)
-        )
-
-        for _name, val in callables:
-            if isinstance(val, ipy.BaseCommand):
-                val.extension = instance
-                val = ipy.utils.wrap_partial(val, instance)
-                bot.add_command(val)
-                instance._commands.append(val)
-
-            elif isinstance(val, ipy.Task):
-                ipy.utils.wrap_partial(val, instance)
-
-            elif isinstance(val, ipy.Listener):
-                val.extension = instance
-                val = val.copy_with_binding(instance)
-                bot.add_listener(val)  # type: ignore
-                instance._listeners.append(val)
-            elif isinstance(val, ipy.GlobalAutoComplete):
-                val.extension = instance
-                val = val.copy_with_binding(instance)
-                bot.add_global_autocomplete(val)
-        bot.dispatch(
-            ipy.events.ExtensionCommandParse(extension=instance, callables=callables)
-        )
-
-        instance.bot.ext[instance.name] = instance
-
-        if hasattr(instance, "async_start"):
-            if inspect.iscoroutinefunction(instance.async_start):
-                bot.async_startup_tasks.append((instance.async_start, (), {}))
-            else:
-                raise TypeError(
-                    "async_start is a reserved method and must be a coroutine"
-                )
-
-        bot.dispatch(ipy.events.ExtensionLoad(extension=instance))
-
-        instance.add_ext_check(_global_checks)  # type: ignore  the only real new line
+        instance = super().__new__(cls, bot, **kwargs)
+        instance.add_ext_check(_global_checks)
         return instance
