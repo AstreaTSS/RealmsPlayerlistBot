@@ -33,8 +33,8 @@ from interactions.ext import paginators
 from interactions.ext import prefixed_commands as prefixed
 from interactions.ext.debug_extension.utils import debug_embed, get_cache_state
 
+import common.realm_stories as realm_stories
 import common.utils as utils
-from common.clubs_playerlist import fill_in_data_from_clubs
 from common.models import GuildConfig
 
 DEV_GUILD_ID = int(os.environ["DEV_GUILD_ID"])
@@ -99,10 +99,9 @@ class OwnerCMDs(utils.Extension):
 
         if club_id:
             data["club_id"] = club_id
-            if club_id != "None" and realm_id and realm_id != "None":
-                await fill_in_data_from_clubs(self.bot, realm_id, club_id)
         if realm_id:
             data["realm_id"] = realm_id
+            await realm_stories.fill_in_data_from_stories(self.bot, realm_id)
         if playerlist_chan:
             data["playerlist_chan"] = int(playerlist_chan)
 
@@ -137,10 +136,9 @@ class OwnerCMDs(utils.Extension):
 
         if realm_id:
             config.realm_id = realm_id if realm_id != "None" else None
+            await realm_stories.fill_in_data_from_stories(self.bot, realm_id)
         if club_id:
             config.club_id = club_id if club_id != "None" else None
-            if club_id != "None" and config.realm_id:
-                await fill_in_data_from_clubs(self.bot, config.realm_id, club_id)
         if playerlist_chan:
             config.playerlist_chan = (
                 int(playerlist_chan) if playerlist_chan != "None" else None
@@ -505,4 +503,5 @@ class OwnerCMDs(utils.Extension):
 
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
+    importlib.reload(realm_stories)
     OwnerCMDs(bot)

@@ -29,10 +29,10 @@ import interactions as ipy
 import tansy
 
 import common.classes as cclasses
-import common.clubs_playerlist as clubs_playerlist
 import common.device_code as device_code
 import common.models as models
 import common.playerlist_utils as pl_utils
+import common.realm_stories as realm_stories
 import common.utils as utils
 
 # regex that takes in:
@@ -118,26 +118,25 @@ class GuildConfig(utils.Extension):
 
         embeds: list[ipy.Embed] = []
 
-        if realm.club_id:
-            config.club_id = str(realm.club_id)
-            if not await models.PlayerSession.prisma().count(
-                where={"realm_id": str(realm.id)}
-            ):
-                await clubs_playerlist.fill_in_data_from_clubs(
-                    self.bot, config.realm_id, config.club_id
-                )
-        else:
-            warning_embed = ipy.Embed(
-                title="Warning",
-                description=(
-                    "I was unable to backfill player data for this Realm. If"
-                    f" you use {self.bot.mention_command('playerlist')}, it may"
-                    " show imcomplete player data. This should resolve itself"
-                    " in about 24 hours."
-                ),
-                color=ipy.RoleColors.YELLOW,
+        if not await models.PlayerSession.prisma().count(
+            where={"realm_id": str(realm.id)}
+        ):
+            result = await realm_stories.fill_in_data_from_stories(
+                self.bot, config.realm_id
             )
-            embeds.append(warning_embed)
+
+            if not result:
+                warning_embed = ipy.Embed(
+                    title="Warning",
+                    description=(
+                        "I was unable to backfill player data for this Realm. If"
+                        f" you use {self.bot.mention_command('playerlist')}, it may"
+                        " show imcomplete player data. This should resolve itself"
+                        " in about 24 hours."
+                    ),
+                    color=ipy.RoleColors.YELLOW,
+                )
+                embeds.append(warning_embed)
 
         await config.save()
 
@@ -440,6 +439,7 @@ class GuildConfig(utils.Extension):
 
             embeds = await self.add_realm(ctx, realm, microsoft_link=True)
             await ctx.edit(msg, embeds=embeds, components=[])
+            return
 
         raise ipy.errors.BadArgument("Invalid link method.")
 
@@ -1181,7 +1181,7 @@ class GuildConfig(utils.Extension):
 def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(utils)
     importlib.reload(device_code)
-    importlib.reload(clubs_playerlist)
+    importlib.reload(realm_stories)
     importlib.reload(cclasses)
     importlib.reload(pl_utils)
     GuildConfig(bot)
