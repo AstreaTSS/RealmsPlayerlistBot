@@ -462,18 +462,20 @@ class GuildConfig(utils.Extension):
 
         results: SecurityCheckResults | None = None
 
-        if utils.FEATURE("SECURITY_CHECK"):
-            await ctx.bot.redis.set(f"rpl-security-check-{ctx.author.id}", "1", ex=3600)
-            ipy.get_logger().info("Running security check for %s.", ctx.author.id)
-            results = await self.security_check(ctx)
-            if not results:
-                return
-
         try:
             # TODO: add this into elytra proper
             realm = await elytra.FullRealm.from_response(
                 await ctx.bot.realms.get(f"worlds/v1/link/{realm_code}")
             )
+
+            if utils.FEATURE("SECURITY_CHECK"):
+                await ctx.bot.redis.set(
+                    f"rpl-security-check-{ctx.author.id}", "1", ex=3600
+                )
+                ipy.get_logger().info("Running security check for %s.", ctx.author.id)
+                results = await self.security_check(ctx)
+                if not results:
+                    return
 
             if results and realm.owner_uuid != results.user_xuid:
                 usable_realm = await ctx.bot.realms.fetch_realm(realm.id)
@@ -534,8 +536,8 @@ class GuildConfig(utils.Extension):
                 raise
 
             error_msg = (
-                "I could not join this Realm. Please make sure the Realm code"
-                " is spelled correctly, and that the code is valid. Also make"
+                "I cannot link this Realm. Please make sure the Realm code"
+                " is spelled correctly, and that the code is valid. Also, make"
                 " sure that you have not banned or kicked"
                 f" `{self.bot.own_gamertag}` from the Realm."
             )
