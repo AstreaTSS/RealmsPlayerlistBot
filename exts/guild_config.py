@@ -434,7 +434,7 @@ class GuildConfig(utils.Extension):
                     return
                 raise
 
-            if config.realm_id != str(realm.id):
+            if config.realm_id and config.realm_id != str(realm.id):
                 await self.remove_realm(ctx)
 
             embeds = await self.add_realm(ctx, realm, microsoft_link=True)
@@ -477,6 +477,9 @@ class GuildConfig(utils.Extension):
                 if not results:
                     return
 
+            # needed otherwise the next fetch realm won't work
+            realm = await ctx.bot.realms.join_realm_from_code(realm_code)
+
             if results and realm.owner_uuid != results.user_xuid:
                 usable_realm = await ctx.bot.realms.fetch_realm(realm.id)
 
@@ -505,6 +508,16 @@ class GuildConfig(utils.Extension):
                             "You are not an operator of this Realm."
                         )
                 except ipy.errors.BadArgument as e:
+                    try:
+                        await ctx.bot.realms.leave_realm(realm.id)
+                    except elytra.MicrosoftAPIException as e:
+                        if e.resp.status_code == 404:
+                            logger.warning(
+                                "Could not leave Realm with ID %s.", realm.id
+                            )
+                        elif e.resp.status_code != 403:
+                            raise
+
                     await ctx.edit(
                         results.msg,
                         embeds=utils.error_embed_generate(str(e)),
@@ -512,10 +525,9 @@ class GuildConfig(utils.Extension):
                     )
                     return
 
-            if config.realm_id != str(realm.id):
+            if config.realm_id and config.realm_id != str(realm.id):
                 await self.remove_realm(ctx)
 
-            realm = await ctx.bot.realms.join_realm_from_code(realm_code)
             embeds = await self.add_realm(
                 ctx,
                 realm,
