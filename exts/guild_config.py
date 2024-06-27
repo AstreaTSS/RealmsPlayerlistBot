@@ -212,7 +212,7 @@ class GuildConfig(utils.Extension):
                 await self.bot.realms.leave_realm(realm_id)
             except elytra.MicrosoftAPIException as e:
                 # might be an invalid id somehow? who knows
-                if e.resp.status_code == 404:
+                if e.resp.status_code in {403, 404}:
                     logger.warning("Could not leave Realm with ID %s.", realm_id)
                 else:
                     raise
@@ -511,11 +511,11 @@ class GuildConfig(utils.Extension):
                     try:
                         await ctx.bot.realms.leave_realm(realm.id)
                     except elytra.MicrosoftAPIException as e:
-                        if e.resp.status_code == 404:
+                        if e.resp.status_code in {403, 404}:
                             logger.warning(
                                 "Could not leave Realm with ID %s.", realm.id
                             )
-                        elif e.resp.status_code != 403:
+                        else:
                             raise
 
                     await ctx.edit(
