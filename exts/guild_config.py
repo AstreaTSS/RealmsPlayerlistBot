@@ -517,15 +517,18 @@ class GuildConfig(utils.Extension):
                             "You are not an operator of this Realm."
                         )
                 except ipy.errors.BadArgument as e:
-                    try:
-                        await ctx.bot.realms.leave_realm(realm.id)
-                    except elytra.MicrosoftAPIException as e:
-                        if e.resp.status_code in {403, 404}:
-                            logger.warning(
-                                "Could not leave Realm with ID %s.", realm.id
-                            )
-                        else:
-                            raise
+                    if not await models.GuildConfig.prisma().count(
+                        where={"realm_id": str(realm.id)}
+                    ):
+                        try:
+                            await ctx.bot.realms.leave_realm(realm.id)
+                        except elytra.MicrosoftAPIException as e:
+                            if e.resp.status_code in {403, 404}:
+                                logger.warning(
+                                    "Could not leave Realm with ID %s.", realm.id
+                                )
+                            else:
+                                raise
 
                     await ctx.edit(
                         results.msg,
