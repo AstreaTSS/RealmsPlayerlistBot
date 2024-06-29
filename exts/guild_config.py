@@ -338,6 +338,8 @@ class GuildConfig(utils.Extension):
             emoji="✅",
         )
         await ctx.edit(msg, embeds=embed, components=[button])
+        button_disabled = ipy.Button.from_dict(button.to_dict())
+        button_disabled.disabled = True
 
         try:
             async with asyncio.timeout(600):
@@ -346,6 +348,10 @@ class GuildConfig(utils.Extension):
                         msg, button, self.button_check(ctx.author.id)
                     )
                     await event.ctx.defer(edit_origin=True)
+                    await event.ctx.edit(
+                        embeds=utils.make_embed("Verifying message..."),
+                        components=[button_disabled],
+                    )
 
                     conversation: elytra.Conversation | None = None
 
@@ -369,10 +375,11 @@ class GuildConfig(utils.Extension):
                             break
 
                     if not conversation:
-                        await event.ctx.send(
+                        await ctx.send(
                             embed=utils.error_embed_generate("Could not find message."),
                             ephemeral=True,
                         )
+                        await event.ctx.edit(embeds=embed, components=[button])
                         continue
 
                     await self.bot.xbox.delete_conversation(
@@ -468,10 +475,7 @@ class GuildConfig(utils.Extension):
         results: SecurityCheckResults | None = None
 
         try:
-            # TODO: add this into elytra proper
-            realm = await elytra.FullRealm.from_response(
-                await ctx.bot.realms.get(f"worlds/v1/link/{realm_code}")
-            )
+            realm = await ctx.bot.realms.fetch_realm_from_code(realm_code)
 
             if utils.FEATURE("SECURITY_CHECK"):
                 await ctx.bot.redis.set(
