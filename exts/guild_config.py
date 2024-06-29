@@ -345,6 +345,7 @@ class GuildConfig(utils.Extension):
                     event = await self.bot.wait_for_component(
                         msg, button, self.button_check(ctx.author.id)
                     )
+                    await event.ctx.defer(edit_origin=True)
 
                     conversation: elytra.Conversation | None = None
 
@@ -374,7 +375,10 @@ class GuildConfig(utils.Extension):
                         )
                         continue
 
-                    await event.ctx.defer(edit_origin=True)
+                    await self.bot.xbox.delete_conversation(
+                        conversation.conversation_id,
+                        conversation.last_message.message_id,
+                    )
                     return SecurityCheckResults(conversation.last_message.sender, msg)
 
         except TimeoutError:
