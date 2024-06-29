@@ -238,8 +238,8 @@ class GuildConfig(utils.Extension):
                 " your Xbox/Microsoft account so that the bot can verify who you are."
                 " This is the recommended method, as it is the most secure -"
                 " furthermore, the bot will not store your credentials.\n- Send a"
-                " specific message to the bot's Xbox account. This method is less"
-                " secure.\n\n**Please pick the method you wish to use. You have 2"
+                " specific message to the bot's Xbox/Microsoft account. This method is"
+                " less secure.\n\n**Please pick the method you wish to use. You have 2"
                 " minutes to do so.**"
             ),
             timestamp=ipy.Timestamp.utcnow(),
@@ -258,7 +258,7 @@ class GuildConfig(utils.Extension):
             ),
             ipy.Button(
                 style=ipy.ButtonStyle.BLURPLE,
-                label="DM the bot's Xbox account",
+                label="DM the bot's Xbox/Microsoft account",
                 emoji="📥",
             ),
             ipy.Button(
@@ -324,8 +324,9 @@ class GuildConfig(utils.Extension):
         verification_code = "".join(verify_code_builder)
 
         embed = utils.make_embed(
-            "Please send the following message to the bot's Xbox account at"
-            f" `{self.bot.own_gamertag}`. **This is"
+            "Please send the following message to the bot's Xbox/Microsoft account at"
+            f" `{self.bot.own_gamertag}`. You can use either an Xbox console or the"
+            " Xbox app on PC/mobile to do so. **This is"
             f" case-sensitive.**\n\n`{verification_code}`\n\nOnce you have done so,"
             " click the button below to verify that you have sent the message. You"
             " have 10 minutes to do so.",
