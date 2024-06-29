@@ -519,7 +519,7 @@ class GuildConfig(utils.Extension):
                 except ipy.errors.BadArgument as e:
                     if not await models.GuildConfig.prisma().count(
                         where={"realm_id": str(realm.id)}
-                    ):
+                    ) and utils.FEATURE("HANDLE_MISSING_REALMS"):
                         try:
                             await ctx.bot.realms.leave_realm(realm.id)
                         except elytra.MicrosoftAPIException as e:
