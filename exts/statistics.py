@@ -541,7 +541,7 @@ class Statistics(utils.Extension):
             case _:
                 period_str = f"{period} days"
 
-        if warn_about_earliest:
+        if warn_about_earliest and not kwargs.get("autorunner"):
             embed = ipy.Embed(
                 title="Warning",
                 description=(
