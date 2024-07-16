@@ -78,7 +78,7 @@ splash_texts: tuple[str, ...] = (
     "Watching players on Realms!",
     "Do bots dream of electric sheep?",
     f"{platform.python_implementation()} {PYTHON_VERSION[0]}.{PYTHON_VERSION[1]}!",  # ie CPython 3.12
-    "Now in purple!",
+    "Now in purplish-pink!",
     "Keyboard compatible!",
     "Made by AstreaTSS!",
     "This is good for Realms!",  # actual splash text in mc proper
@@ -108,13 +108,14 @@ splash_texts: tuple[str, ...] = (
     "/vote for a cookie!",
     "Help, I'm stuck in a splash text generator",
     "Maybe dockerized!",  # i mean, if you self host, sure
-    "It's legal, too!",
+    "Statistics for all!",
     "Created on June 24th, 2020!",
     "Licensed under AGPL!",
     "Now with nicknames!",
     "Made with asyncio!",
     "RIP Playerlist Zero",
     "/leaderboard is used more than /playerlist",
+    "Is the bot's primary color pink or purple?",
 )
 
 
