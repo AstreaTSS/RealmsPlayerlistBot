@@ -447,12 +447,13 @@ class OwnerCMDs(utils.Extension):
     async def trigger_reoccurring_leaderboard(
         self,
         ctx: utils.RealmPrefixedContext,
+        sunday: bool,
         second_sunday: bool,
         first_monday_of_month: bool,
     ) -> None:
         async with ctx.channel.typing:
             await self.bot.ext["Autorunners"].reoccurring_lb_loop(
-                second_sunday, first_monday_of_month
+                sunday, second_sunday, first_monday_of_month
             )
         await ctx.reply("Done!")
 
