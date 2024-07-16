@@ -21,6 +21,7 @@ from collections import Counter, defaultdict
 from enum import IntEnum
 
 import interactions as ipy
+from prisma.types import PlayerSessionWhereInput
 
 import common.graph_template as graph_template
 import common.models as models
@@ -277,9 +278,9 @@ def timespan_minutes_per_day_of_the_week(
     }
 
 
-def _process_lb_timespan(datetime_entry: GatherDatetimesReturn) -> int:
-    start = int(datetime_entry.joined_at.timestamp())
-    end = int(datetime_entry.last_seen.timestamp())
+def calc_timespan(joined_at: datetime.datetime, last_seen: datetime.datetime) -> int:
+    start = int(joined_at.timestamp())
+    end = int(last_seen.timestamp())
 
     start = (start // 60) * 60
     end = (end // 60) * 60
@@ -293,7 +294,9 @@ def calc_leaderboard(
     leaderboard_counter: Counter[str] = Counter()
 
     for datetime_entry in ranges:
-        leaderboard_counter[datetime_entry.xuid] += _process_lb_timespan(datetime_entry)
+        leaderboard_counter[datetime_entry.xuid] += calc_timespan(
+            datetime_entry.joined_at, datetime_entry.last_seen
+        )
 
     leaderboard_counter = +leaderboard_counter  # filters out 0s somehow?
     return [e for e in leaderboard_counter.most_common() if e[0]]
@@ -304,8 +307,10 @@ async def gather_datetimes(
     min_datetime: datetime.datetime,
     *,
     gamertag: typing.Optional[str] = None,
-    **filter_kwargs: typing.Any,
+    **filter_kwargs: typing.Unpack[PlayerSessionWhereInput],
 ) -> list[GatherDatetimesReturn]:
+    filter_kwargs = {k: v for k, v in filter_kwargs.items() if v is not None}
+
     datetimes_to_use: list[GatherDatetimesReturn] = [
         GatherDatetimesReturn(entry.xuid, entry.joined_at, entry.last_seen)
         for entry in await models.PlayerSession.prisma().find_many(

@@ -36,6 +36,12 @@ class LeaderboardKwargs(typing.TypedDict, total=False):
     autorunner: bool
 
 
+class PlaytimeReturn(typing.NamedTuple):
+    total_playtime: float
+    period_str: str
+    length_to_use: int
+
+
 def amazing_modal_error_handler[T: ipy.const.AsyncCallable](func: T) -> T:
     async def wrapper(
         self: typing.Any,
@@ -654,7 +660,9 @@ class Statistics(utils.Extension):
 
             if session.joined_at:
                 last_seen = now if session.online else session.last_seen
-                total_playtime += last_seen.timestamp() - session.joined_at.timestamp()
+                total_playtime += stats_utils.calc_timespan(
+                    session.joined_at, last_seen
+                )
 
             sessions_str.append("\n".join(session_str))
 
@@ -707,6 +715,176 @@ class Statistics(utils.Extension):
             )
             pag.show_callback_button = False
             await pag.send(ctx)
+
+    misc_stats = tansy.TansySlashCommand(
+        name="misc-stats",
+        description="Calculates various extra/fun statistics.",
+        default_member_permissions=ipy.Permissions.MANAGE_GUILD,
+        dm_permission=False,
+    )
+    misc_stats.add_check(pl_utils.has_linked_realm)
+
+    async def playtime_handle(
+        self,
+        ctx: utils.RealmContext,
+        period: int,
+        gamertag: typing.Optional[str],
+    ) -> PlaytimeReturn:
+        config = await ctx.fetch_config()
+
+        xuid: typing.Optional[str] = None
+        if gamertag:
+            xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
+        elif (
+            utils.VOTING_ENABLED
+            and not config.valid_premium
+            and await self.bot.redis.get(f"rpl-voted-{ctx.author.id}") != "1"
+        ):
+            await ctx.command.cooldown.reset(ctx)
+            raise utils.CustomCheckFailure(
+                "To use this command, you must vote for the bot through one of the"
+                f" links listed in {self.bot.mention_command('vote')} or [purchase"
+                " Playerlist Premium](https://rpl.astrea.cc/wiki/premium.html). Voting"
+                " lasts for 12 hours."
+            )
+
+        if period not in {1, 7, 14, 30}:
+            raise utils.CustomCheckFailure("Invalid period given.")
+
+        now = ipy.Timestamp.utcnow().replace(second=30)
+        time_delta = datetime.timedelta(days=period, minutes=1)
+        time_ago = now - time_delta
+
+        total_playtime: float = 0.0
+
+        datetimes = await stats_utils.gather_datetimes(
+            config, time_ago, gamertag=gamertag, xuid=xuid
+        )
+
+        earliest_datetime = min(d.joined_at for d in datetimes)
+        warn_about_earliest = time_ago + datetime.timedelta(days=1) < earliest_datetime
+
+        if not datetimes:
+            raise utils.CustomCheckFailure(
+                "There's no data for the linked Realm for this timespan."
+            )
+
+        for session in datetimes:
+            total_playtime += stats_utils.calc_timespan(
+                session.joined_at, session.last_seen
+            )
+
+        # im lazy
+        match period:
+            case 1:
+                period_str = "24 hours"
+            case 7:
+                period_str = "1 week"
+            case 14:
+                period_str = "2 weeks"
+            case _:
+                period_str = f"{period} days"
+
+        if warn_about_earliest and not gamertag:
+            embed = ipy.Embed(
+                title="Warning",
+                description=(
+                    "The bot does not have enough data to properly parse data for the"
+                    " timespan you specified (most likely, you specified a timespan"
+                    " that goes further back than when you first set up the bot with"
+                    " your Realm). This data may be inaccurate."
+                ),
+                color=ipy.RoleColors.YELLOW,
+            )
+            await ctx.send(embed=embed)
+
+        if gamertag:
+            return PlaytimeReturn(total_playtime, period_str, len(datetimes))
+
+        return PlaytimeReturn(
+            total_playtime, period_str, len({d.xuid for d in datetimes})
+        )
+
+    @misc_stats.subcommand(
+        sub_cmd_name="average-playtime",
+        sub_cmd_description=(
+            "Calculates the average playtime of all players or the specified player on"
+            " the Realm."
+        ),
+    )
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    async def average_playtime(
+        self,
+        ctx: utils.RealmContext,
+        period: int = tansy.Option(
+            "The period to gather data for.",
+            choices=[
+                ipy.SlashCommandChoice("24 hours", 1),
+                ipy.SlashCommandChoice("1 week", 7),
+                ipy.SlashCommandChoice("2 weeks", 14),
+                ipy.SlashCommandChoice("30 days", 30),
+            ],
+        ),
+        gamertag: typing.Optional[str] = tansy.Option(
+            "The player's gamertag. If not specified, calculates Realm wide, which"
+            " requires voting or Premium.",
+            default=None,
+        ),
+    ) -> None:
+        playtime = await self.playtime_handle(ctx, period, gamertag)
+
+        end_string = (
+            "per session\n-# Basically, they play, on average, for that much time every"
+            " time they join the Realm."
+            if gamertag
+            else "per player"
+        )
+        calc_playtime = round(playtime.total_playtime / playtime.length_to_use)
+
+        await ctx.send(
+            embed=utils.make_embed(
+                f"Average playtime {f'for {gamertag}' if gamertag else ''} for the past"
+                f" {playtime.period_str}:"
+                f" {humanize.precisedelta(calc_playtime, minimum_unit='minutes', format='%0.0f')} {end_string}",
+            )
+        )
+
+    @misc_stats.subcommand(
+        sub_cmd_name="total-playtime",
+        sub_cmd_description=(
+            "Calculates the total playtime of all players or the specified player on"
+            " the Realm."
+        ),
+    )
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
+    async def total_playtime(
+        self,
+        ctx: utils.RealmContext,
+        period: int = tansy.Option(
+            "The period to gather data for.",
+            choices=[
+                ipy.SlashCommandChoice("24 hours", 1),
+                ipy.SlashCommandChoice("1 week", 7),
+                ipy.SlashCommandChoice("2 weeks", 14),
+                ipy.SlashCommandChoice("30 days", 30),
+            ],
+        ),
+        gamertag: typing.Optional[str] = tansy.Option(
+            "The player's gamertag. If not specified, calculates Realm wide, which"
+            " requires voting or Premium.",
+            default=None,
+        ),
+    ) -> None:
+        playtime = await self.playtime_handle(ctx, period, gamertag)
+        calc_playtime = round(playtime.total_playtime)
+
+        await ctx.send(
+            embed=utils.make_embed(
+                f"Total playtime {f'for {gamertag}' if gamertag else ''} for the past"
+                f" {playtime.period_str}:"
+                f" {humanize.precisedelta(calc_playtime, minimum_unit='minutes', format='%0.0f')}",
+            )
+        )
 
 
 def setup(bot: utils.RealmBotBase) -> None:
