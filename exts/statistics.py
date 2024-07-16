@@ -834,8 +834,8 @@ class Statistics(utils.Extension):
         playtime = await self.playtime_handle(ctx, period, gamertag)
 
         end_string = (
-            "per session\n-# Basically, they play, on average, for that much time every"
-            " time they join the Realm."
+            "per session\n-# ℹ️ Essentially, they play, on average, for that much time"  # noqa: RUF001
+            " every time they join the Realm."
             if gamertag
             else "per player"
         )
