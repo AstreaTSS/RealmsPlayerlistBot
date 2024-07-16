@@ -54,6 +54,7 @@ _debug_defaults = {
 }
 
 REOCCURRING_LB_FREQUENCY: dict[int, str] = {
+    4: "Every day at 12:00 AM (00:00) UTC",
     1: "Every Sunday at 12:00 AM (00:00) UTC",
     2: "Every other Sunday at 12:00 AM (00:00) UTC",
     3: "The first Sunday of every month at 12:00 AM (00:00) UTC",
@@ -325,7 +326,7 @@ async def config_info_generate(
         )
 
         reoccurring_lb = (
-            f"{REOCCURRING_LB_PERIODS[config.reoccurring_leaderboard % 10]} every"
+            f"{REOCCURRING_LB_PERIODS[config.reoccurring_leaderboard % 10]} "
             f" {REOCCURRING_LB_FREQUENCY[config.reoccurring_leaderboard // 10]}"
             if config.reoccurring_leaderboard
             else "N/A"

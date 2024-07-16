@@ -225,24 +225,21 @@ class Autorunners(utils.Extension):
                 # margin of error
                 now = ipy.Timestamp.utcnow() + datetime.timedelta(milliseconds=1)
 
-                days_to_next_sunday = 6 - now.weekday()
-                if days_to_next_sunday <= 0:
-                    days_to_next_sunday += 7
-
-                next_sunday = now + relativedelta(
-                    days=+days_to_next_sunday, hour=0, minute=0, second=0, microsecond=0
+                tomorrow = now + relativedelta(
+                    days=+1, hour=0, minute=0, second=0, microsecond=0
                 )
 
-                # silly way to have a bitfield that toggles every sunday
-                bit = self.bot.redis.bitfield(
-                    "rpl-sunday-bitshift", default_overflow="WRAP"
-                )
-                bit.incrby("u1", "#0", 1)
-                bit_resp: list[int] = await bit.execute()  # [0] or [1]
+                if tomorrow.weekday() == 6:
+                    # silly way to have a bitfield that toggles every sunday
+                    bit = self.bot.redis.bitfield(
+                        "rpl-sunday-bitshift", default_overflow="WRAP"
+                    )
+                    bit.incrby("u1", "#0", 1)
+                    bit_resp: list[int] = await bit.execute()  # [0] or [1]
 
-                await utils.sleep_until(next_sunday)
+                await utils.sleep_until(tomorrow)
                 await self.reoccurring_lb_loop(
-                    bit_resp[0] % 2 == 0, next_sunday.day <= 7
+                    tomorrow.weekday() == 6, bit_resp[0] % 2 == 0, tomorrow.day <= 7
                 )
 
         except Exception as e:
@@ -250,13 +247,22 @@ class Autorunners(utils.Extension):
                 await utils.error_handle(e)
 
     async def reoccurring_lb_loop(
-        self, second_sunday: bool, first_monday_of_month: bool
+        self, sunday: bool, second_sunday: bool, first_sunday_of_month: bool
     ) -> None:
         lb_command = next(
             c for c in self.bot.application_commands if str(c.name) == "leaderboard"
         )
 
-        if second_sunday and first_monday_of_month:
+        if not sunday:
+            configs = await models.GuildConfig.prisma().find_many(
+                where={
+                    "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
+                    "reoccurring_leaderboard": {"gte": 40, "lt": 50},
+                    "NOT": [{"realm_id": None}],
+                },
+                include={"premium_code": True},
+            )
+        elif second_sunday and first_sunday_of_month:
             configs = await models.GuildConfig.prisma().find_many(
                 where={
                     "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
@@ -264,7 +270,7 @@ class Autorunners(utils.Extension):
                 },
                 include={"premium_code": True},
             )
-        elif first_monday_of_month:
+        elif first_sunday_of_month:
             configs = await models.GuildConfig.prisma().find_many(
                 where={
                     "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
@@ -292,7 +298,7 @@ class Autorunners(utils.Extension):
                     "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
                     "NOT": [
                         {"realm_id": None},
-                        {"reoccurring_leaderboard": {"gte": 20}},
+                        {"reoccurring_leaderboard": {"gte": 20, "lt": 40}},
                     ],
                 },
                 include={"premium_code": True},
