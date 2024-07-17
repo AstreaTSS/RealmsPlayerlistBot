@@ -236,6 +236,8 @@ class Autorunners(utils.Extension):
                     )
                     bit.incrby("u1", "#0", 1)
                     bit_resp: list[int] = await bit.execute()  # [0] or [1]
+                else:
+                    bit_resp: list[int] = [1]
 
                 await utils.sleep_until(tomorrow)
                 await self.reoccurring_lb_loop(
