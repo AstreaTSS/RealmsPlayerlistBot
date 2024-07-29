@@ -11,7 +11,7 @@ redis[hiredis]==5.0.7
 orjson==3.10.6
 python-dateutil==2.9.0.post0
 sentry-sdk==2.10.0
-rapidfuzz==3.9.4
+rapidfuzz==3.9.5
 pycryptodome==3.20.0
 cachetools==5.4.0
 msgspec==0.18.6
