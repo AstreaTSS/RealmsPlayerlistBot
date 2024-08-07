@@ -18,9 +18,8 @@ import asyncio
 import importlib
 import logging
 import os
-import random
 import re
-import string
+import secrets
 import typing
 
 import elytra
@@ -32,6 +31,7 @@ import common.classes as cclasses
 import common.device_code as device_code
 import common.models as models
 import common.playerlist_utils as pl_utils
+import common.premium_utils as premium_utils
 import common.realm_stories as realm_stories
 import common.utils as utils
 
@@ -312,24 +312,18 @@ class GuildConfig(utils.Extension):
             "User %s chose to send a message for the security check.", ctx.author.id
         )
 
-        verify_code_builder: list[str] = []
-        for i in range(6):
-            if i % 2 == 0:
-                verify_code_builder.append(
-                    random.choice(string.ascii_uppercase)  # noqa: S311
-                )
-            else:
-                verify_code_builder.append(random.choice(string.digits))  # noqa: S311
-
-        verification_code = "".join(verify_code_builder)
+        verification_code = ""
+        while not verification_code or premium_utils.has_bad_word(verification_code):
+            verification_code = "".join(
+                secrets.choice(premium_utils.SYMBOLS) for _ in range(6)
+            )
 
         embed = utils.make_embed(
             "Please send the following message to the bot's Xbox/Microsoft account at"
             f" `{self.bot.own_gamertag}`. You can use either an Xbox console or the"
-            " Xbox app on PC/mobile to do so. **This is"
-            f" case-sensitive.**\n\n`{verification_code}`\n\nOnce you have done so,"
-            " click the button below to verify that you have sent the message. You"
-            " have 10 minutes to do so.",
+            f" Xbox app on PC/mobile to do so.\n\n`{verification_code}`\n\nOnce you"
+            " have done so, click the button below to verify that you have sent the"
+            " message. You have 10 minutes to do so.",
         )
 
         button = ipy.Button(
@@ -367,7 +361,7 @@ class GuildConfig(utils.Extension):
                                 for c in folder.conversations
                                 if c.last_message.content_payload
                                 and verification_code
-                                in c.last_message.content_payload.full_content
+                                in c.last_message.content_payload.full_content.upper()
                             ),
                             None,
                         )
@@ -1210,4 +1204,5 @@ def setup(bot: utils.RealmBotBase) -> None:
     importlib.reload(realm_stories)
     importlib.reload(cclasses)
     importlib.reload(pl_utils)
+    importlib.reload(premium_utils)
     GuildConfig(bot)
