@@ -23,7 +23,6 @@ import typing
 import attrs
 import interactions as ipy
 import orjson
-from dateutil.relativedelta import relativedelta
 
 import common.utils as utils
 
@@ -193,9 +192,9 @@ class SplashTexts:
     async def _task_func(self) -> None:
         while True:
             now = datetime.datetime.now(datetime.UTC)
-            next_day = now + relativedelta(
-                days=+1, hour=0, minute=0, second=0, microsecond=0
-            )
+            next_day = now.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ) + datetime.timedelta(days=1)
             await utils.sleep_until(next_day)
             await self.next()
 

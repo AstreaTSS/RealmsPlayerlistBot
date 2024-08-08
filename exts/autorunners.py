@@ -20,7 +20,6 @@ import datetime
 import importlib
 
 import interactions as ipy
-from dateutil.relativedelta import relativedelta
 
 import common.classes as cclasses
 import common.models as models
@@ -225,9 +224,9 @@ class Autorunners(utils.Extension):
                 # margin of error
                 now = ipy.Timestamp.utcnow() + datetime.timedelta(milliseconds=1)
 
-                tomorrow = now + relativedelta(
-                    days=+1, hour=0, minute=0, second=0, microsecond=0
-                )
+                tomorrow = now.replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                ) + datetime.timedelta(days=1)
 
                 if tomorrow.weekday() == 6:
                     # silly way to have a bitfield that toggles every sunday
