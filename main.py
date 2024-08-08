@@ -510,4 +510,16 @@ if __name__ == "__main__":
 
         run_method = uvloop.run
 
+    if os.environ.get("DOCKER_MODE") == "True" and utils.FEATURE(
+        "RUN_MIGRATIONS_AUTOMATICALLY"
+    ):
+        import subprocess
+        import sys
+
+        subprocess.run(
+            [sys.executable, "-m", "prisma", "migrate", "deploy"],
+            check=True,
+            env={"DB_URL": os.environ["DB_URL"]},
+        )
+
     run_method(start())

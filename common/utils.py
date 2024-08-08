@@ -51,6 +51,7 @@ _debug_defaults = {
     "PRINT_TRACKBACK_FOR_ERRORS": False,
     "EVENTUALLY_INVALIDATE": True,
     "SECURITY_CHECK": True,
+    "RUN_MIGRATIONS_AUTOMATICALLY": True,
 }
 
 REOCCURRING_LB_FREQUENCY: dict[int, str] = {
