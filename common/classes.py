@@ -14,7 +14,6 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import pkgutil
 import typing
 import uuid
 from collections.abc import MutableSet
@@ -29,9 +28,8 @@ import msgspec
 import orjson
 from httpcore._backends import anyio
 from httpcore._backends.asyncio import AsyncioBackend
-from prisma import Base64, Json
+from prisma import Base64, Json, _builder
 from prisma._async_http import Response
-from prisma._builder import dumps as prisma_dumps
 
 import common.playerlist_utils as pl_utils
 import common.utils as utils
@@ -398,7 +396,7 @@ def msgspec_enc_hook(obj: typing.Any) -> typing.Any:
     if isinstance(obj, Base64):
         return str(obj)
     if isinstance(obj, Json):
-        return msgspec_dump(obj.data)
+        return msgspec_dumps(obj.data)
     if isinstance(obj, ipy.Timestamp):
         if obj.tzinfo != UTC:
             obj = obj.astimezone(UTC)
@@ -414,10 +412,9 @@ def msgspec_enc_hook(obj: typing.Any) -> typing.Any:
 msgspec_encoder = msgspec.json.Encoder(enc_hook=msgspec_enc_hook)
 
 
-def msgspec_dump(obj: typing.Any, **_: typing.Any) -> str:
+def msgspec_dumps(obj: typing.Any, **_: typing.Any) -> str:
     return msgspec_encoder.encode(obj).decode()
 
 
-if prisma_dumps != msgspec_dump:
-    target = pkgutil.resolve_name(prisma_dumps.__module__)
-    setattr(target, prisma_dumps.__qualname__, msgspec_dump)
+if _builder.dumps != msgspec_dumps:
+    _builder.dumps = msgspec_dumps
