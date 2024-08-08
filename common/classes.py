@@ -27,6 +27,8 @@ import humanize
 import interactions as ipy
 import msgspec
 import orjson
+from httpcore._backends import anyio
+from httpcore._backends.asyncio import AsyncioBackend
 from prisma import Base64, Json
 from prisma._async_http import Response
 from prisma._builder import dumps as prisma_dumps
@@ -379,6 +381,9 @@ class BetterResponse(aiohttp.ClientResponse):
                 message=self.reason,
                 headers=self.headers,
             )
+
+
+anyio.AnyIOBackend = AsyncioBackend
 
 
 class FastResponse(Response):
