@@ -7,7 +7,7 @@ attrs==24.2.0
 pydantic==2.8.2
 httpx[http2]==0.27.0
 prisma==0.13.1
-redis[hiredis]==5.0.7
+redis[hiredis]==5.0.8
 orjson==3.10.6
 python-dateutil==2.9.0.post0
 sentry-sdk==2.12.0
