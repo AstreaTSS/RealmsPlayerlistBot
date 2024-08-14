@@ -67,9 +67,8 @@ class Playerlist(utils.Extension):
         await utils.sleep_until(self.next_time())
 
         while True:
+            next_time = self.next_time()
             try:
-                next_time = self.next_time()
-
                 start = time.perf_counter()
                 await self.parse_realms()
                 end = time.perf_counter()
@@ -81,12 +80,12 @@ class Playerlist(utils.Extension):
 
                 if utils.FEATURE("HANDLE_MISSING_REALMS"):
                     self.bot.create_task(self.handle_missing_warning())
-                await utils.sleep_until(next_time)
             except Exception as e:
                 if not isinstance(e, asyncio.CancelledError):
                     await utils.error_handle(e)
                 else:
                     break
+            await utils.sleep_until(next_time)
 
     async def parse_realms(self) -> None:
         try:
