@@ -9,7 +9,7 @@ git+https://github.com/MarkusSintonen/httpcore.git@e724565270603a72d11f6d3bfc096
 httpx[http2]==0.27.0
 prisma==0.15.0
 redis[hiredis]==5.0.8
-orjson==3.10.6
+orjson==3.10.7
 sentry-sdk==2.13.0
 rapidfuzz==3.9.5
 pycryptodome==3.20.0
