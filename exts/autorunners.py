@@ -32,20 +32,23 @@ UPSELLS = [
         "Want minute-to-minute updates on your Realm? Do you want device information"
         " for players? Check out Playerlist Premium: /premium info"
     ),
-    (
-        "If you like the bot, you can vote for it via /vote! Voting helps the bot grow"
-        " and get more features."
-    ),
+    "Check out all of the features the bot has: https://rpl.astrea.cc/wiki/features",
     (
         "Do you want a constantly updating live online list? Check out Playerlist"
         " Premium: /premium info"
     ),
-    "Check out all of the features the bot has: https://rpl.astrea.cc/wiki/features",
     (
         "Having issues with the bot? Check out the FAQ or join the support server:"
         " /support"
     ),
 ]
+
+if utils.VOTING_ENABLED:
+    UPSELLS.append(
+        "If you like the bot, you can vote for it via /vote! Voting helps the bot grow"
+        " and get more features."
+    )
+
 LENGTH_UPSELLS = len(UPSELLS)
 
 
