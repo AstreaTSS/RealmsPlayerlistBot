@@ -267,8 +267,8 @@ class PlayerlistEventHandling(utils.Extension):
             embed = ipy.Embed(
                 title="Realm Offline",
                 description=(
-                    "The bot has detected that the Realm is offline (or possibly that"
-                    " it has no users)."
+                    "The bot has detected that the Realm has gone offline (or that all"
+                    " users have left it)."
                 ),
                 timestamp=ipy.Timestamp.fromdatetime(event.timestamp),
                 color=ipy.RoleColors.YELLOW,
