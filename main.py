@@ -383,7 +383,7 @@ async def start() -> None:
 
     # mark players as offline if they were online more than 5 minutes ago
     five_minutes_ago = ipy.Timestamp.utcnow() - datetime.timedelta(minutes=5)
-    num_updated = await db.playersession.update_many(
+    num_updated = await models.PlayerSession.prisma().update_many(
         data={"online": False},
         where={
             "online": True,
@@ -392,7 +392,7 @@ async def start() -> None:
     )
     if num_updated > 0:
         # we've reset all online entries, reset live online channels too
-        for config in await db.guildconfig.find_many(
+        for config in await models.GuildConfig.prisma().find_many(
             where={"NOT": [{"live_online_channel": None}]}
         ):
             await bot.redis.hset(config.live_online_channel, "xuids", "")
