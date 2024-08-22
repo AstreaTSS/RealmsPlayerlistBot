@@ -466,7 +466,7 @@ class Playerlist(utils.Extension):
         if device_information:
             if (
                 not config.valid_premium
-                and utils.VOTING_ENABLED
+                and utils.SHOULD_VOTEGATE
                 and await self.bot.redis.get(f"rpl-voted-{ctx.author_id}") != "1"
             ):
                 raise utils.CustomCheckFailure(

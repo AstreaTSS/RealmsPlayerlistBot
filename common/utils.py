@@ -52,6 +52,7 @@ _debug_defaults = {
     "EVENTUALLY_INVALIDATE": True,
     "SECURITY_CHECK": True,
     "RUN_MIGRATIONS_AUTOMATICALLY": True,
+    "VOTEGATING": True,
 }
 
 REOCCURRING_LB_FREQUENCY: dict[int, str] = {
@@ -67,15 +68,18 @@ REOCCURRING_LB_PERIODS: dict[int, str] = {
     4: "30 days",
 }
 
-VOTING_ENABLED: bool = bool(
-    os.environ.get("TOP_GG_TOKEN") or os.environ.get("DBL_TOKEN")
-)
-
 FORMAT_CODE_REGEX: re.Pattern[str] = re.compile(r"§\S")
 
 
 def FEATURE(feature: str) -> bool:  # noqa: N802
     return _DEBUG.get(feature, _debug_defaults[feature])
+
+
+VOTING_ENABLED: bool = bool(
+    os.environ.get("TOP_GG_TOKEN") or os.environ.get("DBL_TOKEN")
+)
+
+SHOULD_VOTEGATE: bool = FEATURE("VOTEGATING") and VOTING_ENABLED
 
 
 async def sleep_until(dt: datetime.datetime) -> None:

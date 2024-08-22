@@ -345,7 +345,7 @@ async def period_parse(
     if period not in PERIODS:
         if period in GATED_PERIODS:
             if (
-                utils.VOTING_ENABLED
+                utils.SHOULD_VOTEGATE
                 and not config.valid_premium
                 and await bot.redis.get(f"rpl-voted-{user_id}") != "1"
             ):
@@ -380,7 +380,7 @@ async def summary_parse(
     if summarize_by not in SUMMARIES:
         if summarize_by in GATED_SUMMARIES:
             if (
-                utils.VOTING_ENABLED
+                utils.SHOULD_VOTEGATE
                 and not config.valid_premium
                 and await bot.redis.get(f"rpl-voted-{user_id}") != "1"
             ):

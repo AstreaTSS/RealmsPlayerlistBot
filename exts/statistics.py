@@ -492,7 +492,7 @@ class Statistics(utils.Extension):
         config = await ctx.fetch_config()
 
         if (
-            utils.VOTING_ENABLED
+            utils.SHOULD_VOTEGATE
             and not config.valid_premium
             and await self.bot.redis.get(f"rpl-voted-{ctx.author.id}") != "1"
         ):
@@ -736,7 +736,7 @@ class Statistics(utils.Extension):
         if gamertag:
             xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
         elif (
-            utils.VOTING_ENABLED
+            utils.SHOULD_VOTEGATE
             and not config.valid_premium
             and await self.bot.redis.get(f"rpl-voted-{ctx.author.id}") != "1"
         ):
