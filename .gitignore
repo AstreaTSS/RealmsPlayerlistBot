@@ -124,6 +124,7 @@ dmypy.json
 discord.log
 debug.log
 .env
+.venv/
 env/
 config.toml
 tokens.json
