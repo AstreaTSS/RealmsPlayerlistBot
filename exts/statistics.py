@@ -63,6 +63,19 @@ def amazing_modal_error_handler[T: ipy.const.AsyncCallable](func: T) -> T:
     return wrapper  # type: ignore
 
 
+def period_resolver(period: int) -> str:
+    match period:
+        case 1:
+            period_str = "24 hours"
+        case 7:
+            period_str = "1 week"
+        case 14:
+            period_str = "2 weeks"
+        case _:
+            period_str = f"{period} days"
+    return period_str
+
+
 class Statistics(utils.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
         self.bot: utils.RealmBotBase = bot
@@ -530,16 +543,7 @@ class Statistics(utils.Extension):
         if kwargs.get("autorunner"):
             leaderboard_counter_sort = leaderboard_counter_sort[:20]
 
-        # im lazy
-        match period:
-            case 1:
-                period_str = "24 hours"
-            case 7:
-                period_str = "1 week"
-            case 14:
-                period_str = "2 weeks"
-            case _:
-                period_str = f"{period} days"
+        period_str = period_resolver(period)
 
         if warn_about_earliest and not kwargs.get("autorunner"):
             embed = ipy.Embed(
@@ -774,16 +778,7 @@ class Statistics(utils.Extension):
                 session.joined_at, session.last_seen
             )
 
-        # im lazy
-        match period:
-            case 1:
-                period_str = "24 hours"
-            case 7:
-                period_str = "1 week"
-            case 14:
-                period_str = "2 weeks"
-            case _:
-                period_str = f"{period} days"
+        period_str = period_resolver(period)
 
         if warn_about_earliest and not gamertag:
             embed = ipy.Embed(
@@ -883,6 +878,93 @@ class Statistics(utils.Extension):
                 f"Total playtime {f'for {gamertag}' if gamertag else ''} for the past"
                 f" {playtime.period_str}:"
                 f" {humanize.precisedelta(calc_playtime, minimum_unit='minutes', format='%0.0f')}",
+            )
+        )
+
+    @misc_stats.subcommand(
+        sub_cmd_name="longest-session",
+        sub_cmd_description=(
+            "Calculates the longest session on the Realm or by a player."
+        ),
+    )
+    async def longest_session(
+        self,
+        ctx: utils.RealmContext,
+        period: int = tansy.Option(
+            "The period to gather data for.",
+            choices=[
+                ipy.SlashCommandChoice("24 hours", 1),
+                ipy.SlashCommandChoice("1 week", 7),
+                ipy.SlashCommandChoice("2 weeks", 14),
+                ipy.SlashCommandChoice("30 days", 30),
+            ],
+        ),
+        gamertag: typing.Optional[str] = tansy.Option(
+            "The player's gamertag. If not specified, calculates Realm wide, which"
+            " requires voting or Premium.",
+            default=None,
+        ),
+    ) -> None:
+        config = await ctx.fetch_config()
+
+        xuid: typing.Optional[str] = None
+        if gamertag:
+            xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
+        elif (
+            utils.SHOULD_VOTEGATE
+            and not config.valid_premium
+            and await self.bot.redis.get(f"rpl-voted-{ctx.author.id}") != "1"
+        ):
+            await ctx.command.cooldown.reset(ctx)
+            raise utils.CustomCheckFailure(
+                "To use this command, you must vote for the bot through one of the"
+                f" links listed in {self.bot.mention_command('vote')} or [purchase"
+                " Playerlist Premium](https://rpl.astrea.cc/wiki/premium.html). Voting"
+                " lasts for 12 hours."
+            )
+
+        if period not in {1, 7, 14, 30}:
+            raise utils.CustomCheckFailure("Invalid period given.")
+
+        now = ipy.Timestamp.utcnow().replace(second=30)
+        time_delta = datetime.timedelta(days=period, minutes=1)
+        time_ago = now - time_delta
+
+        datetimes = await stats_utils.gather_datetimes(
+            config, time_ago, gamertag=gamertag, xuid=xuid
+        )
+        if not datetimes:
+            raise utils.CustomCheckFailure(
+                "There's no data for the linked Realm for this timespan."
+            )
+
+        earliest_datetime = min(d.joined_at for d in datetimes)
+        warn_about_earliest = time_ago + datetime.timedelta(days=1) < earliest_datetime
+
+        biggest_range = max(
+            datetimes, key=lambda d: stats_utils.calc_timespan(d.joined_at, d.last_seen)
+        )
+
+        if warn_about_earliest and not gamertag:
+            embed = ipy.Embed(
+                title="Warning",
+                description=(
+                    "The bot does not have enough data to properly parse data for the"
+                    " timespan you specified (most likely, you specified a timespan"
+                    " that goes further back than when you first set up the bot with"
+                    " your Realm). This data may be inaccurate."
+                ),
+                color=ipy.RoleColors.YELLOW,
+            )
+            await ctx.send(embed=embed)
+
+        await ctx.send(
+            embed=utils.make_embed(
+                f"Longest session {f'for {gamertag}' if gamertag else ''} for the past"
+                f" {period_resolver(period)}:"
+                f" {humanize.precisedelta(stats_utils.calc_timespan(biggest_range.joined_at, biggest_range.last_seen), minimum_unit='minutes', format='%0.0f')} long"
+                f" (from <t:{int(biggest_range.joined_at.timestamp())}:f> to"
+                f" <t:{int(biggest_range.last_seen.timestamp())}:f>)",
             )
         )
 
