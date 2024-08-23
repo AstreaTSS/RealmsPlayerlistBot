@@ -958,15 +958,37 @@ class Statistics(utils.Extension):
             )
             await ctx.send(embed=embed)
 
-        await ctx.send(
-            embed=utils.make_embed(
-                f"Longest session {f'for {gamertag}' if gamertag else ''} for the past"
-                f" {period_resolver(period)}:"
-                f" {humanize.precisedelta(stats_utils.calc_timespan(biggest_range.joined_at, biggest_range.last_seen), minimum_unit='minutes', format='%0.0f')} long"
-                f" (from <t:{int(biggest_range.joined_at.timestamp())}:f> to"
-                f" <t:{int(biggest_range.last_seen.timestamp())}:f>)",
-            )
+        delta = humanize.precisedelta(
+            stats_utils.calc_timespan(biggest_range.joined_at, biggest_range.last_seen),
+            minimum_unit="minutes",
+            format="%0.0f",
         )
+
+        if gamertag:
+            await ctx.send(
+                embed=utils.make_embed(
+                    f"Longest session for {gamertag} for the past"
+                    f" {period_resolver(period)}: {delta} long"
+                    f" (from <t:{int(biggest_range.joined_at.timestamp())}:f> to"
+                    f" <t:{int(biggest_range.last_seen.timestamp())}:f>)",
+                )
+            )
+        else:
+            try:
+                longest_gamertag = (
+                    f"`{await pl_utils.gamertag_from_xuid(self.bot, biggest_range.xuid)}`"
+                )
+            except ipy.errors.BadArgument:
+                longest_gamertag = f"User with XUID `{biggest_range.xuid}`"
+
+            await ctx.send(
+                embed=utils.make_embed(
+                    f"Longest session for the past {period_resolver(period)}:"
+                    f" {delta} long, by {longest_gamertag} (from"
+                    f" <t:{int(biggest_range.joined_at.timestamp())}:f> to"
+                    f" <t:{int(biggest_range.last_seen.timestamp())}:f>)",
+                )
+            )
 
 
 def setup(bot: utils.RealmBotBase) -> None:
