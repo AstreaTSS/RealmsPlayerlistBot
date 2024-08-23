@@ -113,7 +113,7 @@ splash_texts: tuple[str, ...] = (
     "Now with nicknames!",
     "Made with asyncio!",
     "RIP Playerlist Zero",
-    "/leaderboard is used more than /playerlist",
+    "Use /help for help with commands!",
     "Is the bot's primary color pink or purple?",
 )
 
