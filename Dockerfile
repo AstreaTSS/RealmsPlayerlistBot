@@ -9,12 +9,7 @@ WORKDIR /app
 # allows git to work with the directory, making commands like /about better
 RUN git config --global --add safe.directory /app
 
-RUN uv sync
-
-ENV VIRTUAL_ENV=/app/.venv
-ENV PATH="/app/.venv/bin:$PATH"
-
-# no idea why we can't use uv run, but oh well
+RUN uv pip install --system -r requirements.txt
 RUN python -m prisma generate
 
 CMD [ "python", "main.py" ]
