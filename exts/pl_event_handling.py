@@ -170,9 +170,10 @@ class PlayerlistEventHandling(utils.Extension):
                 await chan.send(embeds=embed)
             except ValueError:
                 continue
-            except ipy.errors.HTTPException:
-                await pl_utils.eventually_invalidate(self.bot, config)
-                continue
+            except ipy.errors.HTTPException as e:
+                if e.status < 500:
+                    await pl_utils.eventually_invalidate(self.bot, config)
+                    continue
 
     @ipy.listen("live_online_update", is_default_listener=True)
     async def on_live_online_update(self, event: pl_events.LiveOnlineUpdate) -> None:
@@ -237,8 +238,9 @@ class PlayerlistEventHandling(utils.Extension):
 
         try:
             await fake_msg.edit(embed=embed)
-        except ipy.errors.HTTPException:
-            await pl_utils.eventually_invalidate_live_online(self.bot, event.config)
+        except ipy.errors.HTTPException as e:
+            if e.status < 500:
+                await pl_utils.eventually_invalidate_live_online(self.bot, event.config)
 
     @ipy.listen("realm_down", is_default_listener=True)
     async def realm_down(self, event: pl_events.RealmDown) -> None:
