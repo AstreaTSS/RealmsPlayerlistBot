@@ -13,7 +13,7 @@ dependencies = [
     "attrs==24.2.0",
     "pydantic==2.8.2",
     "httpcore",
-    "httpx[http2]==0.27.0",
+    "httpx[http2]==0.27.2",
     "prisma==0.15.0",
     "redis[hiredis]==5.0.8",
     "orjson==3.10.7",
