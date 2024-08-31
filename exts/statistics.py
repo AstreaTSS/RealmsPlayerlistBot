@@ -887,6 +887,7 @@ class Statistics(utils.Extension):
             "Calculates the longest session on the Realm or by a player."
         ),
     )
+    @ipy.cooldown(ipy.Buckets.GUILD, 1, 5)
     async def longest_session(
         self,
         ctx: utils.RealmContext,
