@@ -532,7 +532,7 @@ class PremiumHandling(utils.Extension):
         entitlement = event.entitlement
 
         if (
-            int(entitlement.sku_id) != os.environ.get("PREMIUM_SKU_ID")
+            str(entitlement.sku_id) != os.environ.get("PREMIUM_SKU_ID")
             or not entitlement.subscription_id
             or not entitlement._guild_id
         ):
@@ -588,7 +588,7 @@ class PremiumHandling(utils.Extension):
         entitlement = event.entitlement
 
         if (
-            int(entitlement.sku_id) != os.environ.get("PREMIUM_SKU_ID")
+            str(entitlement.sku_id) != os.environ.get("PREMIUM_SKU_ID")
             or not entitlement.ends_at
             or not entitlement.subscription_id
             or not entitlement._guild_id
@@ -605,7 +605,7 @@ class PremiumHandling(utils.Extension):
         entitlement = event.entitlement
 
         if (
-            int(entitlement.sku_id) != os.environ.get("PREMIUM_SKU_ID")
+            str(entitlement.sku_id) != os.environ.get("PREMIUM_SKU_ID")
             or not entitlement.subscription_id
             or not entitlement._guild_id
         ):
