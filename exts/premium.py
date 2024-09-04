@@ -533,16 +533,34 @@ class PremiumHandling(utils.Extension):
 
         if (
             int(entitlement.sku_id) != os.environ.get("PREMIUM_SKU_ID")
-            or not entitlement.ends_at
             or not entitlement.subscription_id
             or not entitlement._guild_id
         ):
             return
 
+        if config := await models.GuildConfig.prisma().find_first(
+            where={
+                "guild_id": int(entitlement._guild_id),
+                "premium_code": {
+                    "is": {
+                        "user_id": int(entitlement._user_id),
+                        "max_uses": 1,
+                        "uses": 1,
+                    },
+                    "is_not": {"expires_at": None, "customer_id": None},
+                },
+            },
+            include={"premium_code": True},
+        ):
+            # potential update from old subscription system to new one,
+            # so we'll just delete the old code and update the guild config
+            await models.PremiumCode.prisma().delete(
+                where={"id": config.premium_code_id}
+            )
+
         # admittedly, i really don't want to go through the effort of making
         # stuff for just entitlements, so we're going to pretend they're
         # stripe subscriptions by making a code and then using it just like normal
-        # TODO: what happens if guild already has code?
 
         code = premium_utils.full_code_generate(1, entitlement._user_id)
         encrypted_code = await premium_utils.encrypt_input(code)
@@ -588,7 +606,6 @@ class PremiumHandling(utils.Extension):
 
         if (
             int(entitlement.sku_id) != os.environ.get("PREMIUM_SKU_ID")
-            or not entitlement.ends_at
             or not entitlement.subscription_id
             or not entitlement._guild_id
         ):
