@@ -10,7 +10,7 @@ httpx[http2]==0.27.0
 prisma==0.15.0
 redis[hiredis]==5.0.8
 orjson==3.10.7
-sentry-sdk==2.13.0
+sentry-sdk==2.14.0
 rapidfuzz==3.9.7
 pycryptodome==3.20.0
 msgspec==0.18.6
