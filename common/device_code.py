@@ -22,6 +22,7 @@ import os
 import elytra
 import interactions as ipy
 import orjson
+from httpx import HTTPStatusError
 
 import common.utils as utils
 
@@ -94,9 +95,23 @@ async def handle_realms(
 ) -> elytra.FullRealm:
     await ctx.edit(msg, embeds=utils.make_embed("Getting Realms data..."))
 
-    user_xbox = await elytra.XboxAPI.from_oauth(
-        os.environ["XBOX_CLIENT_ID"], os.environ["XBOX_CLIENT_SECRET"], oauth
-    )
+    try:
+        user_xbox = await elytra.XboxAPI.from_oauth(
+            os.environ["XBOX_CLIENT_ID"], os.environ["XBOX_CLIENT_SECRET"], oauth
+        )
+    except HTTPStatusError as e:
+        if e.response.status_code == 401:
+            ipy.get_logger().error(
+                "Forbidden response when logging into Xbox Live:"
+                f" {(await e.response.aread()).decode()}"
+            )
+            raise utils.CustomCheckFailure(
+                "Failed to authenticate with Xbox Live. Please try again and join the"
+                f" support server ({ctx.bot.mention_command('support')}) if this"
+                " persists."
+            ) from e
+        raise
+
     user_xuid = user_xbox.auth_mgr.xsts_token.xuid
     my_xuid = ctx.bot.xbox.auth_mgr.xsts_token.xuid
 
