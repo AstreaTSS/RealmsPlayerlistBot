@@ -191,7 +191,7 @@ class GuildConfig(utils.Extension):
             return
 
         self.bot.live_playerlist_store[realm_id].discard(config.guild_id)
-        await self.bot.redis.delete(
+        await self.bot.valkey.delete(
             f"invalid-playerlist3-{config.guild_id}",
             f"invalid-playerlist7-{config.guild_id}",
         )
@@ -223,7 +223,7 @@ class GuildConfig(utils.Extension):
 
             self.bot.offline_realms.discard(int(realm_id))
             self.bot.dropped_offline_realms.discard(int(realm_id))
-            await self.bot.redis.delete(
+            await self.bot.valkey.delete(
                 f"missing-realm-{realm_id}", f"invalid-realmoffline-{realm_id}"
             )
 
@@ -472,7 +472,7 @@ class GuildConfig(utils.Extension):
             realm = await ctx.bot.realms.fetch_realm_from_code(realm_code)
 
             if utils.FEATURE("SECURITY_CHECK"):
-                await ctx.bot.redis.set(
+                await ctx.bot.valkey.set(
                     f"rpl-security-check-{ctx.author.id}", "1", ex=3600
                 )
                 ipy.get_logger().info("Running security check for %s.", ctx.author.id)
@@ -601,7 +601,7 @@ class GuildConfig(utils.Extension):
 
             config.playerlist_chan = channel.id
             await config.save()
-            await self.bot.redis.delete(
+            await self.bot.valkey.delete(
                 f"invalid-playerlist3-{config.guild_id}",
                 f"invalid-playerlist7-{config.guild_id}",
             )
@@ -619,7 +619,7 @@ class GuildConfig(utils.Extension):
 
             config.playerlist_chan = None
             await config.save()
-            await self.bot.redis.delete(
+            await self.bot.valkey.delete(
                 f"invalid-playerlist3-{config.guild_id}",
                 f"invalid-playerlist7-{config.guild_id}",
             )

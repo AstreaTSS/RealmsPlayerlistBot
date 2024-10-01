@@ -347,7 +347,7 @@ async def period_parse(
             if (
                 utils.SHOULD_VOTEGATE
                 and not config.valid_premium
-                and await bot.redis.get(f"rpl-voted-{user_id}") != "1"
+                and await bot.valkey.get(f"rpl-voted-{user_id}") != "1"
             ):
                 raise utils.CustomCheckFailure(
                     "To use periods longer than 1 week, you must vote for the bot"
@@ -382,7 +382,7 @@ async def summary_parse(
             if (
                 utils.SHOULD_VOTEGATE
                 and not config.valid_premium
-                and await bot.redis.get(f"rpl-voted-{user_id}") != "1"
+                and await bot.valkey.get(f"rpl-voted-{user_id}") != "1"
             ):
                 raise utils.CustomCheckFailure(
                     "To use periods longer than 1 week, you must vote for the bot"

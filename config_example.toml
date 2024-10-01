@@ -5,9 +5,9 @@ MAIN_TOKEN = "TOKEN"  # your discord bot token, of course!
 DEV_GUILD_ID = 11111111111111111  # guild id that you own and that will not be used for a playerlist
 BOT_COLOR = 12670688  # a color to color some embeds and all - it's nice for branding.
 
-DOCKER_MODE = false  # whether or not the bot is running in docker. if it is, it'll automatically use the docker redis and postgres, and you can leave the next two entries blank
+DOCKER_MODE = false  # whether or not the bot is running in docker. if it is, it'll automatically use the docker valkey and postgres, and you can leave the next two entries blank
 DB_URL = "POSTGRESDB_URL"  # a url to a postgres database
-REDIS_URL = "REDIS_URL"  # url to a redis database
+VALKEY_URL = "VALKEY_URL"  # url to a valkey database
 
 # worth noting for docker:
 # - you'll need a .env file with a POSTGRES_PASSWORD entry (POSTGRES_PASSWORD="PASSWORD"). docker limitation, i would squeeze it in config.toml if i could
@@ -17,7 +17,7 @@ REDIS_URL = "REDIS_URL"  # url to a redis database
 # you'll need to run one of those commands to initialize the database on your first run, but it shouldn't be needed after that
 # also, see https://www.prisma.io/docs/concepts/components/prisma-migrate
 
-# - you can swap out the redis for any redis supporting backend, though i'd suggest keeping the name of the entry in the compose file "redis" because
+# - you can swap out the valkey for any redis 7.2 supporting backend, though i'd suggest keeping the name of the entry in the compose file "redis" because
 # the bot relies on that to connect to it
 
 SENTRY_DSN = "SENTRY_DSN" # the dsn for sentry. optional, you can leave it blank if you don't want to use it

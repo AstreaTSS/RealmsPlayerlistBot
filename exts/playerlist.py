@@ -246,7 +246,7 @@ class Playerlist(utils.Extension):
 
         offline_realms = self.bot.offline_realms.copy()
 
-        async with self.bot.redis.pipeline() as pipe:
+        async with self.bot.valkey.pipeline() as pipe:
             for realm_id in offline_realms:
                 pipe.incr(f"missing-realm-{realm_id}", 1)
 
@@ -258,7 +258,7 @@ class Playerlist(utils.Extension):
                 self.bot.dropped_offline_realms.add(realm_id)
 
         if self.bot.dropped_offline_realms:
-            await self.bot.redis.delete(
+            await self.bot.valkey.delete(
                 *(f"missing-realm-{rid}" for rid in self.bot.dropped_offline_realms)
             )
             self.bot.dropped_offline_realms = set()
@@ -467,7 +467,7 @@ class Playerlist(utils.Extension):
             if (
                 not config.valid_premium
                 and utils.SHOULD_VOTEGATE
-                and await self.bot.redis.get(f"rpl-voted-{ctx.author_id}") != "1"
+                and await self.bot.valkey.get(f"rpl-voted-{ctx.author_id}") != "1"
             ):
                 raise utils.CustomCheckFailure(
                     "To get device information, you must vote for the bot through one"

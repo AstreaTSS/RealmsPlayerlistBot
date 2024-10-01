@@ -430,7 +430,7 @@ class OwnerCMDs(utils.Extension):
         if int(snowflake.id) in ctx.bot.blacklist:
             raise ipy.errors.BadArgument("This entry is already in the blacklist.")
         ctx.bot.blacklist.add(int(snowflake.id))
-        await ctx.bot.redis.set("rpl-blacklist", orjson.dumps(list(ctx.bot.blacklist)))
+        await ctx.bot.valkey.set("rpl-blacklist", orjson.dumps(list(ctx.bot.blacklist)))
         await ctx.reply("Done!")
 
     @debug.subcommand(aliases=["trigger-autorunning-playerlist", "trigger-autorunner"])
@@ -464,7 +464,7 @@ class OwnerCMDs(utils.Extension):
         if int(snowflake.id) not in ctx.bot.blacklist:
             raise ipy.errors.BadArgument("This entry is not in the blacklist.")
         ctx.bot.blacklist.discard(int(snowflake.id))
-        await ctx.bot.redis.set("rpl-blacklist", orjson.dumps(list(ctx.bot.blacklist)))
+        await ctx.bot.valkey.set("rpl-blacklist", orjson.dumps(list(ctx.bot.blacklist)))
         await ctx.reply("Done!")
 
     async def ext_error(

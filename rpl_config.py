@@ -57,7 +57,10 @@ def load() -> None:
         os.environ["DB_URL"] = (
             f"postgresql://postgres:{os.environ['POSTGRES_PASSWORD']}@db:5432/postgres"
         )
-        os.environ["REDIS_URL"] = "redis://redis:6379?protocol=3"
+        os.environ["VALKEY_URL"] = "redis://redis:6379?protocol=3"
+
+    if not os.environ.get("VALKEY_URL") and os.environ.get("REDIS_URL"):
+        os.environ["VALKEY_URL"] = os.environ["REDIS_URL"]
 
     file_location = Path(__file__).parent.absolute().as_posix()
     os.environ["DIRECTORY_OF_BOT"] = file_location

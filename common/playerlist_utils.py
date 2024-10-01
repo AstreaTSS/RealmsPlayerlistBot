@@ -26,7 +26,7 @@ import elytra
 import interactions as ipy
 import orjson
 from msgspec import ValidationError
-from redis.asyncio.client import Pipeline
+from valkey.asyncio.client import Pipeline
 
 import common.models as models
 import common.utils as utils
@@ -317,7 +317,7 @@ async def eventually_invalidate(
     # the idea here is to invalidate autorunners that simply can't be run
     # there's a bit of generousity here, as the code gives a total of limit tries
     # before actually doing it
-    num_times = await bot.redis.incr(f"invalid-playerlist{limit}-{config.guild_id}")
+    num_times = await bot.valkey.incr(f"invalid-playerlist{limit}-{config.guild_id}")
 
     logger.info(
         "Increased invalid-playerlist for guild %s to %s/%s.",
@@ -327,7 +327,7 @@ async def eventually_invalidate(
     )
 
     # expire time - one day plus a bit of leeway
-    await bot.redis.expire(f"invalid-playerlist{limit}-{config.guild_id}", 87400)
+    await bot.valkey.expire(f"invalid-playerlist{limit}-{config.guild_id}", 87400)
 
     if num_times >= limit:
         logger.info(
@@ -349,7 +349,7 @@ async def eventually_invalidate(
         config.notification_channels = {}
         config.reoccurring_leaderboard = None
         await config.save()
-        await bot.redis.delete(
+        await bot.valkey.delete(
             f"invalid-playerlist3-{config.guild_id}",
             f"invalid-playerlist7-{config.guild_id}",
         )
@@ -385,7 +385,7 @@ async def eventually_invalidate_watchlist(
     if not utils.FEATURE("EVENTUALLY_INVALIDATE"):
         return
 
-    num_times = await bot.redis.incr(f"invalid-watchlist-{config.guild_id}")
+    num_times = await bot.valkey.incr(f"invalid-watchlist-{config.guild_id}")
 
     logger.info(
         "Increased invalid-watchlist for guild %s to %s/3.",
@@ -393,7 +393,7 @@ async def eventually_invalidate_watchlist(
         num_times,
     )
 
-    await bot.redis.expire(f"invalid-watchlist-{config.guild_id}", 87400)
+    await bot.valkey.expire(f"invalid-watchlist-{config.guild_id}", 87400)
 
     if num_times >= 3:
         logger.info(
@@ -435,7 +435,7 @@ async def eventually_invalidate_realm_offline(
     if not utils.FEATURE("EVENTUALLY_INVALIDATE"):
         return
 
-    num_times = await bot.redis.incr(f"invalid-realm-offline-{config.guild_id}")
+    num_times = await bot.valkey.incr(f"invalid-realm-offline-{config.guild_id}")
 
     logger.info(
         "Increased invalid-realm-offline for guild %s to %s/3.",
@@ -443,7 +443,7 @@ async def eventually_invalidate_realm_offline(
         num_times,
     )
 
-    await bot.redis.expire(f"invalid-realm-offline-{config.guild_id}", 87400)
+    await bot.valkey.expire(f"invalid-realm-offline-{config.guild_id}", 87400)
 
     if num_times >= 3:
         logger.info(
@@ -477,7 +477,7 @@ async def eventually_invalidate_reoccurring_lb(
     if not utils.FEATURE("EVENTUALLY_INVALIDATE"):
         return
 
-    num_times = await bot.redis.incr(f"invalid-realm-reoccurring-lb-{config.guild_id}")
+    num_times = await bot.valkey.incr(f"invalid-realm-reoccurring-lb-{config.guild_id}")
 
     logger.info(
         "Increased invalid-reoccurring-lb for guild %s to %s/3.",
@@ -485,7 +485,7 @@ async def eventually_invalidate_reoccurring_lb(
         num_times,
     )
 
-    await bot.redis.expire(f"invalid-realm-reoccurring-lb-{config.guild_id}", 87400)
+    await bot.valkey.expire(f"invalid-realm-reoccurring-lb-{config.guild_id}", 87400)
 
     if num_times >= 3:
         logger.info(
@@ -520,13 +520,13 @@ async def eventually_invalidate_live_online(
     if not utils.FEATURE("EVENTUALLY_INVALIDATE"):
         return
 
-    num_times = await bot.redis.incr(f"invalid-liveonline-{config.guild_id}")
-    await bot.redis.expire(f"invalid-liveonline-{config.guild_id}", 86400)
+    num_times = await bot.valkey.incr(f"invalid-liveonline-{config.guild_id}")
+    await bot.valkey.expire(f"invalid-liveonline-{config.guild_id}", 86400)
 
     if num_times >= 3:
         config.live_online_channel = None
         await config.save()
-        await bot.redis.delete(f"invalid-liveonline-{config.guild_id}")
+        await bot.valkey.delete(f"invalid-liveonline-{config.guild_id}")
 
 
 async def fill_in_gamertags_for_sessions(
@@ -557,7 +557,7 @@ async def fill_in_gamertags_for_sessions(
                     session_dict[xuid].gamertag = gamertag
                     session_dict_copy.pop(xuid, None)
 
-        async with bot.redis.pipeline() as pipeline:
+        async with bot.valkey.pipeline() as pipeline:
             for session in session_dict_copy.values():
                 pipeline.get(f"rpl-xuid-{session.xuid}")
 
@@ -599,7 +599,7 @@ async def get_xuid_to_gamertag_map(
 
     unresolved: list[str] = []
 
-    async with bot.redis.pipeline() as pipeline:
+    async with bot.valkey.pipeline() as pipeline:
         for xuid in xuid_list:
             pipeline.get(f"rpl-xuid-{xuid}")
 
@@ -630,7 +630,7 @@ async def get_xuid_to_gamertag_map(
 
 
 async def gamertag_from_xuid(bot: utils.RealmBotBase, xuid: str | int) -> str:
-    if gamertag := await bot.redis.get(f"rpl-xuid-{xuid}"):
+    if gamertag := await bot.valkey.get(f"rpl-xuid-{xuid}"):
         return gamertag
 
     maybe_gamertag: elytra.ProfileResponse | None = None
@@ -671,7 +671,7 @@ async def gamertag_from_xuid(bot: utils.RealmBotBase, xuid: str | int) -> str:
         s.value for s in maybe_gamertag.profile_users[0].settings if s.id == "Gamertag"
     )
 
-    async with bot.redis.pipeline() as pipe:
+    async with bot.valkey.pipeline() as pipe:
         pipe.setex(
             name=f"rpl-xuid-{xuid}",
             time=utils.EXPIRE_GAMERTAGS_AT,
@@ -688,7 +688,7 @@ async def gamertag_from_xuid(bot: utils.RealmBotBase, xuid: str | int) -> str:
 
 
 async def xuid_from_gamertag(bot: utils.RealmBotBase, gamertag: str) -> str:
-    if xuid := await bot.redis.get(f"rpl-gt-{gamertag}"):
+    if xuid := await bot.valkey.get(f"rpl-gt-{gamertag}"):
         return xuid
 
     maybe_xuid: elytra.ProfileResponse | None = None
@@ -715,7 +715,7 @@ async def xuid_from_gamertag(bot: utils.RealmBotBase, gamertag: str) -> str:
 
     xuid = maybe_xuid.profile_users[0].id
 
-    async with bot.redis.pipeline() as pipe:
+    async with bot.valkey.pipeline() as pipe:
         pipe.setex(
             name=f"rpl-xuid-{xuid}",
             time=utils.EXPIRE_GAMERTAGS_AT,

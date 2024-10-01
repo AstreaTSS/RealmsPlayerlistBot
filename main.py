@@ -46,8 +46,8 @@ import aiohttp
 import elytra
 import interactions as ipy
 import orjson
-import redis.asyncio as aioredis
 import sentry_sdk
+import valkey.asyncio as aiovalkey
 from interactions.api.events.processors import Processor
 from interactions.api.gateway.state import ConnectionState
 from interactions.ext import prefixed_commands as prefixed
@@ -299,7 +299,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         await bot.realms.close()
         await bot.db.disconnect()
         await bot.splash_texts.stop()
-        await bot.redis.aclose(close_connection_pool=True)
+        await bot.valkey.aclose(close_connection_pool=True)
 
         return await super().stop()
 
@@ -369,17 +369,17 @@ async def start() -> None:
     await db.connect()
     bot.db = db
 
-    bot.redis = aioredis.Redis.from_url(
-        os.environ["REDIS_URL"],
+    bot.valkey = aiovalkey.Valkey.from_url(
+        os.environ["VALKEY_URL"],
         decode_responses=True,
     )
     bot.splash_texts = await splash_texts.SplashTexts.from_bot(bot)
 
-    if blacklist_raw := await bot.redis.get("rpl-blacklist"):
+    if blacklist_raw := await bot.valkey.get("rpl-blacklist"):
         bot.blacklist = set(orjson.loads(blacklist_raw))
     else:
         bot.blacklist = set()
-        await bot.redis.set("rpl-blacklist", orjson.dumps([]))
+        await bot.valkey.set("rpl-blacklist", orjson.dumps([]))
 
     # mark players as offline if they were online more than 5 minutes ago
     five_minutes_ago = ipy.Timestamp.utcnow() - datetime.timedelta(minutes=5)
@@ -395,8 +395,8 @@ async def start() -> None:
         for config in await models.GuildConfig.prisma().find_many(
             where={"NOT": [{"live_online_channel": None}]}
         ):
-            await bot.redis.hset(config.live_online_channel, "xuids", "")
-            await bot.redis.hset(config.live_online_channel, "gamertags", "")
+            await bot.valkey.hset(config.live_online_channel, "xuids", "")
+            await bot.valkey.hset(config.live_online_channel, "gamertags", "")
 
     # add all online players to the online cache
     for player in await models.PlayerSession.prisma().find_many(where={"online": True}):
@@ -404,7 +404,7 @@ async def start() -> None:
         bot.online_cache[int(player.realm_id)].add(player.xuid)
 
     if utils.FEATURE("HANDLE_MISSING_REALMS"):
-        async for realm_id in bot.redis.scan_iter("missing-realm-*"):
+        async for realm_id in bot.valkey.scan_iter("missing-realm-*"):
             bot.offline_realms.add(int(realm_id.removeprefix("missing-realm-")))
 
     for config in await models.GuildConfig.prisma().find_many(

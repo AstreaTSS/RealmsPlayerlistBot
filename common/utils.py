@@ -393,7 +393,7 @@ class CustomCheckFailure(ipy.errors.BadArgument):
 
 
 if typing.TYPE_CHECKING:
-    import redis.asyncio as aioredis
+    import valkey.asyncio as aiovalkey
     from prisma import Prisma
 
     from .classes import OrderedSet
@@ -415,7 +415,7 @@ if typing.TYPE_CHECKING:
         openxbl_session: aiohttp.ClientSession
         xbox: elytra.XboxAPI
         realms: elytra.BedrockRealmsAPI
-        redis: aioredis.Redis
+        valkey: aiovalkey.Valkey
         own_gamertag: str
         background_tasks: set[asyncio.Task]
         splash_texts: SplashTexts

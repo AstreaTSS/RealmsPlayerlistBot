@@ -177,10 +177,10 @@ class PlayerlistEventHandling(utils.Extension):
 
     @ipy.listen("live_online_update", is_default_listener=True)
     async def on_live_online_update(self, event: pl_events.LiveOnlineUpdate) -> None:
-        xuid_str: str | None = await self.bot.redis.hget(
+        xuid_str: str | None = await self.bot.valkey.hget(
             event.live_online_channel, "xuids"
         )
-        gamertag_str: str | None = await self.bot.redis.hget(
+        gamertag_str: str | None = await self.bot.valkey.hget(
             event.live_online_channel, "gamertags"
         )
 
@@ -205,10 +205,10 @@ class PlayerlistEventHandling(utils.Extension):
 
         new_gamertag_str = "\n".join(gamertag_list)
 
-        await self.bot.redis.hset(
+        await self.bot.valkey.hset(
             event.live_online_channel, "xuids", ",".join(xuid_list)
         )
-        await self.bot.redis.hset(
+        await self.bot.valkey.hset(
             event.live_online_channel, "gamertags", new_gamertag_str
         )
 

@@ -507,7 +507,7 @@ class Statistics(utils.Extension):
         if (
             utils.SHOULD_VOTEGATE
             and not config.valid_premium
-            and await self.bot.redis.get(f"rpl-voted-{ctx.author.id}") != "1"
+            and await self.bot.valkey.get(f"rpl-voted-{ctx.author.id}") != "1"
         ):
             await ctx.command.cooldown.reset(ctx)
             raise utils.CustomCheckFailure(
@@ -742,7 +742,7 @@ class Statistics(utils.Extension):
         elif (
             utils.SHOULD_VOTEGATE
             and not config.valid_premium
-            and await self.bot.redis.get(f"rpl-voted-{ctx.author.id}") != "1"
+            and await self.bot.valkey.get(f"rpl-voted-{ctx.author.id}") != "1"
         ):
             await ctx.command.cooldown.reset(ctx)
             raise utils.CustomCheckFailure(
@@ -914,7 +914,7 @@ class Statistics(utils.Extension):
         elif (
             utils.SHOULD_VOTEGATE
             and not config.valid_premium
-            and await self.bot.redis.get(f"rpl-voted-{ctx.author.id}") != "1"
+            and await self.bot.valkey.get(f"rpl-voted-{ctx.author.id}") != "1"
         ):
             await ctx.command.cooldown.reset(ctx)
             raise utils.CustomCheckFailure(

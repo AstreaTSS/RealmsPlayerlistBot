@@ -233,7 +233,7 @@ class Autorunners(utils.Extension):
 
                 if tomorrow.weekday() == 6:
                     # silly way to have a bitfield that toggles every sunday
-                    bit = self.bot.redis.bitfield(
+                    bit = self.bot.valkey.bitfield(
                         "rpl-sunday-bitshift", default_overflow="WRAP"
                     )
                     bit.incrby("u1", "#0", 1)

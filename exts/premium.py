@@ -278,8 +278,8 @@ class PremiumHandling(utils.Extension):
         config.live_online_channel = f"{msg._channel_id}|{msg.id}"
         await config.save()
 
-        await self.bot.redis.hset(config.live_online_channel, "xuids", xuids)
-        await self.bot.redis.hset(config.live_online_channel, "gamertags", online_str)
+        await self.bot.valkey.hset(config.live_online_channel, "xuids", xuids)
+        await self.bot.valkey.hset(config.live_online_channel, "gamertags", online_str)
 
         await ctx.send(embeds=utils.make_embed("Done!"), ephemeral=True)
 

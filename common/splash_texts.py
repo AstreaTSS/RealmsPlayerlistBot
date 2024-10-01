@@ -138,19 +138,19 @@ class SplashTexts:
 
     @classmethod
     async def from_bot(cls, bot: utils.RealmBotBase) -> typing.Self:
-        current_index_list = await bot.redis.get("rpl-splash-index-list")
+        current_index_list = await bot.valkey.get("rpl-splash-index-list")
         splash_length = len(splash_texts)
 
         if current_index_list is None:
             current_index_list = random.sample(range(splash_length), splash_length)
-            await bot.redis.set(
+            await bot.valkey.set(
                 "rpl-splash-index-list", orjson.dumps(current_index_list)
             )
-            await bot.redis.set("rpl-splash-length", splash_length)
+            await bot.valkey.set("rpl-splash-length", splash_length)
 
         else:
             current_index_list = orjson.loads(current_index_list)
-            stored_splash_length = int(await bot.redis.get("rpl-splash-length"))
+            stored_splash_length = int(await bot.valkey.get("rpl-splash-length"))
 
             if stored_splash_length < splash_length:
                 # add new indexes to the list, while keeping current first index
@@ -159,19 +159,19 @@ class SplashTexts:
                     current_index_list[1:] + indexes_to_add,
                     len(current_index_list[1:] + indexes_to_add),
                 )
-                await bot.redis.set(
+                await bot.valkey.set(
                     "rpl-splash-index-list", orjson.dumps(current_index_list)
                 )
-                await bot.redis.set("rpl-splash-length", len(splash_texts))
+                await bot.valkey.set("rpl-splash-length", len(splash_texts))
 
             if (
                 stored_splash_length > splash_length
             ):  # this should never happen, but just reset
                 current_index_list = random.sample(current_index_list, splash_length)
-                await bot.redis.set(
+                await bot.valkey.set(
                     "rpl-splash-index-list", orjson.dumps(current_index_list)
                 )
-                await bot.redis.set("rpl-splash-length", len(splash_texts))
+                await bot.valkey.set("rpl-splash-length", len(splash_texts))
 
         self = cls(bot, current_index_list, splash_length)
         await self.start()
