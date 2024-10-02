@@ -12,7 +12,7 @@ valkey[libvalkey]==6.0.2
 orjson==3.10.7
 sentry-sdk==2.14.0
 rapidfuzz==3.10.0
-pycryptodome==3.20.0
+pycryptodome==3.21.0
 msgspec==0.18.6
 elytra-ms==0.7.3
 uvloop==0.20.0; platform_system == "Linux"
