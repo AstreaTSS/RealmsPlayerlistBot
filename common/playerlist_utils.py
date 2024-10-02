@@ -206,7 +206,7 @@ class GamertagHandler:
                         await asyncio.wait_for(self.backup_get_gamertags(), timeout=15)
 
         dict_gamertags: dict[str, GamertagInfo] = {}
-        pipe = self.bot.redis.pipeline()
+        pipe = self.bot.valkey.pipeline()
 
         try:
             for response in self.responses:

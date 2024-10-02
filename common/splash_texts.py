@@ -216,7 +216,7 @@ class SplashTexts:
                     self.splash_index_list[0],
                 )
 
-        await self.bot.redis.set(
+        await self.bot.valkey.set(
             "rpl-splash-index-list", orjson.dumps(self.splash_index_list)
         )
         self.bot.dispatch(SplashTextUpdated())
