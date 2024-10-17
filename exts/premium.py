@@ -547,7 +547,7 @@ class PremiumHandling(utils.Extension):
                         "max_uses": 1,
                         "uses": 1,
                     },
-                    "is_not": {"expires_at": None, "customer_id": None},
+                    "is_not": {"customer_id": None},
                 },
             },
             include={"premium_code": True},
@@ -570,7 +570,6 @@ class PremiumHandling(utils.Extension):
                 "code": encrypted_code,
                 "max_uses": 1,
                 "user_id": int(entitlement._user_id) if entitlement._user_id else None,
-                "expires_at": entitlement.ends_at,
                 "customer_id": str(entitlement.subscription_id),
             }
         )
