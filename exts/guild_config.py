@@ -1164,14 +1164,16 @@ class GuildConfig(utils.Extension):
         self,
         ctx: utils.RealmContext,
         gamertag: str = tansy.Option("The gamertag of the user."),
-        nickname: str = tansy.Option("The new nickname for the user."),
+        nickname: str = tansy.Option("The new nickname for the user.", max_length=50),
     ) -> None:
         config = await ctx.fetch_config()
 
-        if len(config.nicknames) >= 10:
-            raise utils.CustomCheckFailure("Cannot set more than 10 nicknames.")
-
         xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
+
+        limit = 25 if config.valid_premium else 10
+        if not config.nicknames.get(xuid) and len(config.nicknames) >= limit:
+            raise utils.CustomCheckFailure(f"Cannot set more than {limit} nicknames.")
+
         config.nicknames[xuid] = nickname
         await config.save()
 
