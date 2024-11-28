@@ -6,7 +6,7 @@ aiodns==3.2.0
 attrs==24.2.0
 pydantic==2.9.2
 git+https://github.com/MarkusSintonen/httpcore.git@e724565270603a72d11f6d3bfc09671ffcfe36f2
-httpx[http2]==0.27.0
+httpx[http2]==0.28.0
 prisma==0.15.0
 valkey[libvalkey]==6.0.2
 orjson==3.10.11
