@@ -39,7 +39,7 @@ def _convert_fields(value: tuple[str, ...] | None) -> tuple[str, ...]:
 
 
 class RealmPlayersContainer:
-    __slots__ = ("player_sessions", "fields")
+    __slots__ = ("fields", "player_sessions")
 
     player_sessions: list[models.PlayerSession]
     fields: tuple[str, ...]

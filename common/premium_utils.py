@@ -49,7 +49,7 @@ import typing
 import interactions as ipy
 from Crypto.Cipher import AES
 
-__all__ = ("full_code_generate", "full_code_validate", "bytestring_length_decode")
+__all__ = ("bytestring_length_decode", "full_code_generate", "full_code_validate")
 
 
 BAD_WORDS: typing.Final[frozenset[str]] = frozenset(
