@@ -120,11 +120,11 @@ splash_texts: tuple[str, ...] = (
 
 class SplashTexts:
     __slots__ = (
-        "splash_index_list",
         "bot",
+        "override",
+        "splash_index_list",
         "splash_length",
         "task",
-        "override",
     )
 
     def __init__(
