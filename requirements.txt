@@ -11,7 +11,7 @@ prisma==0.15.0
 valkey[libvalkey]==6.0.2
 orjson==3.10.12
 sentry-sdk==2.19.2
-rapidfuzz==3.10.1
+rapidfuzz==3.11.0
 pycryptodome==3.21.0
 git+https://github.com/jcrist/msgspec@595c33c4a71c6d0c539b82233982a65819e240cf
 elytra-ms==0.7.3
