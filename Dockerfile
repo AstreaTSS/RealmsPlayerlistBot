@@ -1,7 +1,7 @@
-FROM python:3.12-alpine
+FROM python:3.13-alpine
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-RUN apk add gcc bash musl-dev git libffi-dev npm
+RUN apk add gcc g++ bash musl-dev git libffi-dev openssl
 
 COPY . /app
 WORKDIR /app

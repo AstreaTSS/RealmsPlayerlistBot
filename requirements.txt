@@ -13,6 +13,6 @@ orjson==3.10.12
 sentry-sdk==2.19.2
 rapidfuzz==3.10.1
 pycryptodome==3.21.0
-msgspec==0.18.6
+git+https://github.com/jcrist/msgspec@595c33c4a71c6d0c539b82233982a65819e240cf
 elytra-ms==0.7.3
 uvloop==0.21.0; platform_system == "Linux"
