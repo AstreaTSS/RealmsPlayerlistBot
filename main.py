@@ -56,7 +56,6 @@ from prisma import Prisma
 import common.classes as cclasses
 import common.help_tools as help_tools
 import common.models as models
-import common.splash_texts as splash_texts
 import common.utils as utils
 
 if typing.TYPE_CHECKING:
@@ -145,7 +144,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         activity = ipy.Activity(
             name="Splash Text",
             type=ipy.ActivityType.CUSTOM,
-            state=self.splash_texts.get(),
+            state="Watching Realms | playerlist.astrea.cc",
         )
         await self.change_presence(activity=activity)
 
@@ -154,7 +153,7 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         activity = ipy.Activity(
             name="Splash Text",
             type=ipy.ActivityType.CUSTOM,
-            state=self.splash_texts.get(),
+            state="Watching Realms | playerlist.astrea.cc",
         )
         await self.change_presence(activity=activity)
 
@@ -202,15 +201,6 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
             self, self.intents, event.shard_id
         )
         self.create_task(self._connection_states[event.shard_id].start())
-
-    @ipy.listen(splash_texts.SplashTextUpdated)  # custom event
-    async def new_splash_text(self) -> None:
-        activity = ipy.Activity(
-            name="Splash Text",
-            type=ipy.ActivityType.CUSTOM,
-            state=self.splash_texts.get(),
-        )
-        await self.change_presence(activity=activity)
 
     # guild related stuff so that no caching of guilds is even attempted
     # this code is cursed, im aware
@@ -298,7 +288,6 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         await bot.xbox.close()
         await bot.realms.close()
         await bot.db.disconnect()
-        await bot.splash_texts.stop()
         await bot.valkey.aclose(close_connection_pool=True)
 
         return await super().stop()
@@ -373,7 +362,6 @@ async def start() -> None:
         os.environ["VALKEY_URL"],
         decode_responses=True,
     )
-    bot.splash_texts = await splash_texts.SplashTexts.from_bot(bot)
 
     if blacklist_raw := await bot.valkey.get("rpl-blacklist"):
         bot.blacklist = set(orjson.loads(blacklist_raw))

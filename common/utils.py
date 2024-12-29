@@ -398,7 +398,6 @@ if typing.TYPE_CHECKING:
 
     from .classes import OrderedSet
     from .help_tools import MiniCommand, PermissionsResolver
-    from .splash_texts import SplashTexts
 
     class RealmBotBase(ipy.AutoShardedClient):
         prefixed: prefixed.PrefixedManager
@@ -418,7 +417,6 @@ if typing.TYPE_CHECKING:
         valkey: aiovalkey.Valkey
         own_gamertag: str
         background_tasks: set[asyncio.Task]
-        splash_texts: SplashTexts
 
         online_cache: defaultdict[int, set[str]]
         slash_perms_cache: defaultdict[int, dict[int, PermissionsResolver]]
