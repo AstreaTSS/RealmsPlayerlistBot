@@ -32,7 +32,10 @@ UPSELLS = [
         "Want minute-to-minute updates on your Realm? Do you want device information"
         " for players? Check out Playerlist Premium: /premium info"
     ),
-    "Check out all of the features the bot has: https://rpl.astrea.cc/wiki/features",
+    (
+        "Check out all of the features the bot has:"
+        " https://playerlist.astrea.cc/wiki/features"
+    ),
     (
         "Do you want a constantly updating live online list? Check out Playerlist"
         " Premium: /premium info"

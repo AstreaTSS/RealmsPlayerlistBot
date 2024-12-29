@@ -353,8 +353,8 @@ async def period_parse(
                     "To use periods longer than 1 week, you must vote for the bot"
                     " through one of the links listed in"
                     f" {bot.mention_command('vote')} or [purchase Playerlist"
-                    " Premium](https://rpl.astrea.cc/wiki/premium.html). Voting lasts"
-                    " for 12 hours."
+                    " Premium](https://playerlist.astrea.cc/wiki/premium.html). Voting"
+                    " lasts for 12 hours."
                 )
         else:
             raise ipy.errors.BadArgument("Invalid period given.")
@@ -388,8 +388,8 @@ async def summary_parse(
                     "To use periods longer than 1 week, you must vote for the bot"
                     " through one of the links listed in"
                     f" {bot.mention_command('vote')} or [purchase Playerlist"
-                    " Premium](https://rpl.astrea.cc/wiki/premium.html). Voting lasts"
-                    " for 12 hours."
+                    " Premium](https://playerlist.astrea.cc/wiki/premium.html). Voting"
+                    " lasts for 12 hours."
                 )
         else:
             raise ipy.errors.BadArgument("Invalid summary given.")

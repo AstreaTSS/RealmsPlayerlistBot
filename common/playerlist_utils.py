@@ -265,8 +265,8 @@ async def has_linked_realm(ctx: utils.RealmContext) -> bool:
 
     if not config.realm_id:
         raise utils.CustomCheckFailure(
-            "This server is not linked to any Realm. Please check out [the Server"
-            " Setup Guide](https://rpl.astrea.cc/wiki/server_setup.html) for more"
+            "This server is not linked to any Realm. Please check out [the Server Setup"
+            " Guide](https://playerlist.astrea.cc/wiki/server_setup.html) for more"
             " information."
         )
     return True
@@ -279,7 +279,7 @@ async def has_autorunning_playerlist_channel(ctx: utils.RealmContext) -> bool:
         raise utils.CustomCheckFailure(
             "This server does not have an autorunning playerlist channel set up. Please"
             " check out [the Server Setup"
-            " Guide](https://rpl.astrea.cc/wiki/server_setup.html) for more"
+            " Guide](https://playerlist.astrea.cc/wiki/server_setup.html) for more"
             " information."
         )
     return True

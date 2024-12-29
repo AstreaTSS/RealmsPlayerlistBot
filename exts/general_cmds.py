@@ -107,7 +107,7 @@ class GeneralCMDS(utils.Extension):
             ipy.Button(
                 style=ipy.ButtonStyle.URL,
                 label="Server Setup Guide",
-                url="https://rpl.astrea.cc/wiki/server_setup.html",
+                url="https://playerlist.astrea.cc/wiki/server_setup.html",
             ),
             ipy.Button(
                 style=ipy.ButtonStyle.URL,
@@ -132,7 +132,7 @@ class GeneralCMDS(utils.Extension):
             ipy.Button(
                 style=ipy.ButtonStyle.URL,
                 label="Read the FAQ",
-                url="https://rpl.astrea.cc/wiki/faq.html",
+                url="https://playerlist.astrea.cc/wiki/faq.html",
             ),
             ipy.Button(
                 style=ipy.ButtonStyle.URL,
@@ -216,8 +216,8 @@ class GeneralCMDS(utils.Extension):
         )
 
         links = [
-            "Website: [Link](https://rpl.astrea.cc)",
-            "FAQ: [Link](https://rpl.astrea.cc/wiki/faq.html)",
+            "Website: [Link](https://playerlist.astrea.cc)",
+            "FAQ: [Link](https://playerlist.astrea.cc/wiki/faq.html)",
             "Support Server: [Link](https://discord.gg/NSdetwGjpK)",
         ]
 
@@ -229,9 +229,9 @@ class GeneralCMDS(utils.Extension):
                 "Source Code: [Link](https://github.com/AstreaTSS/RealmsPlayerlistBot)",
                 (
                     "Privacy Policy:"
-                    " [Link](https://rpl.astrea.cc/legal/privacy_policy.html)"
+                    " [Link](https://playerlist.astrea.cc/legal/privacy_policy.html)"
                 ),
-                "Terms of Service: [Link](https://rpl.astrea.cc/legal/tos.html)",
+                "Terms of Service: [Link](https://playerlist.astrea.cc/legal/tos.html)",
             )
         )
 

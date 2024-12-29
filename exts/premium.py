@@ -523,7 +523,7 @@ class PremiumHandling(utils.Extension):
         button = ipy.Button(
             style=ipy.ButtonStyle.URL,
             label="Premium Info",
-            url="https://rpl.astrea.cc/wiki/premium.html",
+            url="https://playerlist.astrea.cc/wiki/premium.html",
         )
         await ctx.send(embeds=embed, components=button)
 

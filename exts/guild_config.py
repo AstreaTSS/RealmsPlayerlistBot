@@ -921,12 +921,12 @@ class GuildConfig(utils.Extension):
             ipy.Button(
                 style=ipy.ButtonStyle.LINK,
                 label="Server Setup Guide",
-                url="https://rpl.astrea.cc/wiki/server_setup.html",
+                url="https://playerlist.astrea.cc/wiki/server_setup.html",
             ),
             ipy.Button(
                 style=ipy.ButtonStyle.LINK,
                 label="Bot Features",
-                url="https://rpl.astrea.cc/wiki/features.html",
+                url="https://playerlist.astrea.cc/wiki/features.html",
             ),
         ]
         await ctx.send(embeds=embed, components=components)

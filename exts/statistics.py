@@ -513,8 +513,8 @@ class Statistics(utils.Extension):
             raise utils.CustomCheckFailure(
                 "To use this command, you must vote for the bot through one of the"
                 f" links listed in {self.bot.mention_command('vote')} or [purchase"
-                " Playerlist Premium](https://rpl.astrea.cc/wiki/premium.html). Voting"
-                " lasts for 12 hours."
+                " Playerlist Premium](https://playerlist.astrea.cc/wiki/premium.html)."
+                " Voting lasts for 12 hours."
             )
 
         if period not in {1, 7, 14, 30}:
@@ -748,8 +748,8 @@ class Statistics(utils.Extension):
             raise utils.CustomCheckFailure(
                 "To use this command, you must vote for the bot through one of the"
                 f" links listed in {self.bot.mention_command('vote')} or [purchase"
-                " Playerlist Premium](https://rpl.astrea.cc/wiki/premium.html). Voting"
-                " lasts for 12 hours."
+                " Playerlist Premium](https://playerlist.astrea.cc/wiki/premium.html)."
+                " Voting lasts for 12 hours."
             )
 
         if period not in {1, 7, 14, 30}:
@@ -920,8 +920,8 @@ class Statistics(utils.Extension):
             raise utils.CustomCheckFailure(
                 "To use this command, you must vote for the bot through one of the"
                 f" links listed in {self.bot.mention_command('vote')} or [purchase"
-                " Playerlist Premium](https://rpl.astrea.cc/wiki/premium.html). Voting"
-                " lasts for 12 hours."
+                " Playerlist Premium](https://playerlist.astrea.cc/wiki/premium.html)."
+                " Voting lasts for 12 hours."
             )
 
         if period not in {1, 7, 14, 30}:
