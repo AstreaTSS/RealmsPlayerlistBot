@@ -16,6 +16,7 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 
 import logging
 import os
+import re
 import typing
 from datetime import UTC, datetime, timedelta
 from functools import cached_property
@@ -50,12 +51,16 @@ __all__ = (
 )
 
 
+USER_MENTION = re.compile(r"^<@!?[0-9]{15,25}>$")
+
+
 def display_gamertag(
     xuid: str, gamertag: str | None = None, nickname: str | None = None
 ) -> str:
     display = "Unknown User"
     if nickname:
-        display = f"`{nickname}`"
+        # optional check to display user mentions as is if it is one
+        display = nickname if USER_MENTION.fullmatch(nickname) else f"`{nickname}`"
     elif gamertag:
         display = f"`{gamertag}`"
     elif xuid:
