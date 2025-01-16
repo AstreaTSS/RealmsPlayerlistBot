@@ -332,7 +332,7 @@ class PlayerlistEventHandling(utils.Extension):
                     "I have been unable to get any information about your Realm for"
                     " the last 24 hours. This could be because the Realm has been"
                     " turned off or because it's inactive, but if it hasn't, make sure"
-                    f" you haven't banned or kick `{self.bot.own_gamertag}`. If you"
+                    f" you haven't banned or kicked `{self.bot.own_gamertag}`. If you"
                     " have, please unban the account if needed and run"
                     f" {self.bot.mention_command('config link-realm')} again to fix"
                     " it.\n\nAlternatively:\n- If you want to disable the autorunning"
