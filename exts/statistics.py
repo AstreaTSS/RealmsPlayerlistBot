@@ -558,7 +558,7 @@ class Statistics(utils.Extension):
             )
             await ctx.send(embed=embed)
 
-        if len(leaderboard_counter_sort) > 20:
+        if len(leaderboard_counter_sort) > +20:
             pag = cclasses.DynamicLeaderboardPaginator(
                 client=self.bot,
                 pages_data=leaderboard_counter_sort,
@@ -584,11 +584,11 @@ class Statistics(utils.Extension):
             if precisedelta == "1 minutes":  # why humanize
                 precisedelta = "1 minute"
 
-            leaderboard_builder.append(
-                f"**{index+1}\\.**"
-                f" `{config.nicknames.get(xuid) or gamertag_map[xuid] or xuid}`:"
-                f" {precisedelta}"
+            display = models.display_gamertag(
+                xuid, gamertag_map[xuid], config.nicknames.get(xuid)
             )
+
+            leaderboard_builder.append(f"**{index+1}\\.** {display}: {precisedelta}")
 
         await ctx.send(
             embed=utils.make_embed(

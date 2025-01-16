@@ -50,6 +50,20 @@ __all__ = (
 )
 
 
+def display_gamertag(
+    xuid: str, gamertag: str | None = None, nickname: str | None = None
+) -> str:
+    display = "Unknown User"
+    if nickname:
+        display = f"`{nickname}`"
+    elif gamertag:
+        display = f"`{gamertag}`"
+    elif xuid:
+        display = f"User with XUID `{xuid}`"
+
+    return display
+
+
 class IgnoreModel:
     __slots__ = ()
     # problem: prisma reads every field in the model and adds them to a set of things to query
@@ -171,20 +185,13 @@ class PlayerSession(PrismaPlayerSession):
     def resolved(self) -> bool:
         return bool(self.gamertag)
 
-    @property
-    def base_display(self) -> str:
-        display = "Unknown User"
-        if self.gamertag:
-            display = f"`{self.gamertag}`"
-        elif self.xuid:
-            display = f"User with XUID `{self.xuid}`"
-
+    def base_display(self, nickname: str | None = None) -> str:
+        display = display_gamertag(self.xuid, self.gamertag, nickname)
         if self.device_emoji:
             display += f" ({self.device_emoji})"
         return display
 
-    @property
-    def display(self) -> str:
+    def display(self, nickname: str | None = None) -> str:
         notes: list[str] = []
         if self.joined_at:
             notes.append(f"joined <t:{int(self.joined_at.timestamp())}:f>")
@@ -193,7 +200,9 @@ class PlayerSession(PrismaPlayerSession):
             notes.append(f"left <t:{int(self.last_seen.timestamp())}:f>")
 
         return (
-            f"{self.base_display}: {', '.join(notes)}" if notes else self.base_display
+            f"{self.base_display(nickname)}: {', '.join(notes)}"
+            if notes
+            else self.base_display(nickname)
         )
 
 

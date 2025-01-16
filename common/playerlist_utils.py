@@ -549,9 +549,6 @@ async def fill_in_gamertags_for_sessions(
                 session_dict_copy.pop(xuid, None)
 
         if gamertag_map:
-            if not isinstance(gamertag_map, defaultdict):
-                gamertag_map = defaultdict(lambda: "", gamertag_map)
-
             for xuid, gamertag in gamertag_map.items():
                 if gamertag and xuid in session_dict_copy:
                     session_dict[xuid].gamertag = gamertag

@@ -253,9 +253,12 @@ class PremiumHandling(utils.Extension):
         )
 
         online_list = sorted(
-            (p for p in playerlist if p.online), key=lambda g: g.display.lower()
+            (p for p in playerlist if p.online),
+            key=lambda k: k.display(config.nicknames.get(k.xuid)).lower(),
         )
-        online_str = "\n".join(p.display for p in online_list)
+        online_str = "\n".join(
+            p.display(config.nicknames.get(p.xuid)) for p in online_list
+        )
         xuids = ",".join(p.xuid for p in online_list)
 
         embed = ipy.Embed(

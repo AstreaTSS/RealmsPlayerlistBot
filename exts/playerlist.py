@@ -353,10 +353,11 @@ class Playerlist(utils.Extension):
         )
 
         online_list = sorted(
-            (p.display for p in player_list if p.online), key=lambda g: g.lower()
+            (p.display(config.nicknames.get(p.xuid)) for p in player_list if p.online),
+            key=lambda g: g.lower(),
         )
         offline_list = [
-            p.display
+            p.display(config.nicknames.get(p.xuid))
             for p in sorted(
                 (p for p in player_list if not p.online),
                 key=lambda p: p.last_seen.timestamp(),
@@ -493,7 +494,11 @@ class Playerlist(utils.Extension):
 
         if not (
             online_list := sorted(
-                (p.display for p in playerlist if p.online),
+                (
+                    p.display(config.nicknames.get(p.xuid))
+                    for p in playerlist
+                    if p.online
+                ),
                 key=lambda g: g.lower(),
             )
         ):

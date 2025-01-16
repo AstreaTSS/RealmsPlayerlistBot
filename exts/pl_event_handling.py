@@ -88,8 +88,6 @@ class PlayerlistEventHandling(utils.Extension):
             player_sessions,
             bypass_cache_for=bypass_cache_for,
         )
-        gamertag_mapping = {p.xuid: p.base_display for p in players}
-        full_gamertag_mapping = {p.xuid: p.display for p in players}
 
         base_embed = ipy.Embed(
             color=ipy.RoleColors.DARK_GREY,
@@ -123,6 +121,13 @@ class PlayerlistEventHandling(utils.Extension):
             if guild_id in self.bot.unavailable_guilds:
                 continue
 
+            gamertag_mapping = {
+                p.xuid: p.base_display(config.nicknames.get(p.xuid)) for p in players
+            }
+            full_gamertag_mapping = {
+                p.xuid: p.display(config.nicknames.get(p.xuid)) for p in players
+            }
+
             if config.live_online_channel:
                 self.bot.dispatch(
                     pl_events.LiveOnlineUpdate(
@@ -143,10 +148,7 @@ class PlayerlistEventHandling(utils.Extension):
                     name=f"{os.environ['GREEN_CIRCLE_EMOJI']} Joined",
                     value="\n".join(
                         sorted(
-                            (
-                                config.nicknames.get(p) or gamertag_mapping[p]
-                                for p in event.joined
-                            ),
+                            (gamertag_mapping[p] for p in event.joined),
                             key=lambda x: x.lower(),
                         )
                     ),
@@ -156,10 +158,7 @@ class PlayerlistEventHandling(utils.Extension):
                     name=f"{os.environ['GRAY_CIRCLE_EMOJI']} Left",
                     value="\n".join(
                         sorted(
-                            (
-                                config.nicknames.get(p) or gamertag_mapping[p]
-                                for p in event.left
-                            ),
+                            (gamertag_mapping[p] for p in event.left),
                             key=lambda x: x.lower(),
                         )
                     ),
@@ -214,15 +213,6 @@ class PlayerlistEventHandling(utils.Extension):
 
         if event.realm_down_event:
             new_gamertag_str = f"{os.environ['GRAY_CIRCLE_EMOJI']} *Realm is offline.*"
-        else:
-            actual_gamertag_list = sorted(
-                (
-                    event.config.nicknames.get(xuid) or event.gamertag_mapping[xuid]
-                    for xuid in xuids
-                ),
-                key=lambda g: g.lower(),
-            )
-            new_gamertag_str = "\n".join(actual_gamertag_list)
 
         embed = ipy.Embed(
             title=f"{len(xuids)}/10 people online",
@@ -391,21 +381,23 @@ class PlayerlistEventHandling(utils.Extension):
                     config.get_notif_channel("player_watchlist"),
                 )
 
-                if config.nicknames.get(event.player_xuid):
-                    gamertag = config.nicknames[event.player_xuid]
-                else:
-                    try:
+                gamertag = None
+
+                if event.player_xuid not in config.nicknames:
+                    with contextlib.suppress(ipy.errors.BadArgument):
                         gamertag = await pl_utils.gamertag_from_xuid(
                             self.bot, event.player_xuid
                         )
-                    except ipy.errors.BadArgument:
-                        gamertag = f"Player with XUID {event.player_xuid}"
+
+                display = models.display_gamertag(
+                    event.player_xuid, gamertag, config.nicknames.get(event.player_xuid)
+                )
 
                 content = ""
                 if config.player_watchlist_role:
                     content = f"<@&{config.player_watchlist_role}>, "
 
-                content += f"`{gamertag}` joined the Realm!"
+                content += f"{display} joined the Realm!"
 
                 await chan.send(
                     content,

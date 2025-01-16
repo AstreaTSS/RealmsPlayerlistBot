@@ -31,6 +31,7 @@ from httpcore._backends.asyncio import AsyncioBackend
 from prisma import Base64, Json, _builder
 from prisma._async_http import Response
 
+import common.models as models
 import common.playerlist_utils as pl_utils
 import common.utils as utils
 from common.help_tools import CustomTimeout
@@ -291,11 +292,11 @@ class DynamicLeaderboardPaginator:
             if precisedelta == "1 minutes":  # why humanize
                 precisedelta = "1 minute"
 
-            leaderboard_builder.append(
-                f"**{index+1}\\.**"
-                f" `{self.nicknames.get(xuid) or gamertag_map[xuid] or xuid}`:"
-                f" {precisedelta}"
+            display = models.display_gamertag(
+                xuid, gamertag_map[xuid], self.nicknames.get(xuid)
             )
+
+            leaderboard_builder.append(f"**{index+1}\\.** {display} {precisedelta}")
 
             index += 1
 
