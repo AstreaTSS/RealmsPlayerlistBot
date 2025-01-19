@@ -193,7 +193,7 @@ class PlayerSession(PrismaPlayerSession):
     def base_display(self, nickname: str | None = None) -> str:
         display = display_gamertag(self.xuid, self.gamertag, nickname)
         if self.device_emoji:
-            display += f" ({self.device_emoji})"
+            display += f" {self.device_emoji}"
         return display
 
     def display(self, nickname: str | None = None) -> str:

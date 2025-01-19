@@ -94,7 +94,7 @@ class PlayerlistEventHandling(utils.Extension):
             timestamp=ipy.Timestamp.fromdatetime(event.timestamp),
         )
         base_embed.set_footer(
-            f"{len(self.bot.online_cache[int(event.realm_id)])} players online as of"
+            f"{len(self.bot.online_cache[int(event.realm_id)])} players online"
         )
 
         for guild_id in self.bot.live_playerlist_store[event.realm_id].copy():
@@ -260,7 +260,7 @@ class PlayerlistEventHandling(utils.Extension):
                 title="Realm Offline",
                 description=(
                     "The bot has detected that the Realm has gone offline (or that all"
-                    " users have left it)."
+                    " users have left the Realm)."
                 ),
                 timestamp=ipy.Timestamp.fromdatetime(event.timestamp),
                 color=ipy.RoleColors.YELLOW,
