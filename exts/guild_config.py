@@ -571,6 +571,37 @@ class GuildConfig(utils.Extension):
             raise ipy.errors.BadArgument(error_msg) from None
 
     @config.subcommand(
+        sub_cmd_name="realm-members",
+        sub_cmd_description="Lists the members of the linked Realm.",
+    )
+    @ipy.check(pl_utils.has_linked_realm)
+    async def realm_members(self, ctx: utils.RealmContext) -> None:
+        config = await ctx.fetch_config()
+        realm = await self.bot.realms.fetch_realm(config.realm_id)
+
+        if not realm.players:
+            await ctx.send(embeds=utils.make_embed("No members found."))
+            return
+
+        pag = cclasses.DynamicRealmMembers(
+            self.bot,
+            pages_data=sorted(realm.players, key=lambda x: x.uuid),
+            timestamp=ipy.Timestamp.utcnow(),
+            nicknames=config.nicknames,
+            owner_xuid=realm.owner_uuid,
+            realm_name=utils.FORMAT_CODE_REGEX.sub("", realm.name),
+        )
+
+        if len(realm.players) <= 20:
+            data = await pag.to_dict()
+            embed = data["embed"]
+            embed.pop("author", None)
+            await ctx.send(embeds=embed)
+            return
+
+        await pag.send(ctx)
+
+    @config.subcommand(
         sub_cmd_name="autorunning-playerlist-channel",
         sub_cmd_description=(
             "Sets (or unsets) where the autorunning playerlist is sent to."

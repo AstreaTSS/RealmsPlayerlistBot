@@ -22,6 +22,7 @@ from datetime import UTC
 
 import aiohttp
 import attrs
+import elytra
 import humanize
 import interactions as ipy
 import msgspec
@@ -191,7 +192,7 @@ class DynamicLeaderboardPaginator:
     )
 
     def __attrs_post_init__(self) -> None:
-        self.client.add_component_callback(
+        self.bot.add_component_callback(
             ipy.ComponentCommand(
                 name=f"Paginator:{self._uuid}",
                 callback=self._on_button,
@@ -206,6 +207,10 @@ class DynamicLeaderboardPaginator:
         )
 
     @property
+    def bot(self) -> "utils.RealmBotBase":
+        return self.client
+
+    @property
     def message(self) -> ipy.Message:
         """The message this paginator is currently attached to"""
         return self._message
@@ -217,7 +222,9 @@ class DynamicLeaderboardPaginator:
 
     @property
     def last_page_index(self) -> int:
-        return len(self.pages_data) // 20
+        if len(self.pages_data) == 0:
+            return 0
+        return (len(self.pages_data) - 1) // 20
 
     def create_components(self, disable: bool = False) -> list[ipy.ActionRow]:
         """
@@ -278,7 +285,7 @@ class DynamicLeaderboardPaginator:
         page_data = self.pages_data[self.page_index * 20 : (self.page_index * 20) + 20]
 
         gamertag_map = await pl_utils.get_xuid_to_gamertag_map(
-            self.client, [e[0] for e in page_data if e[0] not in self.nicknames]
+            self.bot, [e[0] for e in page_data if e[0] not in self.nicknames]
         )
 
         leaderboard_builder: list[str] = []
@@ -303,7 +310,7 @@ class DynamicLeaderboardPaginator:
         page = ipy.Embed(
             title=f"Leaderboard for the past {self.period_str}",
             description="\n".join(leaderboard_builder),
-            color=self.client.color,
+            color=self.bot.color,
             timestamp=self.timestamp,
         )
         page.set_author(name=f"Page {self.page_index+1}/{self.last_page_index+1}")
@@ -362,6 +369,60 @@ class DynamicLeaderboardPaginator:
 
         await ctx.edit_origin(**await self.to_dict())
         return None
+
+
+@ipy.utils.define(kw_only=False, auto_detect=True)
+class DynamicRealmMembers(DynamicLeaderboardPaginator):
+    pages_data: list[elytra.Player] = attrs.field(repr=False, kw_only=True)
+    realm_name: str = attrs.field(repr=False, kw_only=True)
+    owner_xuid: str = attrs.field(repr=False, kw_only=True)
+    period_str: str = attrs.field(repr=False, kw_only=True, default="", init=False)
+
+    async def to_dict(self) -> dict:
+        """Convert this paginator into a dictionary for sending."""
+        page_data = self.pages_data[self.page_index * 20 : (self.page_index * 20) + 20]
+
+        gamertag_map = await pl_utils.get_xuid_to_gamertag_map(
+            self.client, [p.uuid for p in page_data if p.uuid not in self.nicknames]
+        )
+
+        str_builder: list[str] = []
+        index = self.page_index * 20
+
+        for player in page_data:
+            xuid = player.uuid
+
+            base_display = models.display_gamertag(
+                xuid, gamertag_map[xuid], self.nicknames.get(xuid)
+            )
+
+            ending = ""
+
+            if xuid == self.owner_xuid:
+                ending += "**Owner**"
+            elif player.permission.value == "OPERATOR":
+                ending += "**Operator**"
+            elif player.uuid == self.bot.xbox.auth_mgr.xsts_token.xuid:
+                ending += "**This Bot**"
+            else:
+                ending += player.permission.value.title()
+
+            str_builder.append(f"- {base_display} - {ending}")
+
+            index += 1
+
+        page = ipy.Embed(
+            f"Members of {self.realm_name}",
+            description="\n".join(str_builder),
+            color=self.bot.color,
+            timestamp=self.timestamp,
+        )
+        page.set_author(name=f"Page {self.page_index+1}/{self.last_page_index+1}")
+
+        return {
+            "embeds": [page.to_dict()],
+            "components": [c.to_dict() for c in self.create_components()],
+        }
 
 
 class BetterResponse(aiohttp.ClientResponse):
