@@ -880,25 +880,37 @@ class GuildConfig(utils.Extension):
 
         config = await ctx.fetch_config()
 
+        feature_name = ""
+
+        match feature:
+            case "player_watchlist":
+                feature_name = "the Player Watchlist"
+            case "realm_offline":
+                feature_name = "Realm Offline Notifications"
+            case "reoccurring_leaderboard":
+                feature_name = "the Reoccurring Leaderboard"
+
         if channel is not None:
             config.notification_channels[feature] = channel.id
             await config.save()
 
             await ctx.send(
-                embeds=utils.make_embed(f"Set the channel to {channel.mention}.")
+                embeds=utils.make_embed(
+                    f"Set the channel for {feature_name} to {channel.mention}."
+                )
             )
         else:
             result = config.notification_channels.pop(feature, None)
             if result is None:
                 raise ipy.errors.BadArgument(
-                    "There was no channel set in the first place."
+                    f"There was no channel for {feature_name} set in the first place."
                 )
             await config.save()
 
             await ctx.send(
                 embeds=utils.make_embed(
-                    "Reset the channel. The playerlist channel will be used for that"
-                    " type of notification instead."
+                    f"Reset the channel for {feature_name}. The playerlist channel will"
+                    " be used for that type of notification instead."
                 )
             )
 
