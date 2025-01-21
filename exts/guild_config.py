@@ -594,7 +594,7 @@ class GuildConfig(utils.Extension):
 
         if len(realm.players) <= 20:
             data = await pag.to_dict()
-            embed = data["embed"]
+            embed = data["embeds"][0]
             embed.pop("author", None)
             await ctx.send(embeds=embed)
             return
