@@ -915,11 +915,11 @@ class GuildConfig(utils.Extension):
 
         match feature:
             case "player_watchlist":
-                feature_name = "the Player Watchlist"
+                feature_name = "the player watchlist"
             case "realm_offline":
-                feature_name = "Realm Offline Notifications"
+                feature_name = "Realm offline notifications"
             case "reoccurring_leaderboard":
-                feature_name = "the Reoccurring Leaderboard"
+                feature_name = "the reoccurring leaderboard"
 
         if channel is not None:
             config.notification_channels[feature] = channel.id
