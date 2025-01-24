@@ -34,4 +34,4 @@ Copyright 2020-2025 AstreaTSS.
 
 Unless otherwise stated, all files in this repository are licensed under the GNU Affero General Public License v3.0. A copy of the license is available in the [LICENSE](LICENSE) file.
 
-The Realms Playerlist Bot is not an official Minecraft product, and is not approved by or associated with Mojang or Microsoft.
+The Realms Playerlist Bot is not an official Minecraft product and is not approved by or associated with Mojang or Microsoft.
