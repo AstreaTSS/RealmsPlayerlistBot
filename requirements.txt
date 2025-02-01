@@ -9,7 +9,7 @@ git+https://github.com/MarkusSintonen/httpcore.git@e724565270603a72d11f6d3bfc096
 httpx[http2]==0.28.1
 prisma==0.15.0
 valkey[libvalkey]==6.0.2
-orjson==3.10.13
+orjson==3.10.15
 sentry-sdk==2.19.2
 rapidfuzz==3.12.1
 pycryptodome==3.21.0
