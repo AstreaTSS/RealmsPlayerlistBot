@@ -222,7 +222,7 @@ def timespan_minutes_per_hour(
     **_: typing.Any,
 ) -> dict[datetime.time, int]:
     # we want the dict to start at 0, so make the dict first
-    minutes_per_hour: dict[int, int] = {i: 0 for i in range(24)}
+    minutes_per_hour: dict[int, int] = dict.fromkeys(range(24), 0)
 
     for _, start, end in ranges:
         end_time = int(end.timestamp()) // 60 * 60
@@ -252,7 +252,7 @@ def timespan_minutes_per_day_of_the_week(
     ranges: typing.Iterable[GatherDatetimesReturn],
     **_: typing.Any,
 ) -> dict[datetime.date, int]:
-    minutes_per_day_of_the_week: dict[int, int] = {i: 0 for i in range(7)}
+    minutes_per_day_of_the_week: dict[int, int] = dict.fromkeys(range(7), 0)
 
     for _, start, end in ranges:
         end_time = int(end.timestamp()) // 60 * 60
