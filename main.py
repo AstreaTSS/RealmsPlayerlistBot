@@ -451,7 +451,9 @@ async def start() -> None:
         os.environ["XBOX_CLIENT_SECRET"],
         os.environ["XAPI_TOKENS_LOCATION"],
     )
-    bot.realms.BASE_URL = "https://bedrock.frontendlegacy.realms.minecraft-services.net/"
+    bot.realms.BASE_URL = (
+        "https://bedrock.frontendlegacy.realms.minecraft-services.net/"
+    )
     bot.own_gamertag = bot.xbox.auth_mgr.xsts_token.gamertag
 
     headers = {
