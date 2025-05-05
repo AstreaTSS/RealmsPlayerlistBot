@@ -423,8 +423,9 @@ async def start() -> None:
                     "premium_code": {
                         "is": {
                             "expires_at": {
-                                "gt": ipy.Timestamp.utcnow()
-                                - datetime.timedelta(days=1)
+                                "gt": (
+                                    ipy.Timestamp.utcnow() - datetime.timedelta(days=1)
+                                )
                             }
                         }
                     }
@@ -451,7 +452,9 @@ async def start() -> None:
         os.environ["XBOX_CLIENT_SECRET"],
         os.environ["XAPI_TOKENS_LOCATION"],
     )
-    bot.realms.BASE_URL = "https://bedrock.frontendlegacy.realms.minecraft-services.net/"
+    bot.realms.BASE_URL = (
+        "https://bedrock.frontendlegacy.realms.minecraft-services.net/"
+    )
     bot.own_gamertag = bot.xbox.auth_mgr.xsts_token.gamertag
 
     headers = {

@@ -361,7 +361,7 @@ class Statistics(utils.Extension):
     @ipy.listen("modal_completion")
     @amazing_modal_error_handler
     async def multi_player_modals(self, event: ipy.events.ModalCompletion) -> None:
-        ctx = typing.cast(utils.RealmModalContext, event.ctx)
+        ctx = typing.cast("utils.RealmModalContext", event.ctx)
         config = await ctx.fetch_config()
 
         if not ctx.custom_id.startswith("multi_player"):
