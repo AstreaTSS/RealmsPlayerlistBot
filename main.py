@@ -212,10 +212,6 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         self.unavailable_guilds |= expected_guilds
         await super()._on_websocket_ready(self, event)
 
-    @property
-    def guild_count(self) -> int:
-        return len(self.user._guild_ids or ())
-
     @Processor.define()
     async def _on_raw_guild_create(self, event: "ipy.events.RawGatewayEvent") -> None:
         guild_id: int = int(event.data["id"])

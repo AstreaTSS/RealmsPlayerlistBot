@@ -429,9 +429,6 @@ if typing.TYPE_CHECKING:
         fetch_devices_for: set[str]
         blacklist: set[int]
 
-        @property
-        def guild_count(self) -> int: ...
-
         def create_task(
             self, coro: typing.Coroutine[typing.Any, typing.Any, ipy.const.T]
         ) -> asyncio.Task[ipy.const.T]: ...
