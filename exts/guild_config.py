@@ -180,7 +180,7 @@ class GuildConfig(utils.Extension):
         config.fetch_devices = False
         config.live_online_channel = None
         old_player_watchlist = config.player_watchlist
-        config.player_watchlist = []
+        config.player_watchlist = None
         config.player_watchlist_role = None
 
         await config.save()

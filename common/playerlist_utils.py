@@ -345,7 +345,7 @@ async def eventually_invalidate(
         old_live_playerlist = config.live_playerlist
         config.live_playerlist = False
         old_watchlist = config.player_watchlist
-        config.player_watchlist = []
+        config.player_watchlist = None
         config.player_watchlist_role = None
         config.notification_channels = {}
         config.reoccurring_leaderboard = None
@@ -404,7 +404,7 @@ async def eventually_invalidate_watchlist(
         )
 
         old_watchlist = config.player_watchlist
-        config.player_watchlist = []
+        config.player_watchlist = None
         config.player_watchlist_role = None
         old_chan = config.notification_channels.pop("player_watchlist", None)
         await config.save()

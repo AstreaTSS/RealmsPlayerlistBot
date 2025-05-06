@@ -369,7 +369,7 @@ class PlayerlistEventHandling(utils.Extension):
                 self.bot.player_watchlist_store[
                     f"{event.realm_id}-{event.player_xuid}"
                 ].discard(config.guild_id)
-                config.player_watchlist = []
+                config.player_watchlist = None
                 await config.save()
                 continue
 
