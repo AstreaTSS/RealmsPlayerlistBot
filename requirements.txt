@@ -8,7 +8,7 @@ pydantic==2.10.6
 git+https://github.com/MarkusSintonen/httpcore.git@e724565270603a72d11f6d3bfc09671ffcfe36f2
 httpx[http2]==0.28.1
 prisma==0.15.0
-valkey[libvalkey]==6.0.2
+valkey[libvalkey]==6.1.0
 orjson==3.10.15
 sentry-sdk==2.20.0
 rapidfuzz==3.12.1
