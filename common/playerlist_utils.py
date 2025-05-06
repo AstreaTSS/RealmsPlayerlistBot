@@ -300,8 +300,9 @@ async def invalidate_premium(
 
     if config.realm_id:
         bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
-        if not await models.GuildConfig.prisma().count(
-            where={"realm_id": config.realm_id, "fetch_devices": True}
+        if not await models.GuildConfig.exists(
+            realm_id=config.realm_id,
+            fetch_devices=True,
         ):
             bot.fetch_devices_for.discard(config.realm_id)
 

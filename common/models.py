@@ -17,39 +17,15 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 import logging
 import os
 import re
-import typing
 from datetime import UTC, datetime, timedelta
 from functools import cached_property
 
-from prisma import Json
-
-# i cannot tell you just how ridiculous this seems
-# prisma generates models on the fly??? just for typehinting???
-# i love it
-from prisma.models import (
-    GuildConfig as PrismaGuildConfig,
-)
-from prisma.models import (
-    PlayerSession as PrismaPlayerSession,
-)
-from prisma.models import (
-    PremiumCode as PrismaPremiumCode,
-)
-from prisma.partials import AutorunPlayerSession, PrismaAutorunGuildConfig
+import orjson
+import typing_extensions as typing
+from tortoise import Model, fields
+from tortoise.contrib.postgres.fields import ArrayField
 
 logger = logging.getLogger("realms_bot")
-
-__all__ = (
-    "EMOJI_DEVICE_NAMES",
-    "AutorunGuildConfig",
-    "AutorunPlayerSession",
-    "GuildConfig",
-    "IgnoreModel",
-    "NotificationChannels",
-    "PlayerSession",
-    "PremiumCode",
-)
-
 
 USER_MENTION = re.compile(r"^<@!?[0-9]{15,25}>$")
 
@@ -69,39 +45,62 @@ def display_gamertag(
     return display
 
 
-class IgnoreModel:
-    __slots__ = ()
-    # problem: prisma reads every field in the model and adds them to a set of things to query
-    # this includes our virtual fields, which are not in the database
-    # solution: prisma ignores fields that are typehinted as their own type of model,
-    # and it detects it through the existence of this property, so here we are
-    __prisma_model__ = "IgnoreModel"
-
-
 class NotificationChannels(typing.TypedDict, total=False):
     realm_offline: int
     player_watchlist: int
     reoccurring_leaderboard: int
 
 
-class GuildConfig(PrismaGuildConfig):
-    if typing.TYPE_CHECKING:
-        notification_channels: NotificationChannels
-        nicknames: dict[str, str]
+class GuildConfig(Model):
+    guild_id = fields.BigIntField(primary_key=True, source_field="guild_id")
+    club_id: fields.Field[typing.Optional[str]] = fields.CharField(
+        max_length=50, null=True, source_field="club_id"
+    )
+    playerlist_chan: fields.Field[typing.Optional[int]] = fields.BigIntField(
+        source_field="playerlist_chan"
+    )
+    realm_id: fields.Field[typing.Optional[str]] = fields.CharField(
+        max_length=50, null=True, source_field="realm_id"
+    )
+    live_playerlist = fields.BooleanField(default=False, source_field="live_playerlist")
+    realm_offline_role: fields.Field[typing.Optional[int]] = fields.BigIntField(
+        source_field="realm_offline_role", null=True
+    )
+    warning_notifications = fields.BooleanField(
+        default=True, source_field="warning_notifications"
+    )
+    fetch_devices = fields.BooleanField(default=False, source_field="fetch_devices")
+    live_online_channel: fields.Field[typing.Optional[str]] = fields.CharField(
+        max_length=75, null=True, source_field="live_online_channel"
+    )
+    player_watchlist_role: fields.Field[typing.Optional[int]] = fields.BigIntField(
+        source_field="player_watchlist_role", null=True
+    )
+    player_watchlist: fields.Field[list[str] | None] = ArrayField(
+        "TEXT", null=True, source_field="player_watchlist"
+    )
+    notification_channels: fields.Field[NotificationChannels] = fields.JSONField(
+        default="{}",
+        source_field="notification_channels",
+        encoder=lambda x: orjson.dumps(x).decode(),
+        decoder=orjson.loads,
+    )
+    reoccurring_leaderboard: fields.Field[typing.Optional[int]] = fields.IntField(
+        source_field="reoccurring_leaderboard", null=True
+    )
+    nicknames = fields.JSONField(default="{}", source_field="nicknames")
 
-    premium_code: typing.Optional["PremiumCode"] = None
-
-    @classmethod
-    async def get(cls, guild_id: int) -> "GuildConfig":
-        return await cls.prisma().find_unique_or_raise(
-            where={"guild_id": guild_id}, include={"premium_code": True}
+    premium_code: fields.ForeignKeyNullableRelation["PremiumCode"] = (
+        fields.ForeignKeyField(
+            "models.PremiumCode",
+            related_name="guilds",
+            on_delete=fields.SET_NULL,
+            null=True,
         )
+    )
 
-    @classmethod
-    async def get_or_none(cls, guild_id: int) -> typing.Optional["GuildConfig"]:
-        return await cls.prisma().find_unique(
-            where={"guild_id": guild_id}, include={"premium_code": True}
-        )
+    class Meta:
+        table = "realmguildconfig"
 
     @cached_property
     def valid_premium(self) -> bool:
@@ -109,25 +108,6 @@ class GuildConfig(PrismaGuildConfig):
 
     def get_notif_channel(self, type_name: str) -> int:
         return self.notification_channels.get(type_name, self.playerlist_chan)
-
-    async def save(self) -> None:
-        data = self.model_dump(exclude={"premium_code_id", "premium_code"})
-        if data.get("notification_channels") is not None:
-            data["notification_channels"] = Json(data["notification_channels"])
-        if data.get("nicknames") is not None:
-            data["nicknames"] = Json(data["nicknames"])
-        await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
-
-
-class AutorunGuildConfig(PrismaAutorunGuildConfig):
-    if typing.TYPE_CHECKING:
-        nicknames: dict[str, str]
-
-    premium_code: typing.Optional["PremiumCode"] = None
-
-    @cached_property
-    def valid_premium(self) -> bool:
-        return bool(self.premium_code and self.premium_code.valid_code)
 
 
 EMOJI_DEVICE_NAMES = {
@@ -143,15 +123,22 @@ EMOJI_DEVICE_NAMES = {
 }
 
 
-class PlayerSession(PrismaPlayerSession):
-    if typing.TYPE_CHECKING:
-        gamertag: typing.Optional[str] = None
-        device: typing.Optional[str] = None
-        show_left: bool = True
-    else:
-        gamertag: typing.Optional[IgnoreModel] = None
-        device: typing.Optional[IgnoreModel] = None
-        show_left: IgnoreModel | bool = True
+class PlayerSession(Model):
+    custom_id = fields.UUIDField(primary_key=True, source_field="custom_id")
+    realm_id = fields.CharField(max_length=50, source_field="realm_id")
+    xuid = fields.CharField(max_length=50, source_field="xuid")
+    online = fields.BooleanField(default=False, source_field="online")
+    last_seen = fields.DatetimeField(source_field="last_seen")
+    joined_at: fields.Field[typing.Optional[datetime]] = fields.DatetimeField(
+        null=True, source_field="joined_at"
+    )
+
+    gamertag: typing.Optional[str] = None
+    device: typing.Optional[str] = None
+    show_left: bool = True
+
+    class Meta:
+        table = "realmplayersession"
 
     @property
     def device_emoji(self) -> str | None:
@@ -211,11 +198,27 @@ class PlayerSession(PrismaPlayerSession):
         )
 
 
-class PremiumCode(PrismaPremiumCode):
-    if typing.TYPE_CHECKING:
-        _valid_code: bool | None = None
-    else:
-        _valid_code: IgnoreModel | None = None
+class PremiumCode(Model):
+    id = fields.IntField(primary_key=True, source_field="id")
+    code = fields.CharField(max_length=100, source_field="code")
+    user_id: fields.Field[typing.Optional[int]] = fields.BigIntField(
+        source_field="user_id", null=True
+    )
+    uses = fields.IntField(default=0, source_field="uses")
+    max_uses = fields.IntField(default=2, source_field="max_uses")
+    customer_id: fields.Field[typing.Optional[str]] = fields.CharField(
+        max_length=50, null=True, source_field="customer_id"
+    )
+    expires_at: fields.Field[typing.Optional[datetime]] = fields.DatetimeField(
+        null=True, source_field="expires_at"
+    )
+
+    guilds: fields.ReverseRelation["GuildConfig"]
+
+    _valid_code: bool | None = None
+
+    class Meta:
+        table = "realmpremiumcode"
 
     @property
     def valid_code(self) -> bool:
@@ -225,7 +228,3 @@ class PremiumCode(PrismaPremiumCode):
             days=1
         ) > datetime.now(UTC)
         return self._valid_code
-
-
-GuildConfig.model_rebuild(force=True)
-AutorunGuildConfig.model_rebuild(force=True)

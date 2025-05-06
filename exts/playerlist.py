@@ -25,6 +25,7 @@ from collections import defaultdict
 import elytra
 import interactions as ipy
 import tansy
+from pypika import Order, PostgreSQLQuery, Table
 
 import common.classes as cclasses
 import common.models as models
@@ -316,14 +317,24 @@ class Playerlist(utils.Extension):
 
         hour_text = "hour" if hours_ago == 1 else "hours"
 
-        player_sessions = await models.PlayerSession.prisma().find_many(
-            distinct=["xuid"],
-            order=[{"xuid": "asc"}, {"last_seen": "desc"}],
-            where={
-                "realm_id": str(config.realm_id),
-                "OR": [{"online": True}, {"last_seen": {"gte": time_ago}}],
-            },
+        playersession = Table(models.PlayerSession.Meta.table)
+        query = (
+            PostgreSQLQuery.from_(playersession)
+            .select(", ".join(models.PlayerSession._meta.fields))
+            .where(
+                playersession.realm_id.eq(str(config.realm_id))
+                & (
+                    playersession.online.eq(True)
+                    | playersession.last_seen.gte(time_ago)
+                )
+            )
+            .orderby("xuid", order=Order.asc)
+            .orderby("last_seen", order=Order.desc)
+            .distinct_on("xuid")  # type: ignore
         )
+        player_sessions: list[models.PlayerSession] = await models.PlayerSession.raw(
+            str(query)
+        )  # type: ignore
 
         if not player_sessions:
             if autorunner:
@@ -337,10 +348,6 @@ class Playerlist(utils.Extension):
         bypass_cache_for: typing.Optional[set[str]] = None
         if config.fetch_devices:
             if not config.valid_premium:
-                if isinstance(config, models.AutorunGuildConfig):
-                    config = await models.GuildConfig.prisma().find_unique_or_raise(
-                        where={"guild_id": config.guild_id}
-                    )
                 await pl_utils.invalidate_premium(self.bot, config)
             else:
                 bypass_cache_for = {p.xuid for p in player_sessions if p.online}
@@ -457,8 +464,8 @@ class Playerlist(utils.Extension):
         """
         config = await ctx.fetch_config()
 
-        player_sessions = await models.PlayerSession.prisma().find_many(
-            where={"realm_id": str(config.realm_id), "online": True}
+        player_sessions = await models.PlayerSession.filter(
+            realm_id=str(config.realm_id), online=True
         )
 
         # okay, this is going to get complicated

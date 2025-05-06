@@ -39,9 +39,6 @@ from common.models import GuildConfig
 
 DEV_GUILD_ID = int(os.environ["DEV_GUILD_ID"])
 
-if typing.TYPE_CHECKING:
-    from prisma.types import GuildConfigCreateInput
-
 
 class OwnerCMDs(utils.Extension):
     def __init__(self, bot: utils.RealmBotBase) -> None:
@@ -62,9 +59,9 @@ class OwnerCMDs(utils.Extension):
         ctx: utils.RealmContext,
         guild_id: str = tansy.Option("The guild to view."),
     ) -> None:
-        config = await GuildConfig.prisma().find_unique_or_raise(
-            {"guild_id": int(guild_id)}, include={"premium_code": True}
-        )
+        config = await GuildConfig.get(
+            guild_id=int(guild_id),
+        ).prefetch_related("premium_code")
 
         guild_data = await self.bot.http.get_guild(guild_id)
         guild_name = guild_data["name"]
@@ -95,7 +92,7 @@ class OwnerCMDs(utils.Extension):
             "The playerlist channel ID for this guild.", default=None
         ),
     ) -> None:
-        data: GuildConfigCreateInput = {"guild_id": int(guild_id)}
+        data: dict[str, typing.Any] = {"guild_id": int(guild_id)}
 
         if club_id:
             data["club_id"] = club_id
@@ -105,7 +102,7 @@ class OwnerCMDs(utils.Extension):
         if playerlist_chan:
             data["playerlist_chan"] = int(playerlist_chan)
 
-        await GuildConfig.prisma().create(data=data)
+        await GuildConfig.create(**data)
         await ctx.send("Done!")
 
     @tansy.slash_command(
@@ -130,9 +127,7 @@ class OwnerCMDs(utils.Extension):
             "The playerlist channel ID for this guild.", default=None
         ),
     ) -> None:
-        config = await GuildConfig.prisma().find_unique_or_raise(
-            {"guild_id": int(guild_id)}
-        )
+        config = await GuildConfig.get(guild_id=int(guild_id))
 
         if realm_id:
             config.realm_id = realm_id if realm_id != "None" else None
@@ -161,7 +156,7 @@ class OwnerCMDs(utils.Extension):
         ctx: utils.RealmContext,
         guild_id: str = tansy.Option("The guild ID for the guild to remove."),
     ) -> None:
-        await GuildConfig.prisma().delete(where={"guild_id": int(guild_id)})
+        await GuildConfig.filter(guild_id=int(guild_id)).delete()
         await ctx.send("Deleted!")
 
     @prefixed.prefixed_command(aliases=["jsk"])

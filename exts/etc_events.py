@@ -45,38 +45,33 @@ class EtcEvents(utils.Extension):
             await self.bot.http.leave_guild(event.guild_id)
             return
 
-        if not await models.GuildConfig.prisma().count(
-            where={"guild_id": int(event.guild_id)}
-        ):
-            await models.GuildConfig.prisma().create({"guild_id": int(event.guild_id)})
+        await models.GuildConfig.get_or_create(
+            guild_id=int(event.guild_id),
+        )
 
     @ipy.listen("guild_left")
     async def on_guild_left(self, event: ipy.events.GuildLeft) -> None:
         if not self.bot.is_ready:
             return
 
-        if config := await models.GuildConfig.get_or_none(int(event.guild_id)):
+        if config := await models.GuildConfig.get_or_none(guild_id=int(event.guild_id)):
             if (
                 config.realm_id
-                and await models.GuildConfig.prisma().count(
-                    where={
-                        "realm_id": config.realm_id,
-                        "guild_id": {"not": int(event.guild_id)},
-                    }
-                )
+                and await models.GuildConfig.filter(
+                    realm_id=config.realm_id,
+                    guild_id__not=int(event.guild_id),
+                ).count()
                 == 1
             ):
                 # don't want to keep around entries we no longer need, so delete them
-                await models.PlayerSession.prisma().delete_many(
-                    where={"realm_id": config.realm_id}
-                )
+                await models.PlayerSession.filter(
+                    realm_id=config.realm_id,
+                ).delete()
                 # also attempt to leave the realm cus why not
                 with contextlib.suppress(elytra.MicrosoftAPIException):
                     await self.bot.realms.leave_realm(config.realm_id)
 
-            await models.GuildConfig.prisma().delete(
-                where={"guild_id": int(event.guild_id)}
-            )
+            await config.delete()
 
     def _update_tokens(self) -> None:
         with open(os.environ["XAPI_TOKENS_LOCATION"], mode="wb") as f:

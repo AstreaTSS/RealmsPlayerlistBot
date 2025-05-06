@@ -76,12 +76,8 @@ class PremiumHandling(utils.Extension):
         code = premium_utils.full_code_generate(max_uses, user_id)
         encrypted_code = await premium_utils.encrypt_input(code)
 
-        await models.PremiumCode.prisma().create(
-            data={
-                "code": encrypted_code,
-                "user_id": actual_user_id,
-                "max_uses": max_uses,
-            }
+        await models.PremiumCode.create(
+            code=encrypted_code, user_id=actual_user_id, max_uses=max_uses
         )
         await ctx.send(f"Code created!\nCode: `{code}`")
 
@@ -117,10 +113,7 @@ class PremiumHandling(utils.Extension):
                     " that you typed it in correctly?"
                 )
 
-        code_obj = await models.PremiumCode.prisma().find_first(
-            where={"code": encrypted_code}
-        )
-
+        code_obj = await models.PremiumCode.get_or_none(code=encrypted_code)
         if not code_obj:
             raise ipy.errors.BadArgument(
                 f'Invalid code: "{code}". Are you sure this is the correct code and'
@@ -147,16 +140,10 @@ class PremiumHandling(utils.Extension):
         if config.premium_code and config.premium_code.code == code:
             raise ipy.errors.BadArgument("This code has already been redeemed here.")
 
-        await models.GuildConfig.prisma().update(
-            data={"premium_code": {"connect": {"id": code_obj.id}}},
-            where={"guild_id": ctx.guild_id},
-        )
-
-        code_obj = await models.PremiumCode.prisma().update(
-            data={"uses": {"increment": 1}}, where={"id": code_obj.id}
-        )
-        if typing.TYPE_CHECKING:
-            assert code_obj is not None
+        config.premium_code = code_obj
+        code_obj.uses += 1
+        await config.save()
+        await code_obj.save()
 
         remaining_uses = code_obj.max_uses - code_obj.uses
         uses_str = "uses" if remaining_uses != 1 else "use"
@@ -244,8 +231,8 @@ class PremiumHandling(utils.Extension):
                 " regardless.*"
             )
 
-        player_sessions = await models.PlayerSession.prisma().find_many(
-            where={"realm_id": config.realm_id, "online": True}
+        player_sessions = await models.PlayerSession.filter(
+            realm_id=config.realm_id, online=True
         )
         playerlist = await pl_utils.fill_in_gamertags_for_sessions(
             self.bot,
@@ -373,8 +360,8 @@ class PremiumHandling(utils.Extension):
 
             await ctx.send(embeds=utils.make_embed("Turned off displaying devices."))
 
-            if not await models.GuildConfig.prisma().count(
-                where={"realm_id": config.realm_id, "fetch_devices": True}
+            if not await models.GuildConfig.exists(
+                realm_id=config.realm_id, fetch_devices=True
             ):
                 self.bot.fetch_devices_for.discard(config.realm_id)
 
@@ -397,10 +384,9 @@ class PremiumHandling(utils.Extension):
 
         csv_entries: list[str] = ["xuid,gamertag,online,last_seen,joined_at"]
 
-        sessions = await models.PlayerSession.prisma().find_many(
-            where={"realm_id": config.realm_id, "NOT": [{"joined_at": None}]},
-            order={"last_seen": "desc"},
-        )
+        sessions = await models.PlayerSession.filter(
+            realm_id=config.realm_id, joined_at__not_isnull=True
+        ).order_by("-last_seen")
         gamertags = await pl_utils.get_xuid_to_gamertag_map(
             self.bot, list(dict.fromkeys(session.xuid for session in sessions))
         )
@@ -547,25 +533,16 @@ class PremiumHandling(utils.Extension):
             else str(entitlement.id)
         )
 
-        if config := await models.GuildConfig.prisma().find_first(
-            where={
-                "guild_id": int(entitlement._guild_id),
-                "premium_code": {
-                    "is": {
-                        "user_id": int(entitlement._user_id),
-                        "max_uses": 1,
-                        "uses": 1,
-                    },
-                    "is_not": {"customer_id": None},
-                },
-            },
-            include={"premium_code": True},
-        ):
+        if config := await models.GuildConfig.get_or_none(
+            guild_id=int(entitlement._guild_id),
+            premium_code__user_id=int(entitlement._user_id),
+            premium_code__max_uses=1,
+            premium_code__uses=1,
+            premium_code__customer_id__is_notnull=True,
+        ).prefetch_related("premium_code"):
             # potential update from old subscription system to new one,
             # so we'll just delete the old code and update the guild config
-            await models.PremiumCode.prisma().delete(
-                where={"id": config.premium_code_id}
-            )
+            await config.premium_code.delete()
 
         # admittedly, i really don't want to go through the effort of making
         # stuff for just entitlements, so we're going to pretend they're
@@ -574,22 +551,19 @@ class PremiumHandling(utils.Extension):
         code = premium_utils.full_code_generate(1, entitlement._user_id)
         encrypted_code = await premium_utils.encrypt_input(code)
 
-        code = await models.PremiumCode.prisma().create(
-            data={
-                "code": encrypted_code,
-                "max_uses": 1,
-                "user_id": int(entitlement._user_id) if entitlement._user_id else None,
-                "customer_id": id_to_use,
-            }
+        code = await models.PremiumCode.create(
+            code=encrypted_code,
+            max_uses=1,
+            user_id=int(entitlement._user_id),
+            customer_id=id_to_use,
         )
 
-        await models.GuildConfig.prisma().update(
-            data={"premium_code": {"connect": {"id": code.id}}},
-            where={"guild_id": int(entitlement._guild_id)},
-        )
-        await models.PremiumCode.prisma().update(
-            data={"uses": {"increment": 1}}, where={"id": code.id}
-        )
+        await models.GuildConfig.filter(
+            guild_id=int(entitlement._guild_id),
+        ).update(premium_code_id=code.id)
+
+        code.uses += 1
+        await code.save()
 
     @ipy.listen(ipy.events.EntitlementUpdate)
     async def entitlement_update(self, event: ipy.events.EntitlementUpdate) -> None:
@@ -608,10 +582,9 @@ class PremiumHandling(utils.Extension):
             else str(entitlement.id)
         )
 
-        await models.PremiumCode.prisma().update_many(
-            data={"expires_at": entitlement.ends_at},
-            where={"customer_id": id_to_use},
-        )
+        await models.PremiumCode.filter(
+            customer_id=id_to_use,
+        ).update(expires_at=entitlement.ends_at)
 
     @ipy.listen(ipy.events.EntitlementDelete)
     async def entitlement_delete(self, event: ipy.events.EntitlementDelete) -> None:
@@ -628,8 +601,9 @@ class PremiumHandling(utils.Extension):
             if entitlement.subscription_id
             else str(entitlement.id)
         )
-
-        await models.PremiumCode.prisma().delete_many(where={"customer_id": id_to_use})
+        await models.PremiumCode.filter(
+            customer_id=id_to_use
+        ).delete()
 
 
 def setup(bot: utils.RealmBotBase) -> None:

@@ -22,6 +22,7 @@ import typing
 
 import elytra
 import interactions as ipy
+from tortoise.transactions import in_transaction
 
 import common.models as models
 import common.playerlist_events as pl_events
@@ -40,16 +41,13 @@ class PlayerlistEventHandling(utils.Extension):
     async def on_playerlist_finish(
         self, event: pl_events.PlayerlistParseFinish
     ) -> None:
-        async with self.bot.db.batch_() as batch:
+        async with in_transaction():
             for container in event.containers:
-                for session in container.player_sessions:
-                    batch.playersession.upsert(
-                        where={"custom_id": session.custom_id},
-                        data={
-                            "create": session.model_dump(exclude_defaults=True),
-                            "update": session.model_dump(include=set(container.fields)),
-                        },  # type: ignore
-                    )
+                await models.PlayerSession.bulk_create(
+                    container.player_sessions,
+                    on_conflict=("custom_id",),
+                    update_fields=container.fields,
+                )
 
     @ipy.listen("live_playerlist_send", is_default_listener=True)
     async def on_live_playerlist_send(

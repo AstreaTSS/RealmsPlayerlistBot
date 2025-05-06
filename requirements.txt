@@ -7,7 +7,8 @@ attrs==25.1.0
 pydantic==2.10.6
 git+https://github.com/MarkusSintonen/httpcore.git@e724565270603a72d11f6d3bfc09671ffcfe36f2
 httpx[http2]==0.28.1
-prisma==0.15.0
+tortoise-orm[asyncpg]==0.25.0
+pypika==0.48.9
 valkey[libvalkey]==6.1.0
 orjson==3.10.15
 sentry-sdk==2.27.0

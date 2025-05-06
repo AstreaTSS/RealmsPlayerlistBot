@@ -14,19 +14,18 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from prisma.models import GuildConfig, PlayerSession
+import os
 
-GuildConfig.create_partial(
-    "PrismaAutorunGuildConfig",
-    include=(
-        "guild_id",
-        "fetch_devices",
-        "realm_id",
-        "playerlist_chan",
-        "nicknames",
-        "premium_code",
-    ),
-    required=("playerlist_chan", "realm_id"),
-)
+import rpl_config
 
-PlayerSession.create_partial("AutorunPlayerSession", include=("xuid",))
+rpl_config.load()
+
+
+TORTOISE_ORM = {
+    "connections": {"default": os.environ["DB_URL"]},
+    "apps": {
+        "models": {
+            "models": ["common.models", "aerich.models"],
+        }
+    },
+}

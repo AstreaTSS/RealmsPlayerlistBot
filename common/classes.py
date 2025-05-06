@@ -18,19 +18,14 @@ import typing
 import uuid
 from collections.abc import MutableSet
 from copy import copy
-from datetime import UTC
 
 import aiohttp
 import attrs
 import elytra
 import humanize
 import interactions as ipy
-import msgspec
-import orjson
 from httpcore._backends import anyio
 from httpcore._backends.asyncio import AsyncioBackend
-from prisma import Base64, Json, _builder
-from prisma._async_http import Response
 
 import common.models as models
 import common.playerlist_utils as pl_utils
@@ -222,9 +217,7 @@ class DynamicLeaderboardPaginator:
 
     @property
     def last_page_index(self) -> int:
-        if len(self.pages_data) == 0:
-            return 0
-        return (len(self.pages_data) - 1) // 20
+        return 0 if len(self.pages_data) == 0 else (len(self.pages_data) - 1) // 20
 
     def create_components(self, disable: bool = False) -> list[ipy.ActionRow]:
         """
@@ -273,7 +266,7 @@ class DynamicLeaderboardPaginator:
             ),
             ipy.Button(
                 style=ipy.ButtonStyle.BLURPLE,
-                emoji="⏩",
+                emoji="⏭️",
                 custom_id=f"{self._uuid}|last",
                 disabled=disable or self.page_index >= self.last_page_index,
             ),
@@ -444,39 +437,3 @@ class BetterResponse(aiohttp.ClientResponse):
 
 
 anyio.AnyIOBackend = AsyncioBackend
-
-
-class FastResponse(Response):
-    async def json(self, **kwargs: typing.Any) -> typing.Any:
-        return orjson.loads(await self.original.aread(), **kwargs)
-
-
-Response.json = FastResponse.json  # type: ignore
-
-
-def msgspec_enc_hook(obj: typing.Any) -> typing.Any:
-    if isinstance(obj, Base64):
-        return str(obj)
-    if isinstance(obj, Json):
-        return msgspec_dumps(obj.data)
-    if isinstance(obj, ipy.Timestamp):
-        if obj.tzinfo != UTC:
-            obj = obj.astimezone(UTC)
-
-        obj = obj.replace(microsecond=int(obj.microsecond / 1000) * 1000)
-        return obj.isoformat()
-    if isinstance(obj, ipy.Snowflake):
-        return int(obj)
-
-    raise NotImplementedError(f"Objects of type {type(obj)} are not supported")
-
-
-msgspec_encoder = msgspec.json.Encoder(enc_hook=msgspec_enc_hook)
-
-
-def msgspec_dumps(obj: typing.Any, **_: typing.Any) -> str:
-    return msgspec_encoder.encode(obj).decode()
-
-
-if _builder.dumps != msgspec_dumps:
-    _builder.dumps = msgspec_dumps
