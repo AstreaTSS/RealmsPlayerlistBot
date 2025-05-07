@@ -537,10 +537,15 @@ class PremiumHandling(utils.Extension):
 
         if (
             str(entitlement.sku_id) != os.environ.get("PREMIUM_SKU_ID")
-            or not entitlement.subscription_id
             or not entitlement._guild_id
         ):
             return
+
+        id_to_use = (
+            str(entitlement.subscription_id)
+            if entitlement.subscription_id
+            else str(entitlement.id)
+        )
 
         if config := await models.GuildConfig.prisma().find_first(
             where={
@@ -574,7 +579,7 @@ class PremiumHandling(utils.Extension):
                 "code": encrypted_code,
                 "max_uses": 1,
                 "user_id": int(entitlement._user_id) if entitlement._user_id else None,
-                "customer_id": str(entitlement.subscription_id),
+                "customer_id": id_to_use,
             }
         )
 
@@ -593,14 +598,19 @@ class PremiumHandling(utils.Extension):
         if (
             str(entitlement.sku_id) != os.environ.get("PREMIUM_SKU_ID")
             or not entitlement.ends_at
-            or not entitlement.subscription_id
             or not entitlement._guild_id
         ):
             return
 
+        id_to_use = (
+            str(entitlement.subscription_id)
+            if entitlement.subscription_id
+            else str(entitlement.id)
+        )
+
         await models.PremiumCode.prisma().update_many(
             data={"expires_at": entitlement.ends_at},
-            where={"customer_id": str(entitlement.subscription_id)},
+            where={"customer_id": id_to_use},
         )
 
     @ipy.listen(ipy.events.EntitlementDelete)
@@ -609,14 +619,17 @@ class PremiumHandling(utils.Extension):
 
         if (
             str(entitlement.sku_id) != os.environ.get("PREMIUM_SKU_ID")
-            or not entitlement.subscription_id
             or not entitlement._guild_id
         ):
             return
 
-        await models.PremiumCode.prisma().delete_many(
-            where={"customer_id": str(entitlement.subscription_id)}
+        id_to_use = (
+            str(entitlement.subscription_id)
+            if entitlement.subscription_id
+            else str(entitlement.id)
         )
+
+        await models.PremiumCode.prisma().delete_many(where={"customer_id": id_to_use})
 
 
 def setup(bot: utils.RealmBotBase) -> None:
