@@ -601,9 +601,7 @@ class PremiumHandling(utils.Extension):
             if entitlement.subscription_id
             else str(entitlement.id)
         )
-        await models.PremiumCode.filter(
-            customer_id=id_to_use
-        ).delete()
+        await models.PremiumCode.filter(customer_id=id_to_use).delete()
 
 
 def setup(bot: utils.RealmBotBase) -> None:
