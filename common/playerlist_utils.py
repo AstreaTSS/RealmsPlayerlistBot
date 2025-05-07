@@ -300,8 +300,9 @@ async def invalidate_premium(
 
     if config.realm_id:
         bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
-        if not await models.GuildConfig.prisma().count(
-            where={"realm_id": config.realm_id, "fetch_devices": True}
+        if not await models.GuildConfig.exists(
+            realm_id=config.realm_id,
+            fetch_devices=True,
         ):
             bot.fetch_devices_for.discard(config.realm_id)
 
@@ -344,7 +345,7 @@ async def eventually_invalidate(
         old_live_playerlist = config.live_playerlist
         config.live_playerlist = False
         old_watchlist = config.player_watchlist
-        config.player_watchlist = []
+        config.player_watchlist = None
         config.player_watchlist_role = None
         config.notification_channels = {}
         config.reoccurring_leaderboard = None
@@ -403,7 +404,7 @@ async def eventually_invalidate_watchlist(
         )
 
         old_watchlist = config.player_watchlist
-        config.player_watchlist = []
+        config.player_watchlist = None
         config.player_watchlist_role = None
         old_chan = config.notification_channels.pop("player_watchlist", None)
         await config.save()

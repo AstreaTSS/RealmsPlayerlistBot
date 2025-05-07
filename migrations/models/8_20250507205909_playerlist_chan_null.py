@@ -14,19 +14,14 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from prisma.models import GuildConfig, PlayerSession
+from tortoise import BaseDBAsyncClient
 
-GuildConfig.create_partial(
-    "PrismaAutorunGuildConfig",
-    include=(
-        "guild_id",
-        "fetch_devices",
-        "realm_id",
-        "playerlist_chan",
-        "nicknames",
-        "premium_code",
-    ),
-    required=("playerlist_chan", "realm_id"),
-)
 
-PlayerSession.create_partial("AutorunPlayerSession", include=("xuid",))
+async def upgrade(db: BaseDBAsyncClient) -> str:
+    return """
+        ALTER TABLE "realmguildconfig" ALTER COLUMN "playerlist_chan" DROP NOT NULL;"""
+
+
+async def downgrade(db: BaseDBAsyncClient) -> str:
+    return """
+        ALTER TABLE "realmguildconfig" ALTER COLUMN "playerlist_chan" SET NOT NULL;"""

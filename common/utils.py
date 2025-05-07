@@ -393,8 +393,9 @@ class CustomCheckFailure(ipy.errors.BadArgument):
 
 
 if typing.TYPE_CHECKING:
+    import uuid
+
     import valkey.asyncio as aiovalkey
-    from prisma import Prisma
 
     from .classes import OrderedSet
     from .help_tools import MiniCommand, PermissionsResolver
@@ -409,7 +410,6 @@ if typing.TYPE_CHECKING:
         fully_ready: asyncio.Event
         pl_sem: asyncio.Semaphore
 
-        db: Prisma
         session: aiohttp.ClientSession
         openxbl_session: aiohttp.ClientSession
         xbox: elytra.XboxAPI
@@ -423,7 +423,7 @@ if typing.TYPE_CHECKING:
         mini_commands_per_scope: dict[int, dict[str, MiniCommand]]
         live_playerlist_store: defaultdict[str, set[int]]
         player_watchlist_store: defaultdict[str, set[int]]
-        uuid_cache: defaultdict[str, str]
+        uuid_cache: defaultdict[str, uuid.UUID]
         offline_realms: OrderedSet[int]
         dropped_offline_realms: set[int]
         fetch_devices_for: set[str]
@@ -460,10 +460,9 @@ class RealmContextMixin:
         if self.config:
             return self.config
 
-        config = await GuildConfig.get_or_none(
-            self.guild_id
-        ) or await GuildConfig.prisma().create(data={"guild_id": self.guild_id})
-
+        config = await GuildConfig.get_or_none(guild_id=self.guild_id).prefetch_related(
+            "premium_code"
+        ) or await GuildConfig.create(guild_id=self.guild_id, notification_channels={})
         self.config = config
         return config
 

@@ -20,6 +20,7 @@ import datetime
 import importlib
 
 import interactions as ipy
+from pypika import Order, PostgreSQLQuery, Table
 
 import common.classes as cclasses
 import common.models as models
@@ -130,14 +131,14 @@ class Autorunners(utils.Extension):
             c for c in self.bot.application_commands if str(c.name) == "playerlist"
         )
 
-        configs = await models.AutorunGuildConfig.prisma().find_many(
-            where={
-                "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
-                "live_playerlist": False,
-                "NOT": [{"realm_id": None}, {"playerlist_chan": None}],
-            },
-            include={"premium_code": True},
-        )
+        configs = await models.GuildConfig.filter(
+            guild_id__in=[int(g) for g in self.bot.user._guild_ids],
+            live_playerlist=False,
+            realm_id__isnull=False,
+            playerlist_chan__isnull=False,
+        ).prefetch_related("premium_code")
+        if not configs:
+            return
 
         realm_ids = {c.realm_id for c in configs}
         for config in configs:
@@ -148,14 +149,27 @@ class Autorunners(utils.Extension):
         time_delta = datetime.timedelta(hours=1, minutes=5)
         time_ago = now - time_delta
 
-        player_sessions = await models.AutorunPlayerSession.prisma().find_many(
-            distinct=["xuid"],
-            order=[{"xuid": "asc"}, {"last_seen": "desc"}],
-            where={
-                "realm_id": {"in": list(realm_ids)},
-                "OR": [{"online": True}, {"last_seen": {"gte": time_ago}}],
-            },
+        playersession = Table(models.PlayerSession.Meta.table)
+        query = (
+            PostgreSQLQuery.from_(playersession)
+            .select(*models.PlayerSession._meta.fields)
+            .where(
+                playersession.realm_id.isin(list(realm_ids))
+                & (
+                    playersession.online.eq(True)
+                    | playersession.last_seen.gte(time_ago)
+                )
+            )
+            .orderby("xuid", order=Order.asc)
+            .orderby("last_seen", order=Order.desc)
+            .distinct_on("xuid")  # type: ignore
         )
+
+        player_sessions: list[models.PlayerSession] = await models.PlayerSession.raw(
+            str(query)
+        )  # type: ignore
+        if not player_sessions:
+            return
 
         gamertag_map = await pl_utils.get_xuid_to_gamertag_map(
             self.bot, [p.xuid for p in player_sessions]
@@ -176,7 +190,7 @@ class Autorunners(utils.Extension):
     async def auto_run_playerlist(
         self,
         list_cmd: ipy.InteractionCommand,
-        config: models.AutorunGuildConfig,
+        config: models.GuildConfig,
         upsell: str | None,
         gamertag_map: dict[str, str],
     ) -> None:
@@ -214,14 +228,7 @@ class Autorunners(utils.Extension):
             )
         except ipy.errors.HTTPException as e:
             if e.status < 500:
-                # likely a can't send in channel, eventually invalidate and move on
-                full_config = await models.GuildConfig.prisma().find_unique(
-                    where={"guild_id": config.guild_id}
-                )
-                if not full_config:
-                    return
-
-                await pl_utils.eventually_invalidate(self.bot, full_config)
+                await pl_utils.eventually_invalidate(self.bot, config)
 
     async def _start_reoccurring_lb(self) -> None:
         await self.bot.fully_ready.wait()
@@ -261,55 +268,43 @@ class Autorunners(utils.Extension):
         )
 
         if not sunday:
-            configs = await models.GuildConfig.prisma().find_many(
-                where={
-                    "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
-                    "reoccurring_leaderboard": {"gte": 40, "lt": 50},
-                    "NOT": [{"realm_id": None}],
-                },
-                include={"premium_code": True},
-            )
+            configs = await models.GuildConfig.filter(
+                guild_id__in=[int(g) for g in self.bot.user._guild_ids],
+                reoccurring_leaderboard__isnull=False,
+                realm_id__isnull=False,
+                reoccurring_leaderboard__gte=40,
+                reoccurring_leaderboard__lt=50,
+            ).prefetch_related("premium_code")
         elif second_sunday and first_sunday_of_month:
-            configs = await models.GuildConfig.prisma().find_many(
-                where={
-                    "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
-                    "NOT": [{"realm_id": None}, {"reoccurring_leaderboard": None}],
-                },
-                include={"premium_code": True},
-            )
+            configs = await models.GuildConfig.filter(
+                guild_id__in=[int(g) for g in self.bot.user._guild_ids],
+                reoccurring_leaderboard__isnull=False,
+                realm_id__isnull=False,
+            ).prefetch_related("premium_code")
         elif first_sunday_of_month:
-            configs = await models.GuildConfig.prisma().find_many(
-                where={
-                    "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
-                    "NOT": [
-                        {"realm_id": None},
-                        {"reoccurring_leaderboard": {"gte": 20, "lt": 30}},
-                    ],
-                },
-                include={"premium_code": True},
-            )
+            configs = await models.GuildConfig.filter(
+                guild_id__in=[int(g) for g in self.bot.user._guild_ids],
+                reoccurring_leaderboard__isnull=False,
+                realm_id__isnull=False,
+                reoccurring_leaderboard__gte=20,
+                reoccurring_leaderboard__lt=30,
+            ).prefetch_related("premium_code")
         elif second_sunday:
-            configs = await models.GuildConfig.prisma().find_many(
-                where={
-                    "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
-                    "NOT": [
-                        {"realm_id": None},
-                        {"reoccurring_leaderboard": {"gte": 30, "lt": 40}},
-                    ],
-                },
-                include={"premium_code": True},
-            )
+            configs = await models.GuildConfig.filter(
+                guild_id__in=[int(g) for g in self.bot.user._guild_ids],
+                reoccurring_leaderboard__isnull=False,
+                realm_id__isnull=False,
+                reoccurring_leaderboard__gte=30,
+                reoccurring_leaderboard__lt=40,
+            ).prefetch_related("premium_code")
         else:
-            configs = await models.GuildConfig.prisma().find_many(
-                where={
-                    "guild_id": {"in": [int(g) for g in self.bot.user._guild_ids]},
-                    "NOT": [
-                        {"realm_id": None},
-                        {"reoccurring_leaderboard": {"gte": 20, "lt": 40}},
-                    ],
-                },
-                include={"premium_code": True},
-            )
+            configs = await models.GuildConfig.filter(
+                guild_id__in=[int(g) for g in self.bot.user._guild_ids],
+                reoccurring_leaderboard__isnull=False,
+                realm_id__isnull=False,
+                reoccurring_leaderboard__gte=20,
+                reoccurring_leaderboard__lt=40,
+            ).prefetch_related("premium_code")
 
         to_run = [self.send_reoccurring_lb(lb_command, config) for config in configs]
         output = await asyncio.gather(*to_run, return_exceptions=True)
@@ -371,18 +366,20 @@ class Autorunners(utils.Extension):
     async def player_session_delete(self) -> None:
         now = datetime.datetime.now(tz=datetime.UTC)
         time_back = now - datetime.timedelta(days=31)
-        await models.PlayerSession.prisma().delete_many(
-            where={"online": False, "last_seen": {"lt": time_back}}
-        )
+
+        await models.PlayerSession.filter(
+            online=False,
+            last_seen__lt=time_back,
+        ).delete()
 
         too_far_ago = now - datetime.timedelta(hours=1)
-        online_for_too_long = await models.PlayerSession.prisma().find_many(
-            where={"online": True, "last_seen": {"lt": too_far_ago}}
+        online_for_too_long = await models.PlayerSession.filter(
+            online=True, last_seen__lt=too_far_ago
         )
-        await models.PlayerSession.prisma().update_many(
-            data={"online": False},
-            where={"online": True, "last_seen": {"lt": too_far_ago}},
-        )
+
+        await models.PlayerSession.filter(
+            online=True, last_seen__lt=too_far_ago
+        ).update(online=False)
 
         for session in online_for_too_long:
             self.bot.online_cache[int(session.realm_id)].discard(session.xuid)

@@ -97,8 +97,15 @@ class HelpPaginator(paginators.Paginator):
 
     callback_button_emoji: typing.Optional[
         typing.Union["ipy.PartialEmoji", dict, str]
-    ] = attrs.field(default="❔", metadata=ipy.utils.export_converter(process_emoji))
+    ] = attrs.field(
+        repr=False, default="❔", metadata=ipy.utils.export_converter(process_emoji)
+    )
     """The emoji to use for the callback button."""
+    last_button_emoji: typing.Optional[typing.Union["ipy.PartialEmoji", dict, str]] = (
+        attrs.field(
+            repr=False, default="⏩", metadata=ipy.utils.export_converter(process_emoji)
+        )
+    )
     show_callback_button: bool = attrs.field(default=True)
     """Show a button which will call the `callback`"""
     show_select_menu: bool = attrs.field(default=True)

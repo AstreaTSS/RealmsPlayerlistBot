@@ -22,9 +22,6 @@ import elytra
 import common.models as models
 import common.utils as utils
 
-if typing.TYPE_CHECKING:
-    from prisma.types import PlayerSessionCreateWithoutRelationsInput
-
 
 def get_floored_minute_timestamp(
     d: datetime.datetime,
@@ -54,7 +51,7 @@ async def fill_in_data_from_stories(
     if not resp.activity:
         return False
 
-    player_list: list[PlayerSessionCreateWithoutRelationsInput] = []
+    player_list: list[models.PlayerSession] = []
 
     for xuid, entries in resp.activity.items():
         for entry in entries:
@@ -64,21 +61,19 @@ async def fill_in_data_from_stories(
             online = close_to_now <= end_floored
 
             player_list.append(
-                {
-                    "custom_id": bot.uuid_cache[f"{realm_id}-{xuid}"],
-                    "realm_id": realm_id,
-                    "xuid": xuid,
-                    "online": online,
-                    "last_seen": close_to_now if online else end_floored,
-                    "joined_at": start_floored,
-                }
+                models.PlayerSession(
+                    custom_id=bot.uuid_cache[f"{realm_id}-{xuid}"],
+                    realm_id=realm_id,
+                    xuid=xuid,
+                    online=online,
+                    last_seen=close_to_now if online else end_floored,
+                    joined_at=start_floored,
+                )
             )
 
             if online:
                 bot.online_cache[int(realm_id)].add(xuid)
 
     if player_list:
-        await models.PlayerSession.prisma().create_many(
-            data=player_list, skip_duplicates=True
-        )
+        await models.PlayerSession.bulk_create(player_list, ignore_conflicts=True)
     return True

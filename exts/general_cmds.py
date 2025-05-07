@@ -22,6 +22,7 @@ import time
 
 import interactions as ipy
 import tansy
+from tortoise.expressions import Q
 
 import common.classes as cclasses
 import common.models as models
@@ -175,15 +176,13 @@ class GeneralCMDS(utils.Extension):
         command_num = len(self.bot.application_commands) + len(
             self.bot.prefixed.commands
         )
-        premium_count = await models.GuildConfig.prisma().count(
-            where={
-                "NOT": [{"premium_code_id": None}],
-                "OR": [
-                    {"premium_code": {"is_not": {"expires_at": None}}},
-                    {"premium_code": {"is": {"expires_at": {"gt": ctx.id.created_at}}}},
-                ],
-            }
-        )
+        premium_count = await models.GuildConfig.filter(
+            Q(premium_code_id__not_isnull=True)
+            & (
+                Q(premium_code__expires_at__isnull=True)
+                | Q(premium_code__expires_at__gt=ctx.id.created_at)
+            )
+        ).count()
 
         num_shards = len(self.bot.shards)
         shards_str = f"{num_shards} shards" if num_shards != 1 else "1 shard"

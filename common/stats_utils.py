@@ -21,7 +21,6 @@ from collections import Counter, defaultdict
 from enum import IntEnum
 
 import interactions as ipy
-from prisma.types import PlayerSessionWhereInput
 
 import common.graph_template as graph_template
 import common.models as models
@@ -307,18 +306,16 @@ async def gather_datetimes(
     min_datetime: datetime.datetime,
     *,
     gamertag: typing.Optional[str] = None,
-    **filter_kwargs: typing.Unpack[PlayerSessionWhereInput],
+    **filter_kwargs: typing.Any,
 ) -> list[GatherDatetimesReturn]:
     filter_kwargs = {k: v for k, v in filter_kwargs.items() if v is not None}
 
     datetimes_to_use: list[GatherDatetimesReturn] = [
         GatherDatetimesReturn(entry.xuid, entry.joined_at, entry.last_seen)
-        for entry in await models.PlayerSession.prisma().find_many(
-            where={
-                "realm_id": str(config.realm_id),
-                "joined_at": {"gte": min_datetime},
-            }
-            | filter_kwargs  # type: ignore
+        for entry in await models.PlayerSession.filter(
+            realm_id=str(config.realm_id),
+            joined_at__gte=min_datetime,
+            **filter_kwargs,
         )
         if entry.joined_at and entry.last_seen
     ]

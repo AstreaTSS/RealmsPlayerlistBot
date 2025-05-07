@@ -44,9 +44,7 @@ class PlayerlistEvent(ipy.events.BaseEvent):
     realm_id: str = attrs.field(repr=False)
 
     async def configs(self) -> list[models.GuildConfig]:
-        return await models.GuildConfig.prisma().find_many(
-            where={"realm_id": self.realm_id}
-        )
+        return await models.GuildConfig.filter(realm_id=self.realm_id)
 
 
 @define()
@@ -84,6 +82,6 @@ class PlayerWatchlistMatch(PlayerlistEvent):
     guild_ids: set[int] = attrs.field(repr=False)
 
     async def configs(self) -> list[models.GuildConfig]:
-        return await models.GuildConfig.prisma().find_many(
-            where={"realm_id": self.realm_id, "guild_id": {"in": list(self.guild_ids)}}
+        return await models.GuildConfig.filter(
+            realm_id=self.realm_id, guild_id__in=list(self.guild_ids)
         )

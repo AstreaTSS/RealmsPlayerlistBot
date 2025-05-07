@@ -10,6 +10,5 @@ WORKDIR /app
 RUN git config --global --add safe.directory /app
 
 RUN uv pip install --system -r requirements.txt
-RUN python -m prisma generate
 
 CMD [ "python", "main.py" ]

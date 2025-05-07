@@ -1,10 +1,8 @@
 [tool.setuptools]
 packages = []
 
-
 [tool.ruff]
 line-length = 88
-
 select = [
     "E",
     "F",
@@ -51,8 +49,6 @@ ignore = [
     "S607",
     "SIM117",
 ]
-
-# Exclude a variety of commonly ignored directories.
 exclude = [
     ".bzr",
     ".direnv",
@@ -73,21 +69,21 @@ exclude = [
     "dist",
     "node_modules",
     "venv",
+    "migrations"
 ]
-# Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-
 target-version = "py312"
-
 fix = true
 
 [tool.ruff.mccabe]
-# Unlike Flake8, default to a complexity level of 10.
 max-complexity = 10
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**.py" = ["S101"]
+"tests/**.py" = [
+    "S101",
+]
 
-
-[tool.prisma]
-nodeenv_extra_args = ["--node=lts"]
+[tool.aerich]
+tortoise_orm = "db_settings.TORTOISE_ORM"
+location = "./migrations"
+src_folder = "./."

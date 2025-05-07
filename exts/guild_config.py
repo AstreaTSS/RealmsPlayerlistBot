@@ -118,9 +118,7 @@ class GuildConfig(utils.Extension):
 
         embeds: list[ipy.Embed] = []
 
-        if not await models.PlayerSession.prisma().count(
-            where={"realm_id": str(realm.id)}
-        ):
+        if not await models.PlayerSession.exists(realm_id=str(realm.id)):
             result = await realm_stories.fill_in_data_from_stories(
                 self.bot, config.realm_id
             )
@@ -182,7 +180,7 @@ class GuildConfig(utils.Extension):
         config.fetch_devices = False
         config.live_online_channel = None
         old_player_watchlist = config.player_watchlist
-        config.player_watchlist = []
+        config.player_watchlist = None
         config.player_watchlist_role = None
 
         await config.save()
@@ -202,12 +200,10 @@ class GuildConfig(utils.Extension):
                     config.guild_id
                 )
 
-        if not await models.GuildConfig.prisma().count(
-            where={"realm_id": realm_id, "fetch_devices": True}
-        ):
+        if not await models.GuildConfig.exists(realm_id=realm_id, fetch_devices=True):
             self.bot.fetch_devices_for.discard(realm_id)
 
-        if not await models.GuildConfig.prisma().count(where={"realm_id": realm_id}):
+        if not await models.GuildConfig.exists(realm_id=realm_id):
             try:
                 await self.bot.realms.leave_realm(realm_id)
             except elytra.MicrosoftAPIException as e:
@@ -217,9 +213,7 @@ class GuildConfig(utils.Extension):
                 else:
                     raise
 
-            await models.PlayerSession.prisma().delete_many(
-                where={"realm_id": realm_id}
-            )
+            await models.PlayerSession.filter(realm_id=realm_id).delete()
 
             self.bot.offline_realms.discard(int(realm_id))
             self.bot.dropped_offline_realms.discard(int(realm_id))
@@ -511,8 +505,8 @@ class GuildConfig(utils.Extension):
                             "You are not an operator of this Realm."
                         )
                 except ipy.errors.BadArgument as e:
-                    if not await models.GuildConfig.prisma().count(
-                        where={"realm_id": str(realm.id)}
+                    if not await models.GuildConfig.exists(
+                        realm_id=str(realm.id),
                     ) and utils.FEATURE("HANDLE_MISSING_REALMS"):
                         try:
                             await ctx.bot.realms.leave_realm(realm.id)
@@ -1034,6 +1028,9 @@ class GuildConfig(utils.Extension):
         xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
         config = await ctx.fetch_config()
 
+        if config.player_watchlist is None:
+            config.player_watchlist = []
+
         if len(config.player_watchlist) >= 3:
             raise utils.CustomCheckFailure(
                 "You can only track up to three players at once."
@@ -1187,14 +1184,14 @@ class GuildConfig(utils.Extension):
         if not config.nicknames:
             raise utils.CustomCheckFailure("This server has no nicknames set.")
 
-        str_builder: list[str] = []
         gamertag_map = await pl_utils.get_xuid_to_gamertag_map(
             self.bot, list(config.nicknames.keys())
         )
 
-        for xuid, nickname in config.nicknames.items():
-            str_builder.append(f"`{gamertag_map[xuid] or xuid}` -> `{nickname}`")
-
+        str_builder: list[str] = [
+            f"`{gamertag_map[xuid] or xuid}` -> `{nickname}`"
+            for xuid, nickname in config.nicknames.items()
+        ]
         await ctx.send(
             embeds=utils.make_embed("\n".join(str_builder), title="Nickname List")
         )

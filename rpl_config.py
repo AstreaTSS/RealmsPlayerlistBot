@@ -55,7 +55,7 @@ def load() -> None:
 
     if os.environ.get("DOCKER_MODE", "False") == "True":
         os.environ["DB_URL"] = (
-            f"postgresql://postgres:{os.environ['POSTGRES_PASSWORD']}@db:5432/postgres"
+            f"postgres://postgres:{os.environ['POSTGRES_PASSWORD']}@db:5432/postgres"
         )
         os.environ["VALKEY_URL"] = "redis://redis:6379?protocol=3"
 
