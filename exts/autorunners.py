@@ -133,7 +133,7 @@ class Autorunners(utils.Extension):
 
         configs = await models.GuildConfig.filter(
             guild_id__in=[int(g) for g in self.bot.user._guild_ids],
-            live_playerlist=True,
+            live_playerlist=False,
             realm_id__isnull=False,
             playerlist_chan__isnull=False,
         ).prefetch_related("premium_code")
@@ -152,7 +152,7 @@ class Autorunners(utils.Extension):
         playersession = Table(models.PlayerSession.Meta.table)
         query = (
             PostgreSQLQuery.from_(playersession)
-            .select(", ".join(models.PlayerSession._meta.fields))
+            .select(*models.PlayerSession._meta.fields)
             .where(
                 playersession.realm_id.isin(list(realm_ids))
                 & (

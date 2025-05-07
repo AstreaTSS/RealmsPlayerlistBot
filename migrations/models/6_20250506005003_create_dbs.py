@@ -19,6 +19,15 @@ from tortoise import BaseDBAsyncClient
 
 async def upgrade(_: BaseDBAsyncClient) -> str:
     return """
+        CREATE TABLE IF NOT EXISTS "realmpremiumcode" (
+        "id" SERIAL NOT NULL PRIMARY KEY,
+        "code" VARCHAR(100) NOT NULL,
+        "user_id" INT NOT NULL,
+        "uses" INT NOT NULL DEFAULT 0,
+        "max_uses" INT NOT NULL DEFAULT 2,
+        "customer_id" VARCHAR(50),
+        "expires_at" TIMESTAMPTZ
+    );
         CREATE TABLE IF NOT EXISTS "realmguildconfig" (
     "guild_id" SERIAL NOT NULL PRIMARY KEY,
     "club_id" VARCHAR(50),
@@ -44,15 +53,7 @@ async def upgrade(_: BaseDBAsyncClient) -> str:
     "last_seen" TIMESTAMPTZ NOT NULL,
     "joined_at" TIMESTAMPTZ
 );
-        CREATE TABLE IF NOT EXISTS "realmpremiumcode" (
-    "id" SERIAL NOT NULL PRIMARY KEY,
-    "code" VARCHAR(100) NOT NULL,
-    "user_id" INT NOT NULL,
-    "uses" INT NOT NULL DEFAULT 0,
-    "max_uses" INT NOT NULL DEFAULT 2,
-    "customer_id" VARCHAR(50),
-    "expires_at" TIMESTAMPTZ
-);"""
+"""
 
 
 async def downgrade(_: BaseDBAsyncClient) -> str:

@@ -462,7 +462,7 @@ class RealmContextMixin:
 
         config = await GuildConfig.get_or_none(guild_id=self.guild_id).prefetch_related(
             "premium_code"
-        ) or await GuildConfig.create(guild_id=self.guild_id)
+        ) or await GuildConfig.create(guild_id=self.guild_id, notification_channels={})
         self.config = config
         return config
 

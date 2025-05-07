@@ -69,6 +69,7 @@ exclude = [
     "dist",
     "node_modules",
     "venv",
+    "migrations"
 ]
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 target-version = "py312"

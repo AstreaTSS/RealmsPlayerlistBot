@@ -96,7 +96,9 @@ class PlayerlistEventHandling(utils.Extension):
         )
 
         for guild_id in self.bot.live_playerlist_store[event.realm_id].copy():
-            config = await models.GuildConfig.get_or_none(guild_id)
+            config = await models.GuildConfig.get_or_none(
+                guild_id=guild_id
+            ).prefetch_related("premium_code")
 
             if not config:
                 self.bot.live_playerlist_store[event.realm_id].discard(guild_id)

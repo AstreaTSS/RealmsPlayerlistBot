@@ -320,7 +320,7 @@ class Playerlist(utils.Extension):
         playersession = Table(models.PlayerSession.Meta.table)
         query = (
             PostgreSQLQuery.from_(playersession)
-            .select(", ".join(models.PlayerSession._meta.fields))
+            .select(*models.PlayerSession._meta.fields)
             .where(
                 playersession.realm_id.eq(str(config.realm_id))
                 & (

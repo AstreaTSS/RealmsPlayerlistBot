@@ -177,12 +177,12 @@ class GeneralCMDS(utils.Extension):
             self.bot.prefixed.commands
         )
         premium_count = await models.GuildConfig.filter(
-            Q(premium_code__not_isnull=True)
+            Q(premium_code_id__not_isnull=True)
             & (
                 Q(premium_code__expires_at__isnull=True)
                 | Q(premium_code__expires_at__gt=ctx.id.created_at)
             )
-        )
+        ).count()
 
         num_shards = len(self.bot.shards)
         shards_str = f"{num_shards} shards" if num_shards != 1 else "1 shard"

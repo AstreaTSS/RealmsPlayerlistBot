@@ -57,7 +57,7 @@ class GuildConfig(Model):
         max_length=50, null=True, source_field="club_id"
     )
     playerlist_chan: fields.Field[typing.Optional[int]] = fields.BigIntField(
-        source_field="playerlist_chan"
+        source_field="playerlist_chan", null=True
     )
     realm_id: fields.Field[typing.Optional[str]] = fields.CharField(
         max_length=50, null=True, source_field="realm_id"
