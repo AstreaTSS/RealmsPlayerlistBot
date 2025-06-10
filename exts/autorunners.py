@@ -21,6 +21,7 @@ import importlib
 
 import interactions as ipy
 from pypika import Order, PostgreSQLQuery, Table
+from tortoise.expressions import Q
 
 import common.classes as cclasses
 import common.models as models
@@ -283,27 +284,33 @@ class Autorunners(utils.Extension):
             ).prefetch_related("premium_code")
         elif first_sunday_of_month:
             configs = await models.GuildConfig.filter(
-                guild_id__in=[int(g) for g in self.bot.user._guild_ids],
-                reoccurring_leaderboard__isnull=False,
-                realm_id__isnull=False,
-                reoccurring_leaderboard__gte=20,
-                reoccurring_leaderboard__lt=30,
+                Q(guild_id__in=[int(g) for g in self.bot.user._guild_ids])
+                & Q(reoccurring_leaderboard__isnull=False)
+                & Q(realm_id__isnull=False)
+                & ~(
+                    Q(reoccurring_leaderboard__gte=20)
+                    & Q(reoccurring_leaderboard__lt=30)
+                )
             ).prefetch_related("premium_code")
         elif second_sunday:
             configs = await models.GuildConfig.filter(
-                guild_id__in=[int(g) for g in self.bot.user._guild_ids],
-                reoccurring_leaderboard__isnull=False,
-                realm_id__isnull=False,
-                reoccurring_leaderboard__gte=30,
-                reoccurring_leaderboard__lt=40,
+                Q(guild_id__in=[int(g) for g in self.bot.user._guild_ids])
+                & Q(reoccurring_leaderboard__isnull=False)
+                & Q(realm_id__isnull=False)
+                & ~(
+                    Q(reoccurring_leaderboard__gte=30)
+                    & Q(reoccurring_leaderboard__lt=40)
+                )
             ).prefetch_related("premium_code")
         else:
             configs = await models.GuildConfig.filter(
-                guild_id__in=[int(g) for g in self.bot.user._guild_ids],
-                reoccurring_leaderboard__isnull=False,
-                realm_id__isnull=False,
-                reoccurring_leaderboard__gte=20,
-                reoccurring_leaderboard__lt=40,
+                Q(guild_id__in=[int(g) for g in self.bot.user._guild_ids])
+                & Q(reoccurring_leaderboard__isnull=False)
+                & Q(realm_id__isnull=False)
+                & ~(
+                    Q(reoccurring_leaderboard__gte=20)
+                    & Q(reoccurring_leaderboard__lt=40)
+                )
             ).prefetch_related("premium_code")
 
         to_run = [self.send_reoccurring_lb(lb_command, config) for config in configs]
