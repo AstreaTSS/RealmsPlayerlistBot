@@ -79,7 +79,7 @@ class HelpCMD(utils.Extension):
         return True
 
     async def extract_commands(
-        self, ctx: ipy.AutocompleteContext, argument: typing.Optional[str]
+        self, ctx: ipy.AutocompleteContext, argument: str | None
     ) -> tuple[str, ...]:
         cmds = help_tools.get_mini_commands_for_scope(self.bot, int(ctx.guild_id))
 
@@ -105,7 +105,7 @@ class HelpCMD(utils.Extension):
         ctx: utils.RealmContext,
         commands: list[help_tools.MiniCommand],
         name: str,
-        description: typing.Optional[str],
+        description: str | None,
     ) -> list[ipy.Embed]:
         embeds: list[ipy.Embed] = []
 
@@ -194,7 +194,7 @@ class HelpCMD(utils.Extension):
     async def help_cmd(
         self,
         ctx: utils.RealmContext,
-        query: typing.Optional[str] = tansy.Option(
+        query: str | None = tansy.Option(
             "The command to search for.",
             autocomplete=True,
             default=None,
