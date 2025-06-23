@@ -538,7 +538,7 @@ class PremiumHandling(utils.Extension):
             premium_code__user_id=int(entitlement._user_id),
             premium_code__max_uses=1,
             premium_code__uses=1,
-            premium_code__customer_id__is_notnull=True,
+            premium_code__customer_id__not_isnull=True,
         ).prefetch_related("premium_code"):
             # potential update from old subscription system to new one,
             # so we'll just delete the old code and update the guild config
