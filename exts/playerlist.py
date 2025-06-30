@@ -345,7 +345,7 @@ class Playerlist(utils.Extension):
                 f" {hours_ago} {hour_text}."
             )
 
-        bypass_cache_for: typing.Optional[set[str]] = None
+        bypass_cache_for: set[str] | None = None
         if config.fetch_devices:
             if not config.valid_premium:
                 await pl_utils.invalidate_premium(self.bot, config)

@@ -242,7 +242,7 @@ class GuildConfig(utils.Extension):
 
         success = False
         result = ""
-        event: typing.Optional[ipy.events.Component] = None
+        event: ipy.events.Component | None = None
 
         components = [
             ipy.Button(
@@ -605,7 +605,7 @@ class GuildConfig(utils.Extension):
     async def set_autorunning_playerlist_channel(
         self,
         ctx: utils.RealmContext,
-        channel: typing.Optional[ipy.GuildText] = tansy.Option(
+        channel: ipy.GuildText | None = tansy.Option(
             "The channel to set the autorunning playerlist to.",
             converter=cclasses.ValidChannelConverter,
         ),
@@ -760,7 +760,7 @@ class GuildConfig(utils.Extension):
     async def set_realm_offline_role(
         self,
         ctx: utils.RealmContext,
-        role: typing.Optional[ipy.Role] = tansy.Option("The role to ping."),
+        role: ipy.Role | None = tansy.Option("The role to ping."),
         unset: bool = tansy.Option("Should the role be unset?", default=False),
     ) -> None:
         """
@@ -887,7 +887,7 @@ class GuildConfig(utils.Extension):
             ],
             type=str,
         ),
-        channel: typing.Optional[ipy.GuildText] = tansy.Option(
+        channel: ipy.GuildText | None = tansy.Option(
             "The channel to set the feature to.",
             converter=cclasses.ValidChannelConverter,
         ),
@@ -1094,7 +1094,7 @@ class GuildConfig(utils.Extension):
     async def watchlist_ping_role(
         self,
         ctx: utils.RealmContext,
-        role: typing.Optional[ipy.Role] = tansy.Option("The role to ping."),
+        role: ipy.Role | None = tansy.Option("The role to ping."),
         unset: bool = tansy.Option("Should the role be unset?", default=False),
     ) -> None:
         if not (unset ^ bool(role)):
@@ -1148,7 +1148,7 @@ class GuildConfig(utils.Extension):
     async def watchlist_channel(
         self,
         ctx: utils.RealmContext,
-        channel: typing.Optional[ipy.GuildText] = tansy.Option(
+        channel: ipy.GuildText | None = tansy.Option(
             "The channel to set the feature to.",
             converter=cclasses.ValidChannelConverter,
         ),

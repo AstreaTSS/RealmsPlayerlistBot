@@ -91,7 +91,7 @@ async def sleep_until(dt: datetime.datetime) -> None:
 
 
 async def error_handle(
-    error: Exception, *, ctx: typing.Optional[ipy.BaseContext] = None
+    error: Exception, *, ctx: ipy.BaseContext | None = None
 ) -> None:
     if not isinstance(error, aiohttp.ServerDisconnectedError):
         if FEATURE("PRINT_TRACKBACK_FOR_ERRORS") or not SENTRY_ENABLED:
@@ -440,7 +440,7 @@ else:
 
 
 class RealmContextMixin:
-    config: typing.Optional[GuildConfig]
+    config: GuildConfig | None
     guild_id: ipy.Snowflake
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
