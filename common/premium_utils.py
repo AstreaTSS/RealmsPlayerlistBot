@@ -151,7 +151,7 @@ def base_code_generate(*, n_parts: int = 3, part_len: int = 4) -> str:
 
 
 def full_code_generate(
-    max_uses: int, user_id: typing.Optional[ipy.Snowflake_Type] = None
+    max_uses: int, user_id: ipy.Snowflake_Type | None = None
 ) -> str:
     clamped_max_uses = max_uses % 11
     max_uses_char = SYMBOLS[clamped_max_uses + 11]
