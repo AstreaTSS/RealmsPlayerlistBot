@@ -66,7 +66,7 @@ if typing.TYPE_CHECKING:
 
 def default_sentry_filter(
     event: dict[str, typing.Any], hint: dict[str, typing.Any]
-) -> typing.Optional[dict[str, typing.Any]]:
+) -> dict[str, typing.Any] | None:
     if "log_record" in hint:
         record: logging.LogRecord = hint["log_record"]
         if "interactions" in record.name or "realms_bot" in record.name:

@@ -29,7 +29,7 @@ def graph_dict(
     labels: tuple[str, ...],
     data: tuple[int, ...],
     *,
-    max_value: typing.Optional[int] = 70,
+    max_value: int | None = 70,
 ) -> dict[str, typing.Any]:
     config = {
         "type": "bar",
@@ -100,7 +100,7 @@ def graph_template(
     *,
     width: int = 700,
     height: int = 400,
-    max_value: typing.Optional[int] = 70,
+    max_value: int | None = 70,
 ) -> str:
     config = graph_dict(
         title, scale_label, bottom_label, labels, data, max_value=max_value
@@ -125,7 +125,7 @@ def multi_graph_dict(
     gamertags: typing.Iterable[str],
     datas: tuple[tuple[int, ...], ...],
     *,
-    max_value: typing.Optional[int] = 70,
+    max_value: int | None = 70,
 ) -> dict[str, typing.Any]:
     config = {
         "type": "bar",
@@ -192,7 +192,7 @@ def multi_graph_template(
     *,
     width: int = 700,
     height: int = 400,
-    max_value: typing.Optional[int] = 70,
+    max_value: int | None = 70,
 ) -> str:
     config = multi_graph_dict(
         title, scale_label, bottom_label, labels, gamertags, datas, max_value=max_value
