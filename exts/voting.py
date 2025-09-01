@@ -32,7 +32,7 @@ class VoteHandler:
     headers: dict[str, str] = attrs.field()
     data_url: str = attrs.field()
     data_callback: typing.Callable[[int], dict[str, typing.Any]] = attrs.field()
-    vote_url: typing.Optional[str] = attrs.field()
+    vote_url: str | None = attrs.field()
 
 
 class Voting(utils.Extension):

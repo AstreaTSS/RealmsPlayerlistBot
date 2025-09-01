@@ -63,7 +63,7 @@ class PremiumHandling(utils.Extension):
         self,
         ctx: ipy.InteractionContext,
         max_uses: int = tansy.Option("How many uses the code has.", default=2),
-        user_id: typing.Optional[str] = tansy.Option(
+        user_id: str | None = tansy.Option(
             "The user ID this is tied to if needed.", default=None
         ),
     ) -> None:

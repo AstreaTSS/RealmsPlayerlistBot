@@ -339,7 +339,7 @@ class DynamicLeaderboardPaginator:
 
     async def _on_button(
         self, ctx: ipy.ComponentContext, *_: typing.Any, **__: typing.Any
-    ) -> typing.Optional[ipy.Message]:
+    ) -> ipy.Message | None:
         if ctx.author.id != self.author_id:
             return await ctx.send(
                 "You are not allowed to use this paginator.", ephemeral=True

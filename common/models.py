@@ -53,27 +53,27 @@ class NotificationChannels(typing.TypedDict, total=False):
 
 class GuildConfig(Model):
     guild_id = fields.BigIntField(primary_key=True, source_field="guild_id")
-    club_id: fields.Field[typing.Optional[str]] = fields.CharField(
+    club_id: fields.Field[str | None] = fields.CharField(
         max_length=50, null=True, source_field="club_id"
     )
-    playerlist_chan: fields.Field[typing.Optional[int]] = fields.BigIntField(
+    playerlist_chan: fields.Field[int | None] = fields.BigIntField(
         source_field="playerlist_chan", null=True
     )
-    realm_id: fields.Field[typing.Optional[str]] = fields.CharField(
+    realm_id: fields.Field[str | None] = fields.CharField(
         max_length=50, null=True, source_field="realm_id"
     )
     live_playerlist = fields.BooleanField(default=False, source_field="live_playerlist")
-    realm_offline_role: fields.Field[typing.Optional[int]] = fields.BigIntField(
+    realm_offline_role: fields.Field[int | None] = fields.BigIntField(
         source_field="realm_offline_role", null=True
     )
     warning_notifications = fields.BooleanField(
         default=True, source_field="warning_notifications"
     )
     fetch_devices = fields.BooleanField(default=False, source_field="fetch_devices")
-    live_online_channel: fields.Field[typing.Optional[str]] = fields.CharField(
+    live_online_channel: fields.Field[str | None] = fields.CharField(
         max_length=75, null=True, source_field="live_online_channel"
     )
-    player_watchlist_role: fields.Field[typing.Optional[int]] = fields.BigIntField(
+    player_watchlist_role: fields.Field[int | None] = fields.BigIntField(
         source_field="player_watchlist_role", null=True
     )
     player_watchlist: fields.Field[list[str] | None] = ArrayField(
@@ -85,7 +85,7 @@ class GuildConfig(Model):
         encoder=lambda x: orjson.dumps(x).decode(),
         decoder=orjson.loads,
     )
-    reoccurring_leaderboard: fields.Field[typing.Optional[int]] = fields.IntField(
+    reoccurring_leaderboard: fields.Field[int | None] = fields.IntField(
         source_field="reoccurring_leaderboard", null=True
     )
     nicknames = fields.JSONField(default="{}", source_field="nicknames")
@@ -129,12 +129,12 @@ class PlayerSession(Model):
     xuid = fields.CharField(max_length=50, source_field="xuid")
     online = fields.BooleanField(default=False, source_field="online")
     last_seen = fields.DatetimeField(source_field="last_seen")
-    joined_at: fields.Field[typing.Optional[datetime]] = fields.DatetimeField(
+    joined_at: fields.Field[datetime | None] = fields.DatetimeField(
         null=True, source_field="joined_at"
     )
 
-    gamertag: typing.Optional[str] = None
-    device: typing.Optional[str] = None
+    gamertag: str | None = None
+    device: str | None = None
     show_left: bool = True
 
     class Meta:
@@ -201,15 +201,15 @@ class PlayerSession(Model):
 class PremiumCode(Model):
     id = fields.IntField(primary_key=True, source_field="id")
     code = fields.CharField(max_length=100, source_field="code")
-    user_id: fields.Field[typing.Optional[int]] = fields.BigIntField(
+    user_id: fields.Field[int | None] = fields.BigIntField(
         source_field="user_id", null=True
     )
     uses = fields.IntField(default=0, source_field="uses")
     max_uses = fields.IntField(default=2, source_field="max_uses")
-    customer_id: fields.Field[typing.Optional[str]] = fields.CharField(
+    customer_id: fields.Field[str | None] = fields.CharField(
         max_length=50, null=True, source_field="customer_id"
     )
-    expires_at: fields.Field[typing.Optional[datetime]] = fields.DatetimeField(
+    expires_at: fields.Field[datetime | None] = fields.DatetimeField(
         null=True, source_field="expires_at"
     )
 

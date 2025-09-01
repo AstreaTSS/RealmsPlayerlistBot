@@ -95,13 +95,11 @@ class HelpPaginator(paginators.Paginator):
     )
     """The message to be sent when the wrong user uses this paginator."""
 
-    callback_button_emoji: typing.Optional[
-        typing.Union["ipy.PartialEmoji", dict, str]
-    ] = attrs.field(
+    callback_button_emoji: typing.Union["ipy.PartialEmoji", dict, str] | None = attrs.field(
         repr=False, default="❔", metadata=ipy.utils.export_converter(process_emoji)
     )
     """The emoji to use for the callback button."""
-    last_button_emoji: typing.Optional[typing.Union["ipy.PartialEmoji", dict, str]] = (
+    last_button_emoji: typing.Union["ipy.PartialEmoji", dict, str] | None = (
         attrs.field(
             repr=False, default="⏩", metadata=ipy.utils.export_converter(process_emoji)
         )
@@ -264,7 +262,7 @@ class HelpPaginator(paginators.Paginator):
 class PermissionsResolver:
     """An attempt to make a class that can handle slash command permissions."""
 
-    default_member_permissions: typing.Optional[ipy.Permissions] = attrs.field(
+    default_member_permissions: ipy.Permissions | None = attrs.field(
         default=None
     )
 
@@ -279,7 +277,7 @@ class PermissionsResolver:
 
     def __init__(
         self,
-        default_member_permissions: typing.Optional[ipy.Permissions],
+        default_member_permissions: ipy.Permissions | None,
         guild_id: int,
         permissions_data: list[discord_typings.ApplicationCommandPermissionsData],
     ) -> None:
@@ -457,8 +455,8 @@ class MiniCommand:
     type_: typing.Literal["base", "group", "sub"] = attrs.field()
     signature: str = attrs.field()
     slash_command: ipy.SlashCommand = attrs.field()
-    extension: typing.Optional[ipy.Extension] = attrs.field(default=None)
-    default_member_permissions: typing.Optional[ipy.Permissions] = attrs.field(
+    extension: ipy.Extension | None = attrs.field(default=None)
+    default_member_permissions: ipy.Permissions | None = attrs.field(
         default=None
     )
     subcommands: set["MiniCommand"] = attrs.field(factory=set)
