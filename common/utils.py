@@ -90,9 +90,7 @@ async def sleep_until(dt: datetime.datetime) -> None:
     await asyncio.sleep(time_to_sleep)
 
 
-async def error_handle(
-    error: Exception, *, ctx: ipy.BaseContext | None = None
-) -> None:
+async def error_handle(error: Exception, *, ctx: ipy.BaseContext | None = None) -> None:
     if not isinstance(error, aiohttp.ServerDisconnectedError):
         if FEATURE("PRINT_TRACKBACK_FOR_ERRORS") or not SENTRY_ENABLED:
             traceback.print_exception(error)

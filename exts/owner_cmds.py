@@ -82,9 +82,7 @@ class OwnerCMDs(utils.Extension):
         self,
         ctx: utils.RealmContext,
         guild_id: str = tansy.Option("The guild ID for the guild to add."),
-        club_id: str | None = tansy.Option(
-            "The club ID for the Realm.", default=None
-        ),
+        club_id: str | None = tansy.Option("The club ID for the Realm.", default=None),
         realm_id: str | None = tansy.Option(
             "The Realm ID for the Realm.", default=None
         ),
@@ -117,9 +115,7 @@ class OwnerCMDs(utils.Extension):
         self,
         ctx: utils.RealmContext,
         guild_id: str = tansy.Option("The guild to edit."),
-        club_id: str | None = tansy.Option(
-            "The club ID for the Realm.", default=None
-        ),
+        club_id: str | None = tansy.Option("The club ID for the Realm.", default=None),
         realm_id: str | None = tansy.Option(
             "The Realm ID for the Realm.", default=None
         ),
