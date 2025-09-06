@@ -123,8 +123,8 @@ class GatherDatetimesReturn(typing.NamedTuple):
 def get_minutes_per_hour(
     ranges: typing.Iterable[GatherDatetimesReturn],
     *,
-    min_datetime: typing.Optional[datetime.datetime] = None,
-    max_datetime: typing.Optional[datetime.datetime] = None,
+    min_datetime: datetime.datetime | None = None,
+    max_datetime: datetime.datetime | None = None,
 ) -> dict[datetime.datetime, int]:
     minutes_per_hour: defaultdict[int, int] = defaultdict(int)
 
@@ -177,8 +177,8 @@ def get_minutes_per_hour(
 def get_minutes_per_day(
     ranges: typing.Iterable[GatherDatetimesReturn],
     *,
-    min_datetime: typing.Optional[datetime.datetime] = None,
-    max_datetime: typing.Optional[datetime.datetime] = None,
+    min_datetime: datetime.datetime | None = None,
+    max_datetime: datetime.datetime | None = None,
 ) -> dict[datetime.datetime, int]:
     minutes_per_day: defaultdict[int, int] = defaultdict(int)
 
@@ -305,7 +305,7 @@ async def gather_datetimes(
     config: models.GuildConfig,
     min_datetime: datetime.datetime,
     *,
-    gamertag: typing.Optional[str] = None,
+    gamertag: str | None = None,
     **filter_kwargs: typing.Any,
 ) -> list[GatherDatetimesReturn]:
     filter_kwargs = {k: v for k, v in filter_kwargs.items() if v is not None}
@@ -509,8 +509,8 @@ async def process_single_graph_data(
     min_datetime: datetime.datetime,
     now: datetime.datetime,
     func_to_use: typing.Callable[..., VALID_TIME_DICTS],
-    gamertag: typing.Optional[str] = None,
-    filter_kwargs: typing.Optional[dict[str, typing.Any]] = None,
+    gamertag: str | None = None,
+    filter_kwargs: dict[str, typing.Any] | None = None,
 ) -> tuple[VALID_TIME_DICTS, list[GatherDatetimesReturn]]:
     if filter_kwargs is None:
         filter_kwargs = {}
@@ -646,8 +646,8 @@ async def send_graph(
     now: datetime.datetime,
     title: str,
     min_datetime: datetime.datetime,
-    datetimes_used: typing.Optional[list[GatherDatetimesReturn]] = None,
-    earliest_datetime: typing.Optional[datetime.datetime] = None,
+    datetimes_used: list[GatherDatetimesReturn] | None = None,
+    earliest_datetime: datetime.datetime | None = None,
 ) -> None:
     kwargs: dict[str, typing.Any] = {}
 

@@ -89,7 +89,7 @@ class Statistics(utils.Extension):
         unformated_title: str,
         *,
         individual: bool = False,
-        gamertag: typing.Optional[str] = None,
+        gamertag: str | None = None,
         filter_kwargs: dict[str, typing.Any] | None = None,
     ) -> None:
         config = await ctx.fetch_config()
@@ -133,7 +133,7 @@ class Statistics(utils.Extension):
         summarize_by: str,
         unformated_title: str,
         *,
-        gamertag: typing.Optional[str] = None,
+        gamertag: str | None = None,
         filter_kwargs: dict[str, typing.Any] | None = None,
     ) -> None:
         config = await ctx.fetch_config()
@@ -730,11 +730,11 @@ class Statistics(utils.Extension):
         self,
         ctx: utils.RealmContext,
         period: int,
-        gamertag: typing.Optional[str],
+        gamertag: str | None,
     ) -> PlaytimeReturn:
         config = await ctx.fetch_config()
 
-        xuid: typing.Optional[str] = None
+        xuid: str | None = None
         if gamertag:
             xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
         elif (
@@ -818,7 +818,7 @@ class Statistics(utils.Extension):
                 ipy.SlashCommandChoice("30 days", 30),
             ],
         ),
-        gamertag: typing.Optional[str] = tansy.Option(
+        gamertag: str | None = tansy.Option(
             "The player's gamertag. If not specified, calculates Realm wide, which"
             " requires voting or Premium.",
             default=None,
@@ -862,7 +862,7 @@ class Statistics(utils.Extension):
                 ipy.SlashCommandChoice("30 days", 30),
             ],
         ),
-        gamertag: typing.Optional[str] = tansy.Option(
+        gamertag: str | None = tansy.Option(
             "The player's gamertag. If not specified, calculates Realm wide, which"
             " requires voting or Premium.",
             default=None,
@@ -898,7 +898,7 @@ class Statistics(utils.Extension):
                 ipy.SlashCommandChoice("30 days", 30),
             ],
         ),
-        gamertag: typing.Optional[str] = tansy.Option(
+        gamertag: str | None = tansy.Option(
             "The player's gamertag. If not specified, calculates Realm wide, which"
             " requires voting or Premium.",
             default=None,
@@ -906,7 +906,7 @@ class Statistics(utils.Extension):
     ) -> None:
         config = await ctx.fetch_config()
 
-        xuid: typing.Optional[str] = None
+        xuid: str | None = None
         if gamertag:
             xuid = await pl_utils.xuid_from_gamertag(self.bot, gamertag)
         elif (

@@ -82,13 +82,13 @@ class OwnerCMDs(utils.Extension):
         self,
         ctx: utils.RealmContext,
         guild_id: str = tansy.Option("The guild ID for the guild to add."),
-        club_id: typing.Optional[str] = tansy.Option(
+        club_id: str | None = tansy.Option(
             "The club ID for the Realm.", default=None
         ),
-        realm_id: typing.Optional[str] = tansy.Option(
+        realm_id: str | None = tansy.Option(
             "The Realm ID for the Realm.", default=None
         ),
-        playerlist_chan: typing.Optional[str] = tansy.Option(
+        playerlist_chan: str | None = tansy.Option(
             "The playerlist channel ID for this guild.", default=None
         ),
     ) -> None:
@@ -117,13 +117,13 @@ class OwnerCMDs(utils.Extension):
         self,
         ctx: utils.RealmContext,
         guild_id: str = tansy.Option("The guild to edit."),
-        club_id: typing.Optional[str] = tansy.Option(
+        club_id: str | None = tansy.Option(
             "The club ID for the Realm.", default=None
         ),
-        realm_id: typing.Optional[str] = tansy.Option(
+        realm_id: str | None = tansy.Option(
             "The Realm ID for the Realm.", default=None
         ),
-        playerlist_chan: typing.Optional[str] = tansy.Option(
+        playerlist_chan: str | None = tansy.Option(
             "The playerlist channel ID for this guild.", default=None
         ),
     ) -> None:
@@ -355,14 +355,14 @@ class OwnerCMDs(utils.Extension):
 
     @debug.subcommand()
     async def git(
-        self, ctx: prefixed.PrefixedContext, *, cmd: typing.Optional[str] = None
+        self, ctx: prefixed.PrefixedContext, *, cmd: str | None = None
     ) -> None:
         """Shortcut for 'debug shell git'. Invokes the system shell."""
         await self.shell.callback(ctx, cmd=f"git {cmd}" if cmd else "git")
 
     @debug.subcommand()
     async def pip(
-        self, ctx: prefixed.PrefixedContext, *, cmd: typing.Optional[str] = None
+        self, ctx: prefixed.PrefixedContext, *, cmd: str | None = None
     ) -> None:
         """Shortcut for 'debug shell pip'. Invokes the system shell."""
         await self.shell.callback(ctx, cmd=f"pip {cmd}" if cmd else "pip")
