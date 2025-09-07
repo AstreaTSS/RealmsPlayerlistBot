@@ -31,16 +31,24 @@ USER_MENTION = re.compile(r"^<@!?[0-9]{15,25}>$")
 
 
 def display_gamertag(
-    xuid: str, gamertag: str | None = None, nickname: str | None = None
+    xuid: str,
+    gamertag: str | None = None,
+    nickname: str | None = None,
+    *,
+    markdown: str = "`",
 ) -> str:
     display = "Unknown User"
     if nickname:
         # optional check to display user mentions as is if it is one
-        display = nickname if USER_MENTION.fullmatch(nickname) else f"`{nickname}`"
+        display = (
+            nickname
+            if USER_MENTION.fullmatch(nickname)
+            else f"{markdown}{nickname}{markdown}"
+        )
     elif gamertag:
-        display = f"`{gamertag}`"
+        display = f"{markdown}{gamertag}{markdown}"
     elif xuid:
-        display = f"User with XUID `{xuid}`"
+        display = f"User with XUID {markdown}{xuid}{markdown}"
 
     return display
 
@@ -177,8 +185,10 @@ class PlayerSession(Model):
     def resolved(self) -> bool:
         return bool(self.gamertag)
 
-    def base_display(self, nickname: str | None = None) -> str:
-        display = display_gamertag(self.xuid, self.gamertag, nickname)
+    def base_display(self, nickname: str | None = None, *, markdown: str = "`") -> str:
+        display = display_gamertag(
+            self.xuid, self.gamertag, nickname, markdown=markdown
+        )
         if self.device_emoji:
             display += f" {self.device_emoji}"
         return display
@@ -195,6 +205,20 @@ class PlayerSession(Model):
             f"{self.base_display(nickname)}: {', '.join(notes)}"
             if notes
             else self.base_display(nickname)
+        )
+
+    def new_display(self, nickname: str | None = None) -> str:
+        notes: list[str] = []
+        if self.joined_at:
+            notes.append(f"Joined <t:{int(self.joined_at.timestamp())}:f>")
+
+        if not self.online and self.show_left:
+            notes.append(f"left <t:{int(self.last_seen.timestamp())}:f>")
+
+        return (
+            f"{self.base_display(nickname, markdown="**")}\n-# {', '.join(notes)}."
+            if notes
+            else self.base_display(nickname, markdown="**")
         )
 
 

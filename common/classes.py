@@ -14,6 +14,7 @@ You should have received a copy of the GNU Affero General Public License along w
 Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import collections
 import typing
 import uuid
 from collections.abc import MutableSet
@@ -437,3 +438,179 @@ class BetterResponse(aiohttp.ClientResponse):
 
 
 anyio.AnyIOBackend = AsyncioBackend
+
+
+class ContainerComponent(
+    ipy.BaseComponent,
+    collections.UserList[
+        ipy.ActionRow
+        | ipy.SectionComponent
+        | ipy.TextDisplayComponent
+        | ipy.MediaGalleryComponent
+        | ipy.FileComponent
+        | ipy.SeparatorComponent
+    ],
+):
+    accent_color: int | None = None
+    spoiler: bool = False
+
+    def __init__(
+        self,
+        *components: ipy.ActionRow
+        | ipy.SectionComponent
+        | ipy.TextDisplayComponent
+        | ipy.MediaGalleryComponent
+        | ipy.FileComponent
+        | ipy.SeparatorComponent,
+        accent_color: int | None = None,
+        spoiler: bool = False,
+    ) -> None:
+        self.data = list(components)
+        self.accent_color = accent_color
+        self.spoiler = spoiler
+        self.type = ipy.ComponentType.CONTAINER
+
+    @property
+    def components(
+        self,
+    ) -> list[
+        ipy.ActionRow
+        | ipy.SectionComponent
+        | ipy.TextDisplayComponent
+        | ipy.MediaGalleryComponent
+        | ipy.FileComponent
+        | ipy.SeparatorComponent
+    ]:
+        return self.data
+
+    @components.setter
+    def components(
+        self,
+        value: list[
+            ipy.ActionRow
+            | ipy.SectionComponent
+            | ipy.TextDisplayComponent
+            | ipy.MediaGalleryComponent
+            | ipy.FileComponent
+            | ipy.SeparatorComponent
+        ],
+    ) -> None:
+        self.data = value
+
+    @typing.overload
+    def __getitem__(
+        self, i: int
+    ) -> (
+        ipy.ActionRow
+        | ipy.SectionComponent
+        | ipy.TextDisplayComponent
+        | ipy.MediaGalleryComponent
+        | ipy.FileComponent
+        | ipy.SeparatorComponent
+    ): ...
+
+    @typing.overload
+    def __getitem__(self, i: slice) -> typing.Self: ...
+
+    def __getitem__(
+        self, i: int | slice
+    ) -> (
+        typing.Self
+        | ipy.ActionRow
+        | ipy.SectionComponent
+        | ipy.TextDisplayComponent
+        | ipy.MediaGalleryComponent
+        | ipy.FileComponent
+        | ipy.SeparatorComponent
+    ):
+        if isinstance(i, slice):
+            return self.__class__(
+                *self.data[i], accent_color=self.accent_color, spoiler=self.spoiler
+            )
+        return self.data[i]
+
+    def __add__(self, other: typing.Any) -> typing.Self:
+        if isinstance(other, ContainerComponent):
+            return self.__class__(
+                *(self.data + other.data),
+                accent_color=self.accent_color,
+                spoiler=self.spoiler,
+            )
+        if isinstance(other, collections.UserList):
+            return self.__class__(
+                *(self.data + other.data),
+                accent_color=self.accent_color,
+                spoiler=self.spoiler,
+            )
+        if isinstance(other, type(self.data)):
+            return self.__class__(
+                *(self.data + other),
+                accent_color=self.accent_color,
+                spoiler=self.spoiler,
+            )
+        return self.__class__(
+            *(self.data + list(other)),
+            accent_color=self.accent_color,
+            spoiler=self.spoiler,
+        )
+
+    def __radd__(self, other: typing.Any) -> typing.Self:
+        if isinstance(other, ContainerComponent):
+            return self.__class__(
+                *(self.data + other.data),
+                accent_color=other.accent_color,
+                spoiler=other.spoiler,
+            )
+        if isinstance(other, collections.UserList):
+            return self.__class__(
+                *(other.data + self.data),
+                accent_color=self.accent_color,
+                spoiler=self.spoiler,
+            )
+        if isinstance(other, type(self.data)):
+            return self.__class__(
+                *(other + self.data),
+                accent_color=self.accent_color,
+                spoiler=self.spoiler,
+            )
+        return self.__class__(
+            *(list(other) + self.data),
+            accent_color=self.accent_color,
+            spoiler=self.spoiler,
+        )
+
+    def __mul__(self, n: int) -> typing.Self:
+        return self.__class__(
+            *(self.data * n), accent_color=self.accent_color, spoiler=self.spoiler
+        )
+
+    __rmul__ = __mul__
+
+    def copy(self) -> typing.Self:
+        return self.__class__(
+            *self.data, accent_color=self.accent_color, spoiler=self.spoiler
+        )
+
+    @classmethod
+    def from_dict(cls, data: dict) -> typing.Self:
+        return cls(
+            *[
+                ipy.BaseComponent.from_dict_factory(component)
+                for component in data["components"]
+            ],
+            accent_color=data.get("accent_color"),
+            spoiler=data.get("spoiler", False),
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"<{self.__class__.__name__} type={self.type} components={self.components} accent_color={self.accent_color} spoiler={self.spoiler}>"
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "type": self.type.value,
+            "components": [component.to_dict() for component in self.components],
+            "accent_color": self.accent_color,
+            "spoiler": self.spoiler,
+        }

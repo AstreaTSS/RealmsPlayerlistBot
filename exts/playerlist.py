@@ -502,7 +502,7 @@ class Playerlist(utils.Extension):
         if not (
             online_list := sorted(
                 (
-                    p.display(config.nicknames.get(p.xuid))
+                    p.new_display(config.nicknames.get(p.xuid))
                     for p in playerlist
                     if p.online
                 ),
@@ -511,14 +511,23 @@ class Playerlist(utils.Extension):
         ):
             raise utils.CustomCheckFailure("No one is on the Realm right now.")
 
-        embed = ipy.Embed(
-            color=self.bot.color,
-            title=f"{len(online_list)}/10 people online",
-            description="\n".join(online_list),
-            footer=ipy.EmbedFooter(text="As of"),
-            timestamp=ipy.Timestamp.fromdatetime(self.previous_now),
+        container = cclasses.ContainerComponent(
+            ipy.TextDisplayComponent(f"## {len(online_list)}/10 Players Online"),
+            ipy.SeparatorComponent(divider=True),
+            accent_color=self.bot.color.value,
         )
-        await ctx.send(embed=embed)
+        for entry in online_list:
+            container.append(ipy.TextDisplayComponent(entry))
+        container.extend(
+            (
+                ipy.SeparatorComponent(divider=True),
+                ipy.TextDisplayComponent(
+                    f"-# As of <t:{int(self.previous_now.timestamp())}:t>."
+                ),
+            )
+        )
+
+        await ctx.send(components=container)
 
 
 def setup(bot: utils.RealmBotBase) -> None:
