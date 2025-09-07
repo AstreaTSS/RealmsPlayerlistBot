@@ -522,7 +522,7 @@ class Playerlist(utils.Extension):
             (
                 ipy.SeparatorComponent(divider=True),
                 ipy.TextDisplayComponent(
-                    f"-# As of <t:{int(self.previous_now.timestamp())}:t>."
+                    f"-# As of <t:{int(self.previous_now.timestamp())}:t>"
                 ),
             )
         )

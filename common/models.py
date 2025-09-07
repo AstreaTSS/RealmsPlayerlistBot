@@ -216,7 +216,7 @@ class PlayerSession(Model):
             notes.append(f"left <t:{int(self.last_seen.timestamp())}:f>")
 
         return (
-            f"{self.base_display(nickname, markdown="**")}\n-# {', '.join(notes)}."
+            f"{self.base_display(nickname, markdown="**")}\n-# {', '.join(notes)}"
             if notes
             else self.base_display(nickname, markdown="**")
         )
