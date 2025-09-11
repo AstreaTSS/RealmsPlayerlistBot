@@ -10,7 +10,7 @@ httpx[http2]==0.28.1
 tortoise-orm[asyncpg]==0.25.1
 aerich==0.9.1
 pypika==0.48.9
-valkey[libvalkey]==6.1.0
+valkey[libvalkey]==6.1.1
 orjson==3.11.3
 sentry-sdk==2.37.0
 rapidfuzz==3.13.0
