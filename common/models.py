@@ -202,9 +202,9 @@ class PlayerSession(Model):
             notes.append(f"left <t:{int(self.last_seen.timestamp())}:f>")
 
         return (
-            f"{self.base_display(nickname)}: {', '.join(notes)}"
+            f"{self.base_display(nickname, markdown="**")}: {', '.join(notes)}"
             if notes
-            else self.base_display(nickname)
+            else self.base_display(nickname, markdown="**")
         )
 
     def new_display(self, nickname: str | None = None) -> str:
