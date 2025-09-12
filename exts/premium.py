@@ -242,16 +242,20 @@ class PremiumHandling(utils.Extension):
 
         online_list = sorted(
             (p for p in playerlist if p.online),
-            key=lambda k: k.display(config.nicknames.get(k.xuid)).lower(),
+            key=lambda k: k.base_display(config.nicknames.get(k.xuid)).lower(),
         )
-        online_str = "\n".join(
-            p.display(config.nicknames.get(p.xuid)) for p in online_list
+        online_str = "⏎".join(
+            p.new_display(config.nicknames.get(p.xuid)) for p in online_list
         )
         xuids = ",".join(p.xuid for p in online_list)
 
         embed = ipy.Embed(
             title=f"{len(online_list)}/10 people online",
-            description=online_str or "*No players online.*",
+            description=(
+                "\n".join(online_str.split("⏎"))
+                if online_list
+                else "*No players online.*"
+            ),
             color=self.bot.color,
             timestamp=ipy.Timestamp.utcnow(),
         )

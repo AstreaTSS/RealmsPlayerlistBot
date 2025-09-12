@@ -122,10 +122,11 @@ class PlayerlistEventHandling(utils.Extension):
                 continue
 
             gamertag_mapping = {
-                p.xuid: p.base_display(config.nicknames.get(p.xuid)) for p in players
+                p.xuid: p.base_display(config.nicknames.get(p.xuid), markdown="**")
+                for p in players
             }
             full_gamertag_mapping = {
-                p.xuid: p.display(config.nicknames.get(p.xuid)) for p in players
+                p.xuid: p.new_display(config.nicknames.get(p.xuid)) for p in players
             }
 
             if config.live_online_channel:
@@ -189,7 +190,7 @@ class PlayerlistEventHandling(utils.Extension):
             assert isinstance(gamertag_str, str)
 
         xuids_init: list[str] = xuid_str.split(",") if xuid_str else []
-        gamertags: list[str] = gamertag_str.splitlines() if gamertag_str else []
+        gamertags: list[str] = gamertag_str.split("⏎") if gamertag_str else []
 
         event.gamertag_mapping.update(dict(zip(xuids_init, gamertags, strict=True)))
         reverse_gamertag_map = {v: k for k, v in event.gamertag_mapping.items()}
@@ -202,7 +203,7 @@ class PlayerlistEventHandling(utils.Extension):
         )
         xuid_list = [reverse_gamertag_map[g] for g in gamertag_list]
 
-        new_gamertag_str = "\n".join(gamertag_list)
+        new_gamertag_str = "⏎".join(gamertag_list)
 
         await self.bot.valkey.hset(
             event.live_online_channel, "xuids", ",".join(xuid_list)
@@ -212,14 +213,23 @@ class PlayerlistEventHandling(utils.Extension):
         )
 
         if event.realm_down_event:
-            new_gamertag_str = f"{os.environ['GRAY_CIRCLE_EMOJI']} *Realm is offline.*"
-
-        embed = ipy.Embed(
-            title=f"{len(xuids)}/10 people online",
-            description=new_gamertag_str or "*No players online.*",
-            color=self.bot.color,
-            timestamp=event.timestamp,  # type: ignore
-        )
+            embed = ipy.Embed(
+                title=f"{len(xuids)}/10 people online",
+                description=f"{os.environ['GRAY_CIRCLE_EMOJI']} *Realm is offline.*",
+                color=self.bot.color,
+                timestamp=event.timestamp,  # type: ignore
+            )
+        else:
+            embed = ipy.Embed(
+                title=f"{len(xuids)}/10 people online",
+                description=(
+                    "\n".join(new_gamertag_str.split("⏎"))
+                    if new_gamertag_str
+                    else "*No players online.*"
+                ),
+                color=self.bot.color,
+                timestamp=event.timestamp,  # type: ignore
+            )
         embed.set_footer("As of")
 
         chan_id, msg_id = event.live_online_channel.split("|")
