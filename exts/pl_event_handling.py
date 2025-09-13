@@ -214,14 +214,14 @@ class PlayerlistEventHandling(utils.Extension):
 
         if event.realm_down_event:
             embed = ipy.Embed(
-                title=f"{len(xuids)}/10 people online",
+                title=f"{len(xuids)}/10 Players Online",
                 description=f"{os.environ['GRAY_CIRCLE_EMOJI']} *Realm is offline.*",
                 color=self.bot.color,
                 timestamp=event.timestamp,  # type: ignore
             )
         else:
             embed = ipy.Embed(
-                title=f"{len(xuids)}/10 people online",
+                title=f"{len(xuids)}/10 Players Online",
                 description=(
                     "\n".join(new_gamertag_str.split("⏎"))
                     if new_gamertag_str

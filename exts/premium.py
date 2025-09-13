@@ -250,7 +250,7 @@ class PremiumHandling(utils.Extension):
         xuids = ",".join(p.xuid for p in online_list)
 
         embed = ipy.Embed(
-            title=f"{len(online_list)}/10 people online",
+            title=f"{len(online_list)}/10 Players Online",
             description=(
                 "\n".join(online_str.split("⏎"))
                 if online_list
