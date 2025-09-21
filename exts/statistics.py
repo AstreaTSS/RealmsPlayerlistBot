@@ -586,7 +586,7 @@ class Statistics(utils.Extension):
                 precisedelta = "1 minute"
 
             display = models.display_gamertag(
-                xuid, gamertag_map[xuid], config.nicknames.get(xuid)
+                xuid, gamertag_map[xuid], config.nicknames.get(xuid), markdown="**"
             )
 
             leaderboard_builder.append(f"**{index+1}\\.** {display}: {precisedelta}")
