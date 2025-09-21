@@ -237,7 +237,9 @@ class PlayerlistEventHandling(utils.Extension):
         fake_msg = ipy.Message(client=self.bot, id=int(msg_id), channel_id=int(chan_id))  # type: ignore
 
         try:
-            await fake_msg.edit(embed=embed)
+            await fake_msg.edit(
+                embed=embed, allowed_mentions=ipy.AllowedMentions.none()
+            )
         except ipy.errors.HTTPException as e:
             if e.status < 500:
                 await pl_utils.eventually_invalidate_live_online(self.bot, event.config)

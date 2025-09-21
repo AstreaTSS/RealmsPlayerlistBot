@@ -527,7 +527,9 @@ class Playerlist(utils.Extension):
             )
         )
 
-        await ctx.send(components=container)
+        await ctx.send(
+            components=container, allowed_mentions=ipy.AllowedMentions.none()
+        )
 
 
 def setup(bot: utils.RealmBotBase) -> None:

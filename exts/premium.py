@@ -262,7 +262,9 @@ class PremiumHandling(utils.Extension):
         embed.set_footer("As of")
 
         try:
-            msg = await ctx.channel.send(embed=embed)
+            msg = await ctx.channel.send(
+                embed=embed, allowed_mentions=ipy.AllowedMentions.none()
+            )
         except ipy.errors.HTTPException:
             raise utils.CustomCheckFailure(
                 "An error occured when trying to send the live online list. Make sure"
