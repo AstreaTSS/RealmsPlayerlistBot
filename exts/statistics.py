@@ -838,7 +838,8 @@ class Statistics(utils.Extension):
             embed=utils.make_embed(
                 f"Average playtime {f'for {gamertag}' if gamertag else ''} for the past"
                 f" {playtime.period_str}:"
-                f" {humanize.precisedelta(calc_playtime, minimum_unit='minutes', format='%0.0f')} {end_string}",
+                f" {humanize.precisedelta(calc_playtime, minimum_unit='minutes', format='%0.0f')}"
+                f" {end_string}",
             )
         )
 
