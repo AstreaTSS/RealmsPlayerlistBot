@@ -32,6 +32,7 @@ import common.models as models
 import common.playerlist_events as pl_events
 import common.playerlist_utils as pl_utils
 import common.utils as utils
+from common import help_tools
 
 
 class PlayerlistKwargs(typing.TypedDict, total=False):
@@ -282,6 +283,14 @@ class Playerlist(utils.Extension):
             max_value=24,
             default=12,
         ),
+        mode: str = tansy.Option(
+            "The mode to show the playerlist in.",
+            choices=[
+                ipy.SlashCommandChoice("Cozy", "cozy"),
+                ipy.SlashCommandChoice("Compact", "compact"),
+            ],
+            default="cozy",
+        ),
         **kwargs: typing.Unpack[PlayerlistKwargs],
     ) -> None:
         """
@@ -291,10 +300,15 @@ class Playerlist(utils.Extension):
         Has a cooldown of 60 seconds due to how intensive this command can be.
         May take a while to run at first.
         """
+        if mode not in ("cozy", "compact"):
+            raise ipy.errors.BadArgument("Invalid mode.")
 
         autorunner = kwargs.get("autorunner", False)
         upsell = kwargs.get("upsell")
         gamertag_map: defaultdict[str, str] | None = kwargs.get("gamertag_map")
+
+        if autorunner:
+            mode = "compact"
 
         config = await ctx.fetch_config()
 
@@ -347,10 +361,10 @@ class Playerlist(utils.Extension):
 
         bypass_cache_for: set[str] | None = None
         if config.fetch_devices:
-            if not config.valid_premium:
-                await pl_utils.invalidate_premium(self.bot, config)
-            else:
+            if config.valid_premium:
                 bypass_cache_for = {p.xuid for p in player_sessions if p.online}
+            else:
+                await pl_utils.invalidate_premium(self.bot, config)
 
         player_list = await pl_utils.fill_in_gamertags_for_sessions(
             self.bot,
@@ -359,42 +373,79 @@ class Playerlist(utils.Extension):
             gamertag_map=gamertag_map,
         )
 
-        online_list = sorted(
-            (p.display(config.nicknames.get(p.xuid)) for p in player_list if p.online),
-            key=lambda g: g.lower(),
-        )
-        offline_list = [
-            p.display(config.nicknames.get(p.xuid))
-            for p in sorted(
-                (p for p in player_list if not p.online),
-                key=lambda p: p.last_seen.timestamp(),
-                reverse=True,
+        if mode == "compact":
+            online_list = sorted(
+                (
+                    p.display(config.nicknames.get(p.xuid))
+                    for p in player_list
+                    if p.online
+                ),
+                key=lambda g: g.lower(),
             )
-        ]
-
-        embeds: list[ipy.Embed] = []
-        timestamp = ipy.Timestamp.fromdatetime(self.previous_now)
-
-        if online_list:
-            embeds.append(
-                ipy.Embed(
-                    color=ipy.Color.from_hex("7abd59"),
-                    title="People online right now",
-                    description="\n".join(online_list),
-                    footer=ipy.EmbedFooter(text="As of"),
-                    timestamp=timestamp,
+            offline_list = [
+                p.display(config.nicknames.get(p.xuid))
+                for p in sorted(
+                    (p for p in player_list if not p.online),
+                    key=lambda p: p.last_seen.timestamp(),
+                    reverse=True,
                 )
+            ]
+        else:
+            online_list = sorted(
+                (
+                    p.new_display(config.nicknames.get(p.xuid))
+                    for p in player_list
+                    if p.online
+                ),
+                key=lambda g: g.lower(),
             )
+            offline_list = [
+                p.new_display(config.nicknames.get(p.xuid))
+                for p in sorted(
+                    (p for p in player_list if not p.online),
+                    key=lambda p: p.last_seen.timestamp(),
+                    reverse=True,
+                )
+            ]
 
-        if offline_list:
-            offline_embeds: list[ipy.Embed] = []
+        if mode == "compact":
+            embeds: list[ipy.Embed] = []
+            timestamp = ipy.Timestamp.fromdatetime(self.previous_now)
 
-            current_entries: list[str] = []
-            current_length: int = 0
+            if online_list:
+                embeds.append(
+                    ipy.Embed(
+                        color=ipy.Color.from_hex("7abd59"),
+                        title="Players currently online",
+                        description="\n".join(online_list),
+                        footer=ipy.EmbedFooter(text="As of"),
+                        timestamp=timestamp,
+                    )
+                )
 
-            for entry in offline_list:
-                current_length += len(entry)
-                if current_length > 3900:
+            if offline_list:
+                offline_embeds: list[ipy.Embed] = []
+
+                current_entries: list[str] = []
+                current_length: int = 0
+
+                for entry in offline_list:
+                    current_length += len(entry)
+                    if current_length > 3900:
+                        offline_embeds.append(
+                            ipy.Embed(
+                                color=ipy.Color.from_hex("95a5a6"),
+                                description="\n".join(current_entries),
+                                footer=ipy.EmbedFooter(text="As of"),
+                                timestamp=timestamp,
+                            )
+                        )
+                        current_entries = []
+                        current_length = 0
+
+                    current_entries.append(entry)
+
+                if current_entries:
                     offline_embeds.append(
                         ipy.Embed(
                             color=ipy.Color.from_hex("95a5a6"),
@@ -403,44 +454,101 @@ class Playerlist(utils.Extension):
                             timestamp=timestamp,
                         )
                     )
-                    current_entries = []
-                    current_length = 0
 
-                current_entries.append(entry)
+                offline_embeds[0].title = (
+                    f"Players on in the last {hours_ago} {hour_text}"
+                )
+                embeds.extend(offline_embeds)
 
-            if current_entries:
-                offline_embeds.append(
-                    ipy.Embed(
-                        color=ipy.Color.from_hex("95a5a6"),
-                        description="\n".join(current_entries),
-                        footer=ipy.EmbedFooter(text="As of"),
-                        timestamp=timestamp,
+            if upsell and not config.valid_premium:
+                # add upsell message to last embed
+                embeds[-1].set_footer(upsell)
+
+            if autorunner:
+                first_embed = True
+
+                for embed in embeds:
+                    # each embed can border very close to the max character in a message limit,
+                    # so we have to send each one individually
+
+                    if first_embed:
+                        # if we're using the autorunner, add a little message to note that
+                        # this is a log
+                        await ctx.send(
+                            content=f"Autorunner log for {timestamp.format('f')}:",
+                            embed=embed,
+                        )
+                        first_embed = False
+                    else:
+                        await ctx.send(embeds=embed)
+            else:
+                if len(embeds) == 1:
+                    await ctx.send(embeds=embeds[0])
+                    return
+
+                pag = help_tools.HelpPaginator.create_from_embeds(
+                    self.bot, *embeds, timeout=120
+                )
+                await pag.send(ctx)
+        else:
+            components: list[list[ipy.BaseComponent]] = []
+            colors: list[ipy.Color] = []
+
+            if online_list:
+                online: list[ipy.BaseComponent] = [
+                    ipy.TextDisplayComponent("## Players Currently Online"),
+                    ipy.SeparatorComponent(divider=True),
+                ]
+                online.extend(
+                    ipy.TextDisplayComponent(player) for player in online_list
+                )
+                components.append(online)
+                colors.append(ipy.Color.from_hex("7abd59"))
+
+            if offline_list:
+                offline_components: list[list[ipy.BaseComponent]] = []
+
+                current_entries: list[ipy.BaseComponent] = []
+                current_length: int = 0
+
+                for entry in offline_list:
+                    current_length += len(entry)
+                    if current_length > 3900 or len(current_entries) >= 29:
+                        offline_components.append(current_entries)
+                        current_entries = []
+                        current_length = 0
+
+                    current_entries.append(ipy.TextDisplayComponent(entry))
+                    colors.append(ipy.Color.from_hex("95a5a6"))
+
+                if current_entries:
+                    offline_components.append(current_entries)
+                    colors.append(ipy.Color.from_hex("95a5a6"))
+
+                offline_components[0].insert(0, ipy.SeparatorComponent(divider=True))
+                offline_components[0].insert(
+                    0,
+                    ipy.TextDisplayComponent(
+                        "## Players On In the Last"
+                        f" {hours_ago} {hour_text.capitalize()}"
+                    ),
+                )
+                components.extend(offline_components)
+
+            if len(components) == 1:
+                await ctx.send(
+                    components=cclasses.ContainerComponent(
+                        *components[0], accent_color=colors[0].value
                     )
                 )
+                return
 
-            offline_embeds[0].title = f"People on in the last {hours_ago} {hour_text}"
-            embeds.extend(offline_embeds)
-
-        if upsell and not config.valid_premium:
-            # add upsell message to last embed
-            embeds[-1].set_footer(upsell)
-
-        first_embed = True
-
-        for embed in embeds:
-            # each embed can border very close to the max character in a message limit,
-            # so we have to send each one individually
-
-            if autorunner and first_embed:
-                # if we're using the autorunner, add a little message to note that
-                # this is a log
-                await ctx.send(
-                    content=f"Autorunner log for {timestamp.format('f')}:",
-                    embed=embed,
-                )
-                first_embed = False
-            else:
-                await ctx.send(embeds=embed)
+            pag = cclasses.ContainerPaginator(
+                self.bot,
+                pages_data=components,
+                color_for_pages=colors,
+            )
+            await pag.send(ctx)
 
     @tansy.slash_command(
         "online",
