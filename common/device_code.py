@@ -18,6 +18,7 @@ import asyncio
 import datetime
 import logging
 import os
+import typing
 
 import elytra
 import interactions as ipy
@@ -203,7 +204,20 @@ async def handle_realms(
                 "Failed to send invite to Realm. Please try again."
             )
 
-        await ctx.bot.realms.accept_invite(invite.invitation_id)
+        try:
+            await ctx.bot.realms.accept_invite(invite.invitation_id)
+        except elytra.MicrosoftAPIException as e:
+            if e.resp.status_code == 403:
+                data: dict[str, typing.Any] = await orjson.loads(await e.resp.aread())
+
+                if data.get("errorMsg") == "User found in block list":
+                    raise utils.CustomCheckFailure(
+                        "The bot appears to have been blocked from joining your Realm."
+                        f" Please check that `{ctx.bot.own_gamertag}` is not blocked"
+                        " and try again."
+                    ) from None
+
+            raise e
 
         try:
             await user_xbox.remove_friend(xuid=my_xuid)
