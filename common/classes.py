@@ -607,7 +607,8 @@ class ContainerComponent(
 
     def __repr__(self) -> str:
         return (
-            f"<{self.__class__.__name__} type={self.type} components={self.components} accent_color={self.accent_color} spoiler={self.spoiler}>"
+            f"<{self.__class__.__name__} type={self.type} components={self.components}"
+            f" accent_color={self.accent_color} spoiler={self.spoiler}>"
         )
 
     def to_dict(self) -> dict:

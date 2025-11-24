@@ -29,10 +29,14 @@ import common.premium_utils as premium_utils
 import common.utils as utils
 
 
-def premium_check[T: (
-    ipy.BaseCommand,
-    ipy.const.AsyncCallable,
-)]() -> typing.Callable[[T], T]:
+def premium_check[
+    T: (
+        ipy.BaseCommand,
+        ipy.const.AsyncCallable,
+    )
+]() -> (
+    typing.Callable[[T], T]
+):
     async def check(ctx: utils.RealmContext) -> bool:
         config = await ctx.fetch_config()
 
