@@ -368,10 +368,9 @@ async def config_info_generate(
                 else "N/A"
             )
             dev_info_str += (
-                "\nUses:"
-                f" {config.premium_code.uses} used/{config.premium_code.max_uses}\nExpires"
-                f" At: {expires_at}\nLive Online:"
-                f" {na_friendly_str(config.live_online_channel)}"
+                f"\nUses: {config.premium_code.uses}"
+                f" used/{config.premium_code.max_uses}\nExpires At: {expires_at}\nLive"
+                f" Online: {na_friendly_str(config.live_online_channel)}"
             )
 
         embed.add_field(
