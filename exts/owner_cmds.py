@@ -1,5 +1,5 @@
 """
-Copyright 2020-2025 AstreaTSS.
+Copyright 2020-2026 AstreaTSS.
 This file is part of the Realms Playerlist Bot.
 
 The Realms Playerlist Bot is free software: you can redistribute it and/or modify it under
