@@ -82,7 +82,7 @@ def default_sentry_filter(
                 return None
 
     if "exc_info" in hint:
-        exc_type, exc_value, tb = hint["exc_info"]
+        _, exc_value, __ = hint["exc_info"]
         if isinstance(exc_value, KeyboardInterrupt):
             #  We don't need to report a ctrl+c
             return None
