@@ -9,7 +9,7 @@ git+https://github.com/MarkusSintonen/httpcore.git@e724565270603a72d11f6d3bfc096
 httpx[http2]==0.28.1
 tortoise-orm[asyncpg]==0.25.1
 aerich==0.9.1
-pypika==0.48.9
+pypika==0.50.0
 valkey[libvalkey]==6.1.1
 orjson==3.11.3
 sentry-sdk==2.46.0
