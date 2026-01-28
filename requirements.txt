@@ -7,7 +7,7 @@ attrs==25.4.0
 pydantic==2.12.5
 git+https://github.com/MarkusSintonen/httpcore.git@e724565270603a72d11f6d3bfc09671ffcfe36f2
 httpx[http2]==0.28.1
-tortoise-orm[asyncpg]==0.25.1
+tortoise-orm[asyncpg]==0.25.3
 aerich==0.9.1
 pypika==0.50.0
 valkey[libvalkey]==6.1.1
