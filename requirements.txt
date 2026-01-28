@@ -17,5 +17,5 @@ rapidfuzz==3.14.3
 pycryptodome==3.23.0
 msgspec==0.20.0
 elytra-ms==0.7.3
-python-dotenv==1.1.1
+python-dotenv==1.2.1
 uvloop==0.22.1; platform_system == "Linux"
