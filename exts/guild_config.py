@@ -1034,7 +1034,7 @@ class GuildConfig(utils.Extension):
         else:
             watchlist = "N/A"
 
-        desc = f"**Role:** N/A (use {self.watchlist_ping_role.mention()} to set)\n"
+        desc = f"**Role:** N/A (use {self.watchlist_set_ping_role.mention()} to set)\n"
         if config.player_watchlist_role:
             desc = f"**Role**: <@&{config.player_watchlist_role}>\n"
         desc += f"**Watchlist**:\n{watchlist}"
