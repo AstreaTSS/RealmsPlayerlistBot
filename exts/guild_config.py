@@ -595,66 +595,70 @@ class GuildConfig(utils.Extension):
 
         await pag.send(ctx)
 
-    @config.subcommand(
-        sub_cmd_name="autorunning-playerlist-channel",
-        sub_cmd_description=(
-            "Sets (or unsets) where the autorunning playerlist is sent to."
-        ),
+    autorunning_config = config.group(
+        "autorunning-playerlist-channel",
+        "Commands to configure the autorunning playerlist channel.",
+    )
+
+    @autorunning_config.subcommand(
+        sub_cmd_name="set",
+        sub_cmd_description="Sets where the autorunning playerlist is sent to.",
     )
     @ipy.check(pl_utils.has_linked_realm)
     async def set_autorunning_playerlist_channel(
         self,
         ctx: utils.RealmContext,
-        channel: ipy.GuildText | None = tansy.Option(
+        channel: ipy.GuildText = tansy.Option(
             "The channel to set the autorunning playerlist to.",
             converter=cclasses.ValidChannelConverter,
         ),
-        unset: bool = tansy.Option("Should the channel be unset?", default=False),
     ) -> None:
-        # xors, woo!
-        if not (unset ^ bool(channel)):
-            raise ipy.errors.BadArgument(
-                "You must either set a channel or explictly unset the channel. One must"
-                " be given."
-            )
-
         config = await ctx.fetch_config()
 
-        if channel:
-            if typing.TYPE_CHECKING:
-                assert isinstance(channel, ipy.GuildText)
+        if typing.TYPE_CHECKING:
+            assert isinstance(channel, ipy.GuildText)
 
-            config.playerlist_chan = channel.id
-            await config.save()
-            await self.bot.valkey.delete(
-                f"invalid-playerlist3-{config.guild_id}",
-                f"invalid-playerlist7-{config.guild_id}",
+        config.playerlist_chan = channel.id
+        await config.save()
+        await self.bot.valkey.delete(
+            f"invalid-playerlist3-{config.guild_id}",
+            f"invalid-playerlist7-{config.guild_id}",
+        )
+
+        await ctx.send(
+            embeds=utils.make_embed(
+                f"Set the autorunning playerlist channel to {channel.mention}."
+            )
+        )
+
+    @autorunning_config.subcommand(
+        sub_cmd_name="unset",
+        sub_cmd_description="Unsets the autorunning playerlist channel.",
+    )
+    @ipy.check(pl_utils.has_linked_realm)
+    async def unset_autorunning_playerlist_channel(
+        self, ctx: utils.RealmContext
+    ) -> None:
+        config = await ctx.fetch_config()
+
+        if not config.playerlist_chan:
+            raise utils.CustomCheckFailure(
+                "There was no channel set in the first place."
             )
 
-            await ctx.send(
-                embeds=utils.make_embed(
-                    f"Set the autorunning playerlist channel to {channel.mention}."
-                )
-            )
-        else:
-            if not config.playerlist_chan:
-                raise utils.CustomCheckFailure(
-                    "There was no channel set in the first place."
-                )
+        config.playerlist_chan = None
+        await config.save()
+        await self.bot.valkey.delete(
+            f"invalid-playerlist3-{config.guild_id}",
+            f"invalid-playerlist7-{config.guild_id}",
+        )
 
-            config.playerlist_chan = None
-            await config.save()
-            await self.bot.valkey.delete(
-                f"invalid-playerlist3-{config.guild_id}",
-                f"invalid-playerlist7-{config.guild_id}",
-            )
+        if config.realm_id:
+            self.bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
 
-            if config.realm_id:
-                self.bot.live_playerlist_store[config.realm_id].discard(config.guild_id)
-
-            await ctx.send(
-                embeds=utils.make_embed("Unset the autorunning playerlist channel.")
-            )
+        await ctx.send(
+            embeds=utils.make_embed("Unset the autorunning playerlist channel.")
+        )
 
     @staticmethod
     def button_check(author_id: int) -> typing.Callable[..., bool]:
@@ -749,19 +753,23 @@ class GuildConfig(utils.Extension):
 
             await ctx.send(embeds=utils.make_embed("Enabled the warnings."))
 
-    @config.subcommand(
-        sub_cmd_name="realm-offline-role",
+    realm_offline_role = config.group(
+        "realm-offline-role",
+        "Commands to configure the Realm offline ping role.",
+    )
+
+    @realm_offline_role.subcommand(
+        sub_cmd_name="set",
         sub_cmd_description=(
-            "Sets/unsets the role that is pinged in the autorunning playerlist channel"
-            " if the Realm goes offline."
+            "Sets the role that is pinged in the autorunning playerlist channel if"
+            " the Realm goes offline."
         ),
     )
     @ipy.check(pl_utils.has_linked_realm)
     async def set_realm_offline_role(
         self,
         ctx: utils.RealmContext,
-        role: ipy.Role | None = tansy.Option("The role to ping."),
-        unset: bool = tansy.Option("Should the role be unset?", default=False),
+        role: ipy.Role = tansy.Option("The role to ping."),
     ) -> None:
         """
         Sets/unsets the role that is pinged in the autorunning playerlist channel if the Realm goes offline.
@@ -770,105 +778,107 @@ class GuildConfig(utils.Extension):
 
         The bot must be linked to a Realm and the autorunner channel must be set for this to work.
         The bot also must be able to ping the role.
-
-        You must either set a role or explictly unset the role. Only one of the two may (and must) be given.
         """
-        # xors, woo!
-        if not (unset ^ bool(role)):
-            raise ipy.errors.BadArgument(
-                "You must either set a role or explictly unset the role. One must be"
-                " given."
-            )
 
         config = await ctx.fetch_config()
 
-        if role:
-            if isinstance(role, str):  # ???
-                role: ipy.Role = await self.bot.cache.fetch_role(ctx.guild_id, role)
+        if isinstance(role, str):  # ???
+            role = await self.bot.cache.fetch_role(ctx.guild_id, role)
 
-            if (
-                not role.mentionable
-                and ipy.Permissions.MENTION_EVERYONE not in ctx.app_permissions
-            ):
-                raise utils.CustomCheckFailure(
-                    "I cannot ping this role. Make sure the role is either mentionable"
-                    " or the bot can mention all roles."
-                )
-
-            if not config.realm_id:
-                raise utils.CustomCheckFailure(
-                    "Please link your Realm with this server with"
-                    f" {self.link_realm.mention()} first."
-                )
-
-            if not config.playerlist_chan:
-                raise utils.CustomCheckFailure(
-                    "Please set up the autorunning playerlist with"
-                    f" {self.set_autorunning_playerlist_channel.mention()} first."
-                )
-
-            embed = ipy.Embed(
-                title="Warning",
-                description=(
-                    "This ping won't be 100% accurate. The ping hooks onto an event"
-                    ' where the Realm "disappears" from the bot\'s perspective, which'
-                    " happens for a variety of reasons, like crashing... or sometimes,"
-                    " when no one is on the server. Because of this, *it is recommended"
-                    " that this is only enabled for large Realms.*\n\n**If you wish to"
-                    " continue with adding the role, press the accept button.** You"
-                    " have one minute to do so."
-                ),
-                timestamp=ipy.Timestamp.utcnow(),
-                color=ipy.RoleColors.YELLOW,
+        if (
+            not role.mentionable
+            and ipy.Permissions.MENTION_EVERYONE not in ctx.app_permissions
+        ):
+            raise utils.CustomCheckFailure(
+                "I cannot ping this role. Make sure the role is either mentionable"
+                " or the bot can mention all roles."
             )
 
-            result = ""
-            event = None
+        if not config.realm_id:
+            raise utils.CustomCheckFailure(
+                "Please link your Realm with this server with"
+                f" {self.link_realm.mention()} first."
+            )
 
-            components = [
-                ipy.Button(style=ipy.ButtonStyle.GREEN, label="Accept", emoji="✅"),
-                ipy.Button(style=ipy.ButtonStyle.RED, label="Decline", emoji="✖️"),
-            ]
-            msg = await ctx.send(embed=embed, components=components)
+        if not config.playerlist_chan:
+            raise utils.CustomCheckFailure(
+                "Please set up the autorunning playerlist with"
+                f" {self.set_autorunning_playerlist_channel.mention()} first."
+            )
 
-            try:
-                event = await self.bot.wait_for_component(
-                    msg, components, self.button_check(ctx.author.id), timeout=60
+        embed = ipy.Embed(
+            title="Warning",
+            description=(
+                "This ping won't be 100% accurate. The ping hooks onto an event"
+                ' where the Realm "disappears" from the bot\'s perspective, which'
+                " happens for a variety of reasons, like crashing... or sometimes,"
+                " when no one is on the server. Because of this, *it is recommended"
+                " that this is only enabled for large Realms.*\n\n**If you wish to"
+                " continue with adding the role, press the accept button.** You"
+                " have one minute to do so."
+            ),
+            timestamp=ipy.Timestamp.utcnow(),
+            color=ipy.RoleColors.YELLOW,
+        )
+
+        result = ""
+        event = None
+
+        components = [
+            ipy.Button(style=ipy.ButtonStyle.GREEN, label="Accept", emoji="✅"),
+            ipy.Button(style=ipy.ButtonStyle.RED, label="Decline", emoji="✖️"),
+        ]
+        msg = await ctx.send(embed=embed, components=components)
+
+        try:
+            event = await self.bot.wait_for_component(
+                msg, components, self.button_check(ctx.author.id), timeout=60
+            )
+
+            if event.ctx.custom_id == components[1].custom_id:
+                result = "Declined setting the Realm offline ping."
+            else:
+                config.realm_offline_role = role.id
+                await config.save()
+
+                result = f"Set the Realm offline ping to {role.mention}."
+        except TimeoutError:
+            result = "Timed out."
+        finally:
+            embed = utils.make_embed(result)
+            if event:
+                await event.ctx.send(
+                    embeds=embed,
+                    ephemeral=True,
                 )
+            await ctx.edit(msg, embeds=embed, components=[])  # type: ignore
 
-                if event.ctx.custom_id == components[1].custom_id:
-                    result = "Declined setting the Realm offline ping."
-                else:
-                    config.realm_offline_role = role.id
-                    await config.save()
-
-                    result = f"Set the Realm offline ping to {role.mention}."
-            except TimeoutError:
-                result = "Timed out."
-            finally:
-                embed = utils.make_embed(result)
-                if event:
-                    await event.ctx.send(
-                        embeds=embed,
-                        ephemeral=True,
-                    )
-                await ctx.edit(msg, embeds=embed, components=[])  # type: ignore
-        else:
-            if not config.realm_offline_role:
-                raise utils.CustomCheckFailure(
-                    "There was no role set in the first place."
-                )
-
-            config.realm_offline_role = None
-            await config.save()
-            await ctx.send(embeds=utils.make_embed("Unset the Realm offline ping."))
-
-    @config.subcommand(
-        sub_cmd_name="notification-channel",
+    @realm_offline_role.subcommand(
+        sub_cmd_name="unset",
         sub_cmd_description=(
-            "Sets/reset the channels used for notifications from the bot. Defaults to"
-            " the playerlist channel."
+            "Unsets the role that is pinged in the autorunning playerlist channel if"
+            " the Realm goes offline."
         ),
+    )
+    @ipy.check(pl_utils.has_linked_realm)
+    async def unset_realm_offline_role(self, ctx: utils.RealmContext) -> None:
+        config = await ctx.fetch_config()
+
+        if not config.realm_offline_role:
+            raise utils.CustomCheckFailure("There was no role set in the first place.")
+
+        config.realm_offline_role = None
+        await config.save()
+        await ctx.send(embeds=utils.make_embed("Unset the Realm offline ping."))
+
+    notification_channel = config.group(
+        "notification-channel",
+        "Commands to configure the notification channels for various features.",
+    )
+
+    @notification_channel.subcommand(
+        sub_cmd_name="set",
+        sub_cmd_description="Sets the channel used for notifications from the bot.",
     )
     @ipy.check(pl_utils.has_linked_realm)
     async def set_notification_channel(
@@ -887,22 +897,11 @@ class GuildConfig(utils.Extension):
             ],
             type=str,
         ),
-        channel: ipy.GuildText | None = tansy.Option(
+        channel: ipy.GuildText = tansy.Option(
             "The channel to set the feature to.",
             converter=cclasses.ValidChannelConverter,
         ),
-        reset: bool = tansy.Option(
-            "Should the channel be reset? If so, the playerlist channel will be"
-            " used instead.",
-            default=False,
-        ),
     ) -> None:
-        if not (reset ^ bool(channel)):
-            raise ipy.errors.BadArgument(
-                "You must either set a channel or explictly reset the channel. One must"
-                " be given."
-            )
-
         config = await ctx.fetch_config()
 
         feature_name = ""
@@ -915,29 +914,64 @@ class GuildConfig(utils.Extension):
             case "reoccurring_leaderboard":
                 feature_name = "the reoccurring leaderboard"
 
-        if channel is not None:
-            config.notification_channels[feature] = channel.id
-            await config.save()
+        config.notification_channels[feature] = channel.id
+        await config.save()
 
-            await ctx.send(
-                embeds=utils.make_embed(
-                    f"Set the channel for {feature_name} to {channel.mention}."
-                )
+        await ctx.send(
+            embeds=utils.make_embed(
+                f"Set the channel for {feature_name} to {channel.mention}."
             )
-        else:
-            result = config.notification_channels.pop(feature, None)
-            if result is None:
-                raise ipy.errors.BadArgument(
-                    f"There was no channel for {feature_name} set in the first place."
-                )
-            await config.save()
+        )
 
-            await ctx.send(
-                embeds=utils.make_embed(
-                    f"Reset the channel for {feature_name}. The playerlist channel will"
-                    " be used for that type of notification instead."
-                )
+    @notification_channel.subcommand(
+        sub_cmd_name="reset",
+        sub_cmd_description=(
+            "Resets the channel used for notifications from the bot to the playerlist"
+            " channel."
+        ),
+    )
+    async def reset_notification_channel(
+        self,
+        ctx: utils.RealmContext,
+        feature: typing.Literal[
+            "player_watchlist", "realm_offline", "reoccurring_leaderboard"
+        ] = tansy.Option(
+            "The feature/notification type to reset the channel for.",
+            choices=[
+                ipy.SlashCommandChoice("Player Watchlist", "player_watchlist"),
+                ipy.SlashCommandChoice("Realm Offline Notifications", "realm_offline"),
+                ipy.SlashCommandChoice(
+                    "Reoccurring Leaderboard", "reoccurring_leaderboard"
+                ),
+            ],
+            type=str,
+        ),
+    ) -> None:
+        config = await ctx.fetch_config()
+
+        feature_name = ""
+
+        match feature:
+            case "player_watchlist":
+                feature_name = "the player watchlist"
+            case "realm_offline":
+                feature_name = "Realm offline notifications"
+            case "reoccurring_leaderboard":
+                feature_name = "the reoccurring leaderboard"
+
+        result = config.notification_channels.pop(feature, None)
+        if result is None:
+            raise ipy.errors.BadArgument(
+                f"There was no channel for {feature_name} set in the first place."
             )
+        await config.save()
+
+        await ctx.send(
+            embeds=utils.make_embed(
+                f"Reset the channel for {feature_name}. The playerlist channel will"
+                " be used for that type of notification instead."
+            )
+        )
 
     @config.subcommand(
         sub_cmd_name="help",
@@ -1083,79 +1117,81 @@ class GuildConfig(utils.Extension):
             embeds=utils.make_embed(f"Removed `{gamertag}` from the player watchlist.")
         )
 
-    @watchlist.subcommand(
-        sub_cmd_name="ping-role",
+    ping_role = watchlist.group(
+        "ping-role",
+        "Commands to set or unset the role to be pinged when a player on the watchlist"
+        " joins.",
+    )
+
+    @ping_role.subcommand(
+        sub_cmd_name="set",
         sub_cmd_description=(
-            "Sets or unsets the role to be pinged when a player on the watchlist joins"
-            " the linked Realm."
+            "Sets the role to be pinged when a player on the watchlist joins the"
+            " linked Realm."
         ),
     )
     @ipy.check(pl_utils.has_autorunning_playerlist_channel)
-    async def watchlist_ping_role(
+    async def watchlist_set_ping_role(
         self,
         ctx: utils.RealmContext,
-        role: ipy.Role | None = tansy.Option("The role to ping."),
-        unset: bool = tansy.Option("Should the role be unset?", default=False),
+        role: ipy.Role = tansy.Option("The role to ping."),
     ) -> None:
-        if not (unset ^ bool(role)):
-            raise ipy.errors.BadArgument(
-                "You must either set a role or explictly unset the role. One must be"
-                " given."
-            )
-
         config = await ctx.fetch_config()
 
-        if role:
-            if isinstance(role, str):  # ???
-                role: ipy.Role = await self.bot.cache.fetch_role(ctx.guild_id, role)
+        if isinstance(role, str):  # ???
+            role = await self.bot.cache.fetch_role(ctx.guild_id, role)
 
-            if (
-                not role.mentionable
-                and ipy.Permissions.MENTION_EVERYONE not in ctx.app_permissions
-            ):
-                raise utils.CustomCheckFailure(
-                    "I cannot ping this role. Make sure the role is either mentionable"
-                    " or the bot can mention all roles."
-                )
-
-            config.player_watchlist_role = int(role.id)
-            await config.save()
-            await ctx.send(
-                embed=utils.make_embed(
-                    f"Set the player watchlist role to {role.mention}."
-                )
+        if (
+            not role.mentionable
+            and ipy.Permissions.MENTION_EVERYONE not in ctx.app_permissions
+        ):
+            raise utils.CustomCheckFailure(
+                "I cannot ping this role. Make sure the role is either mentionable"
+                " or the bot can mention all roles."
             )
 
-        else:
-            config.player_watchlist_role = None
-            await config.save()
-            await ctx.send(
-                embed=utils.make_embed(
-                    "Unset the player watchlist role. This does not turn of the player"
-                    " watchlist - please remove all players from the watchlist to do"
-                    " that."
-                )
-            )
+        config.player_watchlist_role = int(role.id)
+        await config.save()
+        await ctx.send(
+            embed=utils.make_embed(f"Set the player watchlist role to {role.mention}.")
+        )
 
-    @watchlist.subcommand(
-        sub_cmd_name="channel",
+    @ping_role.subcommand(
+        sub_cmd_name="unset",
         sub_cmd_description=(
-            "Sets or resets the channel to send watchlist messages to. Defaults to the"
-            " playerlist channel."
+            "Unsets the role to be pinged when a player on the watchlist joins the"
+            " linked Realm."
         ),
     )
+    @ipy.check(pl_utils.has_autorunning_playerlist_channel)
+    async def watchlist_unset_ping_role(self, ctx: utils.RealmContext) -> None:
+        config = await ctx.fetch_config()
+
+        config.player_watchlist_role = None
+        await config.save()
+        await ctx.send(
+            embed=utils.make_embed(
+                "Unset the player watchlist role. This does not turn of the player"
+                " watchlist - please remove all players from the watchlist to do"
+                " that."
+            )
+        )
+
+    watchlist_channel = watchlist.group(
+        "channel", "Commands to set or reset the channel to send watchlist messages to."
+    )
+
+    @watchlist_channel.subcommand(
+        sub_cmd_name="set",
+        sub_cmd_description="Sets the channel to send watchlist messages to.",
+    )
     @ipy.check(pl_utils.has_linked_realm)
-    async def watchlist_channel(
+    async def watchlist_set_channel(
         self,
         ctx: utils.RealmContext,
-        channel: ipy.GuildText | None = tansy.Option(
+        channel: ipy.GuildText = tansy.Option(
             "The channel to set the feature to.",
             converter=cclasses.ValidChannelConverter,
-        ),
-        reset: bool = tansy.Option(
-            "Should the channel be reset? If so, the playerlist channel will be"
-            " used instead.",
-            default=False,
         ),
     ) -> None:
         await self.set_notification_channel.call_with_binding(
@@ -1163,7 +1199,21 @@ class GuildConfig(utils.Extension):
             ctx,
             "player_watchlist",
             channel,
-            reset,
+        )
+
+    @watchlist_channel.subcommand(
+        sub_cmd_name="reset",
+        sub_cmd_description=(
+            "Resets the channel to send watchlist messages to back to the playerlist"
+            " channel."
+        ),
+    )
+    @ipy.check(pl_utils.has_linked_realm)
+    async def watchlist_reset_channel(self, ctx: utils.RealmContext) -> None:
+        await self.reset_notification_channel.call_with_binding(
+            self.reset_notification_channel.callback,
+            ctx,
+            "player_watchlist",
         )
 
     nickname = tansy.SlashCommand(
