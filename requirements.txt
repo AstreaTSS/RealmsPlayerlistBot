@@ -13,7 +13,7 @@ pypika==0.50.0
 valkey[libvalkey]==6.1.1
 orjson==3.11.3
 sentry-sdk==2.46.0
-rapidfuzz==3.14.1
+rapidfuzz==3.14.3
 pycryptodome==3.23.0
 msgspec==0.20.0
 elytra-ms==0.7.3
