@@ -349,7 +349,7 @@ class PlayerlistEventHandling(utils.Extension):
                     f" {self.bot.mention_command('config link-realm')} again to fix"
                     " it.\n\nAlternatively:\n- If you want to disable the autorunning"
                     " playerlist entirely, you can use"
-                    f" {self.bot.mention_command('config autorunning-playerlist-channel')}"
+                    f" {self.bot.mention_command('config autorunning-playerlist-channel unset')}"
                     " to do so.\n- If you want to disable this warning, you can use"
                     f" {self.bot.mention_command('config realm-warning')} to do so."
                     " *Note that these warnings are often useful, so disabling is not"
