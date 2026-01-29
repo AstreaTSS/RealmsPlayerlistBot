@@ -11,7 +11,7 @@ tortoise-orm[asyncpg]==0.25.1
 aerich==0.9.1
 pypika==0.50.0
 valkey[libvalkey]==6.1.1
-orjson==3.11.5
+orjson==3.11.6
 sentry-sdk==2.46.0
 rapidfuzz==3.14.3
 pycryptodome==3.23.0
