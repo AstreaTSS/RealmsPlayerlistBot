@@ -44,6 +44,9 @@ class GeneralCMDS(utils.Extension):
 
     def _get_commit_hash(self) -> str | None:
         try:
+            if os.environ.get("SOURCE_COMMIT"):
+                return os.environ["SOURCE_COMMIT"][:7]
+
             return (
                 subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
                 .decode("ascii")
