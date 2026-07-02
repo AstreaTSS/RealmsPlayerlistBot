@@ -1,19 +1,19 @@
 services:
   redis:
-    image: "redis:alpine"
+    image: "valkey/valkey:9-alpine"
     ports:
       - 6379:6379
     volumes:
       - ./data/redis:/var/lib/redis
 
   db:
-    image: "postgres:16-alpine"
+    image: "postgres:18-alpine"
     ports:
       - 5432:5432
     environment:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql
 
   bot:
     build: .
