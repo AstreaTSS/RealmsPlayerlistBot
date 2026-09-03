@@ -57,11 +57,11 @@ if utils.VOTING_ENABLED:
 LENGTH_UPSELLS = len(UPSELLS)
 
 
-def upsell_determiner(dt: datetime.datetime) -> str | None:
-    if dt.hour % 6 == 0:
-        total_seconds = int(dt.timestamp())
-        x_hour_boundary = total_seconds % (21600 * LENGTH_UPSELLS)
-        return UPSELLS[x_hour_boundary // 21600]
+def upsell_determiner(dt: datetime.datetime) -> str | None:  # noqa
+    # if dt.hour % 6 == 0:
+    #     total_seconds = int(dt.timestamp())
+    #     x_hour_boundary = total_seconds % (21600 * LENGTH_UPSELLS)
+    #     return UPSELLS[x_hour_boundary // 21600]
 
     return None
 

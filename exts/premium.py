@@ -562,18 +562,19 @@ class PremiumHandling(utils.Extension):
             "Gives you information about Realms Playerlist Premium and how to get it."
         ),
     )
-    async def premium_info(self, ctx: utils.RealmContext) -> None:
-        embed = utils.make_embed(
-            "To learn about Realms Playerlist Premium, what features it has, and how to"
-            " get it, check out the link below.",
-            title="Premium Info",
-        )
-        button = ipy.Button(
-            style=ipy.ButtonStyle.URL,
-            label="Premium Info",
-            url="https://playerlist.astrea.cc/wiki/premium.html",
-        )
-        await ctx.send(embeds=embed, components=button)
+    async def premium_info(self, ctx: utils.RealmContext) -> None:  # noqa
+        # embed = utils.make_embed(
+        #     "To learn about Realms Playerlist Premium, what features it has, and how to"
+        #     " get it, check out the link below.",
+        #     title="Premium Info",
+        # )
+        # button = ipy.Button(
+        #     style=ipy.ButtonStyle.URL,
+        #     label="Premium Info",
+        #     url="https://playerlist.astrea.cc/wiki/premium.html",
+        # )
+        # await ctx.send(embeds=embed, components=button)
+        raise utils.CustomCheckFailure("You can no longer purchase Playerlist Premium.")
 
     @ipy.listen(ipy.events.EntitlementCreate)
     async def entitlement_create(self, event: ipy.events.EntitlementCreate) -> None:
