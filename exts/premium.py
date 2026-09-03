@@ -21,6 +21,7 @@ import typing
 
 import interactions as ipy
 import tansy
+from tortoise.transactions import in_transaction
 
 import common.classes as cclasses
 import common.models as models
@@ -156,6 +157,53 @@ class PremiumHandling(utils.Extension):
             embeds=utils.make_embed(
                 "Code redeemed for this server!\nThis code has"
                 f" {remaining_uses} {uses_str} remaining."
+            )
+        )
+
+    @premium.subcommand(
+        sub_cmd_name="unlink",
+        sub_cmd_description="Unlinks/unredeems the premium code for this server.",
+    )
+    async def unlink_premium(
+        self,
+        ctx: utils.RealmContext,
+        confirm: bool = tansy.Option(
+            "Are you sure you want to do this? Set this to true if you're sure.",
+            default=False,
+        ),
+    ) -> None:
+        config = await ctx.fetch_config()
+
+        if not confirm:
+            raise ipy.errors.BadArgument(
+                "Confirm option not set to true. Please set the option `confirm` to"
+                " true to continue."
+            )
+
+        if not config.premium_code:
+            raise utils.CustomCheckFailure("This server does not have Premium enabled.")
+
+        if (
+            config.premium_code.user_id
+            and int(ctx.author_id) != config.premium_code.user_id
+        ):
+            raise utils.CustomCheckFailure(
+                "Only the person who owns the premium code can unlink/unredeem Premium"
+                " for this server."
+            )
+
+        async with in_transaction():
+            if config.premium_code.uses < config.premium_code.max_uses:
+                config.premium_code.uses += 1
+                await config.premium_code.save()
+
+            config.premium_code = None
+            await config.save()
+
+        await ctx.send(
+            embed=utils.make_embed(
+                "Unlinked the premium code for this server. This server no longer has"
+                " Playerlist Premium."
             )
         )
 
