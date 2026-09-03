@@ -142,8 +142,11 @@ class PremiumHandling(utils.Extension):
 
         config = await ctx.fetch_config()
 
-        if config.premium_code and config.premium_code.code == code:
-            raise ipy.errors.BadArgument("This code has already been redeemed here.")
+        if config.premium_code:
+            raise ipy.errors.BadArgument(
+                "This server already has Premium. If you wish to redeem a new code for"
+                " this server, please unlink your old code with `/premium unlink`."
+            )
 
         config.premium_code = code_obj
         code_obj.uses += 1
