@@ -102,24 +102,12 @@ class GeneralCMDS(utils.Extension):
     )
     async def invite(self, ctx: utils.RealmContext) -> None:
         embed = utils.make_embed(
-            "If you want to invite me to your server, it's a good idea to use the"
-            " Server Setup Guide. However, if you know what you're doing, you can"
-            " use the Invite Link instead.",
+            "THIS BOT IS SHUTTING DOWN ON DECEMBER 20TH, 2026. INVITES HAVE BEEN"
+            " DISABLED.",
             title="Invite Bot",
         )
-        components = [
-            ipy.Button(
-                style=ipy.ButtonStyle.URL,
-                label="Server Setup Guide",
-                url="https://playerlist.astrea.cc/wiki/server_setup.html",
-            ),
-            ipy.Button(
-                style=ipy.ButtonStyle.URL,
-                label="Invite Link",
-                url=self.invite_link,
-            ),
-        ]
-        await ctx.send(embeds=embed, components=components)
+        embed.color = ipy.MaterialColors.RED
+        await ctx.send(embeds=embed)
 
     @ipy.slash_command(
         "support", description="Gives information about getting support."

@@ -460,7 +460,7 @@ class Playerlist(utils.Extension):
                 )
                 embeds.extend(offline_embeds)
 
-            if upsell and not config.valid_premium:
+            if upsell:
                 # add upsell message to last embed
                 embeds[-1].set_footer(upsell)
 

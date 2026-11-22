@@ -30,38 +30,35 @@ import common.playerlist_utils as pl_utils
 import common.utils as utils
 
 UPSELLS = [
-    (
-        "Want minute-to-minute updates on your Realm? Do you want device information"
-        " for players? Check out Playerlist Premium: /premium info"
-    ),
-    (
-        "Check out all of the features the bot has:"
-        " https://playerlist.astrea.cc/wiki/features"
-    ),
-    (
-        "Do you want a constantly updating live online list? Check out Playerlist"
-        " Premium: /premium info"
-    ),
-    (
-        "Having issues with the bot? Check out the FAQ or join the support server:"
-        " /support"
-    ),
+    "THIS BOT IS SHUTTING DOWN ON DECEMBER 20TH, 2026.",
+    # (
+    #     "Check out all of the features the bot has:"
+    #     " https://playerlist.astrea.cc/wiki/features"
+    # ),
+    # (
+    #     "Do you want a constantly updating live online list? Check out Playerlist"
+    #     " Premium: /premium info"
+    # ),
+    # (
+    #     "Having issues with the bot? Check out the FAQ or join the support server:"
+    #     " /support"
+    # ),
 ]
 
-if utils.VOTING_ENABLED:
-    UPSELLS.append(
-        "If you like the bot, you can vote for it via /vote! Voting helps the bot grow"
-        " and get more features."
-    )
+# if utils.VOTING_ENABLED:
+#     UPSELLS.append(
+#         "If you like the bot, you can vote for it via /vote! Voting helps the bot grow"
+#         " and get more features."
+#     )
 
 LENGTH_UPSELLS = len(UPSELLS)
 
 
-def upsell_determiner(dt: datetime.datetime) -> str | None:  # noqa
-    # if dt.hour % 6 == 0:
-    #     total_seconds = int(dt.timestamp())
-    #     x_hour_boundary = total_seconds % (21600 * LENGTH_UPSELLS)
-    #     return UPSELLS[x_hour_boundary // 21600]
+def upsell_determiner(dt: datetime.datetime) -> str | None:
+    if dt.hour % 6 == 0:
+        total_seconds = int(dt.timestamp())
+        x_hour_boundary = total_seconds % (21600 * LENGTH_UPSELLS)
+        return UPSELLS[x_hour_boundary // 21600]
 
     return None
 

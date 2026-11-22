@@ -146,18 +146,18 @@ class RealmsPlayerlistBot(utils.RealmBotBase):
         activity = ipy.Activity(
             name="Splash Text",
             type=ipy.ActivityType.CUSTOM,
-            state="Watching Realms | playerlist.astrea.cc",
+            state="THIS BOT IS SHUTTING DOWN ON DECEMBER 20TH, 2026.",
         )
-        await self.change_presence(activity=activity)
+        await self.change_presence(status=ipy.Status.DND, activity=activity)
 
     @ipy.listen("resume")
     async def on_resume_func(self) -> None:
         activity = ipy.Activity(
             name="Splash Text",
             type=ipy.ActivityType.CUSTOM,
-            state="Watching Realms | playerlist.astrea.cc",
+            state="THIS BOT IS SHUTTING DOWN ON DECEMBER 20TH, 2026.",
         )
-        await self.change_presence(activity=activity)
+        await self.change_presence(status=ipy.Status.DND, activity=activity)
 
     # technically, this is in ipy itself now, but its easier for my purposes to do this
     @ipy.listen("raw_application_command_permissions_update")
